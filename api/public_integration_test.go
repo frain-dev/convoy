@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -3530,6 +3531,159 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
 	require.Equal(s.T(), "1h", dbSub.AlertConfig.Threshold)
 	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
+}
+
+// matchPathSubRepo builds the subscription repository the dataplane worker reads
+// through, so these tests observe exactly the cache entry event routing depends on.
+func (s *PublicSubscriptionIntegrationTestSuite) matchPathSubRepo() datastore.SubscriptionRepository {
+	lo := log.New("convoy", log.LevelError)
+	return cached.NewCachedSubscriptionRepository(
+		subscriptions.New(lo, s.ConvoyApp.A.DB),
+		s.ConvoyApp.A.Cache,
+		cached.DefaultSubscriptionTTL,
+		lo,
+	)
+}
+
+// seedSubscriptionWithWarmCache seeds one subscription on a fresh endpoint and
+// warms "subs_by_endpoint:<project>:<endpoint>", the list the worker matches on.
+func (s *PublicSubscriptionIntegrationTestSuite) seedSubscriptionWithWarmCache(subscriptionID string) (*datastore.Endpoint, datastore.SubscriptionRepository) {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "endpoint", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil, "", "")
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, subscriptionID, datastore.OutgoingProject, source, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
+	matchRepo := s.matchPathSubRepo()
+	warmed, err := matchRepo.FindSubscriptionsByEndpointID(context.Background(), s.DefaultProject.UID, endpoint.UID)
+	require.NoError(s.T(), err)
+	require.Len(s.T(), warmed, 1)
+	require.ElementsMatch(s.T(), []string{"*"}, warmed[0].FilterConfig.EventTypes)
+
+	return endpoint, matchRepo
+}
+
+// Regression: an API or dashboard edit must invalidate the match-path list.
+// While the handlers held the raw repository the cached repository's invalidation
+// never ran in production, so the worker kept routing on the pre-edit event types
+// until the TTL expired.
+func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription_InvalidatesMatchPathCache() {
+	subscriptionId := ulid.Make().String()
+	endpoint, matchRepo := s.seedSubscriptionWithWarmCache(subscriptionId)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
+	body := serialize(`{
+		"filter_config": {
+			"event_types": [
+				"user.created",
+				"user.updated"
+			]
+		}
+	}`)
+
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusAccepted, w.Code, w.Body.String())
+
+	refreshed, err := matchRepo.FindSubscriptionsByEndpointID(context.Background(), s.DefaultProject.UID, endpoint.UID)
+	require.NoError(s.T(), err)
+	require.Len(s.T(), refreshed, 1)
+	require.ElementsMatch(s.T(), []string{"user.created", "user.updated"}, refreshed[0].FilterConfig.EventTypes,
+		"match path must see the updated event types, not the cached list")
+}
+
+func (s *PublicSubscriptionIntegrationTestSuite) Test_DeleteSubscription_InvalidatesMatchPathCache() {
+	subscriptionId := ulid.Make().String()
+	endpoint, matchRepo := s.seedSubscriptionWithWarmCache(subscriptionId)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+
+	refreshed, err := matchRepo.FindSubscriptionsByEndpointID(context.Background(), s.DefaultProject.UID, endpoint.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), refreshed, "match path must not keep routing to a deleted subscription")
+}
+
+func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidatesMatchPathCache() {
+	seededID := ulid.Make().String()
+	endpoint, matchRepo := s.seedSubscriptionWithWarmCache(seededID)
+
+	// Outgoing projects allow one subscription per endpoint, so free the endpoint
+	// through the raw repository. The warmed entry still holds the seeded
+	// subscription, which is exactly the stale list the create must invalidate.
+	rawRepo := subscriptions.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
+	require.NoError(s.T(), rawRepo.DeleteSubscription(context.Background(), s.DefaultProject.UID, &datastore.Subscription{UID: seededID}))
+
+	body := serialize(`{
+		"name": "sub-2",
+		"type": "outgoing",
+		"project_id": "%s",
+		"endpoint_id": "%s",
+		"filter_config": {
+			"event_types": ["user.created"]
+		}
+	}`, s.DefaultProject.UID, endpoint.UID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusCreated, w.Code, w.Body.String())
+
+	refreshed, err := matchRepo.FindSubscriptionsByEndpointID(context.Background(), s.DefaultProject.UID, endpoint.UID)
+	require.NoError(s.T(), err)
+	require.Len(s.T(), refreshed, 1)
+	require.Equal(s.T(), "sub-2", refreshed[0].Name, "match path must see the newly created subscription")
+	require.ElementsMatch(s.T(), []string{"user.created"}, refreshed[0].FilterConfig.EventTypes)
+}
+
+// Guards the read-your-writes side of the wiring. Only the match-path lookup is
+// cached, so the API's own reads must still answer from the database even while a
+// stale match-path entry exists for the same endpoint.
+func (s *PublicSubscriptionIntegrationTestSuite) Test_GetSubscription_ReadsAreNotServedFromCache() {
+	subscriptionId := ulid.Make().String()
+	endpoint, _ := s.seedSubscriptionWithWarmCache(subscriptionId)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
+	body := serialize(`{
+		"name": "renamed-subscription",
+		"filter_config": {
+			"event_types": ["user.created"]
+		}
+	}`)
+
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusAccepted, w.Code, w.Body.String())
+
+	// Re-warm the match-path entry so a cached list exists for this endpoint again.
+	_, err := s.matchPathSubRepo().FindSubscriptionsByEndpointID(context.Background(), s.DefaultProject.UID, endpoint.UID)
+	require.NoError(s.T(), err)
+
+	req = createRequest(http.MethodGet, url, s.APIKey, nil)
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+
+	var fetched *datastore.Subscription
+	parseResponse(s.T(), w.Result(), &fetched)
+	require.Equal(s.T(), "renamed-subscription", fetched.Name)
+	require.ElementsMatch(s.T(), []string{"user.created"}, fetched.FilterConfig.EventTypes)
+
+	listURL := fmt.Sprintf("/api/v1/projects/%s/subscriptions?endpointId=%s", s.DefaultProject.UID, endpoint.UID)
+	req = createRequest(http.MethodGet, listURL, s.APIKey, nil)
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+	require.Contains(s.T(), w.Body.String(), "renamed-subscription")
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_CreatesEventTypes() {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,10 +19,13 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
+	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 type FilterIntegrationTestSuite struct {
@@ -296,6 +300,184 @@ func contains(slice []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// matchPathFilterRepo builds the filter repository the dataplane worker reads
+// through, so these tests observe exactly the cache entry event matching uses.
+func (s *FilterIntegrationTestSuite) matchPathFilterRepo() datastore.FilterRepository {
+	lo := log.New("convoy", log.LevelError)
+	return cached.NewCachedFilterRepository(
+		filters.New(lo, s.ConvoyApp.A.DB),
+		s.ConvoyApp.A.Cache,
+		cached.DefaultFilterTTL,
+		lo,
+	)
+}
+
+// seedFilterSubscription creates the endpoint, source, subscription and event
+// type the filter routes need.
+func (s *FilterIntegrationTestSuite) seedFilterSubscription(eventTypeName string) *datastore.Subscription {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, "", "", "", nil, "", "")
+	require.NoError(s.T(), err)
+
+	subscription, err := testdb.SeedSubscription(
+		s.ConvoyApp.A.DB,
+		s.DefaultProject,
+		ulid.Make().String(),
+		datastore.OutgoingProject,
+		source,
+		endpoint,
+		&datastore.RetryConfiguration{},
+		&datastore.AlertConfiguration{},
+		nil,
+	)
+	require.NoError(s.T(), err)
+
+	_, err = testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, ulid.Make().String(), eventTypeName, "seeded event type", "user")
+	require.NoError(s.T(), err)
+
+	return subscription
+}
+
+// Regression: creating a filter through the API must evict the not-found entry
+// the match path cached, otherwise the worker keeps treating the event type as
+// unfiltered until the TTL expires.
+func (s *FilterIntegrationTestSuite) Test_CreateFilter_InvalidatesMatchPathCache() {
+	const eventTypeName = "user.created"
+	subscription := s.seedFilterSubscription(eventTypeName)
+	matchRepo := s.matchPathFilterRepo()
+
+	_, err := matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.ErrorIs(s.T(), err, datastore.ErrFilterNotFound)
+
+	body, err := json.Marshal(models.CreateFilterRequest{
+		EventType: eventTypeName,
+		Headers:   datastore.M{"x-api-key": "abc123"},
+		Body:      datastore.M{"user.active": true},
+	})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/filters", s.DefaultProject.UID, subscription.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, bytes.NewReader(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusCreated, w.Code, w.Body.String())
+
+	created, err := matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.NoError(s.T(), err, "match path must see the new filter, not the cached not-found")
+	require.Equal(s.T(), eventTypeName, created.EventType)
+}
+
+func (s *FilterIntegrationTestSuite) Test_UpdateFilter_InvalidatesMatchPathCache() {
+	const eventTypeName = "user.created"
+	subscription := s.seedFilterSubscription(eventTypeName)
+	matchRepo := s.matchPathFilterRepo()
+
+	filter, err := testdb.SeedFilter(s.ConvoyApp.A.DB, subscription.UID, "", eventTypeName,
+		datastore.M{"x-api-key": "abc123"}, datastore.M{"user.active": true})
+	require.NoError(s.T(), err)
+
+	warmed, err := matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), datastore.M{"x-api-key": "abc123"}, warmed.Headers)
+
+	body, err := json.Marshal(models.UpdateFilterRequest{
+		EventType: eventTypeName,
+		Headers:   datastore.M{"x-api-key": "new-key"},
+		Body:      datastore.M{"user.active": true},
+	})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/filters/%s", s.DefaultProject.UID, subscription.UID, filter.UID)
+	req := createRequest(http.MethodPut, url, s.APIKey, bytes.NewReader(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+
+	refreshed, err := matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), datastore.M{"x-api-key": "new-key"}, refreshed.Headers,
+		"match path must match on the updated headers, not the cached filter")
+}
+
+func (s *FilterIntegrationTestSuite) Test_DeleteFilter_InvalidatesMatchPathCache() {
+	const eventTypeName = "user.created"
+	subscription := s.seedFilterSubscription(eventTypeName)
+	matchRepo := s.matchPathFilterRepo()
+
+	filter, err := testdb.SeedFilter(s.ConvoyApp.A.DB, subscription.UID, "", eventTypeName,
+		datastore.M{"x-api-key": "abc123"}, datastore.M{"user.active": true})
+	require.NoError(s.T(), err)
+
+	_, err = matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/filters/%s", s.DefaultProject.UID, subscription.UID, filter.UID)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+
+	_, err = matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.ErrorIs(s.T(), err, datastore.ErrFilterNotFound,
+		"match path must stop matching on a deleted filter")
+}
+
+// Guards why only filter writes moved onto the cached repository. The create and
+// update handlers use FindFilterBySubscriptionAndEventType as a uniqueness gate,
+// and that lookup is read-through cached, so routing the gate through the cache
+// would let a stale entry reject a filter the caller is allowed to create. The
+// stale entry is produced here by deleting through the raw repository, which is
+// also what the cached repository's own delete falls back to when it cannot
+// resolve the filter it is about to remove.
+func (s *FilterIntegrationTestSuite) Test_CreateFilter_UniquenessGateBypassesCache() {
+	const eventTypeName = "user.created"
+	subscription := s.seedFilterSubscription(eventTypeName)
+	matchRepo := s.matchPathFilterRepo()
+
+	filter, err := testdb.SeedFilter(s.ConvoyApp.A.DB, subscription.UID, "", eventTypeName,
+		datastore.M{"x-api-key": "abc123"}, datastore.M{"user.active": true})
+	require.NoError(s.T(), err)
+
+	warmed, err := matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), filter.UID, warmed.UID)
+
+	// Remove the row without invalidating, leaving a stale "filter exists" entry.
+	rawFilterRepo := filters.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
+	require.NoError(s.T(), rawFilterRepo.DeleteFilter(context.Background(), filter.UID))
+
+	stale, err := matchRepo.FindFilterBySubscriptionAndEventType(context.Background(), subscription.UID, eventTypeName)
+	require.NoError(s.T(), err, "precondition: the cache still reports the deleted filter")
+	require.Equal(s.T(), filter.UID, stale.UID)
+
+	body, err := json.Marshal(models.CreateFilterRequest{
+		EventType: eventTypeName,
+		Headers:   datastore.M{"x-api-key": "abc123"},
+		Body:      datastore.M{"user.active": true},
+	})
+	require.NoError(s.T(), err)
+
+	createURL := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s/filters", s.DefaultProject.UID, subscription.UID)
+	req := createRequest(http.MethodPost, createURL, s.APIKey, bytes.NewReader(body))
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusCreated, w.Code, w.Body.String())
 }
 
 func (s *FilterIntegrationTestSuite) Test_UpdateFilter() {

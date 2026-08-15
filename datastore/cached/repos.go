@@ -181,6 +181,19 @@ func (r *CachedEndpointRepository) LoadEndpointsPaged(ctx context.Context, proje
 // SubscriptionRepository
 // ============================================================================
 
+// DefaultSubscriptionTTL is the shared read-through TTL for the endpoint ->
+// subscriptions list the match path reads on every event. Writers must go
+// through CachedSubscriptionRepository so create, update and delete invalidate
+// the key instead of leaving the worker to route on the pre-change list.
+const DefaultSubscriptionTTL = 30 * time.Second
+
+// SubscriptionsByEndpointCacheKey is the single source of truth for the key,
+// since the match-path read and every invalidation site must agree or a write
+// silently fails to evict.
+func SubscriptionsByEndpointCacheKey(projectID, endpointID string) string {
+	return "subs_by_endpoint:" + projectID + ":" + endpointID
+}
+
 type CachedSubscriptionRepository struct {
 	inner  datastore.SubscriptionRepository
 	cache  cachedrepo.Cache
@@ -193,7 +206,7 @@ func NewCachedSubscriptionRepository(inner datastore.SubscriptionRepository, c c
 }
 
 func (r *CachedSubscriptionRepository) FindSubscriptionsByEndpointID(ctx context.Context, projectID, endpointID string) ([]datastore.Subscription, error) {
-	return cachedrepo.FetchSlice(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+endpointID, r.ttl,
+	return cachedrepo.FetchSlice(ctx, r.cache, r.logger, SubscriptionsByEndpointCacheKey(projectID, endpointID), r.ttl,
 		func() ([]datastore.Subscription, error) {
 			return r.inner.FindSubscriptionsByEndpointID(ctx, projectID, endpointID)
 		})
@@ -202,7 +215,7 @@ func (r *CachedSubscriptionRepository) FindSubscriptionsByEndpointID(ctx context
 func (r *CachedSubscriptionRepository) CreateSubscription(ctx context.Context, projectID string, sub *datastore.Subscription) error {
 	err := r.inner.CreateSubscription(ctx, projectID, sub)
 	if err == nil && sub.EndpointID != "" {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+sub.EndpointID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, SubscriptionsByEndpointCacheKey(projectID, sub.EndpointID))
 	}
 	return err
 }
@@ -210,15 +223,20 @@ func (r *CachedSubscriptionRepository) CreateSubscription(ctx context.Context, p
 func (r *CachedSubscriptionRepository) FindOrCreateDynamicSubscription(ctx context.Context, projectID string, sub *datastore.Subscription) (*datastore.Subscription, error) {
 	subscription, err := r.inner.FindOrCreateDynamicSubscription(ctx, projectID, sub)
 	if err == nil && sub.EndpointID != "" {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+sub.EndpointID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, SubscriptionsByEndpointCacheKey(projectID, sub.EndpointID))
 	}
 	return subscription, err
 }
 
+// UpdateSubscription invalidates the list for the endpoint the subscription
+// points at after the write. Retargeting a subscription from one endpoint to
+// another leaves the previous endpoint's list stale until the TTL expires;
+// resolving the previous endpoint would cost a read on the dynamic-event
+// ingest path, which also calls this to sync event types.
 func (r *CachedSubscriptionRepository) UpdateSubscription(ctx context.Context, projectID string, sub *datastore.Subscription) error {
 	err := r.inner.UpdateSubscription(ctx, projectID, sub)
 	if err == nil && sub.EndpointID != "" {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+sub.EndpointID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, SubscriptionsByEndpointCacheKey(projectID, sub.EndpointID))
 	}
 	return err
 }
@@ -226,7 +244,7 @@ func (r *CachedSubscriptionRepository) UpdateSubscription(ctx context.Context, p
 func (r *CachedSubscriptionRepository) DeleteSubscription(ctx context.Context, projectID string, sub *datastore.Subscription) error {
 	err := r.inner.DeleteSubscription(ctx, projectID, sub)
 	if err == nil && sub.EndpointID != "" {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "subs_by_endpoint:"+projectID+":"+sub.EndpointID)
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, SubscriptionsByEndpointCacheKey(projectID, sub.EndpointID))
 	}
 	return err
 }
@@ -269,6 +287,20 @@ func (r *CachedSubscriptionRepository) FetchNewSubscriptions(ctx context.Context
 // FilterRepository
 // ============================================================================
 
+// DefaultFilterTTL is the shared read-through TTL for the per-event-type filter
+// the match path reads. Writers must go through CachedFilterRepository so
+// create, update and delete invalidate the key instead of leaving the worker to
+// match on the pre-change filter.
+const DefaultFilterTTL = 2 * time.Minute
+
+// FilterCacheKey is the single source of truth for the key, since the
+// match-path read and every invalidation site must agree or a write silently
+// fails to evict. The "*" event type is the catch-all filter, not a wildcard
+// delete: the cache only supports exact-key deletes.
+func FilterCacheKey(subscriptionID, eventType string) string {
+	return "filters:" + subscriptionID + ":" + eventType
+}
+
 type CachedFilterRepository struct {
 	inner  datastore.FilterRepository
 	cache  cachedrepo.Cache
@@ -281,7 +313,7 @@ func NewCachedFilterRepository(inner datastore.FilterRepository, c cachedrepo.Ca
 }
 
 func (r *CachedFilterRepository) FindFilterBySubscriptionAndEventType(ctx context.Context, subscriptionID, eventType string) (*datastore.EventTypeFilter, error) {
-	return cachedrepo.FetchWithNotFound(ctx, r.cache, r.logger, "filters:"+subscriptionID+":"+eventType, r.ttl,
+	return cachedrepo.FetchWithNotFound(ctx, r.cache, r.logger, FilterCacheKey(subscriptionID, eventType), r.ttl,
 		func() (*datastore.EventTypeFilter, error) {
 			return r.inner.FindFilterBySubscriptionAndEventType(ctx, subscriptionID, eventType)
 		},
@@ -292,7 +324,7 @@ func (r *CachedFilterRepository) FindFilterBySubscriptionAndEventType(ctx contex
 func (r *CachedFilterRepository) CreateFilter(ctx context.Context, filter *datastore.EventTypeFilter) error {
 	err := r.inner.CreateFilter(ctx, filter)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "filters:"+filter.SubscriptionID+":"+filter.EventType, "filters:"+filter.SubscriptionID+":*")
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, FilterCacheKey(filter.SubscriptionID, filter.EventType), FilterCacheKey(filter.SubscriptionID, "*"))
 	}
 	return err
 }
@@ -301,16 +333,20 @@ func (r *CachedFilterRepository) CreateFilters(ctx context.Context, filters []da
 	err := r.inner.CreateFilters(ctx, filters)
 	if err == nil {
 		for i := range filters {
-			cachedrepo.Invalidate(ctx, r.cache, r.logger, "filters:"+filters[i].SubscriptionID+":"+filters[i].EventType, "filters:"+filters[i].SubscriptionID+":*")
+			cachedrepo.Invalidate(ctx, r.cache, r.logger, FilterCacheKey(filters[i].SubscriptionID, filters[i].EventType), FilterCacheKey(filters[i].SubscriptionID, "*"))
 		}
 	}
 	return err
 }
 
+// UpdateFilter invalidates the key for the event type the filter carries after
+// the write. Changing a filter's event type leaves the previous event type's
+// key stale until the TTL expires, since the caller passes the already-mutated
+// filter and the previous value is no longer reachable here.
 func (r *CachedFilterRepository) UpdateFilter(ctx context.Context, filter *datastore.EventTypeFilter) error {
 	err := r.inner.UpdateFilter(ctx, filter)
 	if err == nil {
-		cachedrepo.Invalidate(ctx, r.cache, r.logger, "filters:"+filter.SubscriptionID+":"+filter.EventType, "filters:"+filter.SubscriptionID+":*")
+		cachedrepo.Invalidate(ctx, r.cache, r.logger, FilterCacheKey(filter.SubscriptionID, filter.EventType), FilterCacheKey(filter.SubscriptionID, "*"))
 	}
 	return err
 }
@@ -319,7 +355,7 @@ func (r *CachedFilterRepository) UpdateFilters(ctx context.Context, filters []da
 	err := r.inner.UpdateFilters(ctx, filters)
 	if err == nil {
 		for i := range filters {
-			cachedrepo.Invalidate(ctx, r.cache, r.logger, "filters:"+filters[i].SubscriptionID+":"+filters[i].EventType, "filters:"+filters[i].SubscriptionID+":*")
+			cachedrepo.Invalidate(ctx, r.cache, r.logger, FilterCacheKey(filters[i].SubscriptionID, filters[i].EventType), FilterCacheKey(filters[i].SubscriptionID, "*"))
 		}
 	}
 	return err
@@ -334,8 +370,8 @@ func (r *CachedFilterRepository) DeleteFilter(ctx context.Context, filterID stri
 	err := r.inner.DeleteFilter(ctx, filterID)
 	if err == nil {
 		cachedrepo.Invalidate(ctx, r.cache, r.logger,
-			"filters:"+filter.SubscriptionID+":"+filter.EventType,
-			"filters:"+filter.SubscriptionID+":*",
+			FilterCacheKey(filter.SubscriptionID, filter.EventType),
+			FilterCacheKey(filter.SubscriptionID, "*"),
 		)
 	}
 	return err
