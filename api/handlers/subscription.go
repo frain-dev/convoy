@@ -13,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/sources"
-	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -77,7 +76,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subsList, paginationData, err := subscriptions.New(h.A.Logger, h.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
+	subsList, paginationData, err := h.subscriptionRepo().LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "an error occurred while fetching subscriptions", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
@@ -145,7 +144,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subscription, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	subscription, err := h.subscriptionRepo().FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to find subscription", "error", err)
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -226,7 +225,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cs := services.NewCreateSubscriptionService(
-		subscriptions.New(h.A.Logger, h.A.DB),
+		h.subscriptionRepo(),
 		endpoints.New(h.A.Logger, h.A.DB),
 		sources.New(h.A.Logger, h.A.DB),
 		project,
@@ -267,7 +266,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	sub, err := h.subscriptionRepo().FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to find subscription", "error", err)
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -298,7 +297,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = subscriptions.New(h.A.Logger, h.A.DB).DeleteSubscription(r.Context(), project.UID, sub)
+	err = h.subscriptionRepo().DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete subscription", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
@@ -359,7 +358,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+		sub, err := h.subscriptionRepo().FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 		if err != nil {
 			h.A.Logger.ErrorContext(r.Context(), "failed to find subscription", "error", err)
 			if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -386,7 +385,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.NewUpdateSubscriptionService(
-		subscriptions.New(h.A.Logger, h.A.DB),
+		h.subscriptionRepo(),
 		endpoints.New(h.A.Logger, h.A.DB),
 		h.projectRepo(),
 		sources.New(h.A.Logger, h.A.DB),
@@ -454,7 +453,7 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
 	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body, false)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to validate subscription filter", "error", err)
