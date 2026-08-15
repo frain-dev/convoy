@@ -16,7 +16,18 @@ const (
 	postgresPollIdle        = 5 * time.Millisecond
 	postgresClaimSize       = 64
 	postgresReclaimInterval = 30 * time.Second
+
+	// postgresHeartbeatTimeout bounds one renewal so a stalled database cannot
+	// block the renewal loop past the next tick.
+	postgresHeartbeatTimeout = 10 * time.Second
 )
+
+// postgresHeartbeatInterval renews the claim lease on everything this consumer
+// holds. It must stay well under the lease so a few slow or failed renewals
+// cannot expire a live worker's claim; at 15s against a 90s lease a worker has
+// to miss five in a row before another consumer can take its job. It is a
+// variable so tests can drive the renewal loop without waiting on wall clock.
+var postgresHeartbeatInterval = 15 * time.Second
 
 // PostgresConsumerQueue is the worker-owned adapter contract for consuming Postgres
 // queue jobs. Provider construction remains in the queue factory.
@@ -27,6 +38,7 @@ type PostgresConsumerQueue interface {
 	Archive(context.Context, string, string) error
 	Release(context.Context, []string) error
 	ReclaimStuck(context.Context) (int64, error)
+	Heartbeat(context.Context, []string) error
 }
 
 type postgresConsumerBackend struct {
@@ -44,10 +56,18 @@ type postgresRunner struct {
 	tasks chan queue.ClaimedJob
 	quit  chan struct{}
 
-	pollerWg sync.WaitGroup
-	workerWg sync.WaitGroup
-	start    sync.Once
-	stop     sync.Once
+	// heldQuit outlives quit: claims stay leased until the last handler drains,
+	// so renewal must not stop when polling does.
+	heldQuit chan struct{}
+
+	heldMu sync.Mutex
+	held   map[string]struct{}
+
+	pollerWg    sync.WaitGroup
+	workerWg    sync.WaitGroup
+	heartbeatWg sync.WaitGroup
+	start       sync.Once
+	stop        sync.Once
 }
 
 func (b *postgresConsumerBackend) newRunner(ctx context.Context, poolSize int, names map[string]int, mux *asynq.ServeMux, lo log.Logger, _ log.Level) (runner, error) {
@@ -63,6 +83,8 @@ func (b *postgresConsumerBackend) newRunner(ctx context.Context, poolSize int, n
 		log:      lo,
 		tasks:    make(chan queue.ClaimedJob, poolSize),
 		quit:     make(chan struct{}),
+		heldQuit: make(chan struct{}),
+		held:     make(map[string]struct{}),
 	}, nil
 }
 
@@ -74,6 +96,8 @@ func (r *postgresRunner) Start() error {
 		}
 		r.pollerWg.Add(1)
 		go r.poll()
+		r.heartbeatWg.Add(1)
+		go r.heartbeat()
 	})
 	return nil
 }
@@ -84,6 +108,8 @@ func (r *postgresRunner) Stop() {
 		r.pollerWg.Wait()
 		close(r.tasks)
 		r.workerWg.Wait()
+		close(r.heldQuit)
+		r.heartbeatWg.Wait()
 	})
 }
 
@@ -132,10 +158,15 @@ func (r *postgresRunner) poll() {
 
 		var unsent []string
 		for i, job := range jobs {
+			// Hold the claim before handing it off. A job buffered in the
+			// channel is already claimed, so its lease is running whether or not
+			// a worker has picked it up yet.
+			r.hold(job.ID)
 			select {
 			case <-r.quit:
 				for _, leftover := range jobs[i:] {
 					unsent = append(unsent, leftover.ID)
+					r.release(leftover.ID)
 				}
 				if err := r.queue.Release(context.WithoutCancel(r.ctx), unsent); err != nil {
 					r.log.Error("postgres queue release on stop failed", "error", err)
@@ -158,6 +189,60 @@ func prioritizeQueue(names []string, preferred string) []string {
 		}
 	}
 	return ordered
+}
+
+func (r *postgresRunner) hold(id string) {
+	r.heldMu.Lock()
+	r.held[id] = struct{}{}
+	r.heldMu.Unlock()
+}
+
+func (r *postgresRunner) release(id string) {
+	r.heldMu.Lock()
+	delete(r.held, id)
+	r.heldMu.Unlock()
+}
+
+func (r *postgresRunner) heldIDs() []string {
+	r.heldMu.Lock()
+	defer r.heldMu.Unlock()
+	if len(r.held) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(r.held))
+	for id := range r.held {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// heartbeat renews the lease on every claim this consumer holds, so a job is
+// reclaimed because its worker died, not because its handler is slow.
+func (r *postgresRunner) heartbeat() {
+	defer r.heartbeatWg.Done()
+
+	ticker := time.NewTicker(postgresHeartbeatInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-r.heldQuit:
+			return
+		case <-ticker.C:
+		}
+
+		ids := r.heldIDs()
+		if len(ids) == 0 {
+			continue
+		}
+		// Renewal must outlive a cancelled consumer context: claims are still
+		// held while in-flight handlers drain.
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.ctx), postgresHeartbeatTimeout)
+		if err := r.queue.Heartbeat(ctx, ids); err != nil {
+			r.log.Error("postgres queue heartbeat failed", "error", err, "jobs", len(ids))
+		}
+		cancel()
+	}
 }
 
 func (r *postgresRunner) reclaimStuck() {
@@ -183,6 +268,8 @@ func (r *postgresRunner) worker() {
 }
 
 func (r *postgresRunner) process(job queue.ClaimedJob) {
+	defer r.release(job.ID)
+
 	headers := job.Headers
 	t := asynq.NewTaskWithHeaders(job.TaskName, job.Payload, headers)
 	err := r.mux.ProcessTask(r.ctx, t)

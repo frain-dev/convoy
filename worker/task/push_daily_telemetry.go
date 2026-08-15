@@ -30,7 +30,7 @@ func PushDailyTelemetry(lo log.Logger, db database.Database, locker JobLocker) f
 			}
 
 			configRepo := configuration.New(lo, db)
-			loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
+			loadConfiguration, err := configRepo.LoadConfiguration(ctx)
 			if err != nil {
 				return err
 			}

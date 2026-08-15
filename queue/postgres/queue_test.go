@@ -343,6 +343,53 @@ func TestReclaimStuckMakesRowClaimable(t *testing.T) {
 	require.Equal(t, id, jobs[0].ID)
 }
 
+func TestHeartbeatKeepsClaimFromBeingReclaimed(t *testing.T) {
+	q := setupQueue(t)
+	q.SetStuckTimeout(50 * time.Millisecond)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("slow")}))
+
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	// A handler slower than the lease: without renewal this row is reclaimable.
+	_, err = q.db.ExecContext(ctx, `UPDATE convoy.queue_jobs SET claimed_at = NOW() - interval '1 second' WHERE id = $1`, id)
+	require.NoError(t, err)
+
+	require.NoError(t, q.Heartbeat(ctx, []string{id}))
+
+	n, err := q.ReclaimStuck(ctx)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), n, "a renewed claim must not be reclaimed")
+
+	var status string
+	require.NoError(t, q.db.GetContext(ctx, &status, `SELECT status FROM convoy.queue_jobs WHERE id = $1`, id))
+	require.Equal(t, statusProcessing, status)
+}
+
+func TestHeartbeatIgnoresJobsThisConsumerNoLongerOwns(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("released")}))
+
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	require.NoError(t, q.Release(ctx, []string{id}))
+
+	// The row went back to pending, so renewal must not resurrect the claim.
+	require.NoError(t, q.Heartbeat(ctx, []string{id}))
+
+	var status string
+	require.NoError(t, q.db.GetContext(ctx, &status, `SELECT status FROM convoy.queue_jobs WHERE id = $1`, id))
+	require.Equal(t, statusPending, status)
+
+	require.NoError(t, q.Heartbeat(ctx, nil))
+}
+
 func TestRetryIncrementsCountAndReleases(t *testing.T) {
 	q := setupQueue(t)
 	ctx := context.Background()

@@ -42,10 +42,13 @@ const (
 	// defaultMaxRetry matches asynq's unexported DefaultMaxRetry.
 	defaultMaxRetry = 25
 
-	// DefaultStuckTimeout is the claim lease. A live handler that outlives this
-	// can be claimed again (double-run). Failure policy: fail open for crashed
-	// workers so the queue does not stall; 30m matches asynq's default timeout.
-	DefaultStuckTimeout = 30 * time.Minute
+	// DefaultStuckTimeout is the claim lease. Consumers renew it while a handler
+	// runs, so it bounds how long a crashed worker's job stays unavailable
+	// rather than how long a handler may take. Failure policy: fail open, a
+	// job whose owner stopped renewing is returned to the queue. Keep this
+	// several heartbeat intervals wide so a slow database cannot expire the
+	// lease of a worker that is still alive and hand its job to a second one.
+	DefaultStuckTimeout = 90 * time.Second
 
 	// cronJobPrefix is the marker the scheduler writes into cron job IDs.
 	cronJobPrefix = queue.CronJobIDPrefix
@@ -571,6 +574,22 @@ func (q *PostgresQueue) Release(ctx context.Context, ids []string) error {
 		    updated_at = NOW()
 		WHERE id = ANY($1) AND status = $3`,
 		pq.Array(ids), statusPending, statusProcessing)
+	return err
+}
+
+// Heartbeat renews the claim lease on jobs a consumer still owns. Rows that are
+// no longer processing are skipped: the job either finished or was already
+// reclaimed, and in neither case may this consumer extend it.
+func (q *PostgresQueue) Heartbeat(ctx context.Context, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	_, err := q.db.ExecContext(ctx, `
+		UPDATE convoy.queue_jobs
+		SET claimed_at = NOW(),
+		    updated_at = NOW()
+		WHERE id = ANY($1) AND status = $2`,
+		pq.Array(ids), statusProcessing)
 	return err
 }
 

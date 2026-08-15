@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -183,6 +184,89 @@ func TestPostgresConsumerStopWaitsForInFlight(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("Stop did not return after the handler finished")
 	}
+}
+
+// heartbeatSpyQueue serves one job, then records every lease renewal so a test
+// can assert the runner keeps a slow handler's claim alive.
+type heartbeatSpyQueue struct {
+	job      queue.ClaimedJob
+	served   atomic.Bool
+	mu       sync.Mutex
+	renewals []string
+}
+
+func (s *heartbeatSpyQueue) Claim(context.Context, []string, int) ([]queue.ClaimedJob, error) {
+	if s.served.Swap(true) {
+		return nil, nil
+	}
+	return []queue.ClaimedJob{s.job}, nil
+}
+
+func (s *heartbeatSpyQueue) Heartbeat(_ context.Context, ids []string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.renewals = append(s.renewals, ids...)
+	return nil
+}
+
+func (s *heartbeatSpyQueue) renewalsFor(id string) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	for _, got := range s.renewals {
+		if got == id {
+			n++
+		}
+	}
+	return n
+}
+
+func (s *heartbeatSpyQueue) Complete(context.Context, string) error                       { return nil }
+func (s *heartbeatSpyQueue) Retry(context.Context, string, time.Time, bool, string) error { return nil }
+func (s *heartbeatSpyQueue) Archive(context.Context, string, string) error                { return nil }
+func (s *heartbeatSpyQueue) Release(context.Context, []string) error                      { return nil }
+func (s *heartbeatSpyQueue) ReclaimStuck(context.Context) (int64, error)                  { return 0, nil }
+
+func TestPostgresConsumerRenewsLeaseWhileHandlerRuns(t *testing.T) {
+	previous := postgresHeartbeatInterval
+	postgresHeartbeatInterval = 10 * time.Millisecond
+	t.Cleanup(func() { postgresHeartbeatInterval = previous })
+
+	id := ulid.Make().String()
+	spy := &heartbeatSpyQueue{job: queue.ClaimedJob{
+		ID:        id,
+		TaskName:  string(pgTestTask),
+		QueueName: string(convoy.EventQueue),
+		Payload:   []byte("slow"),
+	}}
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	lo := log.New("postgres-heartbeat-test", log.LevelError)
+	c, err := NewConsumer(context.Background(), 1, map[string]int{string(convoy.EventQueue): 1},
+		NewPostgresConsumerBackend(spy), lo, log.LevelError)
+	require.NoError(t, err)
+	c.RegisterHandlers(pgTestTask, func(ctx context.Context, tk *asynq.Task) error {
+		close(entered)
+		<-release
+		return nil
+	}, nil)
+	require.NoError(t, c.Start())
+
+	select {
+	case <-entered:
+	case <-time.After(3 * time.Second):
+		t.Fatal("handler did not start")
+	}
+	waitUntil(t, 3*time.Second, func() bool { return spy.renewalsFor(id) >= 3 })
+
+	close(release)
+	waitUntil(t, 3*time.Second, func() bool {
+		before := spy.renewalsFor(id)
+		time.Sleep(50 * time.Millisecond)
+		return spy.renewalsFor(id) == before
+	})
+	c.Stop()
 }
 
 func TestPrioritizeQueueMovesPreferredFirst(t *testing.T) {
