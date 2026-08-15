@@ -85,6 +85,40 @@ const writeJobSQL = `
 		AND convoy.queue_jobs.status IN ($11, $12)
 	  )`
 
+// writeJobsSQL is the batch form of writeJobSQL: one statement for the whole
+// flush window instead of one per job. Conflict handling and the cron guard are
+// identical; RETURNING id reports which rows the guard let through, which is how
+// per-job results survive the collapse into a single round trip.
+const writeJobsSQL = `
+	INSERT INTO convoy.queue_jobs (
+		id, task_name, queue_name, payload, headers,
+		max_retry, retry_count, status, run_at, claimed_at, last_error, created_at, updated_at
+	)
+	SELECT j.id, j.task_name, j.queue_name, j.payload, j.headers,
+	       j.max_retry, 0, $8, NOW() + make_interval(secs => j.delay), NULL, NULL, NOW(), NOW()
+	FROM UNNEST(
+		$1::text[], $2::text[], $3::text[], $4::bytea[],
+		$5::jsonb[], $6::int[], $7::double precision[]
+	) AS j(id, task_name, queue_name, payload, headers, max_retry, delay)
+	ON CONFLICT (id) DO UPDATE SET
+		task_name = EXCLUDED.task_name,
+		queue_name = EXCLUDED.queue_name,
+		payload = EXCLUDED.payload,
+		headers = EXCLUDED.headers,
+		max_retry = EXCLUDED.max_retry,
+		retry_count = 0,
+		status = EXCLUDED.status,
+		run_at = EXCLUDED.run_at,
+		claimed_at = NULL,
+		last_error = NULL,
+		updated_at = NOW()
+	WHERE convoy.queue_jobs.status <> $9
+	  AND NOT (
+		convoy.queue_jobs.id LIKE $10
+		AND convoy.queue_jobs.status IN ($11, $12)
+	  )
+	RETURNING id`
+
 // PostgresQueue implements queue.Queuer with convoy.queue_jobs as the broker.
 type PostgresQueue struct {
 	db           *sqlx.DB
@@ -234,21 +268,78 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 		return results
 	}
 
-	tx, err := q.db.BeginTxx(ctx, nil)
+	// ON CONFLICT DO UPDATE cannot touch the same row twice in one command, so a
+	// window holding the same job ID twice collapses to the last request. That
+	// matches the sequential path, where the later write overwrote the earlier one.
+	last := make(map[string]int, len(batch))
+	for i := range batch {
+		last[batch[i].id] = i
+	}
+
+	n := len(last)
+	ids := make([]string, 0, n)
+	taskNames := make([]string, 0, n)
+	queueNames := make([]string, 0, n)
+	payloads := make([][]byte, 0, n)
+	headers := make([]string, 0, n)
+	maxRetries := make([]int64, 0, n)
+	delays := make([]float64, 0, n)
+	for i := range batch {
+		if last[batch[i].id] != i {
+			continue
+		}
+		ids = append(ids, batch[i].id)
+		taskNames = append(taskNames, batch[i].taskName)
+		queueNames = append(queueNames, batch[i].queueName)
+		payloads = append(payloads, batch[i].payload)
+		headers = append(headers, string(batch[i].headers))
+		maxRetries = append(maxRetries, int64(batch[i].maxRetry))
+		delays = append(delays, batch[i].delay)
+	}
+
+	rows, err := q.db.QueryContext(ctx, writeJobsSQL,
+		pq.StringArray(ids), pq.StringArray(taskNames), pq.StringArray(queueNames),
+		pq.ByteaArray(payloads), pq.StringArray(headers), pq.Int64Array(maxRetries),
+		pq.Float64Array(delays), statusPending, statusProcessing,
+		cronJobPrefix+"%", statusArchived, statusCompleted,
+	)
 	if err != nil {
 		return fillErrors(results, err)
 	}
-	for i := range batch {
-		results[i] = q.execWrite(ctx, tx, batch[i])
-		if results[i] != nil && !errors.Is(results[i], ErrJobProcessing) {
-			_ = tx.Rollback()
-			return fillErrors(results, results[i])
+	written := make(map[string]struct{}, n)
+	for rows.Next() {
+		var id string
+		if err = rows.Scan(&id); err != nil {
+			_ = rows.Close()
+			return fillErrors(results, err)
 		}
+		written[id] = struct{}{}
 	}
-	if err = tx.Commit(); err != nil {
+	if err = rows.Err(); err != nil {
+		_ = rows.Close()
 		return fillErrors(results, err)
 	}
+	if err = rows.Close(); err != nil {
+		return fillErrors(results, err)
+	}
+
+	for i := range batch {
+		if _, ok := written[batch[i].id]; ok {
+			continue
+		}
+		results[i] = skippedWriteResult(batch[i].id)
+	}
 	return results
+}
+
+// skippedWriteResult explains a row the conflict guard rejected. A cron tick
+// that already fired is expected and idempotent; anything else is a job whose
+// active claim must resolve before it can be re-enqueued.
+func skippedWriteResult(id string) error {
+	if len(id) >= len(cronJobPrefix) && id[:len(cronJobPrefix)] == cronJobPrefix {
+		return nil
+	}
+	return ErrJobProcessing
 }
 
 func fillErrors(results []error, err error) []error {
@@ -273,12 +364,9 @@ func (q *PostgresQueue) execWrite(ctx context.Context, db sqlx.ExecerContext, re
 		return err
 	}
 	if affected == 0 {
-		if len(req.id) >= len(cronJobPrefix) && req.id[:len(cronJobPrefix)] == cronJobPrefix {
-			return nil
-		}
 		// Failure policy: an in-flight task is not replaced or reported as
 		// re-enqueued. The caller must retry after the active claim resolves.
-		return ErrJobProcessing
+		return skippedWriteResult(req.id)
 	}
 	return nil
 }
