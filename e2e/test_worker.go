@@ -77,6 +77,21 @@ type TestWorker struct {
 	cancel    context.CancelFunc
 }
 
+func consumerBackendFor(q queue.Queuer) (worker.ConsumerBackend, error) {
+	switch q.Options().Type {
+	case queue.ProviderRedis:
+		return worker.NewRedisConsumerBackend(q.Options()), nil
+	case queue.ProviderPostgres:
+		pq, ok := q.(worker.PostgresConsumerQueue)
+		if !ok {
+			return nil, fmt.Errorf("postgres queue does not implement the consumer contract")
+		}
+		return worker.NewPostgresConsumerBackend(pq), nil
+	default:
+		return nil, fmt.Errorf("unsupported queue provider %q", q.Options().Type)
+	}
+}
+
 // NewTestWorker creates a test worker that validates job IDs
 func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator *JobIDValidator) *TestWorker {
 	t.Helper()
@@ -85,7 +100,15 @@ func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator 
 
 	workerCtx, cancel := context.WithCancel(ctx)
 
-	consumer, err := worker.NewConsumer(workerCtx, 3, q.Options().Names, worker.NewRedisConsumerBackend(q.Options()), logger, log.LevelError)
+	// Follow the queue's provider. These tests run on Redis today, but a backend
+	// pinned to asynq while the queue writes to convoy.queue_jobs would consume
+	// nothing and read as a silent hang rather than a wiring mistake.
+	backend, err := consumerBackendFor(q)
+	if err != nil {
+		t.Fatalf("create consumer backend: %v", err)
+	}
+
+	consumer, err := worker.NewConsumer(workerCtx, 3, q.Options().Names, backend, logger, log.LevelError)
 	if err != nil {
 		t.Fatalf("create worker consumer: %v", err)
 	}

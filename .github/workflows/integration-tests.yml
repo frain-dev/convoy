@@ -52,13 +52,20 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
+                # The api group runs twice, once per queue provider. The suite
+                # itself is provider-neutral, so the postgres pass is what proves
+                # parity rather than assuming it.
                 include:
                     - { group: unit, shard: 1, total: 2 }
                     - { group: unit, shard: 2, total: 2 }
-                    - { group: api, shard: 1, total: 4 }
-                    - { group: api, shard: 2, total: 4 }
-                    - { group: api, shard: 3, total: 4 }
-                    - { group: api, shard: 4, total: 4 }
+                    - { group: api, shard: 1, total: 4, provider: redis }
+                    - { group: api, shard: 2, total: 4, provider: redis }
+                    - { group: api, shard: 3, total: 4, provider: redis }
+                    - { group: api, shard: 4, total: 4, provider: redis }
+                    - { group: api, shard: 1, total: 4, provider: postgres }
+                    - { group: api, shard: 2, total: 4, provider: postgres }
+                    - { group: api, shard: 3, total: 4, provider: postgres }
+                    - { group: api, shard: 4, total: 4, provider: postgres }
 
         runs-on: ubuntu-latest
         env:
@@ -144,13 +151,14 @@ jobs:
                   CONVOY_REDIS_HOST: localhost
                   CONVOY_REDIS_PORT: 6379
 
-            - name: Run tests (shard ${{ matrix.group }}/${{ matrix.shard }})
+            - name: Run tests (shard ${{ matrix.group }}/${{ matrix.shard }}${{ matrix.provider && format(' {0}', matrix.provider) || '' }})
               run: bash scripts/ci/run-shard.sh ${{ matrix.group }} ${{ matrix.shard }} ${{ matrix.total }}
               env:
                   TEST_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
                   CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
+                  CONVOY_TEST_QUEUE_PROVIDER: ${{ matrix.provider }}
 
     # Stable, single required status check. Branch protection should require
     # `test`. Fail closed: the only green-without-running-tests case is a genuine

@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,27 +20,23 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/cache"
-	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
 	"github.com/frain-dev/convoy/util"
 )
@@ -106,6 +104,18 @@ func newInfra(t *testing.T) *testInstance {
 	cfg, err := config.Get()
 	require.NoError(t, err)
 
+	// Point the config at the containers this test actually uses. Without this
+	// it still describes localhost defaults, so anything built from the config
+	// rather than from the handles below (the broker's dedicated advisory lock
+	// pool, for one) would connect somewhere other than the database under test.
+	cfg.Database.DSN = conn.Config().ConnString()
+	if host, port, splitErr := splitHostPort(rd.Options().Addr); splitErr == nil {
+		cfg.Redis.Scheme = config.RedisScheme
+		cfg.Redis.Host = host
+		cfg.Redis.Port = port
+	}
+	cfg.QueueProvider = testQueueProvider()
+
 	// Load CA cert for TLS operations
 	err = config.LoadCaCert("", "")
 	if err != nil {
@@ -140,67 +150,79 @@ func newInfra(t *testing.T) *testInstance {
 	}
 }
 
-func getQueueOptions(t *testing.T, cfg config.Configuration) (queue.QueueOptions, error) {
+// testQueueProvider selects the broker the API suite runs against. The suite
+// asserts provider-neutral behaviour, so the same tests can be run a second
+// time against Postgres to prove parity instead of assuming it.
+func testQueueProvider() config.QueueProvider {
+	if p := os.Getenv("CONVOY_TEST_QUEUE_PROVIDER"); p != "" {
+		return config.QueueProvider(p)
+	}
+	return config.RedisQueueProvider
+}
+
+func splitHostPort(addr string) (string, int, error) {
+	host, rawPort, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", 0, err
+	}
+	port, err := strconv.Atoi(rawPort)
+	if err != nil {
+		return "", 0, err
+	}
+	return host, port, nil
+}
+
+// newBroker builds the queue, cache and rate limiter a test server runs on
+// through the same registry the binary uses, so the suite exercises real wiring
+// instead of a hand-rolled stack that can drift from it.
+func newBroker(t *testing.T, cfg config.Configuration, db database.Database, logger log.Logger) *broker.Dependencies {
 	t.Helper()
 
-	var opts queue.QueueOptions
+	deps, err := broker.New(cfg, db.GetDB(), logger)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = deps.Close() })
 
-	rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
-	if err != nil {
-		return opts, err
-	}
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         3,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.StreamQueue):        1,
-		string(convoy.MetaEventQueue):     1,
-	}
-	opts = queue.QueueOptions{
-		RedisClient:  rd,
-		Names:        queueNames,
-		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
-	}
+	return deps
+}
 
-	return opts, nil
+// newAPIOptions passes the whole broker dependency set, not just the queue and
+// cache. The handler used to derive the circuit breaker store, trial cap, acker
+// and friends from APIOptions.Redis, so the suite covered them for free; now
+// they are explicit and anything left nil is silently skipped by its nil guard.
+// A partial build would mean the Postgres shard runs green while never touching
+// the Postgres implementations of those paths.
+func newAPIOptions(tl *testInstance, deps *broker.Dependencies, licenser license.Licenser) *types.APIOptions {
+	db := tl.Database
+	return &types.APIOptions{
+		DB:                         db,
+		Queue:                      deps.Queue,
+		QueueMonitor:               deps.QueueMonitor,
+		Logger:                     tl.Logger,
+		Cache:                      deps.Cache,
+		QueueSessionStore:          deps.Cache,
+		FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
+		Rate:                       deps.RateLimiter,
+		CircuitBreakerStore:        deps.CircuitBreakerStore,
+		TrialEvents:                deps.TrialEvents,
+		Acker:                      deps.Acker,
+		ResendClaims:               deps.ResendClaims,
+		UsageLocker:                deps.JobLocker,
+		BatchTracker:               deps.BatchTracker,
+		ConfigRepo:                 configuration.New(tl.Logger, db),
+		Licenser:                   licenser,
+		Cfg:                        tl.Config,
+	}
 }
 
 func buildServer(t *testing.T) *ApplicationHandler {
 	t.Helper()
 
-	var qOpts queue.QueueOptions
-
 	tl := newInfra(t)
-	db := tl.Database
+	deps := newBroker(t, tl.Config, tl.Database, tl.Logger)
 
-	qOpts, err := getQueueOptions(t, tl.Config)
-	require.NoError(t, err)
-
-	cfg := tl.Config
-
-	newQueue := redisqueue.NewQueue(qOpts)
-
-	noopCache := rcache.NewRedisCacheFromClient(tl.Redis)
-	limiter := rlimiter.NewLimiterFromRedisClient(tl.Redis)
-
-	ah, err := NewApplicationHandler(
-		&types.APIOptions{
-			DB:                         db,
-			Queue:                      newQueue,
-			Logger:                     tl.Logger,
-			Cache:                      noopCache,
-			QueueSessionStore:          noopCache,
-			FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-			FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
-			EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
-			Rate:                       limiter,
-			ConfigRepo:                 configuration.New(tl.Logger, db),
-			Licenser:                   noopLicenser.NewLicenser(),
-			Cfg:                        cfg,
-		})
+	ah, err := NewApplicationHandler(newAPIOptions(tl, deps, noopLicenser.NewLicenser()))
 	require.NoError(t, err)
 
 	err = ah.RegisterPolicy()

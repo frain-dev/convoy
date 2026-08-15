@@ -2,6 +2,7 @@ package broker
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/hibiken/asynq"
@@ -44,6 +45,23 @@ type Dependencies struct {
 	TaskErrors          task.TaskErrorReader
 	ResendClaims        services.ResendClaimStore
 	BatchTracker        batch_tracker.Tracker
+
+	closers []io.Closer
+}
+
+// Close releases what the broker opened for itself: the dedicated advisory lock
+// pool in postgres mode, the client in redis mode. The application database is
+// passed in rather than opened here, so it stays with its owner. A long-lived
+// process can skip this; anything that builds a broker per unit of work, tests
+// included, must call it or leak a pool per build.
+func (d *Dependencies) Close() error {
+	var firstErr error
+	for _, c := range d.closers {
+		if err := c.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
 
 type constructor func(config.Configuration, *sqlx.DB, log.Logger) (*Dependencies, error)
@@ -76,7 +94,7 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 	if err != nil {
 		return nil, err
 	}
-	c := pgcache.New(db)
+	c := pgcache.NewWithLocalReads(db, cfg.Cache.Postgres.LocalReadTTL(), cfg.Cache.Postgres.LocalReadSize)
 
 	lockDB, err := openJobLockDB(cfg.Database)
 	if err != nil {
@@ -97,6 +115,8 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 		TaskErrors:          q,
 		ResendClaims:        services.NewPostgresResendClaimStore(db),
 		BatchTracker:        batch_tracker.NewPostgresTracker(db),
+		// q first: its batchers must stop before the lock pool goes.
+		closers: []io.Closer{q, lockDB},
 	}, nil
 }
 
@@ -144,6 +164,7 @@ func newRedis(cfg config.Configuration, _ *sqlx.DB, logger log.Logger) (*Depende
 		TaskErrors:          q,
 		ResendClaims:        services.NewRedisResendClaimStore(rd.Client()),
 		BatchTracker:        batch_tracker.NewBatchTracker(rd.Client()),
+		closers:             []io.Closer{rd.Client()},
 	}, nil
 }
 
@@ -192,5 +213,11 @@ func queueOptions(cfg config.Configuration) (queue.QueueOptions, error) {
 		Names:             names,
 		Type:              string(cfg.QueueProvider),
 		PrometheusAddress: cfg.Prometheus.Dsn,
+		PostgresTuning: queue.PostgresTuning{
+			BatchSize:        cfg.Queue.Postgres.BatchSize,
+			BatchWait:        cfg.Queue.Postgres.BatchWait(),
+			WriteConcurrency: cfg.Queue.Postgres.WriteConcurrency,
+			LeaseTimeout:     cfg.Queue.Postgres.LeaseTimeout(),
+		},
 	}, nil
 }

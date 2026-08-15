@@ -227,10 +227,14 @@ func (s *heartbeatSpyQueue) Archive(context.Context, string, string) error      
 func (s *heartbeatSpyQueue) Release(context.Context, []string) error                      { return nil }
 func (s *heartbeatSpyQueue) ReclaimStuck(context.Context) (int64, error)                  { return 0, nil }
 
+// LeaseTimeout drives the derived renewal interval: 60ms over six renewals is
+// 10ms, which the lowered floor in the test below allows through.
+func (s *heartbeatSpyQueue) LeaseTimeout() time.Duration { return 60 * time.Millisecond }
+
 func TestPostgresConsumerRenewsLeaseWhileHandlerRuns(t *testing.T) {
-	previous := postgresHeartbeatInterval
-	postgresHeartbeatInterval = 10 * time.Millisecond
-	t.Cleanup(func() { postgresHeartbeatInterval = previous })
+	previous := minHeartbeatInterval
+	minHeartbeatInterval = time.Millisecond
+	t.Cleanup(func() { minHeartbeatInterval = previous })
 
 	id := ulid.Make().String()
 	spy := &heartbeatSpyQueue{job: queue.ClaimedJob{
@@ -276,4 +280,27 @@ func TestPrioritizeQueueMovesPreferredFirst(t *testing.T) {
 		prioritizeQueue(names, "event"),
 	)
 	require.Equal(t, names, prioritizeQueue(names, ""))
+}
+
+// TestHeartbeatTimeoutNeverExceedsInterval pins the arithmetic the renewal
+// guarantee rests on. Heartbeat is called inline and a ticker holds only one
+// pending tick, so an attempt allowed to outlive its interval stretches the real
+// cadence to the timeout and a live worker gets fewer tries than the lease
+// promises. At the 30s configuration floor a fixed 10s timeout left two.
+func TestHeartbeatTimeoutNeverExceedsInterval(t *testing.T) {
+	for _, lease := range []time.Duration{
+		30 * time.Second, // config floor
+		90 * time.Second, // default
+		10 * time.Minute,
+	} {
+		interval := heartbeatInterval(lease)
+		timeout := heartbeatTimeout(interval)
+
+		require.LessOrEqual(t, timeout, interval,
+			"lease %s: an attempt must fit inside its interval", lease)
+
+		attempts := int(lease / interval)
+		require.GreaterOrEqual(t, attempts, heartbeatsPerLease-1,
+			"lease %s: a worker must survive %d missed renewals", lease, heartbeatsPerLease-1)
+	}
 }

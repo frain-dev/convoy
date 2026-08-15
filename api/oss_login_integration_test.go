@@ -13,21 +13,13 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/api/types"
-	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
-	"github.com/frain-dev/convoy/internal/configuration"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/mocks"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 )
 
 type OSSLoginIntegrationTestSuite struct {
@@ -120,36 +112,13 @@ func (s *OSSLoginIntegrationTestSuite) Test_OSSDefaultUserLogin_ShouldSucceed() 
 func (s *OSSLoginIntegrationTestSuite) buildServerWithMockLicenser(t *testing.T, licenser *mocks.MockLicenser) *ApplicationHandler {
 	t.Helper()
 
-	var qOpts queue.QueueOptions
-
 	tl := newInfra(t)
 	db := tl.Database
-
-	qOpts, err := getQueueOptions(t, tl.Config)
-	require.NoError(t, err)
-
 	cfg := tl.Config
 
-	newQueue := redisqueue.NewQueue(qOpts)
+	deps := newBroker(t, cfg, db, tl.Logger)
 
-	noopCache := rcache.NewRedisCacheFromClient(tl.Redis)
-	limiter := rlimiter.NewLimiterFromRedisClient(tl.Redis)
-
-	ah, err := NewApplicationHandler(
-		&types.APIOptions{
-			DB:                         db,
-			Queue:                      newQueue,
-			Logger:                     tl.Logger,
-			Cache:                      noopCache,
-			QueueSessionStore:          noopCache,
-			FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-			FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
-			EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
-			Rate:                       limiter,
-			ConfigRepo:                 configuration.New(tl.Logger, db),
-			Licenser:                   licenser,
-			Cfg:                        cfg,
-		})
+	ah, err := NewApplicationHandler(newAPIOptions(tl, deps, licenser))
 	require.NoError(t, err)
 
 	err = ah.RegisterPolicy()

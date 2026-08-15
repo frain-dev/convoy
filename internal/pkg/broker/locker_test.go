@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/pglock"
 	log "github.com/frain-dev/convoy/pkg/logger"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 func newLockerWithMock(t *testing.T, maxConns int) (*postgresJobLocker, sqlmock.Sqlmock) {
@@ -135,7 +136,7 @@ func TestPostgresJobLockerMutualExclusion(t *testing.T) {
 		t.Fatal("second holder must not run the critical section")
 		return nil
 	})
-	require.ErrorContains(t, secondErr, "failed to obtain lock")
+	require.ErrorIs(t, secondErr, task.ErrLockBusy)
 	close(release)
 	wg.Wait()
 	require.NoError(t, firstErr)
@@ -174,7 +175,7 @@ func TestPostgresJobLockerMaxRuntimeCancelsCallbackWithoutReleasingLock(t *testi
 		t.Fatal("second holder must not run while the first callback is still executing")
 		return nil
 	})
-	require.ErrorContains(t, secondErr, "failed to obtain lock")
+	require.ErrorIs(t, secondErr, task.ErrLockBusy)
 	require.ErrorContains(t, secondErr, pglock.ErrNotObtained.Error())
 
 	close(finish)
@@ -303,4 +304,31 @@ func TestRunWithLeaseRenewalHealthyRenewalLetsCallbackFinish(t *testing.T) {
 
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, extendCalls.Load(), int32(1))
+}
+
+// TestPostgresJobLockerReportsBusyWhenSlotsSaturated covers a caller that could
+// wait but should not. The slot is held for the holder's whole run, and those
+// runs differ by orders of magnitude: a retention cron holds one for half an
+// hour while a per-request billing recompute wants one for seconds. A caller
+// that waits out a long holder ties up a goroutine and, worse, lets a burst of
+// short callers stall the crons. Contention is reported instead so both skip.
+func TestPostgresJobLockerReportsBusyWhenSlotsSaturated(t *testing.T) {
+	original := slotWait
+	slotWait = 20 * time.Millisecond
+	t.Cleanup(func() { slotWait = original })
+
+	locker, _ := newLockerWithMock(t, 1)
+	locker.slots <- struct{}{}
+
+	// Caller deadline far exceeds the slot wait, so the bound under test is the
+	// slot wait and not the caller's context.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	err := locker.WithLock(ctx, "convoy:test:busy", time.Minute, func(context.Context) error {
+		t.Fatal("must not enter the critical section without a slot")
+		return nil
+	})
+	require.ErrorIs(t, err, task.ErrLockBusy)
+	require.NoError(t, ctx.Err(), "the caller's context must be left usable")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -547,4 +548,35 @@ func TestDeleteEventDeliveriesFromQueueSkipsProcessing(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(0), counts[0].Pending)
 	require.Equal(t, int64(1), counts[0].Processing)
+}
+
+// TestCloseReleasesBatchers covers the goroutines NewQueue starts. A long-lived
+// process only builds one queue, but the integration suite builds a broker per
+// test, and without a shutdown path each build leaked writeConcurrency+1
+// goroutines holding the pool.
+func TestCloseReleasesBatchers(t *testing.T) {
+	before := runtime.NumGoroutine()
+
+	q := setupQueue(t)
+	ctx := context.Background()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID:      ulid.Make().String(),
+		Payload: []byte("hello"),
+	}))
+
+	require.NoError(t, q.Close())
+	require.NoError(t, q.Close(), "Close must be idempotent")
+
+	// Writes offered after Close are refused rather than parked on a channel
+	// with no reader.
+	err := q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID:      ulid.Make().String(),
+		Payload: []byte("late"),
+	})
+	require.ErrorIs(t, err, errQueueClosed)
+
+	// The batchers are joined by Close, so anything still resident belongs to
+	// the test database handle rather than the queue.
+	require.LessOrEqual(t, runtime.NumGoroutine()-before, 4,
+		"batcher goroutines should not outlive Close")
 }

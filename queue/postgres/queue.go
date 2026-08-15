@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -34,10 +35,18 @@ const (
 	statusArchived   = "archived"
 	statusCompleted  = "completed"
 
-	postgresBatchSize    = 64
-	postgresBatchWait    = 2 * time.Millisecond
 	postgresBatchTimeout = 30 * time.Second
 	postgresWeightDepth  = 8
+
+	// Defaults for queue.PostgresTuning, applied when a field is left zero.
+	// A single flusher caps enqueue throughput at one batch per statement round
+	// trip no matter how fast the statement is, so callers queue behind it under
+	// load; several flushers keep that many inserts moving across separate pool
+	// connections while still leaving most of the pool for reads. Config
+	// validation keeps write concurrency below the pool size.
+	defaultBatchSize        = 64
+	defaultBatchWait        = 2 * time.Millisecond
+	defaultWriteConcurrency = 8
 
 	// defaultMaxRetry matches asynq's unexported DefaultMaxRetry.
 	defaultMaxRetry = 25
@@ -62,6 +71,7 @@ const (
 
 var (
 	errMissingDB     = errors.New("database is required")
+	errQueueClosed   = errors.New("queue is closed")
 	ErrJobProcessing = errors.New("queue job is already processing")
 )
 
@@ -127,8 +137,19 @@ type PostgresQueue struct {
 	db           *sqlx.DB
 	opts         queue.QueueOptions
 	stuckTimeout time.Duration
+	batchSize    int
+	batchWait    time.Duration
 	writes       chan writeRequest
 	completions  chan completeRequest
+
+	// quit asks the batchers to stop; done is closed once every one of them has
+	// returned. A caller that has already been admitted to a channel waits on
+	// done as well as its own result, because after the batchers are joined
+	// nothing is left to answer it.
+	quit      chan struct{}
+	done      chan struct{}
+	quitOnce  sync.Once
+	batcherWg sync.WaitGroup
 }
 
 type writeRequest struct {
@@ -147,20 +168,92 @@ type completeRequest struct {
 	result chan error
 }
 
+// resolvedTuning is opts.PostgresTuning with the package defaults filled in for
+// any field the caller left zero.
+type resolvedTuning struct {
+	batchSize        int
+	batchWait        time.Duration
+	writeConcurrency int
+	leaseTimeout     time.Duration
+}
+
+func tuning(t queue.PostgresTuning) resolvedTuning {
+	r := resolvedTuning{
+		batchSize:        t.BatchSize,
+		batchWait:        t.BatchWait,
+		writeConcurrency: t.WriteConcurrency,
+		leaseTimeout:     t.LeaseTimeout,
+	}
+	if r.batchSize < 1 {
+		r.batchSize = defaultBatchSize
+	}
+	if r.batchWait < 1 {
+		r.batchWait = defaultBatchWait
+	}
+	if r.writeConcurrency < 1 {
+		r.writeConcurrency = defaultWriteConcurrency
+	}
+	if r.leaseTimeout < 1 {
+		r.leaseTimeout = DefaultStuckTimeout
+	}
+	return r
+}
+
 func NewQueue(opts queue.QueueOptions) (*PostgresQueue, error) {
 	if opts.DB == nil {
 		return nil, errMissingDB
 	}
+	t := tuning(opts.PostgresTuning)
 	q := &PostgresQueue{
 		db:           opts.DB,
 		opts:         opts,
-		stuckTimeout: DefaultStuckTimeout,
-		writes:       make(chan writeRequest, postgresBatchSize),
-		completions:  make(chan completeRequest, postgresBatchSize),
+		stuckTimeout: t.leaseTimeout,
+		batchSize:    t.batchSize,
+		batchWait:    t.batchWait,
+		writes:       make(chan writeRequest, t.batchSize*t.writeConcurrency),
+		completions:  make(chan completeRequest, t.batchSize),
+		quit:         make(chan struct{}),
+		done:         make(chan struct{}),
 	}
-	go q.runWriteBatcher()
+	q.batcherWg.Add(t.writeConcurrency + 1)
+	for i := 0; i < t.writeConcurrency; i++ {
+		go q.runWriteBatcher()
+	}
 	go q.runCompleteBatcher()
 	return q, nil
+}
+
+// Close stops the batcher goroutines and waits for them to return. A long-lived
+// process can skip it, but anything that builds a queue per unit of work leaks
+// writeConcurrency+1 goroutines per build without it, each holding the pool.
+// Writes admitted before Close still commit; writes offered after it are
+// rejected rather than parked on a channel nobody is draining.
+func (q *PostgresQueue) Close() error {
+	q.quitOnce.Do(func() {
+		close(q.quit)
+		q.batcherWg.Wait()
+		close(q.done)
+	})
+	<-q.done
+	return nil
+}
+
+// awaitResult waits for the batcher's answer, or gives up once every batcher
+// has returned. Checking result again under done matters: a batcher answers its
+// whole batch before exiting, so a request that did commit has its result
+// buffered and must not be reported as rejected.
+func awaitResult(result <-chan error, done <-chan struct{}) error {
+	select {
+	case err := <-result:
+		return err
+	case <-done:
+		select {
+		case err := <-result:
+			return err
+		default:
+			return errQueueClosed
+		}
+	}
 }
 
 func (q *PostgresQueue) Options() queue.QueueOptions {
@@ -169,6 +262,13 @@ func (q *PostgresQueue) Options() queue.QueueOptions {
 
 func (q *PostgresQueue) SetStuckTimeout(d time.Duration) {
 	q.stuckTimeout = d
+}
+
+// LeaseTimeout is how long a claim survives without renewal. Consumers derive
+// their renewal interval from it so the two cannot be configured into a state
+// where a live worker's lease expires under it.
+func (q *PostgresQueue) LeaseTimeout() time.Duration {
+	return q.stuckTimeout
 }
 
 func (q *PostgresQueue) Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
@@ -221,8 +321,19 @@ func (q *PostgresQueue) write(ctx context.Context, taskName convoy.TaskName, que
 		delay:     delay.Seconds(),
 		result:    make(chan error, 1),
 	}
+	// Refuse before offering. Both cases below can be ready at once after Close
+	// and select would pick either, so without this a write can still land in a
+	// buffer no batcher is draining.
+	select {
+	case <-q.quit:
+		return errQueueClosed
+	default:
+	}
+
 	select {
 	case q.writes <- req:
+	case <-q.quit:
+		return errQueueClosed
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -230,16 +341,29 @@ func (q *PostgresQueue) write(ctx context.Context, taskName convoy.TaskName, que
 	// Failure policy: after admission, wait for the durable commit even if the
 	// caller cancels. Returning early could let a parent job complete before
 	// its child is durable; deterministic job IDs make an ambiguous retry safe.
-	return <-req.result
+	return awaitResult(req.result, q.done)
 }
 
 func (q *PostgresQueue) runWriteBatcher() {
-	for first := range q.writes {
+	defer q.batcherWg.Done()
+
+	for {
+		var first writeRequest
+		select {
+		case first = <-q.writes:
+		case <-q.quit:
+			// Drain what was already admitted before giving up: those callers
+			// are blocked on their result channel and a durable commit was
+			// promised to them.
+			q.drainWrites()
+			return
+		}
+
 		batch := []writeRequest{first}
-		timer := time.NewTimer(postgresBatchWait)
+		timer := time.NewTimer(q.batchWait)
 
 	collect:
-		for len(batch) < postgresBatchSize {
+		for len(batch) < q.batchSize {
 			select {
 			case req := <-q.writes:
 				batch = append(batch, req)
@@ -254,6 +378,31 @@ func (q *PostgresQueue) runWriteBatcher() {
 			}
 		}
 
+		results := q.writeBatch(batch)
+		for i := range batch {
+			batch[i].result <- results[i]
+		}
+	}
+}
+
+// drainWrites commits whatever is still buffered after Close. Several batchers
+// may run this at once; each takes what it can get and stops when the channel
+// is empty.
+func (q *PostgresQueue) drainWrites() {
+	for {
+		var batch []writeRequest
+		for len(batch) < q.batchSize {
+			select {
+			case req := <-q.writes:
+				batch = append(batch, req)
+				continue
+			default:
+			}
+			break
+		}
+		if len(batch) == 0 {
+			return
+		}
 		results := q.writeBatch(batch)
 		for i := range batch {
 			batch[i].result <- results[i]
@@ -279,7 +428,19 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 		last[batch[i].id] = i
 	}
 
-	n := len(last)
+	// Flush windows run concurrently and ON CONFLICT takes row locks in
+	// statement order, so two windows holding the same pair of job IDs in
+	// opposite orders would deadlock against each other. Sorting by ID gives
+	// every window the same lock order.
+	order := make([]int, 0, len(last))
+	for i := range batch {
+		if last[batch[i].id] == i {
+			order = append(order, i)
+		}
+	}
+	sort.Slice(order, func(a, b int) bool { return batch[order[a]].id < batch[order[b]].id })
+
+	n := len(order)
 	ids := make([]string, 0, n)
 	taskNames := make([]string, 0, n)
 	queueNames := make([]string, 0, n)
@@ -287,10 +448,7 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 	headers := make([]string, 0, n)
 	maxRetries := make([]int64, 0, n)
 	delays := make([]float64, 0, n)
-	for i := range batch {
-		if last[batch[i].id] != i {
-			continue
-		}
+	for _, i := range order {
 		ids = append(ids, batch[i].id)
 		taskNames = append(taskNames, batch[i].taskName)
 		queueNames = append(queueNames, batch[i].queueName)
@@ -438,20 +596,37 @@ func (q *PostgresQueue) Claim(ctx context.Context, queueNames []string, limit in
 func (q *PostgresQueue) Complete(ctx context.Context, id string) error {
 	req := completeRequest{id: id, result: make(chan error, 1)}
 	select {
+	case <-q.quit:
+		return errQueueClosed
+	default:
+	}
+
+	select {
 	case q.completions <- req:
+	case <-q.quit:
+		return errQueueClosed
 	case <-ctx.Done():
 		return ctx.Err()
 	}
-	return <-req.result
+	return awaitResult(req.result, q.done)
 }
 
 func (q *PostgresQueue) runCompleteBatcher() {
-	for first := range q.completions {
+	defer q.batcherWg.Done()
+
+	for {
+		var first completeRequest
+		select {
+		case first = <-q.completions:
+		case <-q.quit:
+			return
+		}
+
 		batch := []completeRequest{first}
-		timer := time.NewTimer(postgresBatchWait)
+		timer := time.NewTimer(q.batchWait)
 
 	collect:
-		for len(batch) < postgresBatchSize {
+		for len(batch) < q.batchSize {
 			select {
 			case req := <-q.completions:
 				batch = append(batch, req)

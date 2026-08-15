@@ -21,6 +21,12 @@ import (
 // definitive lost-lock). Both are treated as lost: fail closed for singleton jobs.
 var ErrLockLeaseLost = errors.New("lock lease could not be renewed")
 
+// slotWait bounds how long a caller queues for one of the dedicated lock pool's
+// connections before reporting contention. Short, because a caller that cannot
+// start promptly is better off skipping than holding a goroutine while the
+// holder runs for minutes. A variable so tests need not wait it out.
+var slotWait = 5 * time.Second
+
 type postgresJobLocker struct {
 	db     *sqlx.DB
 	logger log.Logger
@@ -50,14 +56,31 @@ func runBounded(ctx context.Context, maxRuntime time.Duration, fn func(context.C
 func (l *postgresJobLocker) WithLock(ctx context.Context, name string, maxRuntime time.Duration, fn func(context.Context) error) error {
 	// Slot gate matches the dedicated pool MaxOpenConns so waiters fail with
 	// ctx errors instead of blocking forever behind a saturated lock pool.
+	//
+	// The wait is bounded because the slot is held for the caller's whole run,
+	// and the callers have very different runs: a retention cron holds one for
+	// up to 30 minutes while a billing usage recompute is triggered per request
+	// and scoped per org. Without a bound, a burst of recomputes takes every
+	// slot and a cron queues behind them for minutes. Both kinds of caller
+	// already treat a lock they could not take as "skip this round", so a
+	// bounded wait turns starvation into an outcome they handle.
+	slotCtx, cancelSlot := context.WithTimeout(ctx, slotWait)
+	defer cancelSlot()
+
 	select {
 	case l.slots <- struct{}{}:
 		defer func() { <-l.slots }()
-	case <-ctx.Done():
-		return fmt.Errorf("failed to obtain lock: %v", ctx.Err())
+	case <-slotCtx.Done():
+		if ctx.Err() != nil {
+			return fmt.Errorf("failed to obtain lock: %v", ctx.Err())
+		}
+		return fmt.Errorf("%w: lock pool has no free slot", task.ErrLockBusy)
 	}
 
 	mu, err := pglock.TryLock(ctx, l.db, name)
+	if errors.Is(err, pglock.ErrNotObtained) {
+		return fmt.Errorf("%w: %v", task.ErrLockBusy, err)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to obtain lock: %v", err)
 	}
@@ -93,6 +116,13 @@ func (l *redisJobLocker) WithLock(ctx context.Context, name string, maxRuntime t
 	lockCtx, cancel := context.WithTimeout(ctx, lockTimeout)
 	defer cancel()
 	if err := mutex.LockContext(lockCtx); err != nil {
+		// redsync reports a lock another holder owns as ErrTaken (or a taken
+		// error per node). That is contention, not a broken backend, and must
+		// read the same to callers as the Postgres provider's version.
+		var taken *redsync.ErrTaken
+		if errors.Is(err, redsync.ErrFailed) || errors.As(err, &taken) {
+			return fmt.Errorf("%w: %v", task.ErrLockBusy, err)
+		}
 		return fmt.Errorf("failed to obtain lock: %v", err)
 	}
 

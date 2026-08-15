@@ -1035,7 +1035,7 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.A.Queue == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry is only available with Redis queue", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry requires a configured queue provider", http.StatusBadRequest))
 		return
 	}
 

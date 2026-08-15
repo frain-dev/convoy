@@ -113,6 +113,18 @@ type QueueOptions struct {
 	PrometheusAddress string
 	// DB is required when Type is postgres. Redis queues ignore it.
 	DB *sqlx.DB
+	// PostgresTuning tunes the postgres write path. Redis queues ignore it,
+	// and zero fields take the postgres driver's defaults.
+	PostgresTuning PostgresTuning
+}
+
+// PostgresTuning carries the postgres queue's write-path settings in
+// provider-neutral form so the queue package does not depend on config.
+type PostgresTuning struct {
+	BatchSize        int
+	BatchWait        time.Duration
+	WriteConcurrency int
+	LeaseTimeout     time.Duration
 }
 
 type JobId struct {

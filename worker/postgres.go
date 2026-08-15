@@ -17,17 +17,45 @@ const (
 	postgresClaimSize       = 64
 	postgresReclaimInterval = 30 * time.Second
 
-	// postgresHeartbeatTimeout bounds one renewal so a stalled database cannot
-	// block the renewal loop past the next tick.
-	postgresHeartbeatTimeout = 10 * time.Second
+	// maxHeartbeatTimeout caps one renewal attempt so a stalled database cannot
+	// hold the renewal loop for a long lease's whole interval.
+	maxHeartbeatTimeout = 10 * time.Second
+
+	// heartbeatsPerLease is how many renewals fit in one lease. Renewal must
+	// stay well under the lease so a few slow or failed renewals cannot expire
+	// a live worker's claim: at six, a worker misses five in a row before
+	// another consumer may take its job. The interval is derived from the
+	// lease rather than configured beside it so the two cannot drift.
+	heartbeatsPerLease = 6
 )
 
-// postgresHeartbeatInterval renews the claim lease on everything this consumer
-// holds. It must stay well under the lease so a few slow or failed renewals
-// cannot expire a live worker's claim; at 15s against a 90s lease a worker has
-// to miss five in a row before another consumer can take its job. It is a
-// variable so tests can drive the renewal loop without waiting on wall clock.
-var postgresHeartbeatInterval = 15 * time.Second
+// minHeartbeatInterval keeps renewal traffic bounded if the lease is ever
+// configured very low. It is a variable so tests can drive the renewal loop
+// without waiting on wall clock.
+var minHeartbeatInterval = time.Second
+
+// heartbeatInterval derives the renewal period from the queue's lease.
+func heartbeatInterval(lease time.Duration) time.Duration {
+	interval := lease / heartbeatsPerLease
+	if interval < minHeartbeatInterval {
+		return minHeartbeatInterval
+	}
+	return interval
+}
+
+// heartbeatTimeout bounds one renewal attempt. It must not exceed the interval:
+// the renewal loop calls Heartbeat inline and a ticker holds only one pending
+// tick, so an attempt that outlives its interval stretches the real cadence to
+// the timeout. At a 30s lease that turns a 5s interval into 10s attempts and
+// leaves two tries before the lease expires instead of five, and a live worker's
+// job gets reclaimed under it. Keeping the timeout at or below the interval
+// holds the five-miss guarantee at every configurable lease.
+func heartbeatTimeout(interval time.Duration) time.Duration {
+	if interval < maxHeartbeatTimeout {
+		return interval
+	}
+	return maxHeartbeatTimeout
+}
 
 // PostgresConsumerQueue is the worker-owned adapter contract for consuming Postgres
 // queue jobs. Provider construction remains in the queue factory.
@@ -39,6 +67,7 @@ type PostgresConsumerQueue interface {
 	Release(context.Context, []string) error
 	ReclaimStuck(context.Context) (int64, error)
 	Heartbeat(context.Context, []string) error
+	LeaseTimeout() time.Duration
 }
 
 type postgresConsumerBackend struct {
@@ -63,6 +92,9 @@ type postgresRunner struct {
 	heldMu sync.Mutex
 	held   map[string]struct{}
 
+	// heartbeatEvery is derived from the queue's lease at construction.
+	heartbeatEvery time.Duration
+
 	pollerWg    sync.WaitGroup
 	workerWg    sync.WaitGroup
 	heartbeatWg sync.WaitGroup
@@ -75,16 +107,17 @@ func (b *postgresConsumerBackend) newRunner(ctx context.Context, poolSize int, n
 		poolSize = 1
 	}
 	return &postgresRunner{
-		ctx:      ctx,
-		poolSize: poolSize,
-		queue:    b.queue,
-		names:    names,
-		mux:      mux,
-		log:      lo,
-		tasks:    make(chan queue.ClaimedJob, poolSize),
-		quit:     make(chan struct{}),
-		heldQuit: make(chan struct{}),
-		held:     make(map[string]struct{}),
+		ctx:            ctx,
+		poolSize:       poolSize,
+		queue:          b.queue,
+		names:          names,
+		mux:            mux,
+		log:            lo,
+		heartbeatEvery: heartbeatInterval(b.queue.LeaseTimeout()),
+		tasks:          make(chan queue.ClaimedJob, poolSize),
+		quit:           make(chan struct{}),
+		heldQuit:       make(chan struct{}),
+		held:           make(map[string]struct{}),
 	}, nil
 }
 
@@ -221,7 +254,7 @@ func (r *postgresRunner) heldIDs() []string {
 func (r *postgresRunner) heartbeat() {
 	defer r.heartbeatWg.Done()
 
-	ticker := time.NewTicker(postgresHeartbeatInterval)
+	ticker := time.NewTicker(r.heartbeatEvery)
 	defer ticker.Stop()
 
 	for {
@@ -237,7 +270,7 @@ func (r *postgresRunner) heartbeat() {
 		}
 		// Renewal must outlive a cancelled consumer context: claims are still
 		// held while in-flight handlers drain.
-		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.ctx), postgresHeartbeatTimeout)
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.ctx), heartbeatTimeout(r.heartbeatEvery))
 		if err := r.queue.Heartbeat(ctx, ids); err != nil {
 			r.log.Error("postgres queue heartbeat failed", "error", err, "jobs", len(ids))
 		}

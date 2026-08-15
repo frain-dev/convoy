@@ -76,7 +76,7 @@ func (l *PostgresLimiter) AllowWithDuration(ctx context.Context, key string, rat
 	period := time.Duration(duration) * time.Second
 	burst := float64(rate)
 	refillPerSec := burst / period.Seconds()
-	reservationSize := min(rate, 32)
+	reservationSize := reservationSizeFor(rate, refillPerSec)
 
 	granted, err := l.reserve(ctx, key, burst, refillPerSec, reservationSize)
 	if err == nil {
@@ -107,6 +107,24 @@ func (l *PostgresLimiter) AllowWithDuration(ctx context.Context, key string, rat
 		retryAfter = time.Millisecond
 	}
 	return limiter.NewRateLimitExceeded(retryAfter)
+}
+
+// minReservation is the floor on how many tokens one refill claims. Small
+// limits keep it, so a low limit spread over several replicas behaves as before.
+const minReservation = 32
+
+// reservationSizeFor claims roughly one second of refill per round trip. A flat
+// floor makes a high limit pay a shared-bucket round trip every few requests,
+// and that round trip happens under the per-key lock, so the limiter and not the
+// limit decides throughput. Sizing by refill rate keeps the round trip count
+// near constant as the limit grows, while the bucket's own burst still caps what
+// a reservation can take, so this cannot over-admit.
+func reservationSizeFor(rate int, refillPerSec float64) int {
+	size := int(math.Ceil(refillPerSec))
+	if size < minReservation {
+		size = minReservation
+	}
+	return min(rate, size)
 }
 
 func (l *PostgresLimiter) leaseFor(key string) *tokenLease {

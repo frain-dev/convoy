@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/cachedrepo"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 func (h *BillingHandler) ensureOrganisationInBilling(w http.ResponseWriter, r *http.Request, orgID string) bool {
@@ -260,8 +262,17 @@ func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey stri
 			defer cancelSet()
 			return h.A.Cache.Set(setCtx, cacheKey, usage, usageCacheTTL)
 		})
+		if errors.Is(err, task.ErrLockBusy) {
+			// Routine: another recompute for this org is already running, or the
+			// lock pool is saturated. The caller keeps the pending sentinel and
+			// the next poll reads whichever run finishes.
+			h.A.Logger.Debug("usage recompute skipped, lock busy", "organisation_id", orgID)
+			return
+		}
 		if err != nil {
-			h.A.Logger.Error("usage recompute lock failed", "error", err)
+			// Covers the aggregation and the cache write as well as the lock, so
+			// the message must not claim the lock was at fault.
+			h.A.Logger.Error("usage recompute failed", "error", err, "organisation_id", orgID)
 		}
 	}()
 }

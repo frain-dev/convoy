@@ -2,8 +2,16 @@ package task
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+// ErrLockBusy means the lock was not attempted or not taken because someone else
+// holds it, or because the provider had no capacity to try. It is the routine
+// outcome of contention, not a failure: callers skip this round and rely on
+// their next tick or request. Providers must return it wrapped so callers can
+// tell contention apart from a lock backend that is actually broken.
+var ErrLockBusy = errors.New("lock is busy")
 
 // JobLocker serializes singleton cron jobs. Construct once at boot.
 //

@@ -222,3 +222,211 @@ func TestGetOrCreateBytes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte("one"), second)
 }
+
+// setupLocalCache builds a cache that may answer Get from process memory.
+func setupLocalCache(t *testing.T, ttl time.Duration) *PostgresCache {
+	t.Helper()
+	conn, err := testInfra.CloneTestDatabase(t, "convoy")
+	require.NoError(t, err)
+	return NewWithLocalReads(dbpostgres.NewFromConnection(conn).GetDB(), ttl, 128)
+}
+
+// removeRow deletes straight from the table, bypassing the cache API so the
+// in-process copy survives. A later Get that still returns the old value
+// therefore proves the value came from memory rather than the database.
+func removeRow(t *testing.T, c *PostgresCache, key string) {
+	t.Helper()
+	_, err := c.db.ExecContext(context.Background(), `DELETE FROM convoy.kv_cache WHERE key = $1`, key)
+	require.NoError(t, err)
+}
+
+func TestLocalReadsAnswerRepeatsAndExpire(t *testing.T) {
+	const ttl = 150 * time.Millisecond
+	c := setupLocalCache(t, ttl)
+	ctx := context.Background()
+	key := "cache:" + ulid.Make().String()
+
+	require.NoError(t, c.Set(ctx, key, "hello", time.Minute))
+
+	var got string
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.Equal(t, "hello", got)
+
+	removeRow(t, c, key)
+
+	got = ""
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.Equal(t, "hello", got, "repeat read should come from memory, not the table")
+
+	time.Sleep(ttl * 3)
+
+	got = ""
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.Empty(t, got, "the local copy must not outlive its ttl")
+}
+
+func TestLocalReadsDroppedByEveryWrite(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("set", func(t *testing.T) {
+		c := setupLocalCache(t, time.Minute)
+		key := "cache:" + ulid.Make().String()
+		require.NoError(t, c.Set(ctx, key, "first", time.Minute))
+
+		var got string
+		require.NoError(t, c.Get(ctx, key, &got))
+		require.Equal(t, "first", got)
+
+		require.NoError(t, c.Set(ctx, key, "second", time.Minute))
+		require.NoError(t, c.Get(ctx, key, &got))
+		require.Equal(t, "second", got, "a writer must not read back its own stale value")
+	})
+
+	t.Run("delete", func(t *testing.T) {
+		c := setupLocalCache(t, time.Minute)
+		key := "cache:" + ulid.Make().String()
+		require.NoError(t, c.Set(ctx, key, "value", time.Minute))
+
+		var got string
+		require.NoError(t, c.Get(ctx, key, &got))
+		require.Equal(t, "value", got)
+
+		require.NoError(t, c.Delete(ctx, key))
+		got = ""
+		require.NoError(t, c.Get(ctx, key, &got))
+		require.Empty(t, got)
+	})
+
+	t.Run("consume", func(t *testing.T) {
+		c := setupLocalCache(t, time.Minute)
+		key := "cache:" + ulid.Make().String()
+		require.NoError(t, c.Set(ctx, key, "once", time.Minute))
+
+		var got string
+		require.NoError(t, c.Get(ctx, key, &got))
+		require.Equal(t, "once", got)
+
+		var consumed string
+		ok, err := c.Consume(ctx, key, &consumed)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, "once", consumed)
+
+		got = ""
+		require.NoError(t, c.Get(ctx, key, &got))
+		require.Empty(t, got, "a consumed one-shot value must not be observable again")
+	})
+}
+
+func TestGetStrictIgnoresLocalReads(t *testing.T) {
+	c := setupLocalCache(t, time.Minute)
+	ctx := context.Background()
+	key := "cache:" + ulid.Make().String()
+
+	require.NoError(t, c.Set(ctx, key, true, time.Minute))
+
+	var got bool
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.True(t, got)
+
+	removeRow(t, c, key)
+
+	var strict bool
+	require.NoError(t, c.GetStrict(ctx, key, &strict))
+	require.False(t, strict, "authoritative reads must always go to the table")
+
+	var loose bool
+	require.NoError(t, c.Get(ctx, key, &loose))
+	require.True(t, loose, "the local copy is still live, so Get should differ from GetStrict here")
+}
+
+func TestLocalReadsGiveEachCallerItsOwnValue(t *testing.T) {
+	c := setupLocalCache(t, time.Minute)
+	ctx := context.Background()
+	key := "cache:" + ulid.Make().String()
+
+	require.NoError(t, c.Set(ctx, key, []string{"a", "b"}, time.Minute))
+
+	var first []string
+	require.NoError(t, c.Get(ctx, key, &first))
+	require.Equal(t, []string{"a", "b"}, first)
+
+	first[0] = "mutated"
+
+	var second []string
+	require.NoError(t, c.Get(ctx, key, &second))
+	require.Equal(t, []string{"a", "b"}, second, "one caller mutating its result must not corrupt another's")
+}
+
+func TestLocalReadsDisabled(t *testing.T) {
+	c := setupCache(t)
+	ctx := context.Background()
+	key := "cache:" + ulid.Make().String()
+
+	require.NoError(t, c.Set(ctx, key, "hello", time.Minute))
+
+	var got string
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.Equal(t, "hello", got)
+
+	removeRow(t, c, key)
+
+	got = ""
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.Empty(t, got, "without local reads every Get must hit the table")
+}
+
+// TestLocalReadsNotResurrectedByConcurrentGet covers the interleaving the
+// sequential write-then-Get tests cannot reach: a Get that has already read the
+// old row from the table but has not yet stored it locally, racing a Delete that
+// drops the local copy in between. Without a guard the reader's store lands
+// after the writer's invalidation and the deleted value answers reads on this
+// replica for the rest of the entry's lifetime, including for the writer.
+//
+// Landing inside that window depends on timing, so the loop widens the odds.
+// The assertion is safe either way: a run that misses the window sees an empty
+// value too, so this can only fail when the resurrection is real.
+func TestLocalReadsNotResurrectedByConcurrentGet(t *testing.T) {
+	c := setupLocalCache(t, time.Minute)
+	ctx := context.Background()
+
+	for i := 0; i < 100; i++ {
+		key := "cache:" + ulid.Make().String()
+		require.NoError(t, c.Set(ctx, key, "v1", time.Minute))
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var read string
+			_ = c.Get(ctx, key, &read)
+		}()
+
+		time.Sleep(time.Duration(i%10) * 50 * time.Microsecond)
+		require.NoError(t, c.Delete(ctx, key))
+		wg.Wait()
+
+		var after string
+		require.NoError(t, c.Get(ctx, key, &after))
+		require.Empty(t, after, "a deleted key must not be resurrected by an in-flight Get (iteration %d)", i)
+	}
+}
+
+// TestLocalReadsFallThroughOnCorruptEntry covers bytes that will not decode.
+// They must not keep answering from memory for the rest of the entry's life:
+// the entry is dropped and the table decides.
+func TestLocalReadsFallThroughOnCorruptEntry(t *testing.T) {
+	c := setupLocalCache(t, time.Minute)
+	ctx := context.Background()
+	key := "cache:" + ulid.Make().String()
+
+	require.NoError(t, c.Set(ctx, key, "good", time.Minute))
+	c.local.Add(key, []byte{0xc1, 0xc1, 0xc1})
+
+	var got string
+	require.NoError(t, c.Get(ctx, key, &got))
+	require.Equal(t, "good", got, "a corrupt local entry must fall through to the table")
+
+	_, stillCached := c.local.Get(key)
+	require.True(t, stillCached, "the table value should replace the corrupt entry")
+}
