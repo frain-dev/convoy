@@ -19,6 +19,15 @@ const (
 	projectLabel  = "project"
 	sourceLabel   = "source"
 	endpointLabel = "endpoint"
+	bucketLabel   = "bucket"
+	outcomeLabel  = "outcome"
+)
+
+// Rate limiter outcomes. A saturated limiter backend and a genuine over-limit
+// hit are indistinguishable in the HTTP response, so they are separated here.
+const (
+	RateLimitOutcomeRejected     = "rejected"
+	RateLimitOutcomeBackendError = "backend_error"
 )
 
 // Metrics for the data plane
@@ -29,6 +38,7 @@ type Metrics struct {
 	IngestErrorsTotal    *prometheus.CounterVec
 	IngestLatency        *prometheus.HistogramVec
 	EventDeliveryLatency *prometheus.HistogramVec
+	RateLimitTotal       *prometheus.CounterVec
 }
 
 func GetDPInstance(licenser license.Licenser) *Metrics {
@@ -41,12 +51,13 @@ func GetDPInstance(licenser license.Licenser) *Metrics {
 func newMetrics(pr prometheus.Registerer, licenser license.Licenser) *Metrics {
 	m := InitMetrics(licenser)
 
-	if m.IsEnabled && m.IngestTotal != nil && m.IngestConsumedTotal != nil && m.IngestErrorsTotal != nil {
+	if m.IsEnabled && m.IngestTotal != nil && m.IngestConsumedTotal != nil && m.IngestErrorsTotal != nil && m.RateLimitTotal != nil {
 		pr.MustRegister(
 			m.IngestTotal,
 			m.IngestConsumedTotal,
 			m.IngestErrorsTotal,
 			m.EventDeliveryLatency,
+			m.RateLimitTotal,
 		)
 	}
 	return m
@@ -97,6 +108,13 @@ func InitMetrics(licenser license.Licenser) *Metrics {
 			},
 			[]string{projectLabel},
 		),
+		RateLimitTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "convoy_rate_limit_total",
+				Help: "Total number of rate limiter outcomes that were not a clean allow, by bucket and outcome: rejected for a genuine over-limit hit, backend_error when the limiter backend failed",
+			},
+			[]string{bucketLabel, outcomeLabel},
+		),
 		EventDeliveryLatency: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "convoy_end_to_end_latency",
@@ -128,6 +146,13 @@ func (m *Metrics) IncrementIngestTotal(source, project string) {
 		return
 	}
 	m.IngestTotal.With(prometheus.Labels{projectLabel: project, sourceLabel: source}).Inc()
+}
+
+func (m *Metrics) IncrementRateLimitTotal(bucket, outcome string) {
+	if !m.IsEnabled {
+		return
+	}
+	m.RateLimitTotal.With(prometheus.Labels{bucketLabel: bucket, outcomeLabel: outcome}).Inc()
 }
 
 func (m *Metrics) IncrementIngestConsumedTotal(source *datastore.Source) {

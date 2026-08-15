@@ -300,6 +300,35 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	return router
 }
 
+// mountEventIntakeRoutes registers the event creation routes on the /api/v1
+// router rather than inside the /projects subtree, so they are metered by the
+// ingest bucket alone. Registering them under /projects would also subject them
+// to that router's fail closed API limiter, and a fail open policy on the ingest
+// bucket buys nothing while a sibling limiter on the same path fails closed.
+//
+// Failure policy: fail open. A rejected event is a destroyed customer event, and
+// senders usually cannot replay it, so a limiter backend outage must not become
+// an ingest outage. This mirrors /ingest, which is the same surface.
+func (a *ApplicationHandler) mountEventIntakeRoutes(router chi.Router, handler *handlers.Handler) {
+	router.Group(func(intakeRouter chi.Router) {
+		// The limiter runs ahead of the project and organisation lookups so a
+		// throttled sender cannot spend a database round trip per request.
+		// InstrumentPath stays outermost so it keeps counting every request that
+		// reaches intake, rejected ones included.
+		intakeRouter.Use(
+			middleware.InstrumentPath(a.A.Licenser),
+			middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen),
+			handler.RequireEnabledProject(),
+			handler.RequireEnabledOrganisation(),
+		)
+
+		intakeRouter.Post("/projects/{projectID}/events", handler.CreateEndpointEvent)
+		intakeRouter.Post("/projects/{projectID}/events/fanout", handler.CreateEndpointFanoutEvent)
+		intakeRouter.Post("/projects/{projectID}/events/broadcast", handler.CreateBroadcastEvent)
+		intakeRouter.Post("/projects/{projectID}/events/dynamic", handler.CreateDynamicEvent)
+	})
+}
+
 func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
@@ -315,8 +344,11 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	})
 
 	// Ingestion API.
+	// Failure policy: fail open. Event intake is the one surface where a
+	// rejected request destroys a customer event instead of costing a retry, so
+	// a limiter backend outage must not become an ingest outage.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -328,8 +360,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth(handler.A.Logger))
 
+			a.mountEventIntakeRoutes(r, handler)
+
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, a.A.Logger))
+				// Failure policy: fail closed. Rejecting a project API call
+				// costs the caller a retry, so a limiter backend outage must
+				// not admit unmetered API traffic. Event intake is deliberately
+				// not under this mount; see mountEventIntakeRoutes.
+				projectRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, middleware.FailClosed))
 				projectRouter.Get("/", handler.GetProjects)
 				projectRouter.With(handler.RequireEnabledOrganisation()).Post("/", handler.CreateProject)
 
@@ -363,20 +401,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
-						// Write routes with shared middleware - using Group to avoid duplication
-						eventRouter.Group(func(r chi.Router) {
-							r.Use(
-								handler.RequireEnabledProject(),
-								handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger),
-							)
-
-							r.Post("/", handler.CreateEndpointEvent)
-							r.Post("/fanout", handler.CreateEndpointFanoutEvent)
-							r.Post("/broadcast", handler.CreateBroadcastEvent)
-							r.Post("/dynamic", handler.CreateDynamicEvent)
-						})
+						// The event creation routes are registered in
+						// mountEventIntakeRoutes, outside this API rate limited
+						// subtree, so they carry the fail open ingest policy.
 
 						// Batch replay route (different middleware - no rate limiting)
 						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).
@@ -960,8 +987,9 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 
 	// Ingestion API. Must use the same knob as the control plane's /ingest so
 	// CONVOY_INSTANCE_INGEST_RATE governs every ingest surface.
+	// Failure policy: fail open, same reasoning as the control plane's /ingest.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -973,23 +1001,18 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth(handler.A.Logger))
 
+			a.mountEventIntakeRoutes(r, handler)
+
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, a.A.Logger))
+				// Failure policy: fail closed, same reasoning as the control
+				// plane's /projects mount. Event intake is deliberately not
+				// under this mount; see mountEventIntakeRoutes.
+				projectRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, middleware.FailClosed))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						eventRouter.Group(func(r chi.Router) {
-							r.Use(
-								handler.RequireEnabledProject(),
-								handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, a.A.Logger),
-							)
-
-							r.Post("/", handler.CreateEndpointEvent)
-							r.Post("/fanout", handler.CreateEndpointFanoutEvent)
-							r.Post("/broadcast", handler.CreateBroadcastEvent)
-							r.Post("/dynamic", handler.CreateDynamicEvent)
-						})
+						// The event creation routes are registered in
+						// mountEventIntakeRoutes, outside this API rate limited
+						// subtree, so they carry the fail open ingest policy.
 
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -12,7 +13,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
+	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -22,6 +27,36 @@ const (
 	testRateKnob    = 1
 	testWindowGrant = testRateKnob * 60
 )
+
+// TestMain enables metrics before any test serves a request. The metrics
+// instance resolves once per process, so a handler that ran first with metrics
+// off would leave the counters permanently disabled for the whole binary.
+func TestMain(m *testing.M) {
+	// The JWT realm is enabled by default and config validation reads its
+	// secrets straight from the environment.
+	env := map[string]string{
+		"CONVOY_JWT_SECRET":         "middleware-test-secret",
+		"CONVOY_JWT_REFRESH_SECRET": "middleware-test-refresh-secret",
+	}
+
+	for key, value := range env {
+		if err := os.Setenv(key, value); err != nil {
+			panic(err)
+		}
+	}
+
+	if err := config.LoadConfig(""); err != nil {
+		panic(err)
+	}
+
+	if err := config.Override(&config.Configuration{
+		Metrics: config.MetricsConfiguration{IsEnabled: true, Backend: config.PrometheusMetricsProvider},
+	}); err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
 
 // countingLimiter is a fixed window bucket per key. It records how many times
 // each bucket was charged, which is what proves a request spends one token per
@@ -116,12 +151,12 @@ func okHandler() http.Handler {
 	})
 }
 
-// eventsStack mirrors the events write path, where the projects router charges
-// the API bucket and the write group charges the ingest bucket.
-func eventsStack(rate limiter.RateLimiter) http.Handler {
-	return RateLimiterHandler(rate, RateLimitBucketAPI, testRateKnob, &recordingLogger{})(
-		RateLimiterHandler(rate, RateLimitBucketIngest, testRateKnob, &recordingLogger{})(okHandler()),
-	)
+func rateLimitOpts(rate limiter.RateLimiter, logger log.Logger) *types.APIOptions {
+	return &types.APIOptions{
+		Rate:     rate,
+		Logger:   logger,
+		Licenser: noopLicenser.NewLicenser(),
+	}
 }
 
 func serve(handler http.Handler) *httptest.ResponseRecorder {
@@ -131,13 +166,47 @@ func serve(handler http.Handler) *httptest.ResponseRecorder {
 	return w
 }
 
-func TestRateLimiterHandlerChargesEachBucketOnce(t *testing.T) {
+// rateLimitCount reads one bucket and outcome sample from the registry the
+// /metrics endpoint serves, so the assertion covers registration as well as the
+// increment. Tests compare a delta rather than an absolute value, so they do not
+// depend on what other tests in the binary recorded.
+func rateLimitCount(t *testing.T, bucket, outcome string) float64 {
+	t.Helper()
+
+	m := metrics.GetDPInstance(noopLicenser.NewLicenser())
+	require.True(t, m.IsEnabled, "metrics must be enabled to assert rate limiter counters")
+
+	families, err := metrics.Reg().Gather()
+	require.NoError(t, err)
+
+	for _, family := range families {
+		if family.GetName() != "convoy_rate_limit_total" {
+			continue
+		}
+
+		for _, sample := range family.GetMetric() {
+			labels := map[string]string{}
+			for _, label := range sample.GetLabel() {
+				labels[label.GetName()] = label.GetValue()
+			}
+
+			if labels["bucket"] == bucket && labels["outcome"] == outcome {
+				return sample.GetCounter().GetValue()
+			}
+		}
+	}
+
+	return 0
+}
+
+func TestRateLimiterHandlerChargesItsOwnBucketOnce(t *testing.T) {
 	rate := newCountingLimiter()
+	handler := RateLimiterHandler(rateLimitOpts(rate, &recordingLogger{}), RateLimitBucketIngest, testRateKnob, FailOpen)(okHandler())
 
-	require.Equal(t, http.StatusOK, serve(eventsStack(rate)).Code)
+	require.Equal(t, http.StatusOK, serve(handler).Code)
 
-	require.Equal(t, 1, rate.charged(RateLimitBucketAPI))
 	require.Equal(t, 1, rate.charged(RateLimitBucketIngest))
+	require.Equal(t, 0, rate.charged(RateLimitBucketAPI))
 }
 
 // Each mount point owns its bucket, so exhausting one must not reject the
@@ -155,8 +224,9 @@ func TestRateLimiterHandlerBucketsAreIndependent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			rate := newCountingLimiter()
-			exhausted := RateLimiterHandler(rate, tc.exhausted, testRateKnob, &recordingLogger{})(okHandler())
-			unaffected := RateLimiterHandler(rate, tc.unaffected, testRateKnob, &recordingLogger{})(okHandler())
+			opts := rateLimitOpts(rate, &recordingLogger{})
+			exhausted := RateLimiterHandler(opts, tc.exhausted, testRateKnob, FailClosed)(okHandler())
+			unaffected := RateLimiterHandler(opts, tc.unaffected, testRateKnob, FailClosed)(okHandler())
 
 			for i := 0; i < testWindowGrant; i++ {
 				require.Equal(t, http.StatusOK, serve(exhausted).Code)
@@ -172,13 +242,13 @@ func TestRateLimiterHandlerBucketsAreIndependent(t *testing.T) {
 // shared one bucket every request spent two tokens, halving it.
 func TestRateLimiterHandlerEffectiveLimitMatchesConfiguredRate(t *testing.T) {
 	rate := newCountingLimiter()
-	stack := eventsStack(rate)
+	handler := RateLimiterHandler(rateLimitOpts(rate, &recordingLogger{}), RateLimitBucketAPI, testRateKnob, FailClosed)(okHandler())
 
 	for i := 0; i < testWindowGrant; i++ {
-		require.Equal(t, http.StatusOK, serve(stack).Code, "request %d rejected before the configured limit", i+1)
+		require.Equal(t, http.StatusOK, serve(handler).Code, "request %d rejected before the configured limit", i+1)
 	}
 
-	require.Equal(t, http.StatusTooManyRequests, serve(stack).Code)
+	require.Equal(t, http.StatusTooManyRequests, serve(handler).Code)
 }
 
 // RFC 9110 wants delta-seconds. A Unix timestamp here reads as roughly 56,000
@@ -196,7 +266,8 @@ func TestRateLimiterHandlerRetryAfterIsDeltaSeconds(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			handler := RateLimiterHandler(rejectingLimiter{delay: tc.delay}, RateLimitBucketAPI, testRateKnob, &recordingLogger{})(okHandler())
+			opts := rateLimitOpts(rejectingLimiter{delay: tc.delay}, &recordingLogger{})
+			handler := RateLimiterHandler(opts, RateLimitBucketAPI, testRateKnob, FailClosed)(okHandler())
 
 			w := serve(handler)
 			require.Equal(t, http.StatusTooManyRequests, w.Code)
@@ -212,28 +283,67 @@ func TestRateLimiterHandlerRetryAfterIsDeltaSeconds(t *testing.T) {
 	}
 }
 
-// A saturated limiter backend and a genuine limit hit both return 429, so the
-// log is the only thing that tells an operator which one happened.
-func TestRateLimiterHandlerDistinguishesBackendFailureFromLimitHit(t *testing.T) {
-	t.Run("backend failure logs an error", func(t *testing.T) {
-		logger := &recordingLogger{}
-		handler := RateLimiterHandler(failingLimiter{}, RateLimitBucketIngest, testRateKnob, logger)(okHandler())
+// A genuine limit hit is a 429 whatever the mount's policy. Only the backend
+// failure branch differs, so a fail open mount must not become unlimited.
+func TestRateLimiterHandlerRejectsLimitHitUnderEveryPolicy(t *testing.T) {
+	tests := []struct {
+		name   string
+		policy RateLimiterFailurePolicy
+	}{
+		{name: "fail closed", policy: FailClosed},
+		{name: "fail open", policy: FailOpen},
+	}
 
-		// Failure policy stays fail closed: an unreachable limiter still 429s.
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := &recordingLogger{}
+			before := rateLimitCount(t, RateLimitBucketIngest, metrics.RateLimitOutcomeRejected)
+
+			opts := rateLimitOpts(rejectingLimiter{delay: time.Second}, logger)
+			handler := RateLimiterHandler(opts, RateLimitBucketIngest, testRateKnob, tc.policy)(okHandler())
+
+			require.Equal(t, http.StatusTooManyRequests, serve(handler).Code)
+
+			require.Empty(t, logger.errors)
+			require.Len(t, logger.debugs, 1)
+			require.Equal(t, before+1, rateLimitCount(t, RateLimitBucketIngest, metrics.RateLimitOutcomeRejected))
+		})
+	}
+}
+
+// A saturated limiter backend and a genuine limit hit are indistinguishable in
+// the response, so the log level, the message and the counter outcome are the
+// only things that tell an operator which one happened.
+func TestRateLimiterHandlerBackendFailureFollowsMountPolicy(t *testing.T) {
+	t.Run("fail open admits the request", func(t *testing.T) {
+		logger := &recordingLogger{}
+		before := rateLimitCount(t, RateLimitBucketIngest, metrics.RateLimitOutcomeBackendError)
+
+		opts := rateLimitOpts(failingLimiter{}, logger)
+		handler := RateLimiterHandler(opts, RateLimitBucketIngest, testRateKnob, FailOpen)(okHandler())
+
+		require.Equal(t, http.StatusOK, serve(handler).Code)
+
+		require.Len(t, logger.errors, 1)
+		require.Contains(t, logger.errors[0], "fail open")
+		require.Empty(t, logger.debugs)
+		require.Contains(t, logger.fields, RateLimitBucketIngest)
+		require.Equal(t, before+1, rateLimitCount(t, RateLimitBucketIngest, metrics.RateLimitOutcomeBackendError))
+	})
+
+	t.Run("fail closed still rejects the request", func(t *testing.T) {
+		logger := &recordingLogger{}
+		before := rateLimitCount(t, RateLimitBucketAPI, metrics.RateLimitOutcomeBackendError)
+
+		opts := rateLimitOpts(failingLimiter{}, logger)
+		handler := RateLimiterHandler(opts, RateLimitBucketAPI, testRateKnob, FailClosed)(okHandler())
+
 		require.Equal(t, http.StatusTooManyRequests, serve(handler).Code)
 
 		require.Len(t, logger.errors, 1)
+		require.Contains(t, logger.errors[0], "fail closed")
 		require.Empty(t, logger.debugs)
-		require.Contains(t, logger.fields, RateLimitBucketIngest)
-	})
-
-	t.Run("limit hit does not log an error", func(t *testing.T) {
-		logger := &recordingLogger{}
-		handler := RateLimiterHandler(rejectingLimiter{delay: time.Second}, RateLimitBucketIngest, testRateKnob, logger)(okHandler())
-
-		require.Equal(t, http.StatusTooManyRequests, serve(handler).Code)
-
-		require.Empty(t, logger.errors)
-		require.Len(t, logger.debugs, 1)
+		require.Contains(t, logger.fields, RateLimitBucketAPI)
+		require.Equal(t, before+1, rateLimitCount(t, RateLimitBucketAPI, metrics.RateLimitOutcomeBackendError))
 	})
 }

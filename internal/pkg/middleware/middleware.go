@@ -159,28 +159,56 @@ const (
 	RateLimitBucketIngest = "instance-ingest"
 )
 
-// Failure policy: fail closed. A limiter backend failure (Redis unreachable,
-// timeout) is rejected with 429 exactly like an over-limit request, so an
-// outage of the limiter becomes an outage of every route it guards. That is
-// deliberate, not an oversight; changing it is a product decision. The two
-// cases are indistinguishable in the response, so they are logged apart.
-func RateLimiterHandler(rateLimiter limiter.RateLimiter, bucketKey string, httpApiRateLimit int, logger log.Logger) func(next http.Handler) http.Handler {
+// RateLimiterFailurePolicy selects what happens when the limiter backend itself
+// fails (unreachable, timed out, saturated), which is a different outcome from a
+// genuine over-limit result. A genuine over-limit result is always a 429,
+// whichever policy the mount carries.
+type RateLimiterFailurePolicy int
+
+const (
+	// FailClosed rejects with 429 when the limiter backend fails. Correct where
+	// a rejected request only costs the caller a retry.
+	FailClosed RateLimiterFailurePolicy = iota
+
+	// FailOpen admits the request when the limiter backend fails. Correct on
+	// event intake, where a rejected request destroys a customer event the
+	// sender usually cannot replay.
+	FailOpen
+)
+
+// RateLimiterHandler meters requests into bucketKey and applies policy when the
+// limiter backend fails. Every mount states its policy explicitly, because the
+// policy is a property of the request path: a fail-open mount buys nothing if a
+// sibling limiter on the same path still fails closed. The two rejection causes
+// are indistinguishable in the response, so they are logged and counted apart.
+func RateLimiterHandler(a *types.APIOptions, bucketKey string, httpApiRateLimit int, policy RateLimiterFailurePolicy) func(next http.Handler) http.Handler {
 	duration := 60
 	rateLimit := httpApiRateLimit * duration
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := rateLimiter.AllowWithDuration(r.Context(), bucketKey, rateLimit, duration)
+			err := a.Rate.AllowWithDuration(r.Context(), bucketKey, rateLimit, duration)
 			if err == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			if limiter.GetRawError(err) != limiter.ErrRateLimitExceeded {
-				logger.ErrorContext(r.Context(), "rate limiter backend failure, rejecting with 429",
+				metrics.GetDPInstance(a.Licenser).IncrementRateLimitTotal(bucketKey, metrics.RateLimitOutcomeBackendError)
+
+				if policy == FailOpen {
+					a.Logger.ErrorContext(r.Context(), "rate limiter backend failure, admitting request unmetered (fail open)",
+						"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path, "error", err.Error())
+					next.ServeHTTP(w, r)
+					return
+				}
+
+				a.Logger.ErrorContext(r.Context(), "rate limiter backend failure, rejecting with 429 (fail closed)",
 					"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path, "error", err.Error())
 			} else {
-				logger.DebugContext(r.Context(), "request rejected by rate limit",
+				metrics.GetDPInstance(a.Licenser).IncrementRateLimitTotal(bucketKey, metrics.RateLimitOutcomeRejected)
+
+				a.Logger.DebugContext(r.Context(), "request rejected by rate limit",
 					"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path)
 			}
 

@@ -29,6 +29,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
@@ -962,6 +963,96 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	//
 	// require.NotEmpty(s.T(), event.UID)
 	// require.Equal(s.T(), event.Endpoinints[0], endpointID)
+}
+
+// The event creation path must be charged to the ingest bucket and nothing else.
+// While it also sat under the projects router's limiter, every event write spent
+// a token of the API bucket too, so api_rate_limit capped the primary event
+// intake and its fail closed policy governed the path.
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_ChargesIngestBucketOnly() {
+	rate := &recordingRateLimiter{}
+	originalRate := s.ConvoyApp.A.Rate
+	s.ConvoyApp.A.Rate = rate
+	defer func() { s.ConvoyApp.A.Rate = originalRate }()
+
+	endpointID := ulid.Make().String()
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+	require.Equal(s.T(), []string{middleware.RateLimitBucketIngest}, rate.charged())
+}
+
+// The whole point of the ingest policy. With the limiter backend down, the event
+// still lands, after traversing every middleware the real router puts on this
+// path. A single fail closed limiter anywhere on the path returns 429 here.
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_LimiterBackendFailureFailsOpen() {
+	originalRate := s.ConvoyApp.A.Rate
+	s.ConvoyApp.A.Rate = failingRateLimiter{}
+	defer func() { s.ConvoyApp.A.Rate = originalRate }()
+
+	endpointID := ulid.Make().String()
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+}
+
+// Fail open covers backend failures only. A genuine limit hit still rejects, so
+// the ingest surface is rate limited, not exempt.
+func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_GenuineLimitHitIsRejected() {
+	originalRate := s.ConvoyApp.A.Rate
+	s.ConvoyApp.A.Rate = rejectingRateLimiter{}
+	defer func() { s.ConvoyApp.A.Rate = originalRate }()
+
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, ulid.Make().String())
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), http.StatusTooManyRequests, w.Code)
+	require.Equal(s.T(), "1", w.Header().Get("Retry-After"))
+}
+
+// The API surface keeps the opposite policy. Reading events costs the caller a
+// retry, not an event, so a limiter backend failure still rejects here.
+func (s *PublicEventIntegrationTestSuite) Test_GetEventsPaged_LimiterBackendFailureFailsClosed() {
+	originalRate := s.ConvoyApp.A.Rate
+	s.ConvoyApp.A.Rate = failingRateLimiter{}
+	defer func() { s.ConvoyApp.A.Rate = originalRate }()
+
+	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), http.StatusTooManyRequests, w.Code)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_RejectsMissingDeliveryTarget() {
