@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"testing"
 
@@ -8,6 +10,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/mocks"
@@ -91,6 +94,41 @@ func TestEndpointWriteRepo_PlainRepoWithoutCache(t *testing.T) {
 
 	_, isCached := h.endpointWriteRepo().(*cached.CachedEndpointRepository)
 	require.False(t, isCached, "no cache available, so the plain repository is wired")
+}
+
+// Deleting an endpoint cascade deletes its subscriptions in SQL, so every
+// source-keyed list those subscriptions belong to has to be evicted. The ids
+// live only on the rows about to disappear, so they are read first.
+func TestSubscriptionSourceKeys(t *testing.T) {
+	subs := []datastore.Subscription{
+		{UID: "sub-1", SourceID: "src-a"},
+		{UID: "sub-2", SourceID: "src-b"},
+		{UID: "sub-3", SourceID: "src-a"}, // same source, one key
+		{UID: "sub-4"},                    // outgoing subscription, no source
+	}
+
+	ctrl := gomock.NewController(t)
+	repo := mocks.NewMockSubscriptionRepository(ctrl)
+	repo.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "proj-1", "ep-1").Return(subs, nil)
+
+	keys := subscriptionSourceKeys(context.Background(), logger.New("test", slog.LevelError), repo, "proj-1", "ep-1")
+
+	require.ElementsMatch(t, []string{
+		cached.SubscriptionsBySourceCacheKey("proj-1", "src-a"),
+		cached.SubscriptionsBySourceCacheKey("proj-1", "src-b"),
+	}, keys, "one key per distinct source, and none for subscriptions without a source")
+}
+
+// A read failure must not block the delete. The lists fall back to the TTL.
+func TestSubscriptionSourceKeys_ReadFailureEvictsNothing(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	repo := mocks.NewMockSubscriptionRepository(ctrl)
+	repo.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "proj-1", "ep-1").
+		Return(nil, errors.New("db down"))
+
+	keys := subscriptionSourceKeys(context.Background(), logger.New("test", slog.LevelError), repo, "proj-1", "ep-1")
+
+	require.Empty(t, keys)
 }
 
 // endpoints.New reads the process-wide key manager to decrypt secrets, so it

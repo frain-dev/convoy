@@ -12,8 +12,10 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/sources"
+	"github.com/frain-dev/convoy/pkg/cachedrepo"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -250,6 +252,12 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete source", http.StatusBadRequest))
 		return
+	}
+
+	// Deleting a source cascade deletes its subscriptions in SQL, below the cached
+	// repository, so nothing else evicts the list the match path reads by source id.
+	if h.A.Cache != nil {
+		cachedrepo.Invalidate(r.Context(), h.A.Cache, h.A.Logger, cached.SubscriptionsBySourceCacheKey(project.UID, source.UID))
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Source deleted successfully", nil, http.StatusOK))

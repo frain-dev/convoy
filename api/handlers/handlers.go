@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -90,6 +92,46 @@ func (h *Handler) filterWriteRepo() datastore.FilterRepository {
 		return repo
 	}
 	return cached.NewCachedFilterRepository(repo, h.A.Cache, cached.DefaultFilterTTL, h.A.Logger)
+}
+
+// subscriptionSourceKeys returns the source-keyed subscription list keys the
+// endpoint's subscriptions currently appear in.
+//
+// Deleting an endpoint cascade deletes its subscriptions in SQL, inside the
+// delete transaction and below the repository, so nothing evicts those lists.
+// The source ids exist only on the rows that are about to disappear, so they
+// have to be read first. This reads the raw repository because the cached list
+// is the thing being invalidated. A failure leaves the lists to the TTL rather
+// than blocking the delete.
+func (h *Handler) subscriptionSourceKeys(ctx context.Context, projectID, endpointID string) []string {
+	if h.A.Cache == nil {
+		return nil
+	}
+	return subscriptionSourceKeys(ctx, h.A.Logger, subscriptions.New(h.A.Logger, h.A.DB), projectID, endpointID)
+}
+
+func subscriptionSourceKeys(ctx context.Context, log logger.Logger, repo datastore.SubscriptionRepository, projectID, endpointID string) []string {
+	subs, err := repo.FindSubscriptionsByEndpointID(ctx, projectID, endpointID)
+	if err != nil {
+		log.ErrorContext(ctx, "failed to read subscriptions before endpoint delete, source lists left to expire",
+			"error", err, "project_id", projectID, "endpoint_id", endpointID)
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(subs))
+	keys := make([]string, 0, len(subs))
+	for i := range subs {
+		sourceID := subs[i].SourceID
+		if sourceID == "" {
+			continue
+		}
+		if _, dup := seen[sourceID]; dup {
+			continue
+		}
+		seen[sourceID] = struct{}{}
+		keys = append(keys, cached.SubscriptionsBySourceCacheKey(projectID, sourceID))
+	}
+	return keys
 }
 
 // endpointWriteRepo returns the endpoint repository endpoint mutations must go
