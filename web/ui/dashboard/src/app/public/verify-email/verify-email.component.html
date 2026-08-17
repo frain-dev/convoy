@@ -14,12 +14,22 @@
 			</button>
 		} @else {
 			<p class="font-body font-normal text-[20px] leading-[24px] text-new.text-secondary">Your email verification failed</p>
+			@if (token) {
+				<button
+					type="button"
+					class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50"
+					[disabled]="isResendingEmail"
+					(click)="resendVerificationEmail()"
+					>
+					{{ isResendingEmail ? 'Sending...' : 'Resend Email' }}
+				</button>
+			}
 			<button
 				type="button"
-				class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
-				routerLink="/"
+				class="w-full px-16px py-12px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+				routerLink="/login"
 				>
-				Resend Email
+				Back to login
 			</button>
 		}
 	</div>
