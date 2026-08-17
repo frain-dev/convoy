@@ -11,6 +11,25 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 )
 
+func TestProcessingBlocksSend(t *testing.T) {
+	tests := []struct {
+		name string
+		mode datastore.DeliveryMode
+		want bool
+	}{
+		{"at_most_once refuses and stays stranded", datastore.AtMostOnceDeliveryMode, true},
+		{"at_least_once resends a reclaimed dispatch", datastore.AtLeastOnceDeliveryMode, false},
+		{"unset mode is unknown and refuses", datastore.DeliveryMode(""), true},
+		{"unrecognised mode is unknown and refuses", datastore.DeliveryMode("sometimes"), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, processingBlocksSend(tt.mode))
+		})
+	}
+}
+
 func TestEventDeliveryForDispatchSkipsReloadOnFirstAttempt(t *testing.T) {
 	t.Parallel()
 

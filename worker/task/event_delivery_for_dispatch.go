@@ -33,3 +33,25 @@ func eventDeliveryForDispatch(
 	}
 	return repo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
 }
+
+// processingBlocksSend reports whether finding a delivery already marked
+// Processing must abandon this dispatch.
+//
+// Every delivery writes the Processing marker before dispatch, so a worker that
+// dies mid-dispatch leaves the row in Processing and the queue hands the job
+// back once its lease expires.
+//
+// Failure policy: at-most-once refuses. It cannot tell "died before the request
+// went out" from "died after the endpoint received it", and it must never send
+// twice, so it leaves the delivery stranded in Processing until an operator
+// retries it. That stranding is the cost of the guarantee. At-least-once
+// resends: its contract permits a duplicate but not a silent loss, and losing
+// the delivery is exactly what refusing would do here. An absent or
+// unrecognised mode is unknown, not at-least-once, and refuses.
+//
+// The resend window is the queue's lease timeout, so a live-but-slow endpoint
+// whose lease expires mid-dispatch can be sent twice. That is inherent to
+// lease-based reclaim rather than to this check, and lease timeout is the knob.
+func processingBlocksSend(mode datastore.DeliveryMode) bool {
+	return mode != datastore.AtLeastOnceDeliveryMode
+}

@@ -278,6 +278,51 @@ func TestPostgresConsumerRenewsLeaseWhileHandlerRuns(t *testing.T) {
 	c.Stop()
 }
 
+type claimLimitSpyQueue struct {
+	claimBatchSize int
+}
+
+func (s *claimLimitSpyQueue) Claim(context.Context, []string, int) ([]queue.ClaimedJob, error) {
+	return nil, nil
+}
+func (s *claimLimitSpyQueue) Complete(context.Context, string) error { return nil }
+func (s *claimLimitSpyQueue) Retry(context.Context, string, time.Time, bool, string) error {
+	return nil
+}
+func (s *claimLimitSpyQueue) Archive(context.Context, string, string) error { return nil }
+func (s *claimLimitSpyQueue) Release(context.Context, []string) error       { return nil }
+func (s *claimLimitSpyQueue) ReclaimStuck(context.Context) (int64, error)   { return 0, nil }
+func (s *claimLimitSpyQueue) Heartbeat(context.Context, []string) error     { return nil }
+func (s *claimLimitSpyQueue) LeaseTimeout() time.Duration                   { return time.Minute }
+func (s *claimLimitSpyQueue) ClaimBatchSize() int {
+	if s.claimBatchSize == 0 {
+		return 64
+	}
+	return s.claimBatchSize
+}
+func (s *claimLimitSpyQueue) PollIdle() time.Duration { return time.Millisecond }
+func (s *claimLimitSpyQueue) Wake() <-chan struct{}   { return nil }
+
+func TestPostgresConsumerUsesConfiguredPoolAndClaimBatch(t *testing.T) {
+	spy := &claimLimitSpyQueue{claimBatchSize: 256}
+	backend := &postgresConsumerBackend{queue: spy}
+
+	got, err := backend.newRunner(
+		context.Background(),
+		256,
+		map[string]int{string(convoy.EventQueue): 1},
+		asynq.NewServeMux(),
+		log.New("postgres-config-test", log.LevelError),
+		log.LevelError,
+	)
+	require.NoError(t, err)
+
+	r := got.(*postgresRunner)
+	require.Equal(t, 256, r.poolSize)
+	require.Equal(t, 256, r.claimBatchSize)
+	require.Equal(t, 256, r.claimLimit)
+}
+
 func TestPrioritizeQueueMovesPreferredFirst(t *testing.T) {
 	names := []string{"create", "default", "event"}
 	require.Equal(t,

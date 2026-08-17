@@ -5,6 +5,7 @@ import (
 	"maps"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -87,7 +88,11 @@ type postgresRunner struct {
 	log      log.Logger
 
 	claimBatchSize int
+	claimLimit     int
 	pollIdle       time.Duration
+
+	claimCount atomic.Uint64
+	claimJobs  atomic.Uint64
 
 	tasks chan queue.ClaimedJob
 	quit  chan struct{}
@@ -105,6 +110,7 @@ type postgresRunner struct {
 	pollerWg    sync.WaitGroup
 	workerWg    sync.WaitGroup
 	heartbeatWg sync.WaitGroup
+	statsWg     sync.WaitGroup
 	start       sync.Once
 	stop        sync.Once
 }
@@ -113,6 +119,17 @@ func (b *postgresConsumerBackend) newRunner(ctx context.Context, poolSize int, n
 	if poolSize <= 0 {
 		poolSize = 1
 	}
+	claimBatchSize := b.queue.ClaimBatchSize()
+	claimLimit := claimBatchSize
+	if poolSize < claimLimit {
+		claimLimit = poolSize
+	}
+	lo.Infof(
+		"Postgres consumer configured with pool size %d and claim batch size %d (claim limit %d).",
+		poolSize,
+		claimBatchSize,
+		claimLimit,
+	)
 	return &postgresRunner{
 		ctx:            ctx,
 		poolSize:       poolSize,
@@ -120,7 +137,8 @@ func (b *postgresConsumerBackend) newRunner(ctx context.Context, poolSize int, n
 		names:          names,
 		mux:            mux,
 		log:            lo,
-		claimBatchSize: b.queue.ClaimBatchSize(),
+		claimBatchSize: claimBatchSize,
+		claimLimit:     claimLimit,
 		pollIdle:       b.queue.PollIdle(),
 		heartbeatEvery: heartbeatInterval(b.queue.LeaseTimeout()),
 		tasks:          make(chan queue.ClaimedJob, poolSize),
@@ -140,6 +158,8 @@ func (r *postgresRunner) Start() error {
 		go r.poll()
 		r.heartbeatWg.Add(1)
 		go r.heartbeat()
+		r.statsWg.Add(1)
+		go r.claimStatsLoop()
 	})
 	return nil
 }
@@ -148,11 +168,49 @@ func (r *postgresRunner) Stop() {
 	r.stop.Do(func() {
 		close(r.quit)
 		r.pollerWg.Wait()
+		r.statsWg.Wait()
 		close(r.tasks)
 		r.workerWg.Wait()
 		close(r.heldQuit)
 		r.heartbeatWg.Wait()
 	})
+}
+
+func (r *postgresRunner) recordClaimBatch(n int) {
+	r.claimCount.Add(1)
+	r.claimJobs.Add(uint64(n))
+}
+
+// claimStatsLoop logs the actual rows returned by Claim, not pg_stat_statements
+// aggregates diluted by idle polls after the run ends.
+func (r *postgresRunner) claimStatsLoop() {
+	defer r.statsWg.Done()
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	var lastClaims, lastJobs uint64
+	for {
+		select {
+		case <-r.quit:
+			return
+		case <-ticker.C:
+		}
+
+		claims := r.claimCount.Load()
+		jobs := r.claimJobs.Load()
+		deltaClaims := claims - lastClaims
+		deltaJobs := jobs - lastJobs
+		lastClaims, lastJobs = claims, jobs
+		if deltaClaims == 0 {
+			continue
+		}
+		per := float64(deltaJobs) / float64(deltaClaims)
+		r.log.Infof(
+			"Postgres claim batches: %d claims, %d jobs, %.1f jobs/claim (limit=%d).",
+			deltaClaims, deltaJobs, per, r.claimLimit,
+		)
+	}
 }
 
 func (r *postgresRunner) poll() {
@@ -164,10 +222,7 @@ func (r *postgresRunner) poll() {
 	}
 	priorities := queue.PriorityCycle(r.names)
 	priorityIndex := 0
-	limit := r.claimBatchSize
-	if r.poolSize < limit {
-		limit = r.poolSize
-	}
+	limit := r.claimLimit
 
 	reclaimTicker := time.NewTicker(postgresReclaimInterval)
 	defer reclaimTicker.Stop()
@@ -197,6 +252,7 @@ func (r *postgresRunner) poll() {
 			r.idle()
 			continue
 		}
+		r.recordClaimBatch(len(jobs))
 
 		var unsent []string
 		for i, job := range jobs {

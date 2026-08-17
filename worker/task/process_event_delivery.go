@@ -205,10 +205,17 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 		attributes["event.id"] = eventDelivery.EventID
 
 		switch eventDelivery.Status {
-		case datastore.ProcessingEventStatus,
-			datastore.SuccessEventStatus:
+		case datastore.SuccessEventStatus:
 			tracer.AddEvent(ctx, tracer.EventEventDeliverySuccess, attributes)
 			return nil
+		case datastore.ProcessingEventStatus:
+			// Reaching this state means an earlier attempt wrote the marker and did
+			// not finish, so the queue handed the job back after its lease expired.
+			// See processingBlocksSend for which modes may resend.
+			if processingBlocksSend(eventDelivery.DeliveryMode) {
+				tracer.AddEvent(ctx, tracer.EventEventDeliverySuccess, attributes)
+				return nil
+			}
 		}
 
 		err = deps.RateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
