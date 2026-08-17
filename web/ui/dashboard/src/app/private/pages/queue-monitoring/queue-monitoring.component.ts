@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostBinding, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminService, QueueTaskAction } from 'src/app/private/pages/admin/admin.service';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -120,7 +120,43 @@ export class QueueMonitoringComponent implements OnInit, OnDestroy {
 	isLoadingScheduler = false;
 
 	autoRefresh = false;
+	lastUpdated: Date | null = null;
 	private refreshTimer: ReturnType<typeof setInterval> | null = null;
+	private isRefreshing = false;
+
+	// Full screen is this page escaping the admin shell, not the admin shell
+	// getting wider: the task table wants room the other admin tabs do not, and
+	// widening the shell for all of them moves the sidebar when tabs change.
+	// The host element becomes the overlay, so no state is torn down and
+	// nothing refetches on the way in or out.
+	fullScreen = false;
+
+	@HostBinding('class') get hostClass(): string {
+		return this.fullScreen ? 'block fixed inset-0 z-50 overflow-y-auto bg-white-100 p-24px' : 'block';
+	}
+
+	@HostListener('document:keydown.escape')
+	exitFullScreen(): void {
+		if (this.fullScreen) this.setFullScreen(false);
+	}
+
+	toggleFullScreen(): void {
+		this.setFullScreen(!this.fullScreen);
+	}
+
+	// Full screen lives in the URL so a reload comes back the way the operator
+	// left it, and so the wide view can be shared as a link. Merging keeps the
+	// admin tab param, and a null clears the flag rather than leaving
+	// `full=0` behind.
+	private setFullScreen(on: boolean): void {
+		this.fullScreen = on;
+		this.router.navigate([], {
+			relativeTo: this.route,
+			queryParams: { queueFullScreen: on ? '1' : null },
+			queryParamsHandling: 'merge',
+			replaceUrl: true
+		});
+	}
 
 	// Only the newest task request may write the list. Paging fast, or clicking
 	// a second status while the first is in flight, otherwise leaves whichever
@@ -133,10 +169,13 @@ export class QueueMonitoringComponent implements OnInit, OnDestroy {
 		private readonly generalService: GeneralService,
 		private readonly rbacService: RbacService,
 		private readonly router: Router,
+		private readonly route: ActivatedRoute,
 		private readonly licenses: LicensesService
 	) {}
 
 	async ngOnInit(): Promise<void> {
+		this.fullScreen = this.route.snapshot.queryParams?.['queueFullScreen'] === '1';
+
 		const role = await this.rbacService.getUserRole();
 		if (role !== 'INSTANCE_ADMIN') {
 			this.router.navigateByUrl('/');
@@ -197,19 +236,37 @@ export class QueueMonitoringComponent implements OnInit, OnDestroy {
 		return this.tasks.length > 0 && this.tasks.every(task => this.selected.has(task.id));
 	}
 
-	async loadStats(): Promise<void> {
-		this.isLoadingStats = true;
+	// A chart of nothing is worse than no chart: the history endpoint fills
+	// every day in the window, so an idle queue still returns rows and would
+	// otherwise draw an empty plot with a date axis under it. Both charts ask
+	// whether there is anything to plot, not whether there is a response.
+	get hasQueueDepth(): boolean {
+		return (this.stats?.queues ?? []).some(queue => this.queueTotal(queue) > 0);
+	}
+
+	get hasHistory(): boolean {
+		const totals = this.historyTotals;
+		return totals.processed > 0 || totals.failed > 0;
+	}
+
+	// A background read is one the operator did not ask for, so it may not move
+	// anything but the data: no spinner, no disabled buttons, no collapsing the
+	// row they are reading. Only an explicit Refresh or a navigation shows work
+	// happening.
+	async loadStats(background = false): Promise<void> {
+		if (!background) this.isLoadingStats = true;
 		this.statsError = '';
 
 		try {
 			const response = await this.adminService.getQueueStats();
 			this.stats = response.data;
+			this.lastUpdated = new Date();
 		} catch (error) {
 			// Keep the last good stats on screen: an empty table would read as
 			// "no queues", which is a different fact from "the read failed".
 			this.statsError = typeof error === 'string' ? error : 'Could not load queue stats.';
 		} finally {
-			this.isLoadingStats = false;
+			if (!background) this.isLoadingStats = false;
 		}
 	}
 
@@ -353,11 +410,13 @@ export class QueueMonitoringComponent implements OnInit, OnDestroy {
 		this.searchInput = '';
 	}
 
-	async loadTasks(): Promise<void> {
+	async loadTasks(background = false): Promise<void> {
 		const request = ++this.taskRequest;
-		this.isLoadingTasks = true;
+		if (!background) {
+			this.isLoadingTasks = true;
+			this.expandedTask = '';
+		}
 		this.tasksError = '';
-		this.expandedTask = '';
 
 		try {
 			const response = await this.adminService.getQueueTasks(this.selectedQueue, this.selectedStatus, this.page, this.perPage, this.search);
@@ -365,14 +424,21 @@ export class QueueMonitoringComponent implements OnInit, OnDestroy {
 			this.tasks = response.data?.tasks ?? [];
 			this.hasNext = !!response.data?.has_next;
 			this.pruneSelection();
+			this.lastUpdated = new Date();
 		} catch (error) {
 			if (request !== this.taskRequest) return;
-			this.tasks = [];
-			this.hasNext = false;
-			this.selected.clear();
 			this.tasksError = typeof error === 'string' ? error : 'Could not load tasks.';
+			// A failed background tick leaves the last good page on screen. The
+			// rows already drawn are still the best answer available, and
+			// blanking them costs the operator the context to act on a
+			// transient error.
+			if (!background) {
+				this.tasks = [];
+				this.hasNext = false;
+				this.selected.clear();
+			}
 		} finally {
-			if (request === this.taskRequest) this.isLoadingTasks = false;
+			if (request === this.taskRequest && !background) this.isLoadingTasks = false;
 		}
 	}
 
@@ -552,14 +618,24 @@ export class QueueMonitoringComponent implements OnInit, OnDestroy {
 	// Refreshing pulls whichever view is open. It skips a tick while a read is
 	// already in flight so a slow broker cannot queue up requests, and it never
 	// fires while an action is running, which would reload the list underneath
-	// the operator mid-click.
+	// the operator mid-click. A hidden tab is not being read by anyone, so it
+	// polls nothing until it comes back.
 	private startAutoRefresh(): void {
 		this.stopAutoRefresh();
-		this.refreshTimer = setInterval(() => {
-			if (this.isBusy || this.runningAction || this.isRunningBulk) return;
-			if (this.isDrilledDown) this.loadTasks();
-			else this.loadStats();
-		}, 10000);
+		this.refreshTimer = setInterval(() => this.refreshTick(), 10000);
+	}
+
+	private async refreshTick(): Promise<void> {
+		if (this.isRefreshing || this.isBusy || this.runningAction || this.isRunningBulk) return;
+		if (document.hidden) return;
+
+		this.isRefreshing = true;
+		try {
+			if (this.isDrilledDown) await this.loadTasks(true);
+			else await this.loadStats(true);
+		} finally {
+			this.isRefreshing = false;
+		}
 	}
 
 	private stopAutoRefresh(): void {

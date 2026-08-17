@@ -11,6 +11,11 @@
 
   @if (licensed) {
     <div class="flex items-center gap-8px shrink-0">
+      <!-- Background refreshes deliberately show no spinner, so this is the
+           only signal that the numbers on screen are current. -->
+      @if (lastUpdated) {
+        <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary whitespace-nowrap">Updated {{ lastUpdated | date: 'h:mm:ss a' }}</span>
+      }
       <button
         type="button"
         class="px-12px py-10px rounded-full font-body font-medium text-[13px] leading-[16px] transition-all"
@@ -19,6 +24,15 @@
         (click)="toggleAutoRefresh()"
         >
         Auto
+      </button>
+      <button
+        type="button"
+        class="px-12px py-10px rounded-full font-body font-medium text-[13px] leading-[16px] transition-all"
+        [class]="fullScreen ? 'bg-new.primary-25 text-new.primary-400' : 'bg-new.surface-muted text-new.text-secondary hover:opacity-80'"
+        [title]="fullScreen ? 'Leave full screen (Esc)' : 'Fill the window, for wide task tables'"
+        (click)="toggleFullScreen()"
+        >
+        {{ fullScreen ? 'Exit full screen' : 'Full screen' }}
       </button>
       <button
         type="button"
@@ -47,14 +61,18 @@
 
   <!-- Landing view: one row per queue, one column per status the provider serves -->
   @if (!isDrilledDown) {
-    @if (stats && stats.queues.length) {
+    @if (stats && stats.queues.length && hasQueueDepth) {
       <div class="bg-white-100 border border-new.border rounded-12px p-20px mb-16px">
         <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-16px">Queue size</p>
-        <div class="flex items-end gap-12px h-[120px]">
+        <!-- The bar scales against its own track, not against the whole
+             column, so a full-height bar cannot push the labels out of the box. -->
+        <div class="flex items-end gap-12px">
           @for (bar of queueSizeBars; track bar.label) {
-            <div class="flex-1 flex flex-col items-center justify-end gap-8px h-full min-w-0" [title]="bar.title">
+            <div class="flex-1 flex flex-col items-center gap-8px min-w-0" [title]="bar.title">
               <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary">{{ bar.queued }}</span>
-              <div class="w-full max-w-[64px] rounded-t-[4px] bg-new.primary-400 transition-all" [style.height.%]="bar.height"></div>
+              <div class="w-full h-[96px] flex items-end justify-center">
+                <div class="w-full max-w-[64px] rounded-t-[4px] bg-new.primary-400 transition-all" [style.height.%]="bar.height"></div>
+              </div>
               <span class="w-full font-body font-normal text-[12px] leading-[16px] text-new.text-secondary text-center truncate">{{ bar.label }}</span>
             </div>
           }
@@ -226,13 +244,13 @@
 
       @if (isLoadingHistory && !history.length) {
         <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Loading throughput.</p>
-      } @else if (!history.length) {
-        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">No throughput recorded for this queue yet.</p>
+      } @else if (!hasHistory) {
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Nothing has finished in this queue over the last {{ historyDays }} days. Counts appear here once tasks complete or fail.</p>
       } @else {
-        <div class="flex items-end gap-8px h-[120px]">
+        <div class="flex items-end gap-8px">
           @for (bar of historyBars; track bar.label) {
-            <div class="flex-1 flex flex-col items-center justify-end gap-6px h-full min-w-0" [title]="bar.title">
-              <div class="w-full flex items-end justify-center gap-2px h-full">
+            <div class="flex-1 flex flex-col items-center gap-6px min-w-0" [title]="bar.title">
+              <div class="w-full flex items-end justify-center gap-2px h-[100px]">
                 <div class="w-1/2 max-w-[18px] rounded-t-[3px] bg-new.primary-400" [style.height.%]="bar.processedHeight"></div>
                 <div class="w-1/2 max-w-[18px] rounded-t-[3px] bg-error-9" [style.height.%]="bar.failedHeight"></div>
               </div>
