@@ -92,7 +92,12 @@ const writeJobSQL = `
 		claimed_at = NULL,
 		last_error = NULL,
 		updated_at = NOW()
-	WHERE convoy.queue_jobs.status <> $9
+	WHERE (
+		convoy.queue_jobs.status <> $9
+		OR (convoy.queue_jobs.status = $9
+		    AND convoy.queue_jobs.queue_name = $13
+		    AND EXCLUDED.queue_name = $14)
+	)
 	  AND NOT (
 		convoy.queue_jobs.id LIKE $10
 		AND convoy.queue_jobs.status IN ($11, $12)
@@ -125,7 +130,12 @@ const writeJobsSQL = `
 		claimed_at = NULL,
 		last_error = NULL,
 		updated_at = NOW()
-	WHERE convoy.queue_jobs.status <> $9
+	WHERE (
+		convoy.queue_jobs.status <> $9
+		OR (convoy.queue_jobs.status = $9
+		    AND convoy.queue_jobs.queue_name = $13
+		    AND EXCLUDED.queue_name = $14)
+	)
 	  AND NOT (
 		convoy.queue_jobs.id LIKE $10
 		AND convoy.queue_jobs.status IN ($11, $12)
@@ -463,6 +473,7 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 		pq.ByteaArray(payloads), pq.StringArray(headers), pq.Int64Array(maxRetries),
 		pq.Float64Array(delays), statusPending, statusProcessing,
 		cronJobPrefix+"%", statusArchived, statusCompleted,
+		string(convoy.EventQueue), string(convoy.RetryEventQueue),
 	)
 	if err != nil {
 		return fillErrors(results, err)
@@ -495,7 +506,9 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 
 // skippedWriteResult explains a row the conflict guard rejected. A cron tick
 // that already fired is expected and idempotent; anything else is a job whose
-// active claim must resolve before it can be re-enqueued.
+// active claim must resolve before it can be re-enqueued on the same queue.
+// Cross-queue writes while processing are allowed: that is the EventQueue to
+// RetryEventQueue handoff ProcessEventDelivery performs in its defer.
 func skippedWriteResult(id string) error {
 	if len(id) >= len(cronJobPrefix) && id[:len(cronJobPrefix)] == cronJobPrefix {
 		return nil
@@ -516,6 +529,7 @@ func (q *PostgresQueue) execWrite(ctx context.Context, db sqlx.ExecerContext, re
 		req.id, req.taskName, req.queueName, req.payload, req.headers,
 		req.maxRetry, statusPending, req.delay, statusProcessing,
 		cronJobPrefix+"%", statusArchived, statusCompleted,
+		string(convoy.EventQueue), string(convoy.RetryEventQueue),
 	)
 	if err != nil {
 		return err

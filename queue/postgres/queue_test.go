@@ -452,6 +452,64 @@ func TestWriteDoesNotReplaceProcessing(t *testing.T) {
 	require.Empty(t, jobs)
 }
 
+func TestWriteHandoffsProcessingJobToRetryQueue(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID: id, Payload: []byte("delivery"),
+	}))
+
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	// ProcessEventDelivery's defer hands the in-flight row to RetryEventQueue
+	// before the consumer completes it. Same id, different queue_name.
+	require.NoError(t, q.Write(ctx, convoy.RetryEventProcessor, convoy.RetryEventQueue, &queue.Job{
+		ID: id, Payload: []byte("delivery"), Delay: 10 * time.Second,
+	}))
+
+	var queueName, status string
+	require.NoError(t, q.db.QueryRowContext(ctx,
+		`SELECT queue_name, status FROM convoy.queue_jobs WHERE id = $1`, id,
+	).Scan(&queueName, &status))
+	require.Equal(t, string(convoy.RetryEventQueue), queueName)
+	require.Equal(t, statusPending, status)
+
+	jobs, err = q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Empty(t, jobs)
+
+	jobs, err = q.Claim(ctx, []string{string(convoy.RetryEventQueue)}, 1)
+	require.NoError(t, err)
+	require.Empty(t, jobs, "delayed retry must not be claimable yet")
+}
+
+func TestWriteDoesNotReplaceProcessingRetryWithEventQueue(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.RetryEventProcessor, convoy.RetryEventQueue, &queue.Job{
+		ID: id, Payload: []byte("delivery"),
+	}))
+
+	jobs, err := q.Claim(ctx, []string{string(convoy.RetryEventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	err = q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID: id, Payload: []byte("replacement"),
+	})
+	require.ErrorIs(t, err, ErrJobProcessing)
+
+	var queueName string
+	require.NoError(t, q.db.QueryRowContext(ctx,
+		`SELECT queue_name FROM convoy.queue_jobs WHERE id = $1`, id,
+	).Scan(&queueName))
+	require.Equal(t, string(convoy.RetryEventQueue), queueName)
+}
+
 func TestProcessingConflictDoesNotRollBackBatchedSiblings(t *testing.T) {
 	q := setupQueue(t)
 	ctx := context.Background()
