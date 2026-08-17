@@ -351,6 +351,49 @@ export class AdminService {
 		});
 	}
 
+	getQueueStats(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/stats`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getQueueTasks(queueName: string, status: string, page: number): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/tasks`,
+					method: 'get',
+					query: { status, page }
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	runQueueTaskAction(queueName: string, taskID: string, action: 'retry' | 'archive'): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/tasks/${encodeURIComponent(taskID)}/${action}`,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	listPartitionTables(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

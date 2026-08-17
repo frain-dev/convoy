@@ -20,13 +20,13 @@ import (
 )
 
 var (
-	_ queue.Queuer   = (*PostgresQueue)(nil)
-	_ queue.Monitor  = (*PostgresQueue)(nil)
-	_ queue.Archiver = (*PostgresQueue)(nil)
+	_ queue.Queuer    = (*PostgresQueue)(nil)
+	_ queue.Archiver  = (*PostgresQueue)(nil)
+	_ queue.Inspector = (*PostgresQueue)(nil)
 
 	// ErrTaskNotFound is returned by LastTaskError when no row matches.
 	// Failure policy: fail closed — unknown is not "no prior error".
-	ErrTaskNotFound = errors.New("postgres queue: task not found")
+	ErrTaskNotFound = queue.ErrTaskNotFound
 )
 
 const (

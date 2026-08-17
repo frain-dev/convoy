@@ -942,9 +942,15 @@ func Test_PostgresQueueValidation(t *testing.T) {
 			wantErr: "queue.postgres.write_concurrency (64) must be below database.max_open_conn (50) so queue writes cannot starve reads on the same pool",
 		},
 		{
-			// An unset pool means the driver default, which is unlimited, so
-			// there is no pool to starve.
-			name:  "unbounded pool skips the starvation check",
+			// An unset pool is bounded at DefaultMaxOpenConnections, so the
+			// starvation check still applies and is measured against it.
+			name:    "unset pool is measured against the default",
+			queue:   PostgresQueueConfiguration{WriteConcurrency: DefaultMaxOpenConnections},
+			pool:    0,
+			wantErr: fmt.Sprintf("queue.postgres.write_concurrency (%d) must be below database.max_open_conn (%d) so queue writes cannot starve reads on the same pool", DefaultMaxOpenConnections, DefaultMaxOpenConnections),
+		},
+		{
+			name:  "unset pool admits concurrency below the default",
 			queue: PostgresQueueConfiguration{WriteConcurrency: 64},
 			pool:  0,
 		},
@@ -963,6 +969,71 @@ func Test_PostgresQueueValidation(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_WorkerPoolUndersized(t *testing.T) {
+	tests := []struct {
+		name     string
+		provider QueueProvider
+		pool     int
+		workers  int
+		want     bool
+	}{
+		{
+			name:     "fewer connections than consumers",
+			provider: PostgresQueueProvider,
+			pool:     50,
+			workers:  100,
+			want:     true,
+		},
+		{
+			name:     "one connection per consumer",
+			provider: PostgresQueueProvider,
+			pool:     100,
+			workers:  100,
+		},
+		{
+			name:     "more connections than consumers",
+			provider: PostgresQueueProvider,
+			pool:     200,
+			workers:  100,
+		},
+		{
+			// An unset pool is not unlimited: the pool builder substitutes
+			// DefaultMaxOpenConnections, so the shortfall is real and the
+			// operator never named the number it is measured against.
+			name:     "unset pool below consumers",
+			provider: PostgresQueueProvider,
+			pool:     0,
+			workers:  DefaultMaxOpenConnections + 1,
+			want:     true,
+		},
+		{
+			name:     "unset pool above consumers",
+			provider: PostgresQueueProvider,
+			pool:     0,
+			workers:  DefaultMaxOpenConnections - 1,
+		},
+		{
+			// Redis mode draws no queue traffic from this pool, so the ratio
+			// carries no meaning there.
+			name:     "redis ignores the ratio",
+			provider: RedisQueueProvider,
+			pool:     50,
+			workers:  100,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := postgresQueueBaseConfig()
+			c.QueueProvider = tc.provider
+			c.Database.SetMaxOpenConnections = tc.pool
+			c.ConsumerPoolSize = tc.workers
+
+			require.Equal(t, tc.want, c.WorkerPoolUndersized())
 		})
 	}
 }

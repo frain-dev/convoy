@@ -195,6 +195,22 @@ type DatabaseConfiguration struct {
 	ReadReplicas ReadReplicaConfiguration `json:"read_replicas" envconfig:"CONVOY_DB_READ_REPLICAS"`
 }
 
+// DefaultMaxOpenConnections is the pool size an unset database.max_open_conn
+// resolves to. The pool builder substitutes it rather than leaving the pool
+// unbounded, so sizing checks must reason about it too.
+const DefaultMaxOpenConnections = 100
+
+// EffectiveMaxOpenConnections is the pool size a replica will actually run with.
+// Every check that compares concurrency against the pool must go through this
+// rather than reading SetMaxOpenConnections, which is 0 when unset and would
+// silently skip the comparison on the deployments most likely to need it.
+func (dc DatabaseConfiguration) EffectiveMaxOpenConnections() int {
+	if dc.SetMaxOpenConnections <= 0 {
+		return DefaultMaxOpenConnections
+	}
+	return dc.SetMaxOpenConnections
+}
+
 type QueueConfiguration struct {
 	Postgres PostgresQueueConfiguration `json:"postgres"`
 }
@@ -315,9 +331,7 @@ func validatePostgresQueue(c *Configuration) error {
 		return fmt.Errorf("queue.postgres.poll_idle_ms must be at least 1, got %d", q.PollIdleMs)
 	}
 
-	// An unset pool size means the driver default (unlimited), so there is
-	// nothing to starve and nothing to check.
-	if pool := c.Database.SetMaxOpenConnections; pool > 0 && q.WriteConcurrency >= pool {
+	if pool := c.Database.EffectiveMaxOpenConnections(); q.WriteConcurrency >= pool {
 		return fmt.Errorf(
 			"queue.postgres.write_concurrency (%d) must be below database.max_open_conn (%d) so queue writes cannot starve reads on the same pool",
 			q.WriteConcurrency, pool,
@@ -766,6 +780,23 @@ type Configuration struct {
 	Dispatcher                 DispatcherConfiguration     `json:"dispatcher"`
 	HCPVault                   HCPVaultConfig              `json:"hcp_vault"`
 	Billing                    BillingConfiguration        `json:"billing"`
+}
+
+// WorkerPoolUndersized reports whether a worker will run more consumers than
+// the connection pool can serve. In Postgres mode every consumer needs a
+// connection to claim and complete work, so below that ratio consumers block in
+// pgxpool.Acquire rather than on the database: 100 consumers against 50
+// connections halved drain rate in the lab.
+//
+// Failure policy: warn, do not reject. An undersized pool costs throughput but
+// stays correct, and the sizing rule pulls against the server's max_connections
+// on a small deployment, so an operator may have to make that trade
+// deliberately.
+func (c Configuration) WorkerPoolUndersized() bool {
+	if c.QueueProvider != PostgresQueueProvider {
+		return false
+	}
+	return c.Database.EffectiveMaxOpenConnections() < c.ConsumerPoolSize
 }
 
 func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {

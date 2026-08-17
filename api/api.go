@@ -575,6 +575,18 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/indexes", handler.ListIndexes)
 			adminRouter.Post("/indexes/rebuild", handler.StartIndexRebuild)
 			adminRouter.Get("/partitions/{runID}", handler.GetPartitionRun)
+
+			// Queue monitoring for the dashboard's native page. Both brokers
+			// implement the inspector, so these routes are provider-neutral.
+			// Instance-admin authorization lives in the handlers, like the
+			// sibling admin routes above.
+			adminRouter.Route("/queue", func(queueRouter chi.Router) {
+				queueRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+				queueRouter.Get("/stats", handler.GetQueueStats)
+				queueRouter.Get("/{queueName}/tasks", handler.GetQueueTasks)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/retry", handler.RetryQueueTask)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/archive", handler.ArchiveQueueTask)
+			})
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
@@ -914,24 +926,33 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		})
 	})
 
+	// Asynqmon. Redis-only: it reads redis directly, so the postgres broker
+	// leaves QueueMonitor nil and its operators use the dashboard's native
+	// queue page, which is served from /ui/admin/queue for both brokers.
 	router.Route("/queue", func(asynqRouter chi.Router) {
+		monitor := a.A.QueueMonitor
+		if monitor == nil {
+			return
+		}
 		asynqRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 		asynqRouter.Group(func(sessionRouter chi.Router) {
 			sessionRouter.Use(middleware.RequireAuth(handler.A.Logger))
 			sessionRouter.Post("/monitoring/session", handler.CreateQueueMonitoringSession)
 			sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
 		})
-
-		monitor := a.A.QueueMonitor
-		if monitor == nil {
-			return
-		}
+		// The embed route is reached by a browser navigation, which cannot
+		// carry an Authorization header, so it is gated on the cookie minted
+		// above for instance admins alone.
 		asynqRouter.Group(func(embedRouter chi.Router) {
 			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.QueueSessionStore)))
 			embedRouter.Handle("/monitoring/embed/*", monitor.MonitorWithRootPath("/queue/monitoring/embed"))
 		})
+		// The direct route carries the same instance-admin policy as minting an
+		// embed session, so both entrances to asynqmon agree on who may read
+		// queue contents.
 		asynqRouter.Group(func(monitorRouter chi.Router) {
 			monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
+			monitorRouter.Use(handler.RequireQueueMonitoringAdmin())
 			monitorRouter.Handle("/monitoring/*", monitor.Monitor())
 		})
 	})

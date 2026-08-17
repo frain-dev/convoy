@@ -149,6 +149,7 @@ func StartConvoyServer(a *cli.App) error {
 			DB:                         a.DB,
 			Queue:                      a.Queue,
 			QueueMonitor:               a.Broker.QueueMonitor,
+			QueueInspector:             a.Broker.QueueInspector,
 			Logger:                     lo,
 			Cache:                      a.Cache,
 			QueueSessionStore:          a.Broker.Cache,

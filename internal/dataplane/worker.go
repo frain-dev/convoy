@@ -101,6 +101,13 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, err
 	}
 
+	if cfg.WorkerPoolUndersized() {
+		lo.Warnf(
+			"database.max_open_conn (%d) is below consumer_pool_size (%d): consumers will block acquiring a connection instead of draining the queue. Raise max_open_conn to at least consumer_pool_size.",
+			cfg.Database.SetMaxOpenConnections, cfg.ConsumerPoolSize,
+		)
+	}
+
 	consumer, err := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, queueNames, opts.Broker.ConsumerBackend, lo, lvl)
 	if err != nil {
 		return nil, err

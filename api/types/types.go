@@ -45,6 +45,7 @@ type APIOptions struct {
 	CircuitBreakerStore        circuit_breaker.CircuitBreakerStore
 	Queue                      queue.Queuer
 	QueueMonitor               queue.Monitor
+	QueueInspector             queue.Inspector
 	Logger                     logger.Logger
 	Cache                      cache.Cache
 	QueueSessionStore          cache.AuthoritativeCache

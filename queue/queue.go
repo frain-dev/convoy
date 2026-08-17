@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -73,6 +74,35 @@ type Monitor interface {
 type Archiver interface {
 	DeleteArchived(ctx context.Context) error
 }
+
+var (
+	// ErrTaskNotFound means no row carries that task ID. Failure policy: fail
+	// closed. A lookup that errored is returned as itself, never reported as a
+	// missing task.
+	ErrTaskNotFound = errors.New("queue: task not found")
+
+	// ErrTaskStatusConflict means the row exists but is not in the status the
+	// requested action moves from.
+	ErrTaskStatusConflict = errors.New("queue: task is not in the required status")
+
+	// ErrCronTaskImmutable protects scheduler rows. A finished cron row is the
+	// tombstone that keeps one tick from being enqueued twice across replicas,
+	// so it is not an operator's to retry or archive.
+	ErrCronTaskImmutable = errors.New("queue: scheduler rows cannot be retried or archived")
+
+	// ErrUnknownTaskStatus rejects a status the running provider does not
+	// serve, rather than returning an empty page that reads as "nothing queued".
+	ErrUnknownTaskStatus = errors.New("queue: unknown task status")
+
+	// ErrQueueRequired rejects a drill-down that names no queue.
+	ErrQueueRequired = errors.New("queue: queue name is required")
+
+	// ErrQueueNotFound means the broker holds no queue under that name.
+	ErrQueueNotFound = errors.New("queue: queue not found")
+
+	// ErrInvalidPage rejects a page outside the bounded drill-down window.
+	ErrInvalidPage = errors.New("queue: page is out of range")
+)
 
 type Job struct {
 	ID      string        `json:"id"`

@@ -32,8 +32,12 @@ import (
 )
 
 type Dependencies struct {
-	Queue               queue.Queuer
+	Queue queue.Queuer
+	// QueueMonitor is asynqmon, which only the redis broker has. The postgres
+	// broker leaves it nil: its monitoring surface is QueueInspector, which
+	// both brokers implement and the dashboard renders natively.
 	QueueMonitor        queue.Monitor
+	QueueInspector      queue.Inspector
 	Cache               cache.AuthoritativeCache
 	RateLimiter         limiter.RateLimiter
 	CircuitBreakerStore circuit_breaker.CircuitBreakerStore
@@ -103,7 +107,7 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 
 	return &Dependencies{
 		Queue:               q,
-		QueueMonitor:        q,
+		QueueInspector:      q,
 		Cache:               c,
 		RateLimiter:         pglimiter.New(db),
 		CircuitBreakerStore: circuit_breaker.NewPostgresStore(db),
@@ -161,6 +165,7 @@ func newRedis(cfg config.Configuration, _ *sqlx.DB, logger log.Logger) (*Depende
 	return &Dependencies{
 		Queue:               q,
 		QueueMonitor:        q,
+		QueueInspector:      q,
 		Cache:               c,
 		RateLimiter:         rateLimiter,
 		CircuitBreakerStore: circuit_breaker.NewRedisStore(rd.Client(), clock.NewRealClock()),

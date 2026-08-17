@@ -138,6 +138,23 @@ func ValidateQueueSessionCookie(c cache.AuthoritativeCache) func(context.Context
 	}
 }
 
+// RequireQueueMonitoringAdmin is the single policy for every entrance to queue
+// monitoring: the native dashboard endpoints, the asynqmon mount, and minting
+// an embed session. Queue contents are instance-wide, so a page of tasks
+// carries the last error text of every org's deliveries; without one gate on
+// all entrances, an authenticated caller from any org could read them.
+// requireInstanceAdmin also refuses API keys, which carry no user.
+func (h *Handler) RequireQueueMonitoringAdmin() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !h.requireInstanceAdmin(w, r) {
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (h *Handler) requireInstanceAdmin(w http.ResponseWriter, r *http.Request) bool {
 	user, err := h.retrieveUser(r)
 	if err != nil {
