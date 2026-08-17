@@ -11,6 +11,7 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
@@ -33,10 +34,10 @@ return 0
 // ResendClaimStore serializes verification-email resends per user.
 // TryClaim returns (true, token, nil) when the claim is acquired.
 // Release must use the same token (compare-and-delete).
-type ResendClaimStore interface {
-	TryClaim(ctx context.Context, userUID string) (ok bool, token string, err error)
-	Release(ctx context.Context, userUID, token string) error
-}
+//
+// It aliases the API-side contract rather than restating it: the broker builds
+// the store and hands the same value to both layers, so the two must not drift.
+type ResendClaimStore = types.ResendClaimStore
 
 type redisResendClaimStore struct {
 	rdb redis.UniversalClient

@@ -11,7 +11,6 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/worker/task"
 )
 
 // jobLockMaxConns caps the dedicated advisory-lock pool. Callers are a fixed
@@ -19,12 +18,8 @@ import (
 // cannot starve the shared API/worker pool (default max 100).
 const jobLockMaxConns = 16
 
-// newPostgresJobLockerFromDB builds the postgres JobLocker. Production wires a
-// dedicated lock pool via newPostgresJobLockerFromConfig; tests may pass a mock DB.
-func newPostgresJobLockerFromDB(db *sqlx.DB, logger log.Logger) task.JobLocker {
-	return newPostgresJobLockerWithLimit(db, logger, jobLockMaxConns)
-}
-
+// newPostgresJobLockerWithLimit takes either the dedicated lock pool opened by
+// openJobLockDB or a mock DB from the tests.
 func newPostgresJobLockerWithLimit(db *sqlx.DB, logger log.Logger, maxConns int) *postgresJobLocker {
 	if maxConns <= 0 {
 		maxConns = jobLockMaxConns

@@ -115,18 +115,8 @@ func (b *redisConsumerBackend) newRunner(ctx context.Context, consumerPoolSize i
 			BaseContext: func() context.Context {
 				return ctx
 			},
-			Queues: queueNames,
-			IsFailure: func(err error) bool {
-				if _, ok := err.(*task.RateLimitError); ok {
-					return false
-				}
-
-				if _, ok := err.(*task.CircuitBreakerError); ok {
-					return false
-				}
-
-				return true
-			},
+			Queues:         queueNames,
+			IsFailure:      isCountedFailure,
 			RetryDelayFunc: task.GetRetryDelay,
 			Logger:         lo,
 			LogLevel:       getLogLevel(level),

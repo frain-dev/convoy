@@ -107,7 +107,7 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 		Cache:               c,
 		RateLimiter:         pglimiter.New(db),
 		CircuitBreakerStore: circuit_breaker.NewPostgresStore(db),
-		JobLocker:           newPostgresJobLockerFromDB(lockDB, logger),
+		JobLocker:           newPostgresJobLockerWithLimit(lockDB, logger, jobLockMaxConns),
 		Acker:               dynamiceventack.NewCacheAcker(c),
 		TrialEvents:         license.NewPostgresTrialEventLimiter(db, logger),
 		ConsumerBackend:     worker.NewPostgresConsumerBackend(q),

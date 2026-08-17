@@ -12,7 +12,6 @@ import (
 type Tracker interface {
 	GenerateBatchID() string
 	CreateBatch(context.Context, string, int64, string, string, string) error
-	UpdateProgress(context.Context, string, int64, int64) error
 	CompleteBatch(context.Context, string) error
 	FailBatch(context.Context, string, string) error
 	GetBatch(context.Context, string) (*BatchProgress, error)
@@ -42,14 +41,6 @@ func (t *PostgresTracker) CreateBatch(ctx context.Context, id string, total int6
 			(batch_id, status, total_count, processed_count, failed_count, start_time, status_filter, time_period, event_id, expires_at)
 		VALUES ($1, $2, $3, 0, 0, NOW(), $4, $5, $6, NOW() + INTERVAL '24 hours')`,
 		id, BatchStatusRunning, total, statusFilter, period, eventID)
-	return err
-}
-
-func (t *PostgresTracker) UpdateProgress(ctx context.Context, id string, processed, failed int64) error {
-	_, err := t.db.ExecContext(ctx, `
-		UPDATE convoy.batch_retry_progress
-		SET processed_count = $2, failed_count = $3
-		WHERE batch_id = $1`, id, processed, failed)
 	return err
 }
 
@@ -108,6 +99,10 @@ func (t *PostgresTracker) increment(ctx context.Context, id, column string, coun
 	return err
 }
 
+// SyncCounters has nothing to reconcile here: the Increment* methods update the
+// batch row in place, so the counters callers read are already authoritative.
+// The Redis tracker needs this because its counters live in keys separate from
+// the progress hash.
 func (t *PostgresTracker) SyncCounters(context.Context, string) error {
 	return nil
 }

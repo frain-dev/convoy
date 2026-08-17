@@ -548,10 +548,22 @@
       "default": "2"
     },
     {
+      "json_path": "queue.postgres.claim_batch_size",
+      "env_var": "CONVOY_POSTGRES_QUEUE_CLAIM_BATCH_SIZE",
+      "go_type": "int",
+      "default": "64"
+    },
+    {
       "json_path": "queue.postgres.lease_timeout_seconds",
       "env_var": "CONVOY_POSTGRES_QUEUE_LEASE_TIMEOUT_SECONDS",
       "go_type": "int",
       "default": "90"
+    },
+    {
+      "json_path": "queue.postgres.poll_idle_ms",
+      "env_var": "CONVOY_POSTGRES_QUEUE_POLL_IDLE_MS",
+      "go_type": "int",
+      "default": "5"
     },
     {
       "json_path": "queue.postgres.write_concurrency",

@@ -46,9 +46,12 @@ var monitorTmpl = template.Must(template.New("queue-monitor").Parse(`<!DOCTYPE h
 </html>`))
 
 func (q *PostgresQueue) Monitor() http.Handler {
-	return q.MonitorWithRootPath("/queue/monitoring")
+	return http.HandlerFunc(q.serveMonitor)
 }
 
+// MonitorWithRootPath ignores the mount path. Asynqmon needs it to rewrite the
+// asset and API URLs it embeds; this page carries no links, so it renders the
+// same wherever it is mounted.
 func (q *PostgresQueue) MonitorWithRootPath(_ string) http.Handler {
 	return http.HandlerFunc(q.serveMonitor)
 }

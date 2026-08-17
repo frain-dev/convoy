@@ -245,7 +245,7 @@ const (
 	minPostgresQueueLeaseTimeoutSecs = 30
 )
 
-// applyDefaults fills unset fields. It does not validate; see validate.
+// applyDefaults fills unset fields. Bounds are checked in validatePostgresQueue.
 func (q *PostgresQueueConfiguration) applyDefaults() {
 	if q.BatchSize == 0 {
 		q.BatchSize = DefaultPostgresQueueBatchSize
@@ -357,7 +357,7 @@ const (
 	maxPostgresCacheLocalReadTTLMs = 30000
 )
 
-// applyDefaults fills unset fields. It does not validate; see validate.
+// applyDefaults fills unset fields. Bounds are checked in validatePostgresCache.
 func (c *PostgresCacheConfiguration) applyDefaults() {
 	if c.LocalReadTTLMs == 0 {
 		c.LocalReadTTLMs = DefaultPostgresCacheLocalReadTTLMs

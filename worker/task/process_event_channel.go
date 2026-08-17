@@ -64,14 +64,15 @@ type EventChannelArgs struct {
 	taskRetryCount             int
 }
 
-const headerRetryCount = "X-Convoy-Retry-Count"
+// HeaderRetryCount is the task header the Postgres consumer stamps with the
+// attempt number. Redis has no equivalent: asynq carries it on the context.
+const HeaderRetryCount = "X-Convoy-Retry-Count"
 
 // matchTaskRetryCount reads how many times this queue job has already run.
-// Postgres workers stamp X-Convoy-Retry-Count; Redis asynq workers use ctx.
 func matchTaskRetryCount(ctx context.Context, t *asynq.Task) int {
 	if t != nil {
 		if headers := t.Headers(); headers != nil {
-			if v, ok := headers[headerRetryCount]; ok {
+			if v, ok := headers[HeaderRetryCount]; ok {
 				if n, err := strconv.Atoi(v); err == nil {
 					return n
 				}

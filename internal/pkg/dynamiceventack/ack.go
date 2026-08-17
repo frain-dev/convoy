@@ -24,7 +24,6 @@ var (
 	ErrNilAcker      = errors.New("dynamic event sync ack unavailable")
 	ErrNilRedis      = errors.New("redis client required for dynamic event sync ack")
 	ErrNilCache      = errors.New("cache required for dynamic event sync ack")
-	ErrCacheConsume  = errors.New("cache does not support atomic consume")
 	ErrInvalidCached = errors.New("invalid cached dynamic event ack")
 )
 
@@ -43,12 +42,15 @@ type redisAcker struct {
 	client redis.UniversalClient
 }
 
-type cacheAcker struct {
-	cache cache.Cache
+// ConsumingCache is what the cache-backed acker needs beyond cache.Cache: an
+// atomic read-and-delete, so exactly one waiter consumes a published result.
+type ConsumingCache interface {
+	cache.Cache
+	Consume(ctx context.Context, key string, dest interface{}) (bool, error)
 }
 
-type cacheConsumer interface {
-	Consume(ctx context.Context, key string, dest interface{}) (bool, error)
+type cacheAcker struct {
+	cache ConsumingCache
 }
 
 type cachedResult struct {
@@ -60,7 +62,7 @@ func NewRedisAcker(rdb redis.UniversalClient) Acker {
 	return &redisAcker{client: rdb}
 }
 
-func NewCacheAcker(brokerCache cache.Cache) Acker {
+func NewCacheAcker(brokerCache ConsumingCache) Acker {
 	return &cacheAcker{cache: brokerCache}
 }
 
@@ -92,10 +94,6 @@ func (a *cacheAcker) Wait(ctx context.Context, projectID, eventID string, timeou
 	}
 
 	key := redisKey(projectID, eventID)
-	consumer, ok := a.cache.(cacheConsumer)
-	if !ok {
-		return Result{}, ErrCacheConsume
-	}
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	ticker := time.NewTicker(cachePollInterval)
@@ -103,7 +101,7 @@ func (a *cacheAcker) Wait(ctx context.Context, projectID, eventID string, timeou
 
 	for {
 		var cached cachedResult
-		found, err := consumer.Consume(ctx, key, &cached)
+		found, err := a.cache.Consume(ctx, key, &cached)
 		if err != nil {
 			return Result{}, fmt.Errorf("wait for dynamic event ack: %w", err)
 		}

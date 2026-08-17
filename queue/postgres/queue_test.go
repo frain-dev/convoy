@@ -442,6 +442,59 @@ func TestRetryIncrementsCountAndReleases(t *testing.T) {
 	require.Equal(t, 1, jobs[0].RetryCount)
 }
 
+// Backpressure retries (rate limit, open circuit breaker) release the job
+// without spending an attempt, so retry_count must survive.
+func TestRetryWithoutIncrementLeavesRetryCount(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("x")}))
+
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	require.NoError(t, q.Retry(ctx, id, time.Now().Add(-time.Second), false, "rate limited"))
+
+	var retryCount int
+	var status string
+	var claimedAt *time.Time
+	var lastError *string
+	require.NoError(t, q.db.QueryRowContext(ctx,
+		`SELECT retry_count, status, claimed_at, last_error FROM convoy.queue_jobs WHERE id = $1`, id,
+	).Scan(&retryCount, &status, &claimedAt, &lastError))
+	require.Equal(t, 0, retryCount)
+	require.Equal(t, statusPending, status)
+	require.Nil(t, claimedAt)
+	require.NotNil(t, lastError)
+	require.Equal(t, "rate limited", *lastError)
+
+	jobs, err = q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	require.Equal(t, 0, jobs[0].RetryCount)
+}
+
+func TestRetryOnlyTouchesProcessingRows(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+
+	for _, incrementRetry := range []bool{false, true} {
+		id := ulid.Make().String()
+		require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("x")}))
+
+		require.NoError(t, q.Retry(ctx, id, time.Now().Add(time.Hour), incrementRetry, "should not apply"))
+
+		var retryCount int
+		var lastError *string
+		require.NoError(t, q.db.QueryRowContext(ctx,
+			`SELECT retry_count, last_error FROM convoy.queue_jobs WHERE id = $1`, id,
+		).Scan(&retryCount, &lastError))
+		require.Equal(t, 0, retryCount, "incrementRetry=%v", incrementRetry)
+		require.Nil(t, lastError, "incrementRetry=%v", incrementRetry)
+	}
+}
+
 func TestNewQueueRequiresDB(t *testing.T) {
 	_, err := NewQueue(queue.QueueOptions{Type: queue.ProviderPostgres})
 	require.Error(t, err)
@@ -576,21 +629,6 @@ func TestProcessingConflictDoesNotRollBackBatchedSiblings(t *testing.T) {
 	require.Equal(t, []byte("fresh"), payload)
 }
 
-func TestQueuePriorityCyclePreservesWeights(t *testing.T) {
-	q := setupQueue(t)
-	q.opts.Names = map[string]int{
-		"critical": 5,
-		"default":  2,
-		"low":      1,
-	}
-
-	cycle := q.QueuePriorityCycle()
-	require.Len(t, cycle, 8)
-	require.Equal(t, 5, countQueue(cycle, "critical"))
-	require.Equal(t, 2, countQueue(cycle, "default"))
-	require.Equal(t, 1, countQueue(cycle, "low"))
-}
-
 func TestClaimHonorsQueuePriorityOrder(t *testing.T) {
 	q := setupQueue(t)
 	ctx := context.Background()
@@ -609,16 +647,6 @@ func TestClaimHonorsQueuePriorityOrder(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, jobs, 1)
 	require.Equal(t, "event-priority", jobs[0].ID)
-}
-
-func countQueue(names []string, target string) int {
-	count := 0
-	for _, name := range names {
-		if name == target {
-			count++
-		}
-	}
-	return count
 }
 
 func TestDeleteEventDeliveriesFromQueueSkipsProcessing(t *testing.T) {

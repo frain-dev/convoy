@@ -30,7 +30,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -923,17 +922,17 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
 		})
 
-		embedHandler, monitorHandler := queueMonitorHandlers(a.A.QueueMonitor)
-		if embedHandler == nil {
+		monitor := a.A.QueueMonitor
+		if monitor == nil {
 			return
 		}
 		asynqRouter.Group(func(embedRouter chi.Router) {
 			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.QueueSessionStore)))
-			embedRouter.Handle("/monitoring/embed/*", embedHandler)
+			embedRouter.Handle("/monitoring/embed/*", monitor.MonitorWithRootPath("/queue/monitoring/embed"))
 		})
 		asynqRouter.Group(func(monitorRouter chi.Router) {
 			monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
-			monitorRouter.Handle("/monitoring/*", monitorHandler)
+			monitorRouter.Handle("/monitoring/*", monitor.Monitor())
 		})
 	})
 
@@ -951,13 +950,6 @@ func (a *ApplicationHandler) metricsHandler() http.HandlerFunc {
 		Registry: metrics.Reg(),
 	})
 	return h.ServeHTTP
-}
-
-func queueMonitorHandlers(m queue.Monitor) (http.Handler, http.Handler) {
-	if m == nil {
-		return nil, nil
-	}
-	return m.MonitorWithRootPath("/queue/monitoring/embed"), m.Monitor()
 }
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {

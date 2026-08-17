@@ -53,13 +53,13 @@ const (
 	// defaultMaxRetry matches asynq's unexported DefaultMaxRetry.
 	defaultMaxRetry = 25
 
-	// DefaultStuckTimeout is the claim lease. Consumers renew it while a handler
+	// defaultStuckTimeout is the claim lease. Consumers renew it while a handler
 	// runs, so it bounds how long a crashed worker's job stays unavailable
 	// rather than how long a handler may take. Failure policy: fail open, a
 	// job whose owner stopped renewing is returned to the queue. Keep this
 	// several heartbeat intervals wide so a slow database cannot expire the
 	// lease of a worker that is still alive and hand its job to a second one.
-	DefaultStuckTimeout = 90 * time.Second
+	defaultStuckTimeout = 90 * time.Second
 
 	// cronJobPrefix is the marker the scheduler writes into cron job IDs.
 	cronJobPrefix = queue.CronJobIDPrefix
@@ -187,67 +187,49 @@ type completeRequest struct {
 	result chan error
 }
 
-// resolvedTuning is opts.PostgresTuning with the package defaults filled in for
-// any field the caller left zero.
-type resolvedTuning struct {
-	batchSize        int
-	batchWait        time.Duration
-	writeConcurrency int
-	leaseTimeout     time.Duration
-	claimBatchSize   int
-	pollIdle         time.Duration
-}
-
-func tuning(t queue.PostgresTuning) resolvedTuning {
-	r := resolvedTuning{
-		batchSize:        t.BatchSize,
-		batchWait:        t.BatchWait,
-		writeConcurrency: t.WriteConcurrency,
-		leaseTimeout:     t.LeaseTimeout,
-		claimBatchSize:   t.ClaimBatchSize,
-		pollIdle:         t.PollIdle,
+// withDefaults fills every field the caller left zero with the package default.
+func withDefaults(t queue.PostgresTuning) queue.PostgresTuning {
+	if t.BatchSize < 1 {
+		t.BatchSize = defaultBatchSize
 	}
-	if r.batchSize < 1 {
-		r.batchSize = defaultBatchSize
+	if t.BatchWait < 1 {
+		t.BatchWait = defaultBatchWait
 	}
-	if r.batchWait < 1 {
-		r.batchWait = defaultBatchWait
+	if t.WriteConcurrency < 1 {
+		t.WriteConcurrency = defaultWriteConcurrency
 	}
-	if r.writeConcurrency < 1 {
-		r.writeConcurrency = defaultWriteConcurrency
+	if t.LeaseTimeout < 1 {
+		t.LeaseTimeout = defaultStuckTimeout
 	}
-	if r.leaseTimeout < 1 {
-		r.leaseTimeout = DefaultStuckTimeout
+	if t.ClaimBatchSize < 1 {
+		t.ClaimBatchSize = defaultClaimBatchSize
 	}
-	if r.claimBatchSize < 1 {
-		r.claimBatchSize = defaultClaimBatchSize
+	if t.PollIdle < 1 {
+		t.PollIdle = defaultPollIdle
 	}
-	if r.pollIdle < 1 {
-		r.pollIdle = defaultPollIdle
-	}
-	return r
+	return t
 }
 
 func NewQueue(opts queue.QueueOptions) (*PostgresQueue, error) {
 	if opts.DB == nil {
 		return nil, errMissingDB
 	}
-	t := tuning(opts.PostgresTuning)
+	t := withDefaults(opts.PostgresTuning)
 	q := &PostgresQueue{
 		db:             opts.DB,
 		opts:           opts,
-		stuckTimeout:   t.leaseTimeout,
-		batchSize:      t.batchSize,
-		batchWait:      t.batchWait,
-		claimBatchSize: t.claimBatchSize,
-		pollIdle:       t.pollIdle,
-		writes:         make(chan writeRequest, t.batchSize*t.writeConcurrency),
-		completions:    make(chan completeRequest, t.batchSize),
+		stuckTimeout:   t.LeaseTimeout,
+		batchSize:      t.BatchSize,
+		batchWait:      t.BatchWait,
+		claimBatchSize: t.ClaimBatchSize,
+		pollIdle:       t.PollIdle,
+		writes:         make(chan writeRequest, t.BatchSize*t.WriteConcurrency),
+		completions:    make(chan completeRequest, t.BatchSize),
 		quit:           make(chan struct{}),
 		done:           make(chan struct{}),
 	}
-	q.batcherWg.Add(t.writeConcurrency + 1)
-	for i := 0; i < t.writeConcurrency; i++ {
+	q.batcherWg.Add(t.WriteConcurrency + 1)
+	for i := 0; i < t.WriteConcurrency; i++ {
 		go q.runWriteBatcher()
 	}
 	go q.runCompleteBatcher()
@@ -396,6 +378,31 @@ func (q *PostgresQueue) write(ctx context.Context, taskName convoy.TaskName, que
 	return awaitResult(req.result, q.done)
 }
 
+// collectBatch fills a flush window that already holds first, taking at most
+// batchSize requests and waiting no longer than batchWait for the rest.
+func collectBatch[T any](first T, ch <-chan T, batchSize int, batchWait time.Duration) []T {
+	batch := []T{first}
+	timer := time.NewTimer(batchWait)
+	defer func() {
+		if !timer.Stop() {
+			select {
+			case <-timer.C:
+			default:
+			}
+		}
+	}()
+
+	for len(batch) < batchSize {
+		select {
+		case req := <-ch:
+			batch = append(batch, req)
+		case <-timer.C:
+			return batch
+		}
+	}
+	return batch
+}
+
 func (q *PostgresQueue) runWriteBatcher() {
 	defer q.batcherWg.Done()
 
@@ -411,24 +418,7 @@ func (q *PostgresQueue) runWriteBatcher() {
 			return
 		}
 
-		batch := []writeRequest{first}
-		timer := time.NewTimer(q.batchWait)
-
-	collect:
-		for len(batch) < q.batchSize {
-			select {
-			case req := <-q.writes:
-				batch = append(batch, req)
-			case <-timer.C:
-				break collect
-			}
-		}
-		if !timer.Stop() {
-			select {
-			case <-timer.C:
-			default:
-			}
-		}
+		batch := collectBatch(first, q.writes, q.batchSize, q.batchWait)
 
 		results := q.writeBatch(batch)
 		for i := range batch {
@@ -685,24 +675,7 @@ func (q *PostgresQueue) runCompleteBatcher() {
 			return
 		}
 
-		batch := []completeRequest{first}
-		timer := time.NewTimer(q.batchWait)
-
-	collect:
-		for len(batch) < q.batchSize {
-			select {
-			case req := <-q.completions:
-				batch = append(batch, req)
-			case <-timer.C:
-				break collect
-			}
-		}
-		if !timer.Stop() {
-			select {
-			case <-timer.C:
-			default:
-			}
-		}
+		batch := collectBatch(first, q.completions, q.batchSize, q.batchWait)
 
 		ids := make([]string, len(batch))
 		for i := range batch {
@@ -761,37 +734,37 @@ func (q *PostgresQueue) LastTaskError(queueName, jobID string) (string, error) {
 	return lastError.String, nil
 }
 
-func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, incrementRetry bool, lastError string) error {
-	// Snap "now"/past Go times onto PostgreSQL NOW() so Claim's run_at <= NOW()
-	// cannot miss an immediate retry when the two clocks disagree by milliseconds.
-	if incrementRetry {
-		res, err := q.db.ExecContext(ctx, `
-			UPDATE convoy.queue_jobs
-			SET status = $2,
-			    retry_count = retry_count + 1,
-			    run_at = CASE WHEN $3 <= NOW() + interval '1 second' THEN NOW() ELSE $3 END,
-			    claimed_at = NULL,
-			    last_error = $4,
-			    updated_at = NOW()
-			WHERE id = $1 AND status = $5`,
-			id, statusPending, runAt, lastError, statusProcessing)
-		if err != nil {
-			return err
-		}
-		if n, _ := res.RowsAffected(); n > 0 {
-			q.notifyPending()
-		}
-		return nil
-	}
-	res, err := q.db.ExecContext(ctx, `
+// The two retry statements differ only in retry_count. Both snap "now"/past Go
+// times onto PostgreSQL NOW() so Claim's run_at <= NOW() cannot miss an
+// immediate retry when the two clocks disagree by milliseconds.
+const (
+	retryJobSQL = `
 		UPDATE convoy.queue_jobs
 		SET status = $2,
 		    run_at = CASE WHEN $3 <= NOW() + interval '1 second' THEN NOW() ELSE $3 END,
 		    claimed_at = NULL,
 		    last_error = $4,
 		    updated_at = NOW()
-		WHERE id = $1 AND status = $5`,
-		id, statusPending, runAt, lastError, statusProcessing)
+		WHERE id = $1 AND status = $5`
+
+	retryJobCountedSQL = `
+		UPDATE convoy.queue_jobs
+		SET status = $2,
+		    retry_count = retry_count + 1,
+		    run_at = CASE WHEN $3 <= NOW() + interval '1 second' THEN NOW() ELSE $3 END,
+		    claimed_at = NULL,
+		    last_error = $4,
+		    updated_at = NOW()
+		WHERE id = $1 AND status = $5`
+)
+
+func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, incrementRetry bool, lastError string) error {
+	stmt := retryJobSQL
+	if incrementRetry {
+		stmt = retryJobCountedSQL
+	}
+
+	res, err := q.db.ExecContext(ctx, stmt, id, statusPending, runAt, lastError, statusProcessing)
 	if err != nil {
 		return err
 	}
@@ -902,21 +875,6 @@ func (q *PostgresQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueNam
 		  AND status <> $3`,
 		string(queueName), pq.Array(ids), statusProcessing)
 	return err
-}
-
-func (q *PostgresQueue) QueueNames() []string {
-	names := make([]string, 0, len(q.opts.Names))
-	for name := range q.opts.Names {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
-}
-
-// QueuePriorityCycle returns a smooth weighted round-robin cycle matching the
-// weights passed to asynq in Redis mode.
-func (q *PostgresQueue) QueuePriorityCycle() []string {
-	return queue.PriorityCycle(q.opts.Names)
 }
 
 // QueueCount is per-queue depth for monitoring and Prometheus.

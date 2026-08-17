@@ -319,7 +319,6 @@ func TestPostgresConsumerUsesConfiguredPoolAndClaimBatch(t *testing.T) {
 
 	r := got.(*postgresRunner)
 	require.Equal(t, 256, r.poolSize)
-	require.Equal(t, 256, r.claimBatchSize)
 	require.Equal(t, 256, r.claimLimit)
 }
 

@@ -72,3 +72,26 @@ func TestCronJobIDCarriesTheSharedPrefix(t *testing.T) {
 	require.Equal(t, CronJobIDPrefix, id[:len(CronJobIDPrefix)])
 	require.Contains(t, id, string(convoy.SnapshotUsage))
 }
+
+func TestPriorityCyclePreservesWeights(t *testing.T) {
+	cycle := PriorityCycle(map[string]int{
+		"critical": 5,
+		"default":  2,
+		"low":      1,
+	})
+
+	require.Len(t, cycle, 8)
+	require.Equal(t, 5, countQueue(cycle, "critical"))
+	require.Equal(t, 2, countQueue(cycle, "default"))
+	require.Equal(t, 1, countQueue(cycle, "low"))
+}
+
+func countQueue(names []string, target string) int {
+	count := 0
+	for _, name := range names {
+		if name == target {
+			count++
+		}
+	}
+	return count
+}
