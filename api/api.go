@@ -583,9 +583,16 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Route("/queue", func(queueRouter chi.Router) {
 				queueRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 				queueRouter.Get("/stats", handler.GetQueueStats)
+				queueRouter.Get("/scheduler", handler.GetQueueSchedulerEntries)
+				queueRouter.Get("/{queueName}/history", handler.GetQueueHistory)
 				queueRouter.Get("/{queueName}/tasks", handler.GetQueueTasks)
+				queueRouter.Post("/{queueName}/tasks/bulk", handler.BulkQueueTaskAction)
 				queueRouter.Post("/{queueName}/tasks/{taskID}/retry", handler.RetryQueueTask)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/run", handler.RunQueueTask)
 				queueRouter.Post("/{queueName}/tasks/{taskID}/archive", handler.ArchiveQueueTask)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/delete", handler.DeleteQueueTask)
+				queueRouter.Post("/{queueName}/pause", handler.PauseQueue)
+				queueRouter.Post("/{queueName}/resume", handler.UnpauseQueue)
 			})
 		})
 

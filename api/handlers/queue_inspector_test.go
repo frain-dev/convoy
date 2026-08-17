@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -21,17 +23,37 @@ import (
 )
 
 type fakeInspector struct {
-	err   error
-	stats queue.Stats
-	page  queue.TaskPage
+	err     error
+	stats   queue.Stats
+	page    queue.TaskPage
+	history []queue.HistoryPoint
+	entries []queue.SchedulerEntry
+	bulk    queue.BulkResult
 
-	filter   queue.TaskFilter
-	retried  [2]string
-	archived [2]string
+	filter    queue.TaskFilter
+	days      int
+	retried   [2]string
+	ran       [2]string
+	archived  [2]string
+	deleted   [2]string
+	bulkCall  [2]string
+	bulkIDs   []string
+	pausedQ   string
+	resumedQ  string
+	historyOf string
 }
 
 func (f *fakeInspector) Stats(context.Context) (queue.Stats, error) {
 	return f.stats, f.err
+}
+
+func (f *fakeInspector) History(_ context.Context, queueName string, days int) ([]queue.HistoryPoint, error) {
+	f.historyOf, f.days = queueName, days
+	return f.history, f.err
+}
+
+func (f *fakeInspector) SchedulerEntries(context.Context) ([]queue.SchedulerEntry, error) {
+	return f.entries, f.err
 }
 
 func (f *fakeInspector) Tasks(_ context.Context, filter queue.TaskFilter) (queue.TaskPage, error) {
@@ -44,8 +66,34 @@ func (f *fakeInspector) RetryTask(_ context.Context, queueName, taskID string) e
 	return f.err
 }
 
+func (f *fakeInspector) RunTask(_ context.Context, queueName, taskID string) error {
+	f.ran = [2]string{queueName, taskID}
+	return f.err
+}
+
 func (f *fakeInspector) ArchiveTask(_ context.Context, queueName, taskID string) error {
 	f.archived = [2]string{queueName, taskID}
+	return f.err
+}
+
+func (f *fakeInspector) DeleteTask(_ context.Context, queueName, taskID string) error {
+	f.deleted = [2]string{queueName, taskID}
+	return f.err
+}
+
+func (f *fakeInspector) BulkAction(_ context.Context, queueName, action string, taskIDs []string) (queue.BulkResult, error) {
+	f.bulkCall = [2]string{queueName, action}
+	f.bulkIDs = taskIDs
+	return f.bulk, f.err
+}
+
+func (f *fakeInspector) PauseQueue(_ context.Context, queueName string) error {
+	f.pausedQ = queueName
+	return f.err
+}
+
+func (f *fakeInspector) UnpauseQueue(_ context.Context, queueName string) error {
+	f.resumedQ = queueName
 	return f.err
 }
 
@@ -127,10 +175,17 @@ func TestQueueEndpointsRequireInstanceAdmin(t *testing.T) {
 	}
 
 	endpoints := map[string]func(*Handler) http.HandlerFunc{
-		"stats":   func(h *Handler) http.HandlerFunc { return h.GetQueueStats },
-		"tasks":   func(h *Handler) http.HandlerFunc { return h.GetQueueTasks },
-		"retry":   func(h *Handler) http.HandlerFunc { return h.RetryQueueTask },
-		"archive": func(h *Handler) http.HandlerFunc { return h.ArchiveQueueTask },
+		"stats":     func(h *Handler) http.HandlerFunc { return h.GetQueueStats },
+		"history":   func(h *Handler) http.HandlerFunc { return h.GetQueueHistory },
+		"scheduler": func(h *Handler) http.HandlerFunc { return h.GetQueueSchedulerEntries },
+		"tasks":     func(h *Handler) http.HandlerFunc { return h.GetQueueTasks },
+		"retry":     func(h *Handler) http.HandlerFunc { return h.RetryQueueTask },
+		"run":       func(h *Handler) http.HandlerFunc { return h.RunQueueTask },
+		"archive":   func(h *Handler) http.HandlerFunc { return h.ArchiveQueueTask },
+		"delete":    func(h *Handler) http.HandlerFunc { return h.DeleteQueueTask },
+		"bulk":      func(h *Handler) http.HandlerFunc { return h.BulkQueueTaskAction },
+		"pause":     func(h *Handler) http.HandlerFunc { return h.PauseQueue },
+		"resume":    func(h *Handler) http.HandlerFunc { return h.UnpauseQueue },
 	}
 
 	for name, endpoint := range endpoints {
@@ -144,8 +199,14 @@ func TestQueueEndpointsRequireInstanceAdmin(t *testing.T) {
 
 				require.Equal(t, tc.wantStatus, rec.Code)
 				require.Empty(t, inspector.retried[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.ran[1], "the action must not run for an unauthorized caller")
 				require.Empty(t, inspector.archived[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.deleted[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.bulkIDs, "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.pausedQ, "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.resumedQ, "the action must not run for an unauthorized caller")
 				require.Empty(t, inspector.filter.Queue, "the read must not run for an unauthorized caller")
+				require.Empty(t, inspector.historyOf, "the read must not run for an unauthorized caller")
 			})
 		}
 	}
@@ -178,7 +239,109 @@ func TestGetQueueTasksPassesFilter(t *testing.T) {
 	h.GetQueueTasks(rec, req)
 
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, queue.TaskFilter{Queue: "EventQueue", Status: queue.StatusArchived, Page: 2}, inspector.filter)
+	require.Equal(t, queue.TaskFilter{Queue: "EventQueue", Status: queue.StatusArchived, Page: 2, PageSize: queue.TasksPerPage}, inspector.filter)
+}
+
+// An id pasted from a log carries whitespace often enough that rejecting it
+// would only teach the operator to trim by hand.
+func TestGetQueueTasksTrimsSearch(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(1))
+
+	req := queueRequest("/ui/admin/queue/EventQueue/tasks?status=pending&perPage=25&search=%20task-1%20",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+
+	rec := httptest.NewRecorder()
+	h.GetQueueTasks(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "task-1", inspector.filter.Search)
+	require.Equal(t, 25, inspector.filter.PageSize)
+}
+
+func TestGetQueueHistoryDefaultsWindow(t *testing.T) {
+	inspector := &fakeInspector{history: []queue.HistoryPoint{{Date: "2026-08-17", Processed: 5, Failed: 1}}}
+	h := newQueueHandler(t, inspector, adminOnce(2))
+
+	rec := httptest.NewRecorder()
+	h.GetQueueHistory(rec, queueRequest("/ui/admin/queue/EventQueue/history",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"}))
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "EventQueue", inspector.historyOf)
+	require.Equal(t, queue.DefaultHistoryDays, inspector.days)
+	require.Contains(t, rec.Body.String(), `"processed":5`)
+
+	// A caller that sent a window meant to have it, so an unparseable one is
+	// rejected rather than silently defaulted.
+	rec = httptest.NewRecorder()
+	h.GetQueueHistory(rec, queueRequest("/ui/admin/queue/EventQueue/history?days=lots",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"}))
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+// A bulk action reports per-id outcomes with 200: some rows did move, and the
+// caller needs to know which.
+func TestBulkQueueTaskAction(t *testing.T) {
+	inspector := &fakeInspector{bulk: queue.BulkResult{Succeeded: 2, Failures: map[string]string{"gone": "queue: task not found"}}}
+	h := newQueueHandler(t, inspector, adminOnce(2))
+
+	req := queueRequest("/ui/admin/queue/EventQueue/tasks/bulk",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+	req.Body = io.NopCloser(strings.NewReader(`{"action":"archive","task_ids":["a","b","gone"]}`))
+
+	rec := httptest.NewRecorder()
+	h.BulkQueueTaskAction(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, [2]string{"EventQueue", queue.ActionArchive}, inspector.bulkCall)
+	require.Equal(t, []string{"a", "b", "gone"}, inspector.bulkIDs)
+	require.Contains(t, rec.Body.String(), `"succeeded":2`)
+	require.Contains(t, rec.Body.String(), `"gone"`)
+
+	// An unparseable body is rejected before the broker is touched.
+	inspector.bulkIDs = nil
+	req = queueRequest("/ui/admin/queue/EventQueue/tasks/bulk",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+	req.Body = io.NopCloser(strings.NewReader(`not json`))
+
+	rec = httptest.NewRecorder()
+	h.BulkQueueTaskAction(rec, req)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.Empty(t, inspector.bulkIDs)
+}
+
+func TestPauseAndResumeQueue(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(2))
+	user := &datastore.User{UID: "user-1"}
+
+	rec := httptest.NewRecorder()
+	h.PauseQueue(rec, queueRequest("/ui/admin/queue/EventQueue/pause", map[string]string{"queueName": "EventQueue"}, user))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "EventQueue", inspector.pausedQ)
+
+	rec = httptest.NewRecorder()
+	h.UnpauseQueue(rec, queueRequest("/ui/admin/queue/EventQueue/resume", map[string]string{"queueName": "EventQueue"}, user))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "EventQueue", inspector.resumedQ)
+}
+
+// Each action reaches its own inspector method, so a button cannot silently run
+// a different transition than the one it is labelled with.
+func TestQueueTaskActionsAreDistinct(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(4))
+	user := &datastore.User{UID: "user-1"}
+
+	for _, run := range []func(http.ResponseWriter, *http.Request){h.RetryQueueTask, h.RunQueueTask, h.ArchiveQueueTask, h.DeleteQueueTask} {
+		run(httptest.NewRecorder(), queueTaskRequest("task-1", user))
+	}
+
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.retried)
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.ran)
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.archived)
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.deleted)
 }
 
 func TestGetQueueTasksRejectsNonNumericPage(t *testing.T) {

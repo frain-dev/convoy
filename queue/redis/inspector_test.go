@@ -102,14 +102,14 @@ func TestRedisInspectorArchiveAndRetry(t *testing.T) {
 	// never shown a button the broker rejects.
 	page, err := q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 1})
 	require.NoError(t, err)
-	require.Equal(t, []string{queue.ActionArchive}, page.Tasks[0].Actions)
+	require.Equal(t, []string{queue.ActionArchive, queue.ActionDelete}, page.Tasks[0].Actions)
 
 	require.NoError(t, q.ArchiveTask(ctx, name, id))
 	page, err = q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusArchived, Page: 1})
 	require.NoError(t, err)
 	require.Len(t, page.Tasks, 1)
 	require.Equal(t, id, page.Tasks[0].ID)
-	require.Equal(t, []string{queue.ActionRetry}, page.Tasks[0].Actions)
+	require.Equal(t, []string{queue.ActionRetry, queue.ActionDelete}, page.Tasks[0].Actions)
 
 	require.NoError(t, q.RetryTask(ctx, name, id))
 	page, err = q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 1})
@@ -154,4 +154,96 @@ func TestRedisInspectorPaginates(t *testing.T) {
 		seen[task.ID] = true
 	}
 	require.Len(t, seen, queue.TasksPerPage+1)
+
+	// A caller-chosen page size has to move the offset with it, or the second
+	// page repeats rows the first already showed.
+	sized, err := q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 1, PageSize: 10})
+	require.NoError(t, err)
+	require.Len(t, sized.Tasks, 10)
+	require.True(t, sized.HasNext)
+
+	next, err := q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 2, PageSize: 10})
+	require.NoError(t, err)
+	require.Len(t, next.Tasks, 10)
+	require.NotEqual(t, sized.Tasks[0].ID, next.Tasks[0].ID)
+
+	// An absurd size lands on the cap rather than being trusted, so it can
+	// never return more than one bounded page.
+	capped, err := q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 1, PageSize: 5000})
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(capped.Tasks), queue.MaxTasksPerPage)
+	require.Len(t, capped.Tasks, queue.TasksPerPage+1, "every queued task fits under the cap here")
+	require.False(t, capped.HasNext)
+}
+
+// A paused queue is asynq's own state, so it shows up on the same stats read
+// that reports depth.
+func TestRedisInspectorPause(t *testing.T) {
+	q := setupInspectorQueue(t)
+	ctx := t.Context()
+	name := string(convoy.EventQueue)
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID:      ulid.Make().String(),
+		Payload: []byte("x"),
+	}))
+
+	require.NoError(t, q.PauseQueue(ctx, name))
+	stats, err := q.Stats(ctx)
+	require.NoError(t, err)
+	require.True(t, stats.Queues[0].Paused)
+	require.Equal(t, int64(1), stats.Queues[0].Counts[queue.StatusPending], "the work is still there")
+
+	// The operator asked for an end state, so a second pause is not a failure.
+	require.NoError(t, q.PauseQueue(ctx, name))
+
+	require.NoError(t, q.UnpauseQueue(ctx, name))
+	stats, err = q.Stats(ctx)
+	require.NoError(t, err)
+	require.False(t, stats.Queues[0].Paused)
+	require.NoError(t, q.UnpauseQueue(ctx, name))
+}
+
+// An operator searching an id wants to know where that task is, whatever status
+// the drill-down happens to be filtered on.
+func TestRedisInspectorSearchIgnoresStatus(t *testing.T) {
+	q := setupInspectorQueue(t)
+	ctx := t.Context()
+	name := string(convoy.EventQueue)
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("x")}))
+	require.NoError(t, q.ArchiveTask(ctx, name, id))
+
+	page, err := q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 1, Search: id})
+	require.NoError(t, err)
+	require.Len(t, page.Tasks, 1)
+	require.Equal(t, queue.StatusArchived, page.Tasks[0].Status)
+	require.False(t, page.HasNext)
+
+	page, err = q.Tasks(ctx, queue.TaskFilter{Queue: name, Status: queue.StatusPending, Page: 1, Search: "no-such-task"})
+	require.NoError(t, err)
+	require.Empty(t, page.Tasks)
+}
+
+func TestRedisInspectorDeleteAndHistory(t *testing.T) {
+	q := setupInspectorQueue(t)
+	ctx := t.Context()
+	name := string(convoy.EventQueue)
+	id := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("x")}))
+
+	require.NoError(t, q.DeleteTask(ctx, name, id))
+	require.ErrorIs(t, q.DeleteTask(ctx, name, id), queue.ErrTaskNotFound)
+
+	// The window is filled and bounded so the two providers plot the same
+	// shape, oldest first.
+	points, err := q.History(ctx, name, 7)
+	require.NoError(t, err)
+	require.Len(t, points, 7)
+
+	points, err = q.History(ctx, name, queue.MaxHistoryDays+50)
+	require.NoError(t, err)
+	require.Len(t, points, queue.MaxHistoryDays)
+
+	_, err = q.History(ctx, "", 7)
+	require.ErrorIs(t, err, queue.ErrQueueRequired)
 }

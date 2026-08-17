@@ -597,6 +597,16 @@ func (q *PostgresQueue) Claim(ctx context.Context, queueNames []string, limit in
 			WHERE status = $4
 			  AND run_at <= NOW()
 			  AND queue_name = ANY($1)
+			  -- A paused queue keeps its work; the workers just stop taking it.
+			  -- The gate is here rather than in the runner's queue list so it
+			  -- applies to every replica the moment it is set, with no cache to
+			  -- go stale. queue_state holds a row only per queue an operator has
+			  -- touched, so this anti-join is against a table of a few rows.
+			  AND NOT EXISTS (
+				SELECT 1 FROM convoy.queue_state s
+				WHERE s.queue_name = convoy.queue_jobs.queue_name
+				  AND s.paused_at IS NOT NULL
+			  )
 			ORDER BY run_at ASC
 			LIMIT ($2::integer * $5::integer + 1)
 			FOR UPDATE SKIP LOCKED
@@ -692,6 +702,11 @@ func (q *PostgresQueue) completeBatch(ids []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), postgresBatchTimeout)
 	defer cancel()
 
+	// A successful task's row is deleted, so this statement is the only place
+	// that ever sees it finish. The throughput counter is folded into the same
+	// round trip rather than issued after it: a separate statement would double
+	// the cost of the hottest write in the driver, and could be lost between
+	// the two, undercounting exactly when the queue is busiest.
 	_, err := q.db.ExecContext(ctx, `
 		WITH completed_cron AS (
 			UPDATE convoy.queue_jobs
@@ -701,11 +716,29 @@ func (q *PostgresQueue) completeBatch(ids []string) error {
 			WHERE id = ANY($1)
 			  AND status = $2
 			  AND id LIKE $4
+			RETURNING queue_name
+		),
+		deleted AS (
+			DELETE FROM convoy.queue_jobs
+			WHERE id = ANY($1)
+			  AND status = $2
+			  AND id NOT LIKE $4
+			RETURNING queue_name
+		),
+		finished AS (
+			SELECT queue_name, COUNT(*) AS total
+			FROM (
+				SELECT queue_name FROM completed_cron
+				UNION ALL
+				SELECT queue_name FROM deleted
+			) rows
+			GROUP BY queue_name
 		)
-		DELETE FROM convoy.queue_jobs
-		WHERE id = ANY($1)
-		  AND status = $2
-		  AND id NOT LIKE $4`,
+		INSERT INTO convoy.queue_job_stats AS s (queue_name, day, processed)
+		SELECT queue_name, (NOW() AT TIME ZONE 'UTC')::date, total FROM finished
+		ON CONFLICT (queue_name, day) DO UPDATE
+		SET processed = s.processed + EXCLUDED.processed,
+		    updated_at = NOW()`,
 		pq.Array(ids), statusProcessing, statusCompleted, cronJobPrefix+"%",
 	)
 	return err
@@ -737,6 +770,10 @@ func (q *PostgresQueue) LastTaskError(queueName, jobID string) (string, error) {
 // The two retry statements differ only in retry_count. Both snap "now"/past Go
 // times onto PostgreSQL NOW() so Claim's run_at <= NOW() cannot miss an
 // immediate retry when the two clocks disagree by milliseconds.
+//
+// Only the counted statement records a failure. An uncounted retry is the
+// driver deferring work it was never able to attempt, such as a rate limit, and
+// counting it would report an error rate for a queue that never errored.
 const (
 	retryJobSQL = `
 		UPDATE convoy.queue_jobs
@@ -748,14 +785,30 @@ const (
 		WHERE id = $1 AND status = $5`
 
 	retryJobCountedSQL = `
-		UPDATE convoy.queue_jobs
-		SET status = $2,
-		    retry_count = retry_count + 1,
-		    run_at = CASE WHEN $3 <= NOW() + interval '1 second' THEN NOW() ELSE $3 END,
-		    claimed_at = NULL,
-		    last_error = $4,
-		    updated_at = NOW()
-		WHERE id = $1 AND status = $5`
+		WITH moved AS (
+			UPDATE convoy.queue_jobs
+			SET status = $2,
+			    retry_count = retry_count + 1,
+			    run_at = CASE WHEN $3 <= NOW() + interval '1 second' THEN NOW() ELSE $3 END,
+			    claimed_at = NULL,
+			    last_error = $4,
+			    updated_at = NOW()
+			WHERE id = $1 AND status = $5
+			RETURNING queue_name
+		)
+		` + recordFailureSQL
+
+	// recordFailureSQL turns a preceding "retried"/"archived" CTE that returns
+	// queue_name into one day-bucketed failure. It is appended rather than
+	// repeated so both failure paths bucket the day the same way, and the
+	// statement's RowsAffected stays 1 exactly when the update matched, which
+	// is what the callers read to decide whether anything moved.
+	recordFailureSQL = `
+		INSERT INTO convoy.queue_job_stats AS s (queue_name, day, failed)
+		SELECT queue_name, (NOW() AT TIME ZONE 'UTC')::date, 1 FROM moved
+		ON CONFLICT (queue_name, day) DO UPDATE
+		SET failed = s.failed + 1,
+		    updated_at = NOW()`
 )
 
 func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, incrementRetry bool, lastError string) error {
@@ -776,12 +829,16 @@ func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, i
 
 func (q *PostgresQueue) Archive(ctx context.Context, id, lastError string) error {
 	_, err := q.db.ExecContext(ctx, `
-		UPDATE convoy.queue_jobs
-		SET status = $2,
-		    claimed_at = NULL,
-		    last_error = $3,
-		    updated_at = NOW()
-		WHERE id = $1 AND status = $4`,
+		WITH moved AS (
+			UPDATE convoy.queue_jobs
+			SET status = $2,
+			    claimed_at = NULL,
+			    last_error = $3,
+			    updated_at = NOW()
+			WHERE id = $1 AND status = $4
+			RETURNING queue_name
+		)
+		`+recordFailureSQL,
 		id, statusArchived, lastError, statusProcessing)
 	return err
 }
@@ -858,6 +915,17 @@ func (q *PostgresQueue) DeleteArchived(ctx context.Context) error {
 		pq.Array([]string{statusArchived, statusCompleted}),
 		cronJobPrefix+"%",
 		cronTombstoneRetention.Seconds())
+	if err != nil {
+		return err
+	}
+
+	// Throughput buckets past the window the monitor can chart are dead rows on
+	// a table that gains one per queue per day forever. This runs on the same
+	// nightly pass as the row cleanup because it is the same kind of debt.
+	_, err = q.db.ExecContext(ctx, `
+		DELETE FROM convoy.queue_job_stats
+		WHERE day < (NOW() AT TIME ZONE 'UTC')::date - make_interval(days => $1::integer)`,
+		queue.MaxHistoryDays)
 	return err
 }
 

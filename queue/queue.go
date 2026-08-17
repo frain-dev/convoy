@@ -102,6 +102,17 @@ var (
 
 	// ErrInvalidPage rejects a page outside the bounded drill-down window.
 	ErrInvalidPage = errors.New("queue: page is out of range")
+
+	// ErrUnknownTaskAction rejects a bulk action name no provider implements,
+	// rather than reporting zero moved rows as a successful no-op.
+	ErrUnknownTaskAction = errors.New("queue: unknown task action")
+
+	// ErrNoTaskIDs rejects a bulk action with nothing selected.
+	ErrNoTaskIDs = errors.New("queue: at least one task id is required")
+
+	// ErrTooManyTaskIDs bounds one bulk action to a page of selections, since
+	// the operator selected them from a page.
+	ErrTooManyTaskIDs = errors.New("queue: too many task ids in one action")
 )
 
 type Job struct {

@@ -10,18 +10,29 @@
   </div>
 
   @if (licensed) {
-    <button
-      type="button"
-      class="shrink-0 px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50 disabled:pointer-events-none"
-      [disabled]="isLoadingStats || isLoadingTasks"
-      (click)="isDrilledDown ? loadTasks() : loadStats()"
-      >
-      {{ isLoadingStats || isLoadingTasks ? 'Refreshing...' : 'Refresh' }}
-    </button>
+    <div class="flex items-center gap-8px shrink-0">
+      <button
+        type="button"
+        class="px-12px py-10px rounded-full font-body font-medium text-[13px] leading-[16px] transition-all"
+        [class]="autoRefresh ? 'bg-new.primary-25 text-new.primary-400' : 'bg-new.surface-muted text-new.text-secondary hover:opacity-80'"
+        [title]="autoRefresh ? 'Auto-refreshing every 10 seconds' : 'Refresh automatically every 10 seconds'"
+        (click)="toggleAutoRefresh()"
+        >
+        Auto
+      </button>
+      <button
+        type="button"
+        class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50 disabled:pointer-events-none"
+        [disabled]="isBusy"
+        (click)="isDrilledDown ? loadTasks() : loadStats()"
+        >
+        {{ isBusy ? 'Refreshing...' : 'Refresh' }}
+      </button>
+    </div>
   }
 </div>
 
-<div class="h-[1px] w-full bg-new.border mb-20px"></div>
+<div class="h-[1px] w-full bg-new.border mt-16px mb-24px"></div>
 
 @if (!licensed) {
   <div class="bg-white-100 border border-new.border rounded-12px p-20px">
@@ -36,6 +47,21 @@
 
   <!-- Landing view: one row per queue, one column per status the provider serves -->
   @if (!isDrilledDown) {
+    @if (stats && stats.queues.length) {
+      <div class="bg-white-100 border border-new.border rounded-12px p-20px mb-16px">
+        <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-16px">Queue size</p>
+        <div class="flex items-end gap-12px h-[120px]">
+          @for (bar of queueSizeBars; track bar.label) {
+            <div class="flex-1 flex flex-col items-center justify-end gap-8px h-full min-w-0" [title]="bar.title">
+              <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary">{{ bar.queued }}</span>
+              <div class="w-full max-w-[64px] rounded-t-[4px] bg-new.primary-400 transition-all" [style.height.%]="bar.height"></div>
+              <span class="w-full font-body font-normal text-[12px] leading-[16px] text-new.text-secondary text-center truncate">{{ bar.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
     <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
       @if (!stats && isLoadingStats) {
         <div class="flex flex-col items-center justify-center gap-8px py-56px px-32px">
@@ -49,26 +75,35 @@
         </div>
       } @else if (stats) {
         <div class="w-full overflow-x-auto">
-          <table class="w-full min-w-[640px] border-collapse">
+          <table class="w-full min-w-[720px] border-collapse">
             <thead>
               <tr class="bg-new.surface-subtle border-b border-new.border">
                 <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Queue</th>
                 @for (status of stats.statuses; track status) {
                   <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary capitalize">{{ status }}</th>
                 }
-                <th class="text-right px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Total</th>
+                <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Today</th>
+                <th class="px-20px h-36px"></th>
               </tr>
             </thead>
             <tbody>
               @for (queue of stats.queues; track queue.queue) {
-                <tr class="border-b border-new.border last:border-b-0 cursor-pointer transition-colors hover:bg-new.surface-subtle" (click)="openTasks(queue.queue, defaultStatus)">
-                  <td class="px-20px h-44px font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ queue.queue }}</td>
+                <tr class="border-b border-new.border last:border-b-0 cursor-pointer transition-colors hover:bg-new.surface-subtle group" (click)="openTasks(queue.queue, defaultStatus)">
+                  <td class="px-20px py-8px">
+                    <div class="flex items-center gap-8px">
+                      <span class="font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ queue.queue }}</span>
+                      @if (queue.paused) {
+                        <convoy-tag color="warning" size="sm">Paused</convoy-tag>
+                      }
+                    </div>
+                    <span class="block font-body font-normal text-[12px] leading-[16px] text-new.text-secondary">{{ latencyLabel(queue) }}</span>
+                  </td>
                   @for (status of stats.statuses; track status) {
-                    <td class="px-12px h-44px text-right">
+                    <td class="px-12px h-52px text-right">
                       <button
                         type="button"
-                        class="font-body font-normal text-[14px] leading-normal transition-colors"
-                        [class]="statusCount(queue, status) ? 'text-new.primary-400 hover:underline' : 'text-new.text-secondary hover:underline'"
+                        class="font-body font-normal text-[14px] leading-normal transition-colors hover:underline"
+                        [class]="statusCount(queue, status) ? 'text-new.primary-400' : 'text-new.text-secondary'"
                         [title]="'View ' + status + ' tasks in ' + queue.queue"
                         (click)="openTasks(queue.queue, status); $event.stopPropagation()"
                         >
@@ -76,11 +111,72 @@
                       </button>
                     </td>
                   }
-                  <td class="px-20px h-44px text-right font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ queueTotal(queue) }}</td>
+                  <!-- Throughput, not depth: what this queue actually got through
+                       today, and how much of it errored. -->
+                  <td class="px-12px py-8px text-right whitespace-nowrap">
+                    <span class="block font-body font-normal text-[14px] leading-normal text-new.text-primary">{{ queue.processed }}</span>
+                    @if (queue.failed) {
+                      <span class="block font-body font-normal text-[12px] leading-[16px] text-error-9">{{ queue.failed }} failed ({{ errorRate(queue) }}%)</span>
+                    }
+                  </td>
+                  <td class="px-20px h-52px text-right">
+                    <button
+                      type="button"
+                      class="px-12px py-6px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted"
+                      [title]="queue.paused ? 'Let workers claim from this queue again' : 'Stop workers claiming from this queue'"
+                      (click)="togglePause(queue, $event)"
+                      >
+                      {{ queue.paused ? 'Resume' : 'Pause' }}
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
           </table>
+        </div>
+      }
+    </div>
+
+    <!-- Scheduler entries are instance-wide, not per queue, so they sit under
+         the landing view rather than inside a drill-down. -->
+    <div class="bg-white-100 border border-new.border rounded-12px mt-16px overflow-hidden">
+      <button type="button" class="w-full flex items-center justify-between px-20px h-48px transition-colors hover:bg-new.surface-subtle" (click)="toggleScheduler()">
+        <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Scheduled tasks</span>
+        <span class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">{{ showScheduler ? 'Hide' : 'Show' }}</span>
+      </button>
+
+      @if (showScheduler) {
+        <div class="border-t border-new.border">
+          @if (isLoadingScheduler) {
+            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary px-20px py-24px">Loading scheduled tasks.</p>
+          } @else if (!schedulerEntries.length) {
+            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary px-20px py-24px">No periodic tasks are registered on this instance.</p>
+          } @else {
+            <div class="w-full overflow-x-auto">
+              <table class="w-full min-w-[640px] border-collapse">
+                <thead>
+                  <tr class="bg-new.surface-subtle border-b border-new.border">
+                    <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Task</th>
+                    <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Queue</th>
+                    <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Spec</th>
+                    <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Last run</th>
+                    <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Next run</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (entry of schedulerEntries; track entry.id) {
+                    <tr class="border-b border-new.border last:border-b-0">
+                      <td class="px-20px h-44px font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ entry.task_name }}</td>
+                      <td class="px-12px h-44px font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ entry.queue || '—' }}</td>
+                      <td class="px-12px h-44px font-menlo text-[13px] text-new.text-secondary whitespace-nowrap">{{ entry.spec }}</td>
+                      <td class="px-12px h-44px font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ entry.prev_run_at ? (entry.prev_run_at | date: 'MMM d, h:mm a') : '—' }}</td>
+                      <td class="px-20px h-44px font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ entry.next_run_at ? (entry.next_run_at | date: 'MMM d, h:mm a') : '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
     </div>
@@ -100,20 +196,114 @@
         </svg>
       </button>
       <span class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">{{ selectedQueue }}</span>
-    </div>
-
-    <div class="flex items-center gap-4px flex-wrap mb-16px">
-      @for (status of stats?.statuses ?? []; track status) {
-        <button
-          type="button"
-          class="px-12px py-6px rounded-full font-body text-[13px] leading-[18px] capitalize transition-colors"
-          [class]="status === selectedStatus ? 'bg-new.primary-25 text-new.primary-400 font-medium' : 'text-new.text-secondary hover:bg-new.surface-muted'"
-          (click)="changeStatus(status)"
-          >
-          {{ status }}
-        </button>
+      @if (selectedQueueStat?.paused) {
+        <convoy-tag color="warning" size="sm">Paused</convoy-tag>
       }
     </div>
+
+    <!-- Throughput over time, for the queue being drilled into. -->
+    <div class="bg-white-100 border border-new.border rounded-12px p-20px mb-16px">
+      <div class="flex items-start justify-between gap-16px mb-16px">
+        <div class="flex flex-col gap-2px">
+          <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Tasks processed</p>
+          <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">
+            {{ historyTotals.processed }} processed, {{ historyTotals.failed }} failed over {{ historyDays }} days
+          </p>
+        </div>
+        <div class="flex items-center gap-4px">
+          @for (days of [7, 14, 30]; track days) {
+            <button
+              type="button"
+              class="px-10px py-4px rounded-full font-body text-[13px] leading-[18px] transition-colors"
+              [class]="days === historyDays ? 'bg-new.primary-25 text-new.primary-400 font-medium' : 'text-new.text-secondary hover:bg-new.surface-muted'"
+              (click)="changeHistoryDays(days)"
+              >
+              {{ days }}d
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (isLoadingHistory && !history.length) {
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Loading throughput.</p>
+      } @else if (!history.length) {
+        <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">No throughput recorded for this queue yet.</p>
+      } @else {
+        <div class="flex items-end gap-8px h-[120px]">
+          @for (bar of historyBars; track bar.label) {
+            <div class="flex-1 flex flex-col items-center justify-end gap-6px h-full min-w-0" [title]="bar.title">
+              <div class="w-full flex items-end justify-center gap-2px h-full">
+                <div class="w-1/2 max-w-[18px] rounded-t-[3px] bg-new.primary-400" [style.height.%]="bar.processedHeight"></div>
+                <div class="w-1/2 max-w-[18px] rounded-t-[3px] bg-error-9" [style.height.%]="bar.failedHeight"></div>
+              </div>
+              <span class="w-full font-body font-normal text-[11px] leading-[14px] text-new.text-secondary text-center truncate">{{ bar.label }}</span>
+            </div>
+          }
+        </div>
+        <div class="flex items-center gap-16px mt-12px">
+          <div class="flex items-center gap-6px">
+            <span class="w-8px h-8px rounded-[2px] bg-new.primary-400"></span>
+            <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary">Processed</span>
+          </div>
+          <div class="flex items-center gap-6px">
+            <span class="w-8px h-8px rounded-[2px] bg-error-9"></span>
+            <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary">Failed</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="flex items-center justify-between gap-16px flex-wrap mb-16px">
+      <div class="flex items-center gap-4px flex-wrap">
+        @for (status of stats?.statuses ?? []; track status) {
+          <button
+            type="button"
+            class="px-12px py-6px rounded-full font-body text-[13px] leading-[18px] capitalize transition-colors"
+            [class]="status === selectedStatus ? 'bg-new.primary-25 text-new.primary-400 font-medium' : 'text-new.text-secondary hover:bg-new.surface-muted'"
+            (click)="changeStatus(status)"
+            >
+            {{ status }}
+          </button>
+        }
+      </div>
+
+      <!-- Exact id only: neither broker can scan for a partial id without
+           reading every task in the queue. -->
+      <div class="flex items-center gap-8px">
+        <input
+          type="search"
+          class="w-[240px] h-32px px-12px rounded-[6px] border border-new.border bg-white-100 font-body font-normal text-[13px] leading-normal text-new.text-primary placeholder:text-new.text-secondary focus:outline-none focus:border-new.primary-400"
+          placeholder="Find by exact task ID"
+          [(ngModel)]="searchInput"
+          (keyup.enter)="submitSearch()"
+          />
+        @if (search) {
+          <button type="button" class="font-body font-normal text-[13px] leading-normal text-new.text-secondary hover:underline" (click)="clearSearchAndReload()">Clear</button>
+        }
+      </div>
+    </div>
+
+    @if (search) {
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mb-12px">Showing the task matching this ID in {{ selectedQueue }}, whatever status it is in.</p>
+    }
+
+    @if (bulkActions.length) {
+      <div class="flex items-center gap-12px px-16px h-48px bg-new.primary-25 border border-new.primary-100 rounded-8px mb-12px">
+        <span class="font-body font-medium text-[13px] leading-normal text-new.text-primary">{{ selected.size }} selected</span>
+        <div class="flex items-center gap-8px">
+          @for (action of bulkActions; track action) {
+            <button
+              type="button"
+              class="px-12px py-6px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted disabled:opacity-50 disabled:pointer-events-none"
+              [disabled]="isRunningBulk"
+              (click)="runBulkAction(action)"
+              >
+              {{ actionLabel(action) }}
+            </button>
+          }
+        </div>
+      </div>
+    }
 
     <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
       @if (isLoadingTasks) {
@@ -131,15 +321,20 @@
         </div>
       } @else if (!tasks.length) {
         <div class="flex flex-col items-center justify-center gap-8px py-56px px-32px text-center">
-          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No {{ selectedStatus }} tasks</p>
-          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ page > 1 ? selectedQueue + ' has nothing in this state on this page.' : selectedQueue + ' has nothing in this state.' }}</p>
+          <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">{{ search ? 'No task with that ID' : 'No ' + selectedStatus + ' tasks' }}</p>
+          <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+            {{ search ? selectedQueue + ' holds no task with that ID.' : page > 1 ? selectedQueue + ' has nothing in this state on this page.' : selectedQueue + ' has nothing in this state.' }}
+          </p>
         </div>
       } @else {
         <div class="w-full overflow-x-auto">
-            <table class="w-full min-w-[720px] border-collapse">
+          <table class="w-full min-w-[760px] border-collapse">
             <thead>
               <tr class="bg-new.surface-subtle border-b border-new.border">
-                <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Task ID</th>
+                <th class="w-40px pl-20px h-36px">
+                  <input type="checkbox" class="w-14px h-14px cursor-pointer" title="Select every task on this page" [checked]="allSelected" (change)="toggleSelectAll()" />
+                </th>
+                <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Task ID</th>
                 <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Task</th>
                 <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Status</th>
                 <th class="text-left px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Retries</th>
@@ -154,10 +349,13 @@
                   [class]="isExpanded(task) ? 'bg-new.primary-25' : 'hover:bg-new.surface-subtle'"
                   (click)="toggleTask(task)"
                   >
-                  <td class="px-20px h-44px">
+                  <td class="pl-20px h-44px">
+                    <input type="checkbox" class="w-14px h-14px cursor-pointer" [checked]="isSelected(task)" (click)="toggleSelection(task, $event)" />
+                  </td>
+                  <td class="px-12px h-44px">
                     <div class="flex items-center gap-8px">
                       <span class="font-menlo text-[13px] text-new.text-primary whitespace-nowrap" [title]="task.id">{{ taskIdLabel(task) }}</span>
-                      <button type="button" class="w-24px h-24px shrink-0 flex items-center justify-center rounded-[6px] opacity-0 group-hover:opacity-100 transition-all hover:bg-new.surface-muted" title="Copy task ID" (click)="copyTaskId(task); $event.stopPropagation()">
+                      <button type="button" class="w-24px h-24px shrink-0 flex items-center justify-center rounded-[6px] opacity-0 group-hover:opacity-100 transition-all hover:bg-new.surface-muted" title="Copy task ID" (click)="copyTaskId(task, $event)">
                         <img src="/assets/img/svg/copy-gray.svg" class="w-14px h-14px" alt="copy task id" />
                       </button>
                     </div>
@@ -165,7 +363,7 @@
                   <!-- The error rides under the task name rather than in its own
                        column: at this width a separate column truncates to a few
                        useless characters, and the full text is one click away. -->
-                  <td class="px-12px py-8px max-w-[260px]">
+                  <td class="px-12px py-8px max-w-[220px]">
                     <span class="block font-body font-normal text-[14px] leading-normal text-new.text-secondary truncate" [title]="task.task_name">{{ task.task_name }}</span>
                     @if (task.last_error) {
                       <span class="block font-body font-normal text-[12px] leading-[16px] text-error-9 truncate" [title]="task.last_error">{{ task.last_error }}</span>
@@ -180,24 +378,15 @@
                   </td>
                   <td class="px-20px h-44px">
                     <div class="flex items-center justify-end gap-8px">
-                      @if (canRun(task, 'retry')) {
+                      @for (action of task.actions; track action) {
                         <button
                           type="button"
-                          class="px-12px py-6px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted disabled:opacity-50 disabled:pointer-events-none"
+                          class="px-12px py-6px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] transition-colors hover:bg-new.surface-muted disabled:opacity-50 disabled:pointer-events-none"
+                          [class]="action === 'delete' ? 'text-error-9' : 'text-new.text-primary'"
                           [disabled]="!!runningAction"
-                          (click)="runAction(task, 'retry'); $event.stopPropagation()"
+                          (click)="runAction(task, action, $event)"
                           >
-                          {{ isRunning(task, 'retry') ? 'Retrying...' : 'Retry' }}
-                        </button>
-                      }
-                      @if (canRun(task, 'archive')) {
-                        <button
-                          type="button"
-                          class="px-12px py-6px rounded-full border border-new.border bg-white-100 font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted disabled:opacity-50 disabled:pointer-events-none"
-                          [disabled]="!!runningAction"
-                          (click)="runAction(task, 'archive'); $event.stopPropagation()"
-                          >
-                          {{ isRunning(task, 'archive') ? 'Archiving...' : 'Archive' }}
+                          {{ isRunning(task, action) ? 'Working...' : actionLabel(action) }}
                         </button>
                       }
                       @if (!task.actions.length) {
@@ -211,7 +400,7 @@
                      error long enough to say what actually failed. -->
                 @if (isExpanded(task)) {
                   <tr class="border-b border-new.border bg-new.surface-subtle">
-                    <td colspan="6" class="px-20px py-16px">
+                    <td colspan="7" class="px-20px py-16px">
                       <dl class="grid grid-cols-2 gap-x-24px gap-y-12px desktop:grid-cols-1">
                         <div class="flex flex-col gap-2px col-span-2 desktop:col-span-1">
                           <dt class="font-body font-medium text-[12px] leading-normal text-new.text-secondary uppercase">Task ID</dt>
@@ -239,7 +428,21 @@
         </div>
 
         <div class="flex items-center justify-between px-20px h-56px bg-white-100 border-t border-new.border">
-          <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Page {{ page }}</span>
+          <div class="flex items-center gap-12px">
+            <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Page {{ page }}</span>
+            <div class="flex items-center gap-4px">
+              @for (size of perPageOptions; track size) {
+                <button
+                  type="button"
+                  class="px-8px py-2px rounded-[4px] font-body text-[12px] leading-[16px] transition-colors"
+                  [class]="size === perPage ? 'bg-new.surface-muted text-new.text-primary font-medium' : 'text-new.text-secondary hover:bg-new.surface-subtle'"
+                  (click)="changePerPage(size)"
+                  >
+                  {{ size }}
+                </button>
+              }
+            </div>
+          </div>
           <div class="flex items-center gap-8px">
             <button
               type="button"
