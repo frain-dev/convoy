@@ -116,6 +116,9 @@ type QueueOptions struct {
 	// PostgresTuning tunes the postgres write path. Redis queues ignore it,
 	// and zero fields take the postgres driver's defaults.
 	PostgresTuning PostgresTuning
+	// PostgresConnString enables LISTEN/NOTIFY consumer wakeups when set.
+	// Redis queues ignore it.
+	PostgresConnString string
 }
 
 // PostgresTuning carries the postgres queue's write-path settings in
@@ -125,6 +128,11 @@ type PostgresTuning struct {
 	BatchWait        time.Duration
 	WriteConcurrency int
 	LeaseTimeout     time.Duration
+	// ClaimBatchSize is how many jobs one Claim round trip may take. Consumers
+	// cap this at pool size so a small pool does not over-claim.
+	ClaimBatchSize int
+	// PollIdle is how long the consumer waits when Claim returns no work.
+	PollIdle time.Duration
 }
 
 type JobId struct {

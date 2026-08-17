@@ -146,7 +146,7 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		return nil, &EndpointError{Err: err, delay: defaultEventDelay}
 	}
 
-	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	event, err := eventForMatch(ctx, args.eventRepo, metadata, args.taskRetryCount)
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventDynamicEventSubscriptionMatchingError, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}

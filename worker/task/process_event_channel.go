@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -60,6 +61,40 @@ type EventChannelArgs struct {
 	earlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	acker                      dynamiceventack.Acker
 	logger                     log.Logger
+	taskRetryCount             int
+}
+
+const headerRetryCount = "X-Convoy-Retry-Count"
+
+// matchTaskRetryCount reads how many times this queue job has already run.
+// Postgres workers stamp X-Convoy-Retry-Count; Redis asynq workers use ctx.
+func matchTaskRetryCount(ctx context.Context, t *asynq.Task) int {
+	if t != nil {
+		if headers := t.Headers(); headers != nil {
+			if v, ok := headers[headerRetryCount]; ok {
+				if n, err := strconv.Atoi(v); err == nil {
+					return n
+				}
+			}
+		}
+	}
+	if n, ok := asynq.GetRetryCount(ctx); ok {
+		return n
+	}
+	return 0
+}
+
+// eventForMatch returns the event row MatchSubscriptions should use.
+// Failure policy: first attempt trusts the create/match payload snapshot; retries
+// reload from DB so status and idempotency reflect partial match work.
+func eventForMatch(ctx context.Context, repo datastore.EventRepository, metadata EventChannelMetadata, taskRetryCount int) (*datastore.Event, error) {
+	if metadata.Event == nil || util.IsStringEmpty(metadata.Event.UID) {
+		return nil, fmt.Errorf("missing event in match metadata")
+	}
+	if taskRetryCount == 0 {
+		return metadata.Event, nil
+	}
+	return repo.FindEventByID(ctx, metadata.Event.ProjectID, metadata.Event.UID)
 }
 
 type EventChannelSubResponse struct {
@@ -230,6 +265,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			earlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
 			acker:                      deps.Acker,
 			logger:                     deps.Logger,
+			taskRetryCount:             matchTaskRetryCount(ctx, t),
 		})
 		if err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventSubscriptionMatchingError, attributes)

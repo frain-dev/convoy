@@ -140,7 +140,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			return &DeliveryError{Err: err}
 		}
 
-		eventDelivery, err := deps.EventDeliveryRepo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := eventDeliveryForDispatch(ctx, deps.EventDeliveryRepo, data, matchTaskRetryCount(ctx, t))
 		if err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventDeliveryError, attributes)
 			return &DeliveryError{Err: err}

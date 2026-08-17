@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	"maps"
+	"strconv"
 	"sync"
 	"time"
 
@@ -13,8 +15,6 @@ import (
 )
 
 const (
-	postgresPollIdle        = 5 * time.Millisecond
-	postgresClaimSize       = 64
 	postgresReclaimInterval = 30 * time.Second
 
 	// maxHeartbeatTimeout caps one renewal attempt so a stalled database cannot
@@ -68,6 +68,10 @@ type PostgresConsumerQueue interface {
 	ReclaimStuck(context.Context) (int64, error)
 	Heartbeat(context.Context, []string) error
 	LeaseTimeout() time.Duration
+	ClaimBatchSize() int
+	PollIdle() time.Duration
+	// Wake is nil when LISTEN/NOTIFY is disabled.
+	Wake() <-chan struct{}
 }
 
 type postgresConsumerBackend struct {
@@ -81,6 +85,9 @@ type postgresRunner struct {
 	names    map[string]int
 	mux      *asynq.ServeMux
 	log      log.Logger
+
+	claimBatchSize int
+	pollIdle       time.Duration
 
 	tasks chan queue.ClaimedJob
 	quit  chan struct{}
@@ -113,6 +120,8 @@ func (b *postgresConsumerBackend) newRunner(ctx context.Context, poolSize int, n
 		names:          names,
 		mux:            mux,
 		log:            lo,
+		claimBatchSize: b.queue.ClaimBatchSize(),
+		pollIdle:       b.queue.PollIdle(),
 		heartbeatEvery: heartbeatInterval(b.queue.LeaseTimeout()),
 		tasks:          make(chan queue.ClaimedJob, poolSize),
 		quit:           make(chan struct{}),
@@ -155,7 +164,7 @@ func (r *postgresRunner) poll() {
 	}
 	priorities := queue.PriorityCycle(r.names)
 	priorityIndex := 0
-	limit := postgresClaimSize
+	limit := r.claimBatchSize
 	if r.poolSize < limit {
 		limit = r.poolSize
 	}
@@ -285,10 +294,19 @@ func (r *postgresRunner) reclaimStuck() {
 }
 
 func (r *postgresRunner) idle() {
-	timer := time.NewTimer(postgresPollIdle)
+	timer := time.NewTimer(r.pollIdle)
 	defer timer.Stop()
+	wake := r.queue.Wake()
+	if wake == nil {
+		select {
+		case <-r.quit:
+		case <-timer.C:
+		}
+		return
+	}
 	select {
 	case <-r.quit:
+	case <-wake:
 	case <-timer.C:
 	}
 }
@@ -304,6 +322,12 @@ func (r *postgresRunner) process(job queue.ClaimedJob) {
 	defer r.release(job.ID)
 
 	headers := job.Headers
+	if headers == nil {
+		headers = make(map[string]string, 1)
+	} else {
+		headers = maps.Clone(headers)
+	}
+	headers["X-Convoy-Retry-Count"] = strconv.Itoa(job.RetryCount)
 	t := asynq.NewTaskWithHeaders(job.TaskName, job.Payload, headers)
 	err := r.mux.ProcessTask(r.ctx, t)
 	ctx := context.WithoutCancel(r.ctx)

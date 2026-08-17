@@ -883,8 +883,11 @@ func Test_PostgresQueueDefaults(t *testing.T) {
 	require.Equal(t, DefaultPostgresQueueBatchWaitMs, q.BatchWaitMs)
 	require.Equal(t, DefaultPostgresQueueWriteConcurrency, q.WriteConcurrency)
 	require.Equal(t, DefaultPostgresQueueLeaseTimeoutSecs, q.LeaseTimeoutSeconds)
+	require.Equal(t, DefaultPostgresQueueClaimBatchSize, q.ClaimBatchSize)
+	require.Equal(t, DefaultPostgresQueuePollIdleMs, q.PollIdleMs)
 	require.Equal(t, 2*time.Millisecond, q.BatchWait())
 	require.Equal(t, 90*time.Second, q.LeaseTimeout())
+	require.Equal(t, 5*time.Millisecond, q.PollIdle())
 }
 
 func Test_PostgresQueueValidation(t *testing.T) {

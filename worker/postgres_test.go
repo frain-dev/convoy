@@ -47,12 +47,14 @@ func setupPostgresConsumer(t *testing.T) (*Consumer, *pgqueue.PostgresQueue) {
 	require.NoError(t, err)
 	db := postgres.NewFromConnection(conn)
 	q, err := pgqueue.NewQueue(queue.QueueOptions{
-		Names: map[string]int{string(convoy.EventQueue): 1},
-		Type:  queue.ProviderPostgres,
-		DB:    db.GetDB(),
+		Names:              map[string]int{string(convoy.EventQueue): 1},
+		Type:               queue.ProviderPostgres,
+		DB:                 db.GetDB(),
+		PostgresConnString: conn.Config().ConnString(),
 	})
 	require.NoError(t, err)
 	q.SetStuckTimeout(time.Hour)
+	t.Cleanup(func() { _ = q.Close() })
 
 	lo := log.New("postgres-queue-test", log.LevelError)
 	c, err := NewConsumer(context.Background(), 2, q.Options().Names, NewPostgresConsumerBackend(q), lo, log.LevelError)
@@ -230,6 +232,9 @@ func (s *heartbeatSpyQueue) ReclaimStuck(context.Context) (int64, error)        
 // LeaseTimeout drives the derived renewal interval: 60ms over six renewals is
 // 10ms, which the lowered floor in the test below allows through.
 func (s *heartbeatSpyQueue) LeaseTimeout() time.Duration { return 60 * time.Millisecond }
+func (s *heartbeatSpyQueue) ClaimBatchSize() int         { return 64 }
+func (s *heartbeatSpyQueue) PollIdle() time.Duration     { return time.Millisecond }
+func (s *heartbeatSpyQueue) Wake() <-chan struct{}       { return nil }
 
 func TestPostgresConsumerRenewsLeaseWhileHandlerRuns(t *testing.T) {
 	previous := minHeartbeatInterval

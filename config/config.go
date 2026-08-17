@@ -77,6 +77,8 @@ var DefaultConfiguration = Configuration{
 			BatchWaitMs:         DefaultPostgresQueueBatchWaitMs,
 			WriteConcurrency:    DefaultPostgresQueueWriteConcurrency,
 			LeaseTimeoutSeconds: DefaultPostgresQueueLeaseTimeoutSecs,
+			ClaimBatchSize:      DefaultPostgresQueueClaimBatchSize,
+			PollIdleMs:          DefaultPostgresQueuePollIdleMs,
 		},
 	},
 	Cache: CacheConfiguration{
@@ -218,6 +220,10 @@ type PostgresQueueConfiguration struct {
 	// this value rather than configured separately, so the two cannot drift
 	// into a setting where a live worker loses its own job.
 	LeaseTimeoutSeconds int `json:"lease_timeout_seconds" envconfig:"CONVOY_POSTGRES_QUEUE_LEASE_TIMEOUT_SECONDS"`
+	// ClaimBatchSize is how many jobs one dequeue claim may take per round trip.
+	ClaimBatchSize int `json:"claim_batch_size" envconfig:"CONVOY_POSTGRES_QUEUE_CLAIM_BATCH_SIZE"`
+	// PollIdleMs is how long the consumer sleeps when a claim finds no work.
+	PollIdleMs int `json:"poll_idle_ms" envconfig:"CONVOY_POSTGRES_QUEUE_POLL_IDLE_MS"`
 }
 
 const (
@@ -225,6 +231,10 @@ const (
 	DefaultPostgresQueueBatchWaitMs      = 2
 	DefaultPostgresQueueWriteConcurrency = 8
 	DefaultPostgresQueueLeaseTimeoutSecs = 90
+	DefaultPostgresQueueClaimBatchSize   = 64
+	DefaultPostgresQueuePollIdleMs       = 5
+
+	maxPostgresQueueClaimBatchSize = 1000
 
 	// maxPostgresQueueBatchSize bounds the arrays bound into a single insert.
 	maxPostgresQueueBatchSize = 10000
@@ -249,6 +259,12 @@ func (q *PostgresQueueConfiguration) applyDefaults() {
 	if q.LeaseTimeoutSeconds == 0 {
 		q.LeaseTimeoutSeconds = DefaultPostgresQueueLeaseTimeoutSecs
 	}
+	if q.ClaimBatchSize == 0 {
+		q.ClaimBatchSize = DefaultPostgresQueueClaimBatchSize
+	}
+	if q.PollIdleMs == 0 {
+		q.PollIdleMs = DefaultPostgresQueuePollIdleMs
+	}
 }
 
 // BatchWait is BatchWaitMs as a duration.
@@ -259,6 +275,11 @@ func (q PostgresQueueConfiguration) BatchWait() time.Duration {
 // LeaseTimeout is LeaseTimeoutSeconds as a duration.
 func (q PostgresQueueConfiguration) LeaseTimeout() time.Duration {
 	return time.Duration(q.LeaseTimeoutSeconds) * time.Second
+}
+
+// PollIdle is PollIdleMs as a duration.
+func (q PostgresQueueConfiguration) PollIdle() time.Duration {
+	return time.Duration(q.PollIdleMs) * time.Millisecond
 }
 
 // validatePostgresQueue checks the queue tuning against the pool it draws from.
@@ -283,6 +304,15 @@ func validatePostgresQueue(c *Configuration) error {
 			"queue.postgres.lease_timeout_seconds must be at least %d, got %d",
 			minPostgresQueueLeaseTimeoutSecs, q.LeaseTimeoutSeconds,
 		)
+	}
+	if q.ClaimBatchSize < 1 || q.ClaimBatchSize > maxPostgresQueueClaimBatchSize {
+		return fmt.Errorf(
+			"queue.postgres.claim_batch_size must be between 1 and %d, got %d",
+			maxPostgresQueueClaimBatchSize, q.ClaimBatchSize,
+		)
+	}
+	if q.PollIdleMs < 1 {
+		return fmt.Errorf("queue.postgres.poll_idle_ms must be at least 1, got %d", q.PollIdleMs)
 	}
 
 	// An unset pool size means the driver default (unlimited), so there is

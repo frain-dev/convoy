@@ -40,11 +40,13 @@ func setupQueue(t *testing.T) *PostgresQueue {
 	require.NoError(t, err)
 	db := dbpostgres.NewFromConnection(conn)
 	q, err := NewQueue(queue.QueueOptions{
-		Names: map[string]int{string(convoy.EventQueue): 1},
-		Type:  queue.ProviderPostgres,
-		DB:    db.GetDB(),
+		Names:              map[string]int{string(convoy.EventQueue): 1},
+		Type:               queue.ProviderPostgres,
+		DB:                 db.GetDB(),
+		PostgresConnString: conn.Config().ConnString(),
 	})
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = q.Close() })
 	return q
 }
 
@@ -65,6 +67,37 @@ func TestWriteAndClaim(t *testing.T) {
 	require.Equal(t, id, jobs[0].ID)
 	require.Equal(t, []byte("hello"), jobs[0].Payload)
 	require.Equal(t, string(convoy.EventProcessor), jobs[0].TaskName)
+}
+
+func TestNotifyWakesListener(t *testing.T) {
+	q := setupQueue(t)
+	wake := q.Wake()
+	require.NotNil(t, wake)
+
+	ctx := context.Background()
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-wake:
+			close(done)
+		case <-time.After(5 * time.Second):
+		}
+	}()
+
+	// Give the LISTEN connection time to subscribe.
+	time.Sleep(100 * time.Millisecond)
+
+	err := q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID:      ulid.Make().String(),
+		Payload: []byte("notify"),
+	})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for NOTIFY wakeup")
+	}
 }
 
 func TestWriteReplacesDuplicateID(t *testing.T) {

@@ -226,6 +226,9 @@ func queueOptions(cfg config.Configuration) (queue.QueueOptions, error) {
 			BatchWait:        cfg.Queue.Postgres.BatchWait(),
 			WriteConcurrency: cfg.Queue.Postgres.WriteConcurrency,
 			LeaseTimeout:     cfg.Queue.Postgres.LeaseTimeout(),
+			ClaimBatchSize:   cfg.Queue.Postgres.ClaimBatchSize,
+			PollIdle:         cfg.Queue.Postgres.PollIdle(),
 		},
+		PostgresConnString: cfg.Database.BuildDsn(),
 	}, nil
 }

@@ -47,6 +47,8 @@ const (
 	defaultBatchSize        = 64
 	defaultBatchWait        = 2 * time.Millisecond
 	defaultWriteConcurrency = 8
+	defaultClaimBatchSize   = 64
+	defaultPollIdle         = 5 * time.Millisecond
 
 	// defaultMaxRetry matches asynq's unexported DefaultMaxRetry.
 	defaultMaxRetry = 25
@@ -144,13 +146,15 @@ const writeJobsSQL = `
 
 // PostgresQueue implements queue.Queuer with convoy.queue_jobs as the broker.
 type PostgresQueue struct {
-	db           *sqlx.DB
-	opts         queue.QueueOptions
-	stuckTimeout time.Duration
-	batchSize    int
-	batchWait    time.Duration
-	writes       chan writeRequest
-	completions  chan completeRequest
+	db             *sqlx.DB
+	opts           queue.QueueOptions
+	stuckTimeout   time.Duration
+	batchSize      int
+	batchWait      time.Duration
+	claimBatchSize int
+	pollIdle       time.Duration
+	writes         chan writeRequest
+	completions    chan completeRequest
 
 	// quit asks the batchers to stop; done is closed once every one of them has
 	// returned. A caller that has already been admitted to a channel waits on
@@ -160,6 +164,11 @@ type PostgresQueue struct {
 	done      chan struct{}
 	quitOnce  sync.Once
 	batcherWg sync.WaitGroup
+
+	wake          chan struct{}
+	listenerQuit  chan struct{}
+	listenerDone  chan struct{}
+	notifyEnabled bool
 }
 
 type writeRequest struct {
@@ -185,6 +194,8 @@ type resolvedTuning struct {
 	batchWait        time.Duration
 	writeConcurrency int
 	leaseTimeout     time.Duration
+	claimBatchSize   int
+	pollIdle         time.Duration
 }
 
 func tuning(t queue.PostgresTuning) resolvedTuning {
@@ -193,6 +204,8 @@ func tuning(t queue.PostgresTuning) resolvedTuning {
 		batchWait:        t.BatchWait,
 		writeConcurrency: t.WriteConcurrency,
 		leaseTimeout:     t.LeaseTimeout,
+		claimBatchSize:   t.ClaimBatchSize,
+		pollIdle:         t.PollIdle,
 	}
 	if r.batchSize < 1 {
 		r.batchSize = defaultBatchSize
@@ -206,6 +219,12 @@ func tuning(t queue.PostgresTuning) resolvedTuning {
 	if r.leaseTimeout < 1 {
 		r.leaseTimeout = DefaultStuckTimeout
 	}
+	if r.claimBatchSize < 1 {
+		r.claimBatchSize = defaultClaimBatchSize
+	}
+	if r.pollIdle < 1 {
+		r.pollIdle = defaultPollIdle
+	}
 	return r
 }
 
@@ -215,21 +234,30 @@ func NewQueue(opts queue.QueueOptions) (*PostgresQueue, error) {
 	}
 	t := tuning(opts.PostgresTuning)
 	q := &PostgresQueue{
-		db:           opts.DB,
-		opts:         opts,
-		stuckTimeout: t.leaseTimeout,
-		batchSize:    t.batchSize,
-		batchWait:    t.batchWait,
-		writes:       make(chan writeRequest, t.batchSize*t.writeConcurrency),
-		completions:  make(chan completeRequest, t.batchSize),
-		quit:         make(chan struct{}),
-		done:         make(chan struct{}),
+		db:             opts.DB,
+		opts:           opts,
+		stuckTimeout:   t.leaseTimeout,
+		batchSize:      t.batchSize,
+		batchWait:      t.batchWait,
+		claimBatchSize: t.claimBatchSize,
+		pollIdle:       t.pollIdle,
+		writes:         make(chan writeRequest, t.batchSize*t.writeConcurrency),
+		completions:    make(chan completeRequest, t.batchSize),
+		quit:           make(chan struct{}),
+		done:           make(chan struct{}),
 	}
 	q.batcherWg.Add(t.writeConcurrency + 1)
 	for i := 0; i < t.writeConcurrency; i++ {
 		go q.runWriteBatcher()
 	}
 	go q.runCompleteBatcher()
+	if opts.PostgresConnString != "" {
+		q.wake = make(chan struct{}, 1)
+		q.listenerQuit = make(chan struct{})
+		q.listenerDone = make(chan struct{})
+		q.notifyEnabled = true
+		go q.runListener(opts.PostgresConnString)
+	}
 	return q, nil
 }
 
@@ -240,6 +268,10 @@ func NewQueue(opts queue.QueueOptions) (*PostgresQueue, error) {
 // rejected rather than parked on a channel nobody is draining.
 func (q *PostgresQueue) Close() error {
 	q.quitOnce.Do(func() {
+		if q.listenerQuit != nil {
+			close(q.listenerQuit)
+			<-q.listenerDone
+		}
 		close(q.quit)
 		q.batcherWg.Wait()
 		close(q.done)
@@ -279,6 +311,16 @@ func (q *PostgresQueue) SetStuckTimeout(d time.Duration) {
 // where a live worker's lease expires under it.
 func (q *PostgresQueue) LeaseTimeout() time.Duration {
 	return q.stuckTimeout
+}
+
+// ClaimBatchSize is how many jobs one Claim round trip may take.
+func (q *PostgresQueue) ClaimBatchSize() int {
+	return q.claimBatchSize
+}
+
+// PollIdle is how long the consumer waits when Claim returns no work.
+func (q *PostgresQueue) PollIdle() time.Duration {
+	return q.pollIdle
 }
 
 func (q *PostgresQueue) Write(ctx context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
@@ -426,7 +468,11 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 
 	results := make([]error, len(batch))
 	if len(batch) == 1 {
-		results[0] = q.execWrite(ctx, q.db, batch[0])
+		err := q.execWrite(ctx, q.db, batch[0])
+		results[0] = err
+		if err == nil {
+			q.notifyPending()
+		}
 		return results
 	}
 
@@ -500,6 +546,9 @@ func (q *PostgresQueue) writeBatch(batch []writeRequest) []error {
 			continue
 		}
 		results[i] = skippedWriteResult(batch[i].id)
+	}
+	if len(written) > 0 {
+		q.notifyPending()
 	}
 	return results
 }
@@ -716,7 +765,7 @@ func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, i
 	// Snap "now"/past Go times onto PostgreSQL NOW() so Claim's run_at <= NOW()
 	// cannot miss an immediate retry when the two clocks disagree by milliseconds.
 	if incrementRetry {
-		_, err := q.db.ExecContext(ctx, `
+		res, err := q.db.ExecContext(ctx, `
 			UPDATE convoy.queue_jobs
 			SET status = $2,
 			    retry_count = retry_count + 1,
@@ -726,9 +775,15 @@ func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, i
 			    updated_at = NOW()
 			WHERE id = $1 AND status = $5`,
 			id, statusPending, runAt, lastError, statusProcessing)
-		return err
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			q.notifyPending()
+		}
+		return nil
 	}
-	_, err := q.db.ExecContext(ctx, `
+	res, err := q.db.ExecContext(ctx, `
 		UPDATE convoy.queue_jobs
 		SET status = $2,
 		    run_at = CASE WHEN $3 <= NOW() + interval '1 second' THEN NOW() ELSE $3 END,
@@ -737,7 +792,13 @@ func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, i
 		    updated_at = NOW()
 		WHERE id = $1 AND status = $5`,
 		id, statusPending, runAt, lastError, statusProcessing)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		q.notifyPending()
+	}
+	return nil
 }
 
 func (q *PostgresQueue) Archive(ctx context.Context, id, lastError string) error {
@@ -756,14 +817,20 @@ func (q *PostgresQueue) Release(ctx context.Context, ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	_, err := q.db.ExecContext(ctx, `
+	res, err := q.db.ExecContext(ctx, `
 		UPDATE convoy.queue_jobs
 		SET status = $2,
 		    claimed_at = NULL,
 		    updated_at = NOW()
 		WHERE id = ANY($1) AND status = $3`,
 		pq.Array(ids), statusPending, statusProcessing)
-	return err
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n > 0 {
+		q.notifyPending()
+	}
+	return nil
 }
 
 // Heartbeat renews the claim lease on jobs a consumer still owns. Rows that are
@@ -794,7 +861,14 @@ func (q *PostgresQueue) ReclaimStuck(ctx context.Context) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	if n > 0 {
+		q.notifyPending()
+	}
+	return n, nil
 }
 
 // DeleteArchived drops finished rows. Cron tombstones are the memory that
