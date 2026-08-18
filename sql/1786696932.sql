@@ -25,26 +25,12 @@ CREATE TABLE IF NOT EXISTS convoy.queue_jobs (
     CONSTRAINT queue_jobs_status_check CHECK (status IN ('pending', 'processing', 'archived', 'completed'))
 );
 
--- Claim path: pending rows whose run_at has arrived, oldest first.
-CREATE INDEX IF NOT EXISTS idx_queue_jobs_claim
-    ON convoy.queue_jobs (run_at)
-    WHERE status = 'pending';
-
--- Stuck reclaim: processing rows whose claim lease is older than the timeout.
-CREATE INDEX IF NOT EXISTS idx_queue_jobs_stuck
-    ON convoy.queue_jobs (claimed_at)
-    WHERE status = 'processing';
-
 -- Postgres cache (queue_provider=postgres). TTL is expires_at; NULL means no expiry.
 CREATE TABLE IF NOT EXISTS convoy.kv_cache (
     key        TEXT PRIMARY KEY,
     value      BYTEA NOT NULL,
     expires_at TIMESTAMPTZ
 );
-
-CREATE INDEX IF NOT EXISTS idx_kv_cache_expires
-    ON convoy.kv_cache (expires_at)
-    WHERE expires_at IS NOT NULL;
 
 -- Postgres token-bucket limiter (queue_provider=postgres).
 CREATE TABLE IF NOT EXISTS convoy.rate_limits (
@@ -86,8 +72,41 @@ CREATE TABLE IF NOT EXISTS convoy.batch_retry_progress (
     expires_at       TIMESTAMPTZ NOT NULL
 );
 
+RESET lock_timeout;
+RESET statement_timeout;
+
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
+-- Claim path: pending rows whose run_at has arrived, oldest first.
+CREATE INDEX IF NOT EXISTS idx_queue_jobs_claim
+    ON convoy.queue_jobs (run_at)
+    WHERE status = 'pending';
+
+-- Stuck reclaim: processing rows whose claim lease is older than the timeout.
+CREATE INDEX IF NOT EXISTS idx_queue_jobs_stuck
+    ON convoy.queue_jobs (claimed_at)
+    WHERE status = 'processing';
+
+CREATE INDEX IF NOT EXISTS idx_kv_cache_expires
+    ON convoy.kv_cache (expires_at)
+    WHERE expires_at IS NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_batch_retry_progress_expires
     ON convoy.batch_retry_progress (expires_at);
+
+RESET lock_timeout;
+RESET statement_timeout;
+
+-- +migrate Down notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
+DROP INDEX IF EXISTS convoy.idx_batch_retry_progress_expires;
+DROP INDEX IF EXISTS convoy.idx_kv_cache_expires;
+DROP INDEX IF EXISTS convoy.idx_queue_jobs_stuck;
+DROP INDEX IF EXISTS convoy.idx_queue_jobs_claim;
 
 RESET lock_timeout;
 RESET statement_timeout;
