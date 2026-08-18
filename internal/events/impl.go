@@ -418,7 +418,7 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 		PageLimit:                pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	}
 
-	rows, err := s.repo.LoadEventsPagedExists(ctx, params)
+	rows, err := s.loadEventsPagedExistsRows(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -433,6 +433,19 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 	}
 
 	return events, nil
+}
+
+func eventsPagedInnerDesc(sortOrder, direction string) bool {
+	return (sortOrder == "DESC" && direction == "next") || (sortOrder == "ASC" && direction == "prev")
+}
+
+func (s *Service) loadEventsPagedExistsRows(ctx context.Context, params repo.LoadEventsPagedExistsParams) ([]repo.LoadEventsPagedExistsRow, error) {
+	sortOrder := params.SortOrder.String
+	direction := params.Direction.String
+	if eventsPagedInnerDesc(sortOrder, direction) {
+		return s.repo.LoadEventsPagedExistsInnerDesc(ctx, params)
+	}
+	return s.repo.LoadEventsPagedExistsInnerAsc(ctx, params)
 }
 
 // loadEventsPagedSearch handles CTE path pagination (with search query)

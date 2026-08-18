@@ -1507,3 +1507,12 @@ func TestPartitionEventsTablesNameForRetention(t *testing.T) {
 	require.NoError(t, service.PartitionEventsSearchTable(ctx))
 	testenv.RequirePartitionsAddressableByRetention(t, db, "events_search", project.UID)
 }
+
+func TestEventsPagedInnerDesc(t *testing.T) {
+	t.Parallel()
+
+	require.True(t, eventsPagedInnerDesc("DESC", "next"))
+	require.True(t, eventsPagedInnerDesc("ASC", "prev"))
+	require.False(t, eventsPagedInnerDesc("ASC", "next"))
+	require.False(t, eventsPagedInnerDesc("DESC", "prev"))
+}
