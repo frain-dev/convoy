@@ -86,6 +86,14 @@ func (r *RedisCache) GetStrict(ctx context.Context, key string, data interface{}
 	return err
 }
 
+func (r *RedisCache) GetBytes(ctx context.Context, key string) ([]byte, error) {
+	raw, err := r.client.Get(ctx, key).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return nil, nil
+	}
+	return raw, err
+}
+
 func (r *RedisCache) GetOrCreateBytes(ctx context.Context, key string, value []byte) ([]byte, error) {
 	created, err := r.client.SetNX(ctx, key, value, 0).Result()
 	if err != nil {

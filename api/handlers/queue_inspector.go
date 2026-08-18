@@ -87,8 +87,13 @@ func (h *Handler) GetQueueTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	queueName, ok := queueNameParam(w, r)
+	if !ok {
+		return
+	}
+
 	tasks, err := inspector.Tasks(r.Context(), queue.TaskFilter{
-		Queue:    chi.URLParam(r, "queueName"),
+		Queue:    queueName,
 		Status:   r.URL.Query().Get("status"),
 		Page:     page,
 		PageSize: perPage,
@@ -275,7 +280,7 @@ func intQuery(w http.ResponseWriter, r *http.Request, name string, fallback int)
 // It answers 501 rather than panicking when a deployment has no inspector
 // wired. Every caller must stop on false.
 func (h *Handler) queueInspector(w http.ResponseWriter, r *http.Request) (queue.Inspector, bool) {
-	if !h.requireInstanceAdmin(w, r) {
+	if !h.requireStrictInstanceAdmin(w, r) {
 		return nil, false
 	}
 	if h.A.QueueInspector == nil {

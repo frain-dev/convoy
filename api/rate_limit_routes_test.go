@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -33,8 +34,10 @@ const (
 )
 
 const (
-	probeUsername = "rate-limit-probe"
-	probePassword = "rate-limit-probe-password"
+	probeProjectID = "probe-project"
+	probeOrgID     = "probe-org"
+	probeUsername  = "rate-limit-probe"
+	probePassword  = "rate-limit-probe-password"
 )
 
 // newRateLimitProbeHandler builds a handler with a mock rate limiter. The mock
@@ -221,6 +224,7 @@ func TestEventIntakeChargesTheIngestBucketOnly(t *testing.T) {
 				rate := mocks.NewMockRateLimiter(ctrl)
 				handler := newRateLimitProbeHandler(t, rate)
 				initProbeFileRealm(t, handler.cfg)
+				wireProbeIntakeRepos(t, ctrl, handler)
 
 				rate.EXPECT().
 					AllowWithDuration(gomock.Any(), middleware.RateLimitBucketIngest, probeInstanceIngestRate*60, 60).
@@ -304,4 +308,31 @@ func initProbeFileRealm(t *testing.T, cfg config.Configuration) {
 	}}
 
 	require.NoError(t, realm_chain.Init(&authCfg, nil, nil, nil, nil, testenv.NewLogger(t)))
+}
+
+// wireProbeIntakeRepos stubs the project/org lookups intake middleware runs
+// before the ingest bucket. Intake no longer rate-limits ahead of auth gates.
+func wireProbeIntakeRepos(t *testing.T, ctrl *gomock.Controller, handler *ApplicationHandler) {
+	t.Helper()
+
+	projectRepo := mocks.NewMockProjectRepository(ctrl)
+	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
+
+	project := &datastore.Project{
+		UID:            probeProjectID,
+		OrganisationID: probeOrgID,
+	}
+	org := &datastore.Organisation{UID: probeOrgID}
+
+	projectRepo.EXPECT().
+		FetchProjectByID(gomock.Any(), probeProjectID).
+		Return(project, nil).
+		AnyTimes()
+	orgRepo.EXPECT().
+		FetchOrganisationByID(gomock.Any(), probeOrgID).
+		Return(org, nil).
+		AnyTimes()
+
+	handler.A.ProjectRepo = projectRepo
+	handler.A.OrgRepo = orgRepo
 }

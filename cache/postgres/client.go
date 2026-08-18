@@ -214,6 +214,22 @@ func (c *PostgresCache) Consume(ctx context.Context, key string, dest interface{
 	return true, nil
 }
 
+// GetBytes reads a raw byte value written by GetOrCreateBytes. Miss returns nil, nil.
+func (c *PostgresCache) GetBytes(ctx context.Context, key string) ([]byte, error) {
+	var raw []byte
+	err := c.db.GetContext(ctx, &raw, `
+		SELECT value
+		FROM convoy.kv_cache
+		WHERE key = $1
+		  AND (expires_at IS NULL OR expires_at > NOW())`,
+		key,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return raw, err
+}
+
 // GetOrCreateBytes inserts value when the key is absent (SETNX). Concurrent
 // writers converge on the first row. Used for cluster-wide secrets such as the
 // queue-monitoring cookie signing key.

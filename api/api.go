@@ -310,15 +310,16 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 // an ingest outage. This mirrors /ingest, which is the same surface.
 func (a *ApplicationHandler) mountEventIntakeRoutes(router chi.Router, handler *handlers.Handler) {
 	router.Group(func(intakeRouter chi.Router) {
-		// The limiter runs ahead of the project and organisation lookups so a
-		// throttled sender cannot spend a database round trip per request.
+		// Project and org gates run before the shared ingest bucket so callers
+		// cannot burn /ingest capacity with unauthorized project IDs. Matches
+		// the ordering on main's /projects/{projectID}/events write group.
 		// InstrumentPath stays outermost so it keeps counting every request that
 		// reaches intake, rejected ones included.
 		intakeRouter.Use(
 			middleware.InstrumentPath(a.A.Licenser),
-			middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen),
 			handler.RequireEnabledProject(),
 			handler.RequireEnabledOrganisation(),
+			middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen),
 		)
 
 		intakeRouter.Post("/projects/{projectID}/events", handler.CreateEndpointEvent)

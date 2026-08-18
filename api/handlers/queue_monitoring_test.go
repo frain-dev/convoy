@@ -83,6 +83,14 @@ func (f *fakeSigningCache) Delete(context.Context, string) error           { ret
 func (f *fakeSigningCache) GetStrict(context.Context, string, interface{}) error {
 	return f.strictErr
 }
+func (f *fakeSigningCache) GetBytes(_ context.Context, _ string) ([]byte, error) {
+	if f.val == nil {
+		return nil, nil
+	}
+	out := make([]byte, len(f.val))
+	copy(out, f.val)
+	return out, nil
+}
 func (f *fakeSigningCache) GetOrCreateBytes(_ context.Context, _ string, value []byte) ([]byte, error) {
 	if f.val == nil {
 		f.val = append([]byte(nil), value...)

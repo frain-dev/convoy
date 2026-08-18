@@ -63,7 +63,11 @@ func (h *Handler) RequireEnabledOrganisation() func(next http.Handler) http.Hand
 				if cachedOrg := r.Context().Value(convoy.OrganisationCtx); cachedOrg != nil {
 					org = cachedOrg.(*datastore.Organisation)
 				} else {
-					orgRepo := cached.NewCachedOrganisationRepository(organisations.New(h.A.Logger, h.A.DB), h.A.Cache, 5*time.Minute, h.A.Logger)
+					inner := h.orgRepo()
+					orgRepo := inner
+					if h.A.Cache != nil {
+						orgRepo = cached.NewCachedOrganisationRepository(inner, h.A.Cache, 5*time.Minute, h.A.Logger)
+					}
 					org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 					if err != nil {
 						h.A.Logger.Error("Failed to fetch organisation for disabled check", "error", err)

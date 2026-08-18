@@ -14,5 +14,7 @@ type Cache interface {
 type AuthoritativeCache interface {
 	Cache
 	GetStrict(ctx context.Context, key string, data interface{}) error
+	// GetBytes reads a raw byte value written by GetOrCreateBytes. Miss returns nil, nil.
+	GetBytes(ctx context.Context, key string) ([]byte, error)
 	GetOrCreateBytes(ctx context.Context, key string, value []byte) ([]byte, error)
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
@@ -52,6 +53,13 @@ func getOrCreateSigningKey(ctx context.Context, c cache.AuthoritativeCache) ([]b
 	if c == nil {
 		return nil, false
 	}
+
+	if raw, err := c.GetBytes(ctx, signingKeyStoreKey); err != nil {
+		return nil, false
+	} else if len(raw) > 0 {
+		return decodeSigningKey(string(raw))
+	}
+
 	newKey := make([]byte, signingKeyLen)
 	if _, err := rand.Read(newKey); err != nil {
 		return nil, false
@@ -164,6 +172,24 @@ func (h *Handler) requireInstanceAdmin(w http.ResponseWriter, r *http.Request) b
 
 	isAdmin, err := h.A.OrgMemberRepo.HasInstanceAdminAccess(r.Context(), user.UID)
 	if err != nil || !isAdmin {
+		_ = render.Render(w, r, util.NewErrorResponse("instance admin access required", http.StatusForbidden))
+		return false
+	}
+	return true
+}
+
+// requireStrictInstanceAdmin matches sibling /ui/admin mutation routes: the
+// caller must hold the instance_admin role, not the bootstrap OR that grants
+// access while no instance admin exists yet.
+func (h *Handler) requireStrictInstanceAdmin(w http.ResponseWriter, r *http.Request) bool {
+	user, err := h.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+		return false
+	}
+
+	member, err := h.A.OrgMemberRepo.FetchInstanceAdminByUserID(r.Context(), user.UID)
+	if err != nil || member == nil || member.Role.Type != auth.RoleInstanceAdmin {
 		_ = render.Render(w, r, util.NewErrorResponse("instance admin access required", http.StatusForbidden))
 		return false
 	}

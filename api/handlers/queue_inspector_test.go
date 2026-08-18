@@ -134,7 +134,9 @@ func newQueueHandler(t *testing.T, inspector queue.Inspector, expectRepo func(*m
 
 func adminOnce(times int) func(*mocks.MockOrganisationMemberRepository) {
 	return func(repo *mocks.MockOrganisationMemberRepository) {
-		repo.EXPECT().HasInstanceAdminAccess(gomock.Any(), "user-1").Return(true, nil).Times(times)
+		repo.EXPECT().FetchInstanceAdminByUserID(gomock.Any(), "user-1").Return(&datastore.OrganisationMember{
+			Role: auth.Role{Type: auth.RoleInstanceAdmin},
+		}, nil).Times(times)
 	}
 }
 
@@ -159,7 +161,7 @@ func TestQueueEndpointsRequireInstanceAdmin(t *testing.T) {
 			name: "authenticated non-admin",
 			user: user,
 			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
-				repo.EXPECT().HasInstanceAdminAccess(gomock.Any(), "user-1").Return(false, nil)
+				repo.EXPECT().FetchInstanceAdminByUserID(gomock.Any(), "user-1").Return(nil, datastore.ErrOrgMemberNotFound)
 			},
 			wantStatus: http.StatusForbidden,
 		},
@@ -168,7 +170,7 @@ func TestQueueEndpointsRequireInstanceAdmin(t *testing.T) {
 			name: "membership lookup fails",
 			user: user,
 			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
-				repo.EXPECT().HasInstanceAdminAccess(gomock.Any(), "user-1").Return(false, fmt.Errorf("db down"))
+				repo.EXPECT().FetchInstanceAdminByUserID(gomock.Any(), "user-1").Return(nil, fmt.Errorf("db down"))
 			},
 			wantStatus: http.StatusForbidden,
 		},
@@ -461,9 +463,11 @@ func TestRequireQueueMonitoringAdmin(t *testing.T) {
 			wantStatus: http.StatusForbidden,
 		},
 		{
-			name:       "instance admin",
-			user:       &datastore.User{UID: "user-1"},
-			expectRepo: adminOnce(1),
+			name: "instance admin",
+			user: &datastore.User{UID: "user-1"},
+			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
+				repo.EXPECT().HasInstanceAdminAccess(gomock.Any(), "user-1").Return(true, nil)
+			},
 			wantStatus: http.StatusOK,
 			wantServed: true,
 		},
