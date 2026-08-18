@@ -185,35 +185,25 @@ func newBroker(t *testing.T, cfg config.Configuration, db database.Database, log
 	return deps
 }
 
-// newAPIOptions passes the whole broker dependency set, not just the queue and
-// cache. The handler used to derive the circuit breaker store, trial cap, acker
-// and friends from APIOptions.Redis, so the suite covered them for free; now
-// they are explicit and anything left nil is silently skipped by its nil guard.
-// A partial build would mean the Postgres shard runs green while never touching
-// the Postgres implementations of those paths.
+// newAPIOptions wires the full broker dependency set via ApplyToAPIOptions. The
+// handler used to derive circuit breaker, trial cap, acker and friends from
+// APIOptions.Redis; they are explicit now and anything left nil is silently
+// skipped by its nil guard. ApplyToAPIOptions keeps the suite aligned with prod
+// wiring so a partial build cannot run green without touching broker paths.
 func newAPIOptions(tl *testInstance, deps *broker.Dependencies, licenser license.Licenser) *types.APIOptions {
 	db := tl.Database
-	return &types.APIOptions{
+	o := &types.APIOptions{
 		DB:                         db,
-		Queue:                      deps.Queue,
-		QueueMonitor:               deps.QueueMonitor,
 		Logger:                     tl.Logger,
-		Cache:                      deps.Cache,
-		QueueSessionStore:          deps.Cache,
 		FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
 		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
 		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
-		Rate:                       deps.RateLimiter,
-		CircuitBreakerStore:        deps.CircuitBreakerStore,
-		TrialEvents:                deps.TrialEvents,
-		Acker:                      deps.Acker,
-		ResendClaims:               deps.ResendClaims,
-		UsageLocker:                deps.JobLocker,
-		BatchTracker:               deps.BatchTracker,
 		ConfigRepo:                 configuration.New(tl.Logger, db),
 		Licenser:                   licenser,
 		Cfg:                        tl.Config,
 	}
+	deps.ApplyToAPIOptions(o)
+	return o
 }
 
 func buildServer(t *testing.T) *ApplicationHandler {

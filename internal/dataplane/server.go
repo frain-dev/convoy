@@ -37,27 +37,18 @@ func StartServer(opts RuntimeOpts, cfg config.Configuration) error {
 		return fmt.Errorf("broker dependencies are required")
 	}
 
-	evHandler, err := api.NewApplicationHandler(
-		&types.APIOptions{
-			FFlag:               flag,
-			DB:                  opts.DB,
-			Queue:               opts.Queue,
-			QueueMonitor:        opts.Broker.QueueMonitor,
-			Logger:              lo,
-			Cache:               opts.Cache,
-			QueueSessionStore:   opts.Broker.Cache,
-			Rate:                opts.Rate,
-			CircuitBreakerStore: opts.Broker.CircuitBreakerStore,
-			TrialEvents:         opts.Broker.TrialEvents,
-			Acker:               opts.Broker.Acker,
-			ResendClaims:        opts.Broker.ResendClaims,
-			UsageLocker:         opts.Broker.JobLocker,
-			BatchTracker:        opts.Broker.BatchTracker,
-			Licenser:            opts.Licenser,
-			Cfg:                 cfg,
-			TracerBackend:       opts.TracerBackend,
-			ConfigRepo:          configRepo,
-		})
+	apiOpts := &types.APIOptions{
+		FFlag:         flag,
+		DB:            opts.DB,
+		Logger:        lo,
+		Licenser:      opts.Licenser,
+		Cfg:           cfg,
+		TracerBackend: opts.TracerBackend,
+		ConfigRepo:    configRepo,
+	}
+	opts.Broker.ApplyToAPIOptions(apiOpts)
+
+	evHandler, err := api.NewApplicationHandler(apiOpts)
 	if err != nil {
 		return fmt.Errorf("failed to create application handler: %w", err)
 	}

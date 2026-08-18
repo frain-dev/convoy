@@ -141,30 +141,20 @@ func StartConvoyServer(a *cli.App) error {
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
-	handler, err := api.NewApplicationHandler(
-		&types.APIOptions{
-			FFlag:                      flag,
-			FeatureFlagFetcher:         featureFlagFetcher,
-			EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
-			DB:                         a.DB,
-			Queue:                      a.Queue,
-			QueueMonitor:               a.Broker.QueueMonitor,
-			QueueInspector:             a.Broker.QueueInspector,
-			Logger:                     lo,
-			Cache:                      a.Cache,
-			QueueSessionStore:          a.Broker.Cache,
-			Rate:                       a.Rate,
-			CircuitBreakerStore:        a.Broker.CircuitBreakerStore,
-			TrialEvents:                a.Broker.TrialEvents,
-			Acker:                      a.Broker.Acker,
-			ResendClaims:               a.Broker.ResendClaims,
-			UsageLocker:                a.Broker.JobLocker,
-			BatchTracker:               a.Broker.BatchTracker,
-			Licenser:                   a.Licenser,
-			Cfg:                        cfg,
-			TracerBackend:              a.TracerBackend,
-			ConfigRepo:                 configRepo,
-		})
+	apiOpts := &types.APIOptions{
+		FFlag:                      flag,
+		FeatureFlagFetcher:         featureFlagFetcher,
+		EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+		DB:                         a.DB,
+		Logger:                     lo,
+		Licenser:                   a.Licenser,
+		Cfg:                        cfg,
+		TracerBackend:              a.TracerBackend,
+		ConfigRepo:                 configRepo,
+	}
+	a.Broker.ApplyToAPIOptions(apiOpts)
+
+	handler, err := api.NewApplicationHandler(apiOpts)
 	if err != nil {
 		return err
 	}
