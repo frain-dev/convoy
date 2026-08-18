@@ -682,11 +682,44 @@ func (q *PostgresQueue) runCompleteBatcher() {
 		select {
 		case first = <-q.completions:
 		case <-q.quit:
+			// Drain what was already admitted before giving up: those callers
+			// are blocked on their result channel and a durable completion was
+			// promised to them.
+			q.drainCompletions()
 			return
 		}
 
 		batch := collectBatch(first, q.completions, q.batchSize, q.batchWait)
 
+		ids := make([]string, len(batch))
+		for i := range batch {
+			ids[i] = batch[i].id
+		}
+		err := q.completeBatch(ids)
+		for i := range batch {
+			batch[i].result <- err
+		}
+	}
+}
+
+// drainCompletions finishes whatever is still buffered after Close. Several
+// batchers may run this at once; each takes what it can get and stops when the
+// channel is empty.
+func (q *PostgresQueue) drainCompletions() {
+	for {
+		var batch []completeRequest
+		for len(batch) < q.batchSize {
+			select {
+			case req := <-q.completions:
+				batch = append(batch, req)
+				continue
+			default:
+			}
+			break
+		}
+		if len(batch) == 0 {
+			return
+		}
 		ids := make([]string, len(batch))
 		for i := range batch {
 			ids[i] = batch[i].id

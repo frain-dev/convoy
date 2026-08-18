@@ -699,3 +699,36 @@ func TestCloseReleasesBatchers(t *testing.T) {
 	require.LessOrEqual(t, runtime.NumGoroutine()-before, 4,
 		"batcher goroutines should not outlive Close")
 }
+
+func TestCloseDrainsInFlightCompletions(t *testing.T) {
+	q := setupQueue(t)
+	ctx := context.Background()
+	jobID := ulid.Make().String()
+	require.NoError(t, q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{
+		ID:      jobID,
+		Payload: []byte("hello"),
+	}))
+	jobs, err := q.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- q.Complete(ctx, jobID)
+	}()
+
+	time.Sleep(10 * time.Millisecond)
+	require.NoError(t, q.Close())
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(2 * time.Second):
+		t.Fatal("Complete did not finish after Close drained completions")
+	}
+
+	var remaining int
+	require.NoError(t, q.db.GetContext(ctx, &remaining,
+		`SELECT COUNT(*) FROM convoy.queue_jobs WHERE id = $1`, jobID))
+	require.Equal(t, 0, remaining)
+}
