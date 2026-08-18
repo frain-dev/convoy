@@ -150,6 +150,16 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 		return !!this.eventDelsDetails?.endpoint_metadata?.deleted_at;
 	}
 
+	// Per-delivery URL truth lives on target_url (dynamic paths) or delivery_attempts.url.
+	// Do not fall back to endpoint_metadata.url; that is the live endpoint template.
+	deliveredToUrl(): string {
+		const targetUrl = this.eventDelsDetails?.target_url?.trim();
+		if (targetUrl) return targetUrl;
+
+		const attemptUrl = (this.selectedDeliveryAttempt ?? this.eventDeliveryAtempt)?.url?.trim();
+		return attemptUrl || '';
+	}
+
 	checkScreenSize() {
 		this.screenWidth > 1010 ? (this.shouldRenderSmallSize = false) : (this.shouldRenderSmallSize = true);
 	}
