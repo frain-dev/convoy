@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	convoynet "github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/cachedrepo"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -98,7 +99,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.NewCreateEndpointService(
-		endpointsvc.New(h.A.Logger, h.A.DB),
+		h.endpointWriteRepo(),
 		h.projectRepo(),
 		h.A.Licenser,
 		h.A.FFlag,
@@ -593,7 +594,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.NewUpdateEndpointService(
 		h.A.Cache,
-		endpointsvc.New(h.A.Logger, h.A.DB),
+		h.endpointWriteRepo(),
 		h.projectRepo(),
 		h.A.Licenser,
 		h.A.FFlag,
@@ -672,11 +673,20 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = endpointsvc.New(h.A.Logger, h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	// Collected before the delete: the cascade removes the rows these ids live on.
+	sourceKeys := h.subscriptionSourceKeys(r.Context(), project.UID, endpointID)
+
+	err = h.endpointWriteRepo().DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete endpoint", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
 		return
+	}
+
+	// The repository evicts the endpoint-keyed list; these are the source-keyed
+	// lists the same cascade invalidated.
+	if len(sourceKeys) > 0 {
+		cachedrepo.Invalidate(r.Context(), h.A.Cache, h.A.Logger, sourceKeys...)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint deleted successfully", nil, http.StatusOK))
@@ -727,7 +737,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	xs := services.ExpireSecretService{
 		Queuer:       h.A.Queue,
 		Cache:        h.A.Cache,
-		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
+		EndpointRepo: h.endpointWriteRepo(),
 		ProjectRepo:  h.projectRepo(),
 		S:            e,
 		Endpoint:     endpoint,
@@ -785,7 +795,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
+		EndpointRepo: h.endpointWriteRepo(),
 		ProjectID:    project.UID,
 		EndpointId:   endpointID,
 		Logger:       h.A.Logger,
@@ -859,7 +869,7 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aes := services.ActivateEndpointService{
-		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
+		EndpointRepo: h.endpointWriteRepo(),
 		ProjectID:    project.UID,
 		EndpointId:   endpointID,
 		Logger:       h.A.Logger,

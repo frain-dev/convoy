@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -16,13 +17,17 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/datastore/cached"
+	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/events"
+	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
+	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -50,6 +55,102 @@ func (h *Handler) projectRepo() datastore.ProjectRepository {
 		return h.A.ProjectRepo
 	}
 	return projects.New(h.A.Logger, h.A.DB)
+}
+
+// subscriptionRepo returns the subscription repository handlers must use. When a
+// cache is configured it wraps the raw repository in the same decorator the
+// dataplane worker reads through, so create, update and delete invalidate
+// "subs_by_endpoint:<project>:<endpoint>" instead of leaving the worker to route
+// on the pre-change subscription list until the TTL expires. Only the match-path
+// lookup is cached; every read the API performs through this repository
+// (FindSubscriptionByID, LoadSubscriptionsPaged, CountEndpointSubscriptions) is a
+// pass-through, so it cannot serve a stale response to a caller who just wrote.
+//
+// Invalidation deletes the shared cache entry that the worker reads. Any
+// per-replica in-process cache layered in front of it would still serve its own
+// copy on the replicas that did not handle the write, so this narrows the
+// staleness window rather than closing it fleet-wide.
+func (h *Handler) subscriptionRepo() datastore.SubscriptionRepository {
+	repo := subscriptions.New(h.A.Logger, h.A.DB)
+	if h.A.Cache == nil {
+		return repo
+	}
+	return cached.NewCachedSubscriptionRepository(repo, h.A.Cache, cached.DefaultSubscriptionTTL, h.A.Logger)
+}
+
+// filterWriteRepo returns the filter repository filter mutations must go through,
+// so create, update and delete invalidate "filters:<subscription>:<eventType>",
+// which the worker matches on.
+//
+// Filter reads deliberately stay on the raw repository.
+// FindFilterBySubscriptionAndEventType is read-through cached, not-found included,
+// and the API uses it as a uniqueness gate; a stale entry there would reject a
+// filter the caller is allowed to create.
+func (h *Handler) filterWriteRepo() datastore.FilterRepository {
+	repo := filters.New(h.A.Logger, h.A.DB)
+	if h.A.Cache == nil {
+		return repo
+	}
+	return cached.NewCachedFilterRepository(repo, h.A.Cache, cached.DefaultFilterTTL, h.A.Logger)
+}
+
+// subscriptionSourceKeys returns the source-keyed subscription list keys the
+// endpoint's subscriptions currently appear in.
+//
+// Deleting an endpoint cascade deletes its subscriptions in SQL, inside the
+// delete transaction and below the repository, so nothing evicts those lists.
+// The source ids exist only on the rows that are about to disappear, so they
+// have to be read first. This reads the raw repository because the cached list
+// is the thing being invalidated. A failure leaves the lists to the TTL rather
+// than blocking the delete.
+func (h *Handler) subscriptionSourceKeys(ctx context.Context, projectID, endpointID string) []string {
+	if h.A.Cache == nil {
+		return nil
+	}
+	return subscriptionSourceKeys(ctx, h.A.Logger, subscriptions.New(h.A.Logger, h.A.DB), projectID, endpointID)
+}
+
+func subscriptionSourceKeys(ctx context.Context, log logger.Logger, repo datastore.SubscriptionRepository, projectID, endpointID string) []string {
+	subs, err := repo.FindSubscriptionsByEndpointID(ctx, projectID, endpointID)
+	if err != nil {
+		log.ErrorContext(ctx, "failed to read subscriptions before endpoint delete, source lists left to expire",
+			"error", err, "project_id", projectID, "endpoint_id", endpointID)
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(subs))
+	keys := make([]string, 0, len(subs))
+	for i := range subs {
+		sourceID := subs[i].SourceID
+		if sourceID == "" {
+			continue
+		}
+		if _, dup := seen[sourceID]; dup {
+			continue
+		}
+		seen[sourceID] = struct{}{}
+		keys = append(keys, cached.SubscriptionsBySourceCacheKey(projectID, sourceID))
+	}
+	return keys
+}
+
+// endpointWriteRepo returns the endpoint repository endpoint mutations must go
+// through, so create, update, delete, secret expiry and pause or activate
+// invalidate "endpoints:<project>:<endpoint>" and
+// "endpoints_by_owner:<project>:<owner>", which the delivery path reads. Delete
+// also drops the endpoint's subscription list, since that cascade happens in SQL
+// below the repository.
+//
+// This repository never serves a cached read. UpdateEndpointService,
+// PauseEndpointService and ActivateEndpointService load the endpoint through it
+// and then merge or toggle onto that record, so a worker-populated entry up to
+// DefaultEndpointTTL old would become the base of the next write.
+func (h *Handler) endpointWriteRepo() datastore.EndpointRepository {
+	repo := endpoints.New(h.A.Logger, h.A.DB)
+	if h.A.Cache == nil {
+		return repo
+	}
+	return cached.NewInvalidatingEndpointRepository(repo, h.A.Cache, h.A.Logger)
 }
 
 // orgMemberRepo returns the injected organisation member repository, falling back to a
@@ -429,7 +530,7 @@ func (h *Handler) RequirePortalLinkOwnsSubscription() func(next http.Handler) ht
 					return
 				}
 
-				sub, err := subscriptions.New(h.A.Logger, h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+				sub, err := h.subscriptionRepo().FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 				if err != nil {
 					if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 						_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
