@@ -56,6 +56,7 @@ export interface EVENT_DELIVERY {
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {
+	url?: string;
 	ip_address: string;
 	http_status: string;
 	api_version: string;
