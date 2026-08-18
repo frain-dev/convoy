@@ -48,11 +48,11 @@ type Querier interface {
 	// Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
 	// ============================================================================
 	// Fast pagination using EXISTS subquery (no search query)
-	// Uses CTE with direction-based sort for correct backward pagination
+	// Inner scan uses plain ORDER BY id DESC or ASC for index-friendly generic plans.
 	// @direction: 'next' or 'prev' (pagination direction)
 	// @sort_order: 'ASC' or 'DESC' (user-requested sort order)
-	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
-	LoadEventsPagedExists(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
+	LoadEventsPagedExistsInnerDesc(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
+	LoadEventsPagedExistsInnerAsc(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
 	// Full-text search pagination using CTE + JOIN + GROUP BY
 	// Uses convoy.events_search table for search_token matching
 	// @direction: 'next' or 'prev' (pagination direction)

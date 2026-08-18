@@ -158,11 +158,11 @@ WHERE ev.project_id = @project_id
 -- Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
 -- ============================================================================
 
--- name: LoadEventsPagedExists :many
+-- name: LoadEventsPagedExistsInnerDesc :many
 -- Fast pagination using EXISTS subquery (no search query)
--- Uses CTE with direction-based sort for correct backward pagination
+-- Inner scan uses plain ORDER BY id DESC so generic plans keep the events_pkey index.
 -- @direction: 'next' or 'prev' (pagination direction)
--- @sort_order: 'ASC' or 'DESC' (user-requested sort order)
+-- @sort_order: 'ASC' or 'DESC' (user-requested sort order for cursor + outer re-sort)
 WITH filtered_events AS (
     SELECT ev.id,
            ev.project_id,
@@ -188,7 +188,6 @@ WITH filtered_events AS (
     FROM convoy.events ev
              LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL
-      -- EXISTS subquery for endpoint/owner filters (enables index usage)
       AND (
         CASE
             WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
@@ -204,20 +203,16 @@ WITH filtered_events AS (
             ELSE true
             END
         )
-      -- Base filters
       AND ev.project_id = @project_id
       AND (CASE
                WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
                ELSE true END)
       AND ev.created_at >= @start_date
       AND ev.created_at <= @end_date
-      -- Source filter
       AND (CASE WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[]) ELSE true END)
-      -- Broker message ID filter
       AND (CASE
                WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
                ELSE true END)
-      -- Cursor pagination: DESC+next or ASC+prev → id <= cursor; ASC+next or DESC+prev → id >= cursor
       AND (
         CASE
             WHEN @cursor = '' THEN true
@@ -226,13 +221,81 @@ WITH filtered_events AS (
             ELSE true
         END
       )
-    -- Inner sort: DESC+next or ASC+prev → DESC; ASC+next or DESC+prev → ASC
-    ORDER BY
-        CASE WHEN (@sort_order::text = 'DESC' AND @direction::text = 'next') OR (@sort_order::text = 'ASC' AND @direction::text = 'prev') THEN ev.id END DESC,
-        CASE WHEN (@sort_order::text = 'ASC' AND @direction::text = 'next') OR (@sort_order::text = 'DESC' AND @direction::text = 'prev') THEN ev.id END ASC
+    ORDER BY ev.id DESC
     LIMIT @page_limit
 )
--- Outer sort: always the user-requested sort order (re-reverses backward fetches)
+SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
+       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
+       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
+       "source_metadata.id", "source_metadata.name"
+FROM filtered_events
+ORDER BY
+    CASE WHEN @sort_order::text = 'DESC' THEN id END DESC,
+    CASE WHEN @sort_order::text = 'ASC' THEN id END ASC;
+
+-- name: LoadEventsPagedExistsInnerAsc :many
+-- Same as LoadEventsPagedExistsInnerDesc but inner scan uses ORDER BY id ASC.
+WITH filtered_events AS (
+    SELECT ev.id,
+           ev.project_id,
+           ev.event_type,
+           ev.is_duplicate_event,
+           COALESCE(ev.source_id, '')        AS source_id,
+           ev.endpoints,
+           ev.headers,
+           ev.raw,
+           ev.data,
+           ev.created_at,
+           COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+           COALESCE(ev.url_query_params, '') AS url_query_params,
+           COALESCE(ev.url_path, '')         AS url_path,
+           ev.updated_at,
+           ev.deleted_at,
+           ev.acknowledged_at,
+           ev.metadata,
+           ev.status,
+           COALESCE(ev.failure_reason, '')   AS failure_reason,
+           COALESCE(s.id, '')                AS "source_metadata.id",
+           COALESCE(s.name, '')              AS "source_metadata.name"
+    FROM convoy.events ev
+             LEFT JOIN convoy.sources s ON s.id = ev.source_id
+    WHERE ev.deleted_at IS NULL
+      AND (
+        CASE
+            WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
+                EXISTS (SELECT 1
+                        FROM convoy.events_endpoints ee
+                                 JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                        WHERE ee.event_id = ev.id
+                          AND (CASE WHEN @has_owner_id::BOOLEAN THEN e.owner_id = @owner_id ELSE true END)
+                          AND (CASE
+                                   WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
+                                   ELSE true END)
+                )
+            ELSE true
+            END
+        )
+      AND ev.project_id = @project_id
+      AND (CASE
+               WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
+               ELSE true END)
+      AND ev.created_at >= @start_date
+      AND ev.created_at <= @end_date
+      AND (CASE WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[]) ELSE true END)
+      AND (CASE
+               WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
+               ELSE true END)
+      AND (
+        CASE
+            WHEN @cursor = '' THEN true
+            WHEN (@sort_order::text = 'DESC' AND @direction::text = 'next') OR (@sort_order::text = 'ASC' AND @direction::text = 'prev') THEN ev.id <= @cursor
+            WHEN (@sort_order::text = 'ASC' AND @direction::text = 'next') OR (@sort_order::text = 'DESC' AND @direction::text = 'prev') THEN ev.id >= @cursor
+            ELSE true
+        END
+      )
+    ORDER BY ev.id ASC
+    LIMIT @page_limit
+)
 SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
        headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
        updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
