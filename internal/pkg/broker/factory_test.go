@@ -25,10 +25,15 @@ func testConfig(provider config.QueueProvider) config.Configuration {
 	}
 }
 
-func assertCompleteDependencies(t *testing.T, deps *Dependencies) {
+func assertCompleteDependencies(t *testing.T, provider config.QueueProvider, deps *Dependencies) {
 	t.Helper()
 	require.NotNil(t, deps.Queue)
-	require.NotNil(t, deps.QueueMonitor)
+	require.NotNil(t, deps.QueueInspector)
+	if provider == config.RedisQueueProvider {
+		require.NotNil(t, deps.QueueMonitor)
+	} else {
+		require.Nil(t, deps.QueueMonitor)
+	}
 	require.NotNil(t, deps.Cache)
 	require.NotNil(t, deps.RateLimiter)
 	require.NotNil(t, deps.CircuitBreakerStore)
@@ -49,11 +54,11 @@ func TestRegistryBuildsBothProviders(t *testing.T) {
 
 	postgresDeps, err := New(testConfig(config.PostgresQueueProvider), db, logger)
 	require.NoError(t, err)
-	assertCompleteDependencies(t, postgresDeps)
+	assertCompleteDependencies(t, config.PostgresQueueProvider, postgresDeps)
 
 	redisDeps, err := New(testConfig(config.RedisQueueProvider), db, logger)
 	require.NoError(t, err)
-	assertCompleteDependencies(t, redisDeps)
+	assertCompleteDependencies(t, config.RedisQueueProvider, redisDeps)
 }
 
 func stubJobLockDB(t *testing.T, db *sqlx.DB) {
