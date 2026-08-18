@@ -13,7 +13,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/users"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -60,7 +59,7 @@ func TestCircuitBreakersGet_PrintsJSON(t *testing.T) {
 	err := store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:test-breaker": breaker}, time.Minute)
 	require.NoError(t, err)
 
-	app := &cli.App{Redis: redisClient}
+	app := newCLIApp(t, l)
 	cmd := AddCircuitBreakersGetCommand(app)
 
 	out := captureStdout(func() {
@@ -92,7 +91,7 @@ func TestCircuitBreakersGet_TrimsPrefix(t *testing.T) {
 	err := store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:test-breaker2": breaker}, time.Minute)
 	require.NoError(t, err)
 
-	app := &cli.App{Redis: redisClient}
+	app := newCLIApp(t, l)
 	cmd := AddCircuitBreakersGetCommand(app)
 
 	out := captureStdout(func() {
@@ -110,9 +109,8 @@ func TestCircuitBreakersGet_TrimsPrefix(t *testing.T) {
 
 func TestCircuitBreakersGet_NotFound(t *testing.T) {
 	_, l := newInfra(t)
-	redisClient := l.Redis
 
-	app := &cli.App{Redis: redisClient}
+	app := newCLIApp(t, l)
 	cmd := AddCircuitBreakersGetCommand(app)
 	err := cmd.RunE(cmd, []string{"does-not-exist"})
 	require.Error(t, err)
@@ -150,11 +148,7 @@ func TestCircuitBreakersUpdate_Integration(t *testing.T) {
 	require.NoError(t, store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:cb-endpoint-1": breaker}, time.Minute))
 
 	// Execute update via CLI command using same app deps
-	cmd := AddCircuitBreakersUpdateCommand(&cli.App{
-		DB:     app.Database,
-		Redis:  app.Redis,
-		Logger: app.Logger,
-	})
+	cmd := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 	require.NoError(t, cmd.Flags().Set("failure_threshold", "55"))
 	require.NoError(t, cmd.Flags().Set("success_threshold", "6"))
 	require.NoError(t, cmd.Flags().Set("minimum_request_count", "11"))
@@ -215,7 +209,7 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 		require.NoError(t, store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:ec-endpoint-a": breaker}, time.Minute))
 
 		// Run update without flags
-		cmd := AddCircuitBreakersUpdateCommand(&cli.App{DB: app.Database, Redis: app.Redis, Logger: app.Logger})
+		cmd := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 		err := cmd.RunE(cmd, []string{project.UID})
 		require.NoError(t, err)
 
@@ -238,7 +232,7 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 		breaker := cb.CircuitBreaker{Key: "ec-endpoint-b", TenantId: project.UID}
 		require.NoError(t, store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:ec-endpoint-b": breaker}, time.Minute))
 
-		cmd := AddCircuitBreakersUpdateCommand(&cli.App{DB: app.Database, Redis: app.Redis, Logger: app.Logger})
+		cmd := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 		_ = cmd.Flags().Set("failure_threshold", "51")
 		err := cmd.RunE(cmd, []string{project.UID})
 		require.NoError(t, err)
@@ -258,7 +252,7 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 		breaker := cb.CircuitBreaker{Key: "ec-endpoint-c", TenantId: project.UID}
 		require.NoError(t, store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:ec-endpoint-c": breaker}, time.Minute))
 
-		cmd := AddCircuitBreakersUpdateCommand(&cli.App{DB: app.Database, Redis: app.Redis, Logger: app.Logger})
+		cmd := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 		_ = cmd.Flags().Set("success_threshold", "9")
 		err := cmd.RunE(cmd, []string{project.UID})
 		require.NoError(t, err)
@@ -279,21 +273,21 @@ func TestCircuitBreakersUpdate_EdgeCases(t *testing.T) {
 		require.NoError(t, store.SetMany(ctx, map[string]cb.CircuitBreaker{"breaker:ec-endpoint-d": breaker}, time.Minute))
 
 		// failure_threshold > 100 should error
-		cmd := AddCircuitBreakersUpdateCommand(&cli.App{DB: app.Database, Redis: app.Redis, Logger: app.Logger})
+		cmd := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 		_ = cmd.Flags().Set("failure_threshold", "101")
 		err := cmd.RunE(cmd, []string{project.UID})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failure_threshold")
 
 		// success_threshold > 100 should error
-		cmd2 := AddCircuitBreakersUpdateCommand(&cli.App{DB: app.Database, Redis: app.Redis, Logger: app.Logger})
+		cmd2 := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 		_ = cmd2.Flags().Set("success_threshold", "1000")
 		err = cmd2.RunE(cmd2, []string{project.UID})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "success_threshold")
 
 		// observability_window == 0 should error
-		cmd3 := AddCircuitBreakersUpdateCommand(&cli.App{DB: app.Database, Redis: app.Redis, Logger: app.Logger})
+		cmd3 := AddCircuitBreakersUpdateCommand(newCLIApp(t, app))
 		_ = cmd3.Flags().Set("observability_window", "0")
 		err = cmd3.RunE(cmd3, []string{project.UID})
 		require.Error(t, err)

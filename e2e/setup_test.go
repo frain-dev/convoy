@@ -140,7 +140,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	err = rd.FlushDB(ctx).Err()
 	require.NoError(t, err)
 
-	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger)
+	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger, conn, rd)
 
 	// Create licenser
 	licenser := noopLicenser.NewLicenser()
@@ -342,7 +342,7 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	err = rd.FlushDB(ctx).Err()
 	require.NoError(t, err)
 
-	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger)
+	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger, conn, rd)
 
 	// Create licenser
 	licenser := noopLicenser.NewLicenser()
