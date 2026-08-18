@@ -21,8 +21,10 @@ export class VerifyEmailComponent implements OnInit {
 		try {
 			const response = await this.verifyEmailService.resendVerificationEmail();
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.isResendingEmail = false;
+			this.closeModal.emit();
 		} catch {
+			/* keep modal open so the user can retry */
+		} finally {
 			this.isResendingEmail = false;
 		}
 	}

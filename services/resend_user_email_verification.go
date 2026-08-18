@@ -86,7 +86,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 	if !u.User.EmailVerificationExpiresAt.IsZero() {
 		lastSent := u.User.EmailVerificationExpiresAt.Add(-emailVerificationTokenTTL)
 		if time.Now().Before(lastSent.Add(emailVerificationResendCooldown)) {
-			return &ServiceError{ErrMsg: "please wait before requesting another verification email"}
+			return &ServiceError{ErrMsg: "please wait 1 minute before requesting another email"}
 		}
 	}
 
@@ -100,7 +100,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 				u.Logger.ErrorContext(ctx, "verification resend claim error; continuing with soft cooldown only", "error", err)
 			}
 		} else if !ok {
-			return &ServiceError{ErrMsg: "please wait before requesting another verification email"}
+			return &ServiceError{ErrMsg: "please wait 1 minute before requesting another email"}
 		} else {
 			claimToken = token
 		}

@@ -8,14 +8,15 @@ import (
 
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
@@ -130,8 +131,21 @@ func (h *Handler) enqueueCloudOnboardingWelcome(ctx context.Context, user *datas
 }
 
 func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request) {
-	user, ok := getUser(r)
-	if !ok {
+	userRepo := users.New(h.A.Logger, h.A.DB)
+
+	// Prefer ?token= when present so the public /verify-email page always
+	// resends for the link's user, even if another account is signed in.
+	var user *datastore.User
+	if token := r.URL.Query().Get("token"); token != "" {
+		found, err := userRepo.FindUserByEmailVerificationToken(r.Context(), token)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("invalid verification token", http.StatusBadRequest))
+			return
+		}
+		user = found
+	} else if sessionUser, ok := getUser(r); ok {
+		user = sessionUser
+	} else {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
@@ -143,7 +157,7 @@ func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request
 	}
 
 	rs := services.ResendEmailVerificationTokenService{
-		UserRepo:   users.New(h.A.Logger, h.A.DB),
+		UserRepo:   userRepo,
 		Queue:      h.A.Queue,
 		ClaimStore: services.NewRedisResendClaimStore(h.A.Redis),
 		BaseURL:    baseUrl,
@@ -342,8 +356,11 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUser(r *http.Request) (*datastore.User, bool) {
-	authUser := m.GetAuthUserFromContext(r.Context())
+	// Comma-ok: GetAuthUserFromContext panics when AuthUserCtx is unset (guest routes).
+	authUser, ok := r.Context().Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
+	if !ok || authUser == nil {
+		return nil, false
+	}
 	user, ok := authUser.Metadata.(*datastore.User)
-
 	return user, ok
 }

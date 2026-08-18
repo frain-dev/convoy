@@ -491,7 +491,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Post("/users/forgot-password", handler.ForgotPassword)
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
 		uiRouter.Post("/users/verify_email", handler.VerifyEmail)
-		uiRouter.Post("/users/resend_verification_email", handler.ResendVerificationEmail)
+		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/users/resend_verification_email", handler.ResendVerificationEmail)
 		uiRouter.Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
@@ -1174,6 +1174,7 @@ var guestRoutes = []string{
 	"/users/forgot-password",
 	"/users/reset-password",
 	"/users/verify_email",
+	"/users/resend_verification_email",
 	"/organisations/process_invite",
 	"/ui/configuration/auth",
 	"/ui/license/features",
