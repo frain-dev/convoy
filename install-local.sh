@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPO_URL="${CONVOY_REPO_URL:-https://github.com/frain-dev/convoy.git}"
+CONVOY_IMAGE="${CONVOY_IMAGE:-getconvoy/convoy:latest}"
 INSTALL_DIR="${CONVOY_INSTALL_DIR:-$HOME/convoy}"
 MAX_WAIT_SECONDS="${CONVOY_MAX_WAIT_SECONDS:-180}"
 
@@ -74,10 +74,6 @@ PY
 
 check_prereqs() {
   log "Checking prerequisites"
-
-  if ! command_exists git; then
-    die "Git is not installed. Install Git first and run this script again."
-  fi
 
   if ! command_exists curl; then
     die "curl is not installed. Install curl first and run this script again."
@@ -251,42 +247,233 @@ write_compose_file() {
     "$COMPOSE_BASE_FILE" > "$COMPOSE_RENDERED_FILE"
 }
 
-prepare_repo() {
-  log "Preparing Convoy repository"
+generate_config_files() {
+  log "Generating Convoy config files"
 
-  if [ -d "$INSTALL_DIR/.git" ]; then
-    printf "Found existing repo at %s. Pull latest changes? [Y/n]: " "$INSTALL_DIR"
-    if ! read -r pull_choice; then
-      pull_choice=""
-    fi
-    pull_choice="${pull_choice:-Y}"
-    if [[ "$pull_choice" =~ ^[Yy]$ ]]; then
-      git -C "$INSTALL_DIR" pull --ff-only
-    fi
+  local dir="$INSTALL_DIR/configs/local"
+  mkdir -p "$dir/conf"
+
+
+  cat > "$dir/docker-compose.yml" <<'EOF'
+services:
+    migrate:
+        image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
+        command: ["migrate", "up", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        depends_on:
+            postgres:
+                condition: service_healthy
+            pgbouncer:
+                condition: service_started
+            redis_server:
+                condition: service_started
+
+    web:
+        image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
+        command: ["server", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q --spider http://localhost:5005/healthz"]
+            interval: 5s
+            timeout: 30s
+            retries: 10
+            start_period: 10s
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+    agent:
+        image: ${CONVOY_IMAGE:-getconvoy/convoy:latest}
+        command: ["agent", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q --spider http://localhost:5008/healthz"]
+            interval: 5s
+            timeout: 30s
+            retries: 10
+            start_period: 15s
+        depends_on:
+            migrate:
+                condition: service_completed_successfully
+
+    caddy:
+        image: caddy:2-alpine
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile
+            - caddy_data:/data
+        depends_on:
+            web:
+                condition: service_healthy
+            agent:
+                condition: service_healthy
+
+    postgres:
+        image: postgres:15.2-alpine
+        restart: unless-stopped
+        ports:
+            - "5433:5432"
+        environment:
+            POSTGRES_DB: convoy
+            POSTGRES_USER: convoy
+            POSTGRES_PASSWORD: pg_password
+            PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/data/postgres
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U convoy"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        command:
+            - "postgres"
+            - "-c"
+            - "wal_level=logical"
+
+    pgbouncer:
+        image: bitnamilegacy/pgbouncer
+        hostname: pgbouncer
+        restart: unless-stopped
+        ports:
+            - "6432:6432"
+        depends_on:
+            postgres:
+                condition: service_healthy
+        env_file:
+            - ./conf/.env
+        volumes:
+            - ./conf/:/bitnami/pgbouncer/conf/
+            - ./conf/userlists.txt:/bitnami/userlists.txt
+
+    redis_server:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+        volumes:
+            - redis_data:/data
+
+
+volumes:
+    postgres_data:
+    redis_data:
+    caddy_data:
+EOF
+
+  cat > "$dir/Caddyfile" <<'EOF'
+:80 {
+    # Data Plane — webhook source ingestion
+    handle /ingest/* {
+        reverse_proxy agent:5008
+    }
+
+    # Data Plane — portal link event operations
+    handle /portal-api/events/* {
+        reverse_proxy agent:5008
+    }
+    handle /portal-api/events {
+        reverse_proxy agent:5008
+    }
+
+    # Data Plane — portal link delivery operations
+    handle /portal-api/eventdeliveries/* {
+        reverse_proxy agent:5008
+    }
+    handle /portal-api/eventdeliveries {
+        reverse_proxy agent:5008
+    }
+
+    # Control Plane — management API, UI, portal management, everything else
+    handle {
+        reverse_proxy web:5005
+    }
+}
+EOF
+
+  cat > "$dir/conf/.env" <<'EOF'
+## ****** DEPLOYMENT VARIABLES ******
+PGBOUNCER_VERSION=1.22.1
+
+## ****** POSTGRES DB ******
+POSTGRESQL_USER=convoy
+POSTGRESQL_PASSWORD=pg_password
+POSTGRESQL_DATABASE=convoy
+POSTGRESQL_HOST=postgres #should be your db host address
+POSTGRESQL_OPTIONS="sslmode=disable&connect_timeout=30"
+
+PGBOUNCER_AUTH_TYPE=trust
+PGBOUNCER_USERLIST_FILE=/bitnami/userlists.txt
+PGBOUNCER_DATABASE=${POSTGRESQL_DATABASE}
+PGBOUNCER_AUTH_USER=convoy
+PGBOUNCER_POOL_MODE=transaction
+PGBOUNCER_MAX_CLIENT_CONN=500
+PGBOUNCER_DEFAULT_POOL_SIZE=80
+PGBOUNCER_MAX_DB_CONNECTIONS=250
+PGBOUNCER_MAX_PREPARED_STATEMENTS=100
+PGBOUNCER_IGNORE_STARTUP_PARAMETERS=extra_float_digits
+
+# host should be your db host address
+PGBOUNCER_DSN_0=pg1=host=postgres port=5432 dbname=convoy
+EOF
+
+  cat > "$dir/conf/userlists.txt" <<'EOF'
+"convoy" "pg_password"
+EOF
+
+  # App config: only create if missing so user customizations survive re-runs.
+  # Redis runs without TLS for this local quick-start (plain redis://).
+  if [ ! -f "$dir/convoy.json" ]; then
+    cat > "$dir/convoy.json" <<'EOF'
+{
+    "host": "http://localhost",
+    "database": {
+        "host": "pgbouncer",
+        "username": "convoy",
+        "password": "pg_password",
+        "database": "convoy",
+        "port": 6432
+    },
+    "redis": {
+        "scheme": "redis",
+        "port": 6379,
+        "host": "redis_server"
+    },
+    "server": {
+        "http": {
+            "port": 5005,
+            "agent_port": 5008
+        }
+    },
+    "auth": {
+        "is_signup_enabled": true,
+        "native": {
+            "enabled": true
+        },
+        "jwt": {
+            "enabled": true,
+            "secret": "local-access-secret",
+            "refresh_secret": "local-refresh-secret"
+        }
+    }
+}
+EOF
   else
-    if [ -d "$INSTALL_DIR" ] && [ "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
-      die "Install directory '$INSTALL_DIR' exists and is not a git repo. Use an empty path or set CONVOY_INSTALL_DIR to another directory."
-    fi
-    git clone "$REPO_URL" "$INSTALL_DIR"
+    log "Existing convoy.json found; keeping it"
   fi
 }
 
 ensure_local_config() {
   local config_path="$INSTALL_DIR/configs/local/convoy.json"
 
-  if [ -f "$config_path" ]; then
-    return
-  fi
-
-  log "Ensuring local Convoy config exists"
-
-  # Recover deleted tracked file from git if available.
-  if [ -d "$INSTALL_DIR/.git" ] && git -C "$INSTALL_DIR" ls-files --error-unmatch "configs/local/convoy.json" >/dev/null 2>&1; then
-    git -C "$INSTALL_DIR" checkout -- "configs/local/convoy.json"
-  fi
-
   if [ ! -f "$config_path" ]; then
-    die "Missing $config_path. Restore it from the repository or create it before running installer."
+    die "Missing $config_path after generating config files."
   fi
 }
 
@@ -355,20 +542,24 @@ print_next_steps() {
 
 🎉 Convoy is set up.
 
+Open the dashboard:
+  ${SELECTED_HOST_URL}
+
+Log in with the default credentials:
+  Email:    superuser@default.com
+  Password: default
+
 Useful commands:
   docker compose -f "$COMPOSE_RENDERED_FILE" ps
   docker compose -f "$COMPOSE_RENDERED_FILE" logs -f web agent
   docker compose -f "$COMPOSE_RENDERED_FILE" down
-
-Open:
-  ${SELECTED_HOST_URL}
 
 EOF
 }
 
 main() {
   check_prereqs
-  prepare_repo
+  generate_config_files
   ensure_local_config
   resolve_ports
   update_local_host_config
