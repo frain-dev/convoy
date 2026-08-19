@@ -178,6 +178,10 @@ func splitHostPort(addr string) (string, int, error) {
 func newBroker(t *testing.T, cfg config.Configuration, db database.Database, logger log.Logger) *broker.Dependencies {
 	t.Helper()
 
+	if cfg.QueueProvider == config.PostgresQueueProvider {
+		cfg.EnableFeatureFlag = append(cfg.EnableFeatureFlag, string(fflag.PostgresQueue))
+	}
+
 	deps, err := broker.New(cfg, db.GetDB(), logger)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = deps.Close() })

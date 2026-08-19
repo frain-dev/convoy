@@ -8,12 +8,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license/noop"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 func testConfig(provider config.QueueProvider) config.Configuration {
-	return config.Configuration{
+	cfg := config.Configuration{
 		QueueProvider:       provider,
 		WorkerExecutionMode: config.DefaultExecutionMode,
 		Redis: config.RedisConfiguration{
@@ -23,6 +25,10 @@ func testConfig(provider config.QueueProvider) config.Configuration {
 			Database: "0",
 		},
 	}
+	if provider == config.PostgresQueueProvider {
+		cfg.EnableFeatureFlag = []string{string(fflag.PostgresQueue)}
+	}
+	return cfg
 }
 
 func assertCompleteDependencies(t *testing.T, provider config.QueueProvider, deps *Dependencies) {
@@ -92,4 +98,39 @@ func TestPostgresDependencyGraphDoesNotConstructRedis(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, deps)
 	require.False(t, called)
+}
+
+func TestPostgresProviderWithoutFeatureFlagDoesNotFallbackToRedis(t *testing.T) {
+	original := newRedisClient
+	t.Cleanup(func() { newRedisClient = original })
+
+	called := false
+	newRedisClient = func(config.RedisConfiguration) (*rdb.Redis, error) {
+		called = true
+		return nil, nil
+	}
+
+	cfg := testConfig(config.PostgresQueueProvider)
+	cfg.EnableFeatureFlag = nil
+
+	deps, err := New(cfg, sqlx.NewDb(&sql.DB{}, "postgres"), log.New("test", log.LevelError))
+	require.Nil(t, deps)
+	require.ErrorIs(t, err, fflag.ErrPostgresQueueNotEnabled)
+	require.False(t, called)
+}
+
+type denyPostgresQueueLicenser struct {
+	*noop.Licenser
+}
+
+func (denyPostgresQueueLicenser) PostgresQueue() bool { return false }
+
+func TestAllowPostgresQueue(t *testing.T) {
+	redisCfg := testConfig(config.RedisQueueProvider)
+	require.NoError(t, AllowPostgresQueue(redisCfg, nil))
+
+	pgCfg := testConfig(config.PostgresQueueProvider)
+	require.NoError(t, AllowPostgresQueue(pgCfg, noop.NewLicenser()))
+	require.EqualError(t, AllowPostgresQueue(pgCfg, nil), "postgres queue requires the postgres_queue license entitlement")
+	require.EqualError(t, AllowPostgresQueue(pgCfg, denyPostgresQueueLicenser{Licenser: noop.NewLicenser()}), "postgres queue requires the postgres_queue license entitlement")
 }

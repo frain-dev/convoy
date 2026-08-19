@@ -237,6 +237,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		if err := broker.AllowPostgresQueue(cfg, app.Licenser); err != nil {
+			return err
+		}
+
 		lo.Debugf("Read replicas: %d", db.ReplicaSize())
 		if db.ReplicaSize() > 0 && !app.Licenser.ReadReplica() {
 			lo.Error("your instance does not have access to use read replicas, upgrade to access this feature")

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -63,6 +64,10 @@ func NewTest(t *testing.T, cfg config.Configuration, db *sqlx.DB, logger log.Log
 	t.Helper()
 
 	PatchTestConfig(&cfg, conn, rd)
+
+	if cfg.QueueProvider == config.PostgresQueueProvider {
+		cfg.EnableFeatureFlag = append(cfg.EnableFeatureFlag, string(fflag.PostgresQueue))
+	}
 
 	deps, err := New(cfg, db, logger)
 	require.NoError(t, err)

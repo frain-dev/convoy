@@ -12,6 +12,7 @@ import (
 var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
 var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
 var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
+var ErrPostgresQueueNotEnabled = errors.New("[feature flag] postgres queue is not enabled")
 var ErrCredentialEncryptionNotEnabled = errors.New("[feature flag] credential encryption is not enabled")
 var ErrMTLSNotEnabled = errors.New("[feature flag] mTLS is not enabled")
 var ErrOAuthTokenExchangeNotEnabled = errors.New("[feature flag] OAuth token exchange is not enabled")
@@ -29,6 +30,7 @@ type (
 const (
 	IpRules              FeatureFlagKey = "ip-rules"
 	Prometheus           FeatureFlagKey = "prometheus"
+	PostgresQueue        FeatureFlagKey = "postgres-queue"
 	CircuitBreaker       FeatureFlagKey = "circuit-breaker"
 	FullTextSearch       FeatureFlagKey = "full-text-search"
 	ReadReplicas         FeatureFlagKey = "read-replicas"
@@ -51,6 +53,7 @@ const (
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
 	IpRules:              disabled,
 	Prometheus:           disabled,
+	PostgresQueue:        disabled,
 	FullTextSearch:       disabled,
 	CircuitBreaker:       disabled,
 	ReadReplicas:         disabled,
@@ -76,6 +79,8 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[IpRules] = enabled
 		case string(Prometheus):
 			f.Features[Prometheus] = enabled
+		case string(PostgresQueue):
+			f.Features[PostgresQueue] = enabled
 		case string(FullTextSearch):
 			f.Features[FullTextSearch] = enabled
 		case string(CircuitBreaker):
@@ -125,7 +130,7 @@ func (c *FFlag) CanAccessFeature(key FeatureFlagKey) bool {
 }
 
 func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fetcher FeatureFlagFetcher, earlyAdopterFetcher EarlyAdopterFeatureFetcher, orgID string) bool {
-	if key == Prometheus || key == ReadReplicas || key == IpRules || key == FullTextSearch {
+	if key == Prometheus || key == PostgresQueue || key == ReadReplicas || key == IpRules || key == FullTextSearch {
 		return c.CanAccessFeature(key)
 	}
 

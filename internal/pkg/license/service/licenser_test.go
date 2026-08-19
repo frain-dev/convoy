@@ -33,6 +33,11 @@ func TestCommunityFeatureListExposesBuiltInLimits(t *testing.T) {
 	requireLimit(t, features["org_limit"], communityOrgLimit, communityOrgLimit, false, true, true)
 	requireLimit(t, features["user_limit"], communityUserLimit, communityUserLimit, false, true, true)
 	requireLimit(t, features["project_limit"], communityProjectLimit, communityProjectLimit, false, true, true)
+	require.False(t, licenser.PostgresQueue())
+
+	var postgresQueue bool
+	require.NoError(t, json.Unmarshal(features["PostgresQueue"], &postgresQueue))
+	require.False(t, postgresQueue)
 }
 
 func requireLimit(t *testing.T, raw json.RawMessage, expectedLimit, expectedCurrent int64, expectedAllowed, expectedAvailable, expectedReached bool) {

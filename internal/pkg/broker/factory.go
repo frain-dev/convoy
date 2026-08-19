@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	pglimiter "github.com/frain-dev/convoy/internal/pkg/limiter/postgres"
@@ -82,7 +83,26 @@ func New(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dependencie
 	if !ok {
 		return nil, fmt.Errorf("unsupported broker provider %q", cfg.QueueProvider)
 	}
+	if cfg.QueueProvider == config.PostgresQueueProvider {
+		if !fflag.NewFFlag(cfg.EnableFeatureFlag).CanAccessFeature(fflag.PostgresQueue) {
+			return nil, fflag.ErrPostgresQueueNotEnabled
+		}
+	}
 	return build(cfg, db, logger)
+}
+
+// AllowPostgresQueue is the license half of the postgres provider gate.
+// The feature flag is checked in New because config is available then; the
+// licenser is created later in PreRun, so this runs immediately after it.
+// Redis is unaffected. Missing entitlement is refuse-to-boot, not a redis fallback.
+func AllowPostgresQueue(cfg config.Configuration, licenser license.Licenser) error {
+	if cfg.QueueProvider != config.PostgresQueueProvider {
+		return nil
+	}
+	if licenser == nil || !licenser.PostgresQueue() {
+		return fmt.Errorf("postgres queue requires the postgres_queue license entitlement")
+	}
+	return nil
 }
 
 func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dependencies, error) {
