@@ -89,12 +89,18 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		this.tableChanges = this.partitionForm.get('table')!.valueChanges.subscribe(() => this.applyOperations());
 	}
 
+	// Read off the controls, not partitionForm.value. The group's aggregate value
+	// trails a child write, so a getter built on it can still name the table the
+	// operator just switched away from. applyOperations runs in that window, off
+	// the table's own valueChanges, and would narrow the operation for the
+	// previous table: pick a converted table and the select still offers, and
+	// starts, the operation that suited the heap you left.
 	get selectedTable(): string {
-		return this.partitionForm.value.table;
+		return this.partitionForm.get('table')!.value;
 	}
 
 	get selectedOperation(): PartitionOperation {
-		return this.partitionForm.value.operation;
+		return this.partitionForm.get('operation')!.value;
 	}
 
 	// The table's current shape, not the form or the select. Switching tables
@@ -168,9 +174,9 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		const state = this.stateOf(this.selectedTable);
 		const next = state ? [state.partitioned ? UNPARTITION : PARTITION] : ALL_OPERATIONS;
 
-		// Patch before replacing options so writeValue can still find the new
-		// uid in the previous list. Assigning options first leaves the select
-		// showing Unpartition on a heap.
+		// Once the table's shape is known only one operation applies, so move the
+		// control onto it rather than leaving the select on a stale choice the
+		// server would refuse.
 		if (next.length === 1 && this.selectedOperation !== next[0].uid) {
 			this.partitionForm.patchValue({ operation: next[0].uid });
 		}
