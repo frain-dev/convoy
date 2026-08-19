@@ -37,6 +37,11 @@ const maxIdentifier = 63
 // traffic rather than queueing ahead of it.
 const lockTimeout = "3s"
 
+// resetTimeout bounds undoing lockTimeout when the connection goes back to the
+// pool. It is short because the alternative to waiting is closing the connection,
+// which is cheap next to leaving a session-wide timeout on a pooled connection.
+const resetTimeout = 5 * time.Second
+
 // Invalid is an index the planner is ignoring.
 type Invalid struct {
 	Table string
@@ -147,8 +152,11 @@ func Rebuild(ctx context.Context, db *pgxpool.Pool, d Dropped) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Release()
+	defer release(ctx, conn)
 
+	// SET, not SET LOCAL: a concurrent index build cannot run in a transaction,
+	// so there is no transaction for the setting to be local to. That makes it
+	// session state on a pooled connection, which release has to undo.
 	if _, err = conn.Exec(ctx, `SET lock_timeout = '`+lockTimeout+`'`); err != nil {
 		return err
 	}
@@ -173,6 +181,25 @@ func Rebuild(ctx context.Context, db *pgxpool.Pool, d Dropped) error {
 		return fmt.Errorf("index %s was rebuilt but recording that failed, it will be offered again: %w", d.Name, err)
 	}
 	return nil
+}
+
+// release hands the connection back with the lock_timeout undone.
+//
+// The pool this came from serves ordinary traffic, where a 3s lock_timeout is
+// wrong: a row-lock wait that is supposed to queue would abort instead. The
+// reset gets a context of its own because it also has to run when the rebuild's
+// context is already cancelled, which is exactly when the setting would
+// otherwise be left behind. If the reset cannot be confirmed, the connection
+// leaves the pool rather than going back carrying it.
+func release(ctx context.Context, conn *pgxpool.Conn) {
+	reset, cancel := context.WithTimeout(context.WithoutCancel(ctx), resetTimeout)
+	defer cancel()
+
+	if _, err := conn.Exec(reset, `RESET lock_timeout`); err != nil {
+		_ = conn.Hijack().Close(reset)
+		return
+	}
+	conn.Release()
 }
 
 // rebuildHeap builds the index as it was, online.

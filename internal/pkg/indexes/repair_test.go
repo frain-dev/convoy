@@ -312,6 +312,50 @@ func TestDroppedIndexesAreOfferedUniqueFirst(t *testing.T) {
 	require.True(t, owed[0].Unique())
 }
 
+// A concurrent build cannot run in a transaction, so the rebuild's lock_timeout
+// is session state on a pooled connection. Left behind, it would abort row-lock
+// waits in ordinary traffic that are supposed to queue.
+func TestRebuildLeavesNoLockTimeoutOnThePool(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `CREATE TABLE convoy.idx_test_reset (k TEXT)`)
+	require.NoError(t, err)
+
+	owed := Dropped{
+		Table:      "idx_test_reset",
+		Name:       "idx_test_reset_k",
+		Definition: `CREATE INDEX idx_test_reset_k ON convoy.idx_test_reset USING btree (k)`,
+	}
+	_, err = db.Exec(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition)
+        VALUES ($1, $2, $3)`, owed.Name, owed.Table, owed.Definition)
+	require.NoError(t, err)
+
+	require.NoError(t, Rebuild(ctx, db, owed))
+
+	// Check every connection the pool is holding, not one, since the rebuild's
+	// connection is only the one most likely to be handed back first.
+	idle := int(db.Stat().IdleConns())
+	require.Positive(t, idle, "the rebuild's connection should be back in the pool")
+
+	held := make([]*pgxpool.Conn, 0, idle)
+	defer func() {
+		for _, c := range held {
+			c.Release()
+		}
+	}()
+	for i := 0; i < idle; i++ {
+		conn, err := db.Acquire(ctx)
+		require.NoError(t, err)
+		held = append(held, conn)
+
+		var timeout string
+		require.NoError(t, conn.QueryRow(ctx, `SHOW lock_timeout`).Scan(&timeout))
+		require.Equal(t, "0", timeout, "a pooled connection is still carrying the rebuild's lock_timeout")
+	}
+}
+
 func TestRebuildRejectsAMissingTable(t *testing.T) {
 	db := setupDB(t)
 

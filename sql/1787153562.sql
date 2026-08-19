@@ -87,11 +87,17 @@ BEGIN
 
     EXECUTE FORMAT('DROP INDEX convoy.%I', p_index);
 
-    -- An invalid index is ignored by the planner but is still maintained by
-    -- writes once it reached the validation scan, so a unique one was enforcing
-    -- its key right up to this drop. Losing an index costs speed; losing this
-    -- one also costs the uniqueness, which the operator has to hear about.
-    IF v_def LIKE 'CREATE UNIQUE %' THEN
+    -- Only a recorded drop leaves work behind to advise about. The unrecorded
+    -- one is a rebuild clearing a leftover on its way to building the index
+    -- back, so pointing the caller at --rebuild would name what they are
+    -- already running.
+    IF NOT p_record THEN
+        RAISE NOTICE 'cleared the invalid index convoy.% left by an earlier attempt', p_index;
+    ELSIF v_def LIKE 'CREATE UNIQUE %' THEN
+        -- An invalid index is ignored by the planner but is still maintained by
+        -- writes once it reached the validation scan, so a unique one was
+        -- enforcing its key right up to this drop. Losing an index costs speed;
+        -- losing this one also costs the uniqueness.
         RAISE WARNING 'dropped invalid unique index convoy.%: its key is no longer unique until rebuilt with convoy utils indexes --rebuild', p_index;
     ELSE
         RAISE NOTICE 'dropped invalid index convoy.%, rebuild it with: convoy utils indexes --rebuild', p_index;
