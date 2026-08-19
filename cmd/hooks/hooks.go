@@ -124,11 +124,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
-		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
-		if err != nil {
-			return errors.New("failed to ping cache with err: " + err.Error())
-		}
-
 		hooks := dbhook.Init()
 
 		// the order matters here
@@ -151,6 +146,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			if err != nil {
 				return errors.New("pending migrations check failed: " + err.Error())
 			}
+		}
+
+		// Postgres cache writes convoy.kv_cache. Ping after the migration
+		// check so a missing table is pending-migrations, not a cache failure.
+		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
+		if err != nil {
+			return errors.New("failed to ping cache with err: " + err.Error())
 		}
 
 		app.DB = postgresDB
