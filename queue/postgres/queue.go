@@ -92,6 +92,7 @@ const writeJobSQL = `
 		status = EXCLUDED.status,
 		run_at = EXCLUDED.run_at,
 		claimed_at = NULL,
+		claim_id = NULL,
 		last_error = NULL,
 		updated_at = NOW()
 	WHERE (
@@ -130,6 +131,7 @@ const writeJobsSQL = `
 		status = EXCLUDED.status,
 		run_at = EXCLUDED.run_at,
 		claimed_at = NULL,
+		claim_id = NULL,
 		last_error = NULL,
 		updated_at = NOW()
 	WHERE (
@@ -169,6 +171,14 @@ type PostgresQueue struct {
 	listenerQuit  chan struct{}
 	listenerDone  chan struct{}
 	notifyEnabled bool
+
+	// leases is this process's claim_id for each job it Claim'd. Heartbeat
+	// pairs those uuids with the row; a later Claim overwrites claim_id, so a
+	// stale worker cannot renew the new owner's lease. Generation does not
+	// change on renew: claimed_at is what Heartbeat writes, and cannot be the
+	// CAS key.
+	leaseMu sync.Mutex
+	leases  map[string]string
 }
 
 type writeRequest struct {
@@ -227,6 +237,7 @@ func NewQueue(opts queue.QueueOptions) (*PostgresQueue, error) {
 		completions:    make(chan completeRequest, t.BatchSize),
 		quit:           make(chan struct{}),
 		done:           make(chan struct{}),
+		leases:         make(map[string]string),
 	}
 	q.batcherWg.Add(t.WriteConcurrency + 1)
 	for i := 0; i < t.WriteConcurrency; i++ {
@@ -626,10 +637,11 @@ func (q *PostgresQueue) Claim(ctx context.Context, queueNames []string, limit in
 		UPDATE convoy.queue_jobs AS j
 		SET status = $3,
 		    claimed_at = NOW(),
+		    claim_id = gen_random_uuid(),
 		    updated_at = NOW()
 		FROM claim
 		WHERE j.id = claim.id
-		RETURNING j.id, j.task_name, j.queue_name, j.payload, j.headers, j.max_retry, j.retry_count`,
+		RETURNING j.id, j.task_name, j.queue_name, j.payload, j.headers, j.max_retry, j.retry_count, j.claim_id::text`,
 		pq.Array(queueNames), limit, statusProcessing, statusPending, postgresWeightDepth,
 	)
 	if err != nil {
@@ -638,12 +650,14 @@ func (q *PostgresQueue) Claim(ctx context.Context, queueNames []string, limit in
 	defer rows.Close()
 
 	var jobs []queue.ClaimedJob
+	claimIDs := make([]string, 0)
 	for rows.Next() {
 		var (
 			job         queue.ClaimedJob
 			headerBytes []byte
+			claimID     string
 		)
-		if err := rows.Scan(&job.ID, &job.TaskName, &job.QueueName, &job.Payload, &headerBytes, &job.MaxRetry, &job.RetryCount); err != nil {
+		if err := rows.Scan(&job.ID, &job.TaskName, &job.QueueName, &job.Payload, &headerBytes, &job.MaxRetry, &job.RetryCount, &claimID); err != nil {
 			return nil, err
 		}
 		if len(headerBytes) > 0 {
@@ -652,8 +666,13 @@ func (q *PostgresQueue) Claim(ctx context.Context, queueNames []string, limit in
 			}
 		}
 		jobs = append(jobs, job)
+		claimIDs = append(claimIDs, claimID)
 	}
-	return jobs, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	q.rememberClaims(jobs, claimIDs)
+	return jobs, nil
 }
 
 func (q *PostgresQueue) Complete(ctx context.Context, id string) error {
@@ -774,7 +793,11 @@ func (q *PostgresQueue) completeBatch(ids []string) error {
 		    updated_at = NOW()`,
 		pq.Array(ids), statusProcessing, statusCompleted, cronJobPrefix+"%",
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	q.dropLeases(ids)
+	return nil
 }
 
 // LastTaskError returns the persisted last_error for a job, matching the
@@ -857,6 +880,7 @@ func (q *PostgresQueue) Retry(ctx context.Context, id string, runAt time.Time, i
 	if n, _ := res.RowsAffected(); n > 0 {
 		q.notifyPending()
 	}
+	q.dropLeases([]string{id})
 	return nil
 }
 
@@ -873,7 +897,11 @@ func (q *PostgresQueue) Archive(ctx context.Context, id, lastError string) error
 		)
 		`+recordFailureSQL,
 		id, statusArchived, lastError, statusProcessing)
-	return err
+	if err != nil {
+		return err
+	}
+	q.dropLeases([]string{id})
+	return nil
 }
 
 func (q *PostgresQueue) Release(ctx context.Context, ids []string) error {
@@ -893,23 +921,67 @@ func (q *PostgresQueue) Release(ctx context.Context, ids []string) error {
 	if n, _ := res.RowsAffected(); n > 0 {
 		q.notifyPending()
 	}
+	q.dropLeases(ids)
 	return nil
 }
 
-// Heartbeat renews the claim lease on jobs a consumer still owns. Rows that are
-// no longer processing are skipped: the job either finished or was already
-// reclaimed, and in neither case may this consumer extend it.
+// Heartbeat renews the claim lease on jobs this consumer still owns. Matching
+// only id and status = processing is not enough: ReclaimStuck returns the row
+// to pending, the next Claim sets processing again, and a stale heartbeat
+// would then extend the new owner's claimed_at. claim_id is minted at Claim
+// and is not rewritten here, so aging claimed_at to simulate a slow handler
+// still renews, and a later Claim's uuid does not.
 func (q *PostgresQueue) Heartbeat(ctx context.Context, ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
+	jobIDs, claimIDs := q.leasesForHeartbeat(ids)
+	if len(jobIDs) == 0 {
+		return nil
+	}
 	_, err := q.db.ExecContext(ctx, `
-		UPDATE convoy.queue_jobs
+		UPDATE convoy.queue_jobs AS j
 		SET claimed_at = NOW(),
 		    updated_at = NOW()
-		WHERE id = ANY($1) AND status = $2`,
-		pq.Array(ids), statusProcessing)
+		FROM UNNEST($1::text[], $2::uuid[]) AS t(id, claim_id)
+		WHERE j.id = t.id
+		  AND j.status = $3
+		  AND j.claim_id = t.claim_id`,
+		pq.Array(jobIDs), pq.Array(claimIDs), statusProcessing)
 	return err
+}
+
+func (q *PostgresQueue) rememberClaims(jobs []queue.ClaimedJob, claimIDs []string) {
+	q.leaseMu.Lock()
+	defer q.leaseMu.Unlock()
+	for i, job := range jobs {
+		if claimIDs[i] == "" {
+			continue
+		}
+		q.leases[job.ID] = claimIDs[i]
+	}
+}
+
+func (q *PostgresQueue) dropLeases(ids []string) {
+	q.leaseMu.Lock()
+	defer q.leaseMu.Unlock()
+	for _, id := range ids {
+		delete(q.leases, id)
+	}
+}
+
+func (q *PostgresQueue) leasesForHeartbeat(ids []string) ([]string, []string) {
+	q.leaseMu.Lock()
+	defer q.leaseMu.Unlock()
+	jobIDs := make([]string, 0, len(ids))
+	claimIDs := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if cid, ok := q.leases[id]; ok {
+			jobIDs = append(jobIDs, id)
+			claimIDs = append(claimIDs, cid)
+		}
+	}
+	return jobIDs, claimIDs
 }
 
 func (q *PostgresQueue) ReclaimStuck(ctx context.Context) (int64, error) {
@@ -917,6 +989,7 @@ func (q *PostgresQueue) ReclaimStuck(ctx context.Context) (int64, error) {
 		UPDATE convoy.queue_jobs
 		SET status = $1,
 		    claimed_at = NULL,
+		    claim_id = NULL,
 		    updated_at = NOW()
 		WHERE status = $2
 		  AND claimed_at < NOW() - make_interval(secs => $3)`,

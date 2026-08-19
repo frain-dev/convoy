@@ -50,6 +50,17 @@ func setupQueue(t *testing.T) *PostgresQueue {
 	return q
 }
 
+// setupQueuePair is two consumers on one cloned database. setupQueue clones a
+// DB per call, so a reclaim-then-reclaim test cannot use it twice.
+func setupQueuePair(t *testing.T) (*PostgresQueue, *PostgresQueue) {
+	t.Helper()
+	first := setupQueue(t)
+	second, err := NewQueue(first.opts)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = second.Close() })
+	return first, second
+}
+
 func TestWriteAndClaim(t *testing.T) {
 	q := setupQueue(t)
 	ctx := context.Background()
@@ -422,6 +433,52 @@ func TestHeartbeatIgnoresJobsThisConsumerNoLongerOwns(t *testing.T) {
 	require.Equal(t, statusPending, status)
 
 	require.NoError(t, q.Heartbeat(ctx, nil))
+}
+
+func TestHeartbeatDoesNotRenewForeignClaim(t *testing.T) {
+	owner, other := setupQueuePair(t)
+	owner.SetStuckTimeout(50 * time.Millisecond)
+	ctx := context.Background()
+	id := ulid.Make().String()
+	require.NoError(t, owner.Write(ctx, convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: id, Payload: []byte("leased")}))
+
+	jobs, err := owner.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+
+	_, err = owner.db.ExecContext(ctx, `UPDATE convoy.queue_jobs SET claimed_at = NOW() - interval '1 second' WHERE id = $1`, id)
+	require.NoError(t, err)
+	n, err := owner.ReclaimStuck(ctx)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), n)
+
+	jobs, err = other.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	require.Equal(t, id, jobs[0].ID)
+
+	require.NoError(t, owner.Heartbeat(ctx, []string{id}))
+
+	_, err = owner.db.ExecContext(ctx, `UPDATE convoy.queue_jobs SET claimed_at = NOW() - interval '1 second' WHERE id = $1`, id)
+	require.NoError(t, err)
+	n, err = owner.ReclaimStuck(ctx)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), n, "a stale consumer must not extend a later claim")
+
+	require.NoError(t, other.Heartbeat(ctx, []string{id}))
+	var status string
+	require.NoError(t, owner.db.GetContext(ctx, &status, `SELECT status FROM convoy.queue_jobs WHERE id = $1`, id))
+	require.Equal(t, statusPending, status)
+
+	jobs, err = other.Claim(ctx, []string{string(convoy.EventQueue)}, 1)
+	require.NoError(t, err)
+	require.Len(t, jobs, 1)
+	_, err = owner.db.ExecContext(ctx, `UPDATE convoy.queue_jobs SET claimed_at = NOW() - interval '1 second' WHERE id = $1`, id)
+	require.NoError(t, err)
+	require.NoError(t, other.Heartbeat(ctx, []string{id}))
+	n, err = owner.ReclaimStuck(ctx)
+	require.NoError(t, err)
+	require.Equal(t, int64(0), n, "the live owner must still be able to renew")
 }
 
 func TestRetryIncrementsCountAndReleases(t *testing.T) {
