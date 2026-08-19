@@ -406,7 +406,8 @@ type CircuitBreakerConfiguration struct {
 }
 
 type AnalyticsConfiguration struct {
-	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
+	IsEnabled                 bool   `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
+	BlastRadiusRetentionHours uint64 `json:"blast_radius_retention_hours" envconfig:"CONVOY_ANALYTICS_BLAST_RADIUS_RETENTION_HOURS"`
 }
 
 type StoragePolicyConfiguration struct {

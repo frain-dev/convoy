@@ -229,3 +229,34 @@ func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string
 
 	return messagesSent, messages, nil
 }
+
+func (h *Handler) GetProjectBlastRadius(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if h.A.Redis == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Redis is not configured", http.StatusServiceUnavailable))
+		return
+	}
+
+	hllKey := datastore.BlastRadiusKey(project.UID, time.Now())
+	count, err := h.A.Redis.PFCount(r.Context(), hllKey).Result()
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to fetch blast radius", "error", err)
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	response := map[string]interface{}{
+		"status":  true,
+		"message": "Blast radius fetched successfully",
+		"data": map[string]interface{}{
+			"blast_radius": count,
+		},
+	}
+
+	render.JSON(w, r, response)
+}
