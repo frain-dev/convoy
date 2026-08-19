@@ -94,6 +94,14 @@ func TestInvalidIndexIsReportedDroppedAndRebuilt(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, owed, 1, "a rebuild that failed still owes the index")
 
+	// The failed build left an invalid index behind under the same name. It is
+	// one piece of work, and the debt row is the actionable one, so it must not
+	// also be reported as an abandoned index to deal with separately.
+	invalid, err = ListInvalid(ctx, db)
+	require.NoError(t, err)
+	require.NotContains(t, names(invalid), "idx_test_heap_project",
+		"an index that already owes a rebuild is reported once, as debt")
+
 	_, err = db.Exec(ctx, `DELETE FROM convoy.idx_test_heap WHERE ctid = (
         SELECT MIN(ctid) FROM convoy.idx_test_heap WHERE project_id = 'dup')`)
 	require.NoError(t, err)
@@ -104,6 +112,53 @@ func TestInvalidIndexIsReportedDroppedAndRebuilt(t *testing.T) {
 	owed, err = ListDropped(ctx, db)
 	require.NoError(t, err)
 	require.Empty(t, owed, "a rebuilt index must not be offered again")
+}
+
+// GetDropped is what a caller-supplied index name has to pass before a rebuild is
+// recorded, so it has to refuse a name that identifies no pending work. An
+// unknown name and an already-rebuilt one are the same answer: there is nothing
+// to rebuild, and the caller has nothing different to do about either.
+func TestGetDroppedRefusesANameThatOwesNothing(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := GetDropped(ctx, db, "idx_never_existed")
+	require.ErrorIs(t, err, ErrNotDropped)
+
+	_, err = db.Exec(ctx, `
+        CREATE TABLE convoy.idx_test_lookup (project_id TEXT NOT NULL)`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(ctx, `INSERT INTO convoy.idx_test_lookup (project_id) VALUES ('dup'), ('dup')`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(ctx, `CREATE UNIQUE INDEX CONCURRENTLY idx_test_lookup_project ON convoy.idx_test_lookup (project_id)`)
+	require.Error(t, err, "the build has to fail for there to be an invalid index to repair")
+
+	var dropped bool
+	require.NoError(t, db.QueryRow(ctx,
+		`SELECT convoy.drop_invalid_index('idx_test_lookup_project')`).Scan(&dropped))
+	require.True(t, dropped)
+
+	owed, err := GetDropped(ctx, db, "idx_test_lookup_project")
+	require.NoError(t, err)
+	require.Equal(t, "idx_test_lookup", owed.Table)
+	require.True(t, owed.Unique())
+
+	// Whitespace is trimmed by the caller, not here: the name is matched against
+	// the recorded row exactly, so a padded name is a miss.
+	_, err = GetDropped(ctx, db, " idx_test_lookup_project ")
+	require.ErrorIs(t, err, ErrNotDropped)
+
+	_, err = db.Exec(ctx, `DELETE FROM convoy.idx_test_lookup WHERE ctid = (
+        SELECT MIN(ctid) FROM convoy.idx_test_lookup WHERE project_id = 'dup')`)
+	require.NoError(t, err)
+	require.NoError(t, Rebuild(ctx, db, owed))
+
+	// Once rebuilt it owes nothing, so a second request for it must not start
+	// hours of work on an index that is already valid.
+	_, err = GetDropped(ctx, db, "idx_test_lookup_project")
+	require.ErrorIs(t, err, ErrNotDropped)
 }
 
 // The index has to be rebuildable after the table is partitioned, which is the
@@ -310,6 +365,28 @@ func TestDroppedIndexesAreOfferedUniqueFirst(t *testing.T) {
 	require.Len(t, owed, 2)
 	require.Equal(t, "idx_test_uniq", owed[0].Name, "the unique index waited two days less and still goes first")
 	require.True(t, owed[0].Unique())
+}
+
+// While the run guard is missing the runner refuses to start anything else, so a
+// rebuild that took another index first would fail on every one of them.
+func TestTheRunGuardIsOfferedAheadOfOtherUniqueIndexes(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition, dropped_at)
+        VALUES ('idx_test_uniq', 'events', 'CREATE UNIQUE INDEX idx_test_uniq ON convoy.events USING btree (id)',
+                NOW() - INTERVAL '2 days'),
+               ('idx_partition_runs_single_active', 'partition_runs',
+                'CREATE UNIQUE INDEX idx_partition_runs_single_active ON convoy.partition_runs USING btree (status) WHERE (status = ''running'')',
+                NOW())`)
+	require.NoError(t, err)
+
+	owed, err := ListDropped(ctx, db)
+	require.NoError(t, err)
+	require.Len(t, owed, 2)
+	require.Equal(t, "idx_partition_runs_single_active", owed[0].Name,
+		"the guard blocks every other rebuild, so it cannot be second")
 }
 
 // A concurrent build cannot run in a transaction, so the rebuild's lock_timeout

@@ -8,6 +8,8 @@ import { OrganisationOverridesComponent } from './organisation-overrides/organis
 import { CircuitBreakerConfigComponent } from './circuit-breaker-config/circuit-breaker-config.component';
 import { ResendEventsComponent } from './resend-events/resend-events.component';
 import { TablePartitionsComponent } from './table-partitions/table-partitions.component';
+import { TableIndexesComponent } from './table-indexes/table-indexes.component';
+import { RunCardComponent } from './runs/run-card.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -27,7 +29,9 @@ const routes: Routes = [{ path: '', component: AdminComponent }];
 		OrganisationOverridesComponent,
 		CircuitBreakerConfigComponent,
 		ResendEventsComponent,
-		TablePartitionsComponent
+		TablePartitionsComponent,
+		TableIndexesComponent,
+		RunCardComponent
 	],
 	imports: [
 		CommonModule,

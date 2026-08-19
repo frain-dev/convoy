@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"text/tabwriter"
 
@@ -8,6 +9,7 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/indexes"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 )
 
 func AddIndexesCommand(a *cli.App) *cobra.Command {
@@ -111,6 +113,15 @@ func reportIndexes(cmd *cobra.Command, a *cli.App) error {
 	return nil
 }
 
+// rebuildIndexes builds the dropped indexes through the same service the
+// dashboard uses.
+//
+// Going through it is what puts a rebuild started from a shell under the
+// instance-wide single-active lock, for the reason a CLI conversion goes through
+// it: the index being rebuilt lives on a table a conversion may be rewriting, and
+// the two would contend for locks on the same relation. The slot is taken and
+// released per index, so a conversion waiting on the instance gets its turn
+// between them rather than after all of them.
 func rebuildIndexes(cmd *cobra.Command, a *cli.App) error {
 	ctx := cmd.Context()
 	db := a.DB.GetConn()
@@ -125,16 +136,34 @@ func rebuildIndexes(cmd *cobra.Command, a *cli.App) error {
 		return nil
 	}
 
+	service := partitions.New(a.DB, a.Logger)
 	for _, d := range dropped {
 		fmt.Fprintf(out, "Building %s on convoy.%s. This holds no lock against traffic but can take hours.\n", d.Name, d.Table)
 
-		// One failure does not stop the rest: the indexes are independent, and a
-		// table that cannot take one now should not keep the others missing.
-		if err = indexes.Rebuild(ctx, db, d); err != nil {
-			fmt.Fprintf(out, "  failed: %v\n", err)
+		err = service.RunIndexRebuild(ctx, d.Name, triggeredByCLI)
+		if err == nil {
+			fmt.Fprintf(out, "  done: %s\n", d.Name)
 			continue
 		}
-		fmt.Fprintf(out, "  done: %s\n", d.Name)
+
+		// The list was read before the loop, so another operator's rebuild can
+		// have cleared this one since. Nothing is owed on it, which is the
+		// outcome asked for, not a failure.
+		if errors.Is(err, indexes.ErrNotDropped) {
+			fmt.Fprintf(out, "  already rebuilt: %s\n", d.Name)
+			continue
+		}
+
+		// Something else holds the instance, so the next index would fail the
+		// same way. Stop rather than reporting a failure per index.
+		if errors.Is(err, partitions.ErrRunInProgress) {
+			return fmt.Errorf("%w. If it was left behind by a killed process, close it with "+
+				"UPDATE convoy.partition_runs SET status = 'failed', completed_at = NOW() WHERE status = 'running'", err)
+		}
+
+		// One failure does not stop the rest: the indexes are independent, and a
+		// table that cannot take one now should not keep the others missing.
+		fmt.Fprintf(out, "  failed: %v\n", err)
 	}
 
 	remaining, err := indexes.ListDropped(ctx, db)

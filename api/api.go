@@ -550,6 +550,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Post("/partitions", handler.StartPartitionRun)
 			adminRouter.Get("/partitions", handler.ListPartitionRuns)
 			adminRouter.Get("/partitions/tables", handler.ListPartitionTables)
+			adminRouter.Get("/indexes", handler.ListIndexes)
+			adminRouter.Post("/indexes/rebuild", handler.StartIndexRebuild)
 			adminRouter.Get("/partitions/{runID}", handler.GetPartitionRun)
 		})
 

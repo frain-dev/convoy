@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
-export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions';
+export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
 
 @Component({
     selector: 'app-admin',
@@ -16,10 +16,24 @@ export class AdminComponent implements OnInit {
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
 		{ name: 'resend events', icon: 'retry', svg: 'fill' },
 		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' },
-		{ name: 'table partitions', icon: 'view-data', svg: 'fill' }
+		{ name: 'table partitions', icon: 'table-grid', svg: 'fill' },
+		{ name: 'table indexes', icon: 'key', svg: 'fill' }
 	];
 
 	constructor(private route: ActivatedRoute) {}
+
+	// Every class is written out in full because Tailwind reads these files as text:
+	// a name assembled from parts at runtime is never generated, and the missing
+	// utility is silent. stroke-new.text-primary appears nowhere else in the app, so
+	// a stroke icon asking for it would render with no stroke at all. Colours match
+	// the label beside them, leaving the selected row's background to mark it.
+	iconClass(menu: { svg: 'stroke' | 'fill' }, active: boolean): string {
+		if (menu.svg === 'fill') {
+			return active ? 'fill-new.text-primary' : 'fill-new.text-secondary';
+		}
+		// A symbol drawn as outlines still fills black by default, so clear it.
+		return active ? 'fill-none stroke-new.text-primary' : 'fill-none stroke-new.text-secondary';
+	}
 
 	ngOnInit() {
 		// Set active page from URL query parameter
@@ -27,17 +41,10 @@ export class AdminComponent implements OnInit {
 		this.toggleActivePage(requestedPage);
 	}
 
+	// Checked against the menu rather than a second list of the same names, so a
+	// page added above cannot be one an ?activePage link silently falls back from.
 	toggleActivePage(page: string) {
-		if (
-			page === 'feature flags' ||
-			page === 'circuit breaker config' ||
-			page === 'resend events' ||
-			page === 'queue monitoring' ||
-			page === 'table partitions'
-		) {
-			this.activePage = page as ADMIN_PAGE;
-		} else {
-			this.activePage = 'feature flags';
-		}
+		const known = this.adminMenu.some(menu => menu.name === page);
+		this.activePage = known ? (page as ADMIN_PAGE) : 'feature flags';
 	}
 }
