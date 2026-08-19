@@ -47,13 +47,15 @@
       <div class="grid grid-cols-2 gap-24px">
         <convoy-input-field>
           <label for="table" convoy-label>Table</label>
+          <!-- No (selectedOption) handler: convoy-select emits before it writes the
+               control, so a handler here would narrow the operation for the table
+               being replaced. The valueChanges subscription carries the new one. -->
           <convoy-select
             [options]="tables"
             name="table"
             formControlName="table"
             placeholder="Select table"
             [searchable]="false"
-            (selectedOption)="applyOperations()"
           ></convoy-select>
         </convoy-input-field>
 
