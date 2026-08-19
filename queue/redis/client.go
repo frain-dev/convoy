@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/danvixent/asynqmon"
 	"github.com/hibiken/asynq"
@@ -18,6 +19,12 @@ import (
 )
 
 var (
+	_ queue.Queuer   = (*RedisQueue)(nil)
+	_ queue.Monitor  = (*RedisQueue)(nil)
+	_ queue.Archiver = (*RedisQueue)(nil)
+)
+
+var (
 	ErrTaskNotFound  = fmt.Errorf("asynq: %w", asynq.ErrTaskNotFound)
 	ErrQueueNotFound = fmt.Errorf("asynq: %w", asynq.ErrQueueNotFound)
 )
@@ -29,7 +36,7 @@ type RedisQueue struct {
 	logger    log.Logger
 }
 
-func NewQueue(opts queue.QueueOptions) queue.Queuer {
+func NewQueue(opts queue.QueueOptions) *RedisQueue {
 	var c asynq.RedisConnOpt
 	if opts.RedisFailoverOpt != nil {
 		c = *opts.RedisFailoverOpt
@@ -132,12 +139,12 @@ func (q *RedisQueue) Options() queue.QueueOptions {
 	return q.opts
 }
 
-func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {
+func (q *RedisQueue) Monitor() http.Handler {
 	return q.MonitorWithRootPath("/queue/monitoring")
 }
 
 // MonitorWithRootPath builds an Asynqmon handler for a custom mount path.
-func (q *RedisQueue) MonitorWithRootPath(rootPath string) *asynqmon.HTTPHandler {
+func (q *RedisQueue) MonitorWithRootPath(rootPath string) http.Handler {
 	var redisConnOpt asynq.RedisConnOpt
 	if q.opts.RedisFailoverOpt != nil {
 		redisConnOpt = *q.opts.RedisFailoverOpt
@@ -157,6 +164,37 @@ func (q *RedisQueue) MonitorWithRootPath(rootPath string) *asynqmon.HTTPHandler 
 
 func (q *RedisQueue) Inspector() *asynq.Inspector {
 	return q.inspector
+}
+
+func (q *RedisQueue) LastTaskError(queueName, jobID string) (string, error) {
+	taskInfo, err := q.inspector.GetTaskInfo(queueName, jobID)
+	if err != nil {
+		return "", err
+	}
+	return taskInfo.LastErr, nil
+}
+
+func (q *RedisQueue) DeleteArchived(_ context.Context) error {
+	queues := []string{
+		string(convoy.EventQueue),
+		string(convoy.CreateEventQueue),
+		string(convoy.ScheduleQueue),
+		string(convoy.DefaultQueue),
+		string(convoy.StreamQueue),
+		string(convoy.MetaEventQueue),
+		string(convoy.EventWorkflowQueue),
+	}
+
+	var first error
+	for _, qu := range queues {
+		if _, err := q.inspector.DeleteAllArchivedTasks(qu); err != nil {
+			q.logger.Error(fmt.Sprintf("failed to delete archived task from queue - %s: %v", qu, err))
+			if first == nil {
+				first = err
+			}
+		}
+	}
+	return first
 }
 
 func (q *RedisQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueName, ids []string) error {

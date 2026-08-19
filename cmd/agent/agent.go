@@ -211,12 +211,12 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 func buildRuntimeOpts(a *cli.App) dataplane.RuntimeOpts {
 	return dataplane.RuntimeOpts{
 		DB:            a.DB,
-		Redis:         a.Redis,
 		Queue:         a.Queue,
 		Logger:        a.Logger,
 		Cache:         a.Cache,
 		Rate:          a.Rate,
 		Licenser:      a.Licenser,
 		TracerBackend: a.TracerBackend,
+		Broker:        a.Broker,
 	}
 }

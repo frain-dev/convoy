@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/oklog/ulid/v2"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore/cached"
@@ -22,17 +21,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/cachedrepo"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 )
-
-// usageLockReleaseScript releases the recompute lock only if the caller still
-// owns it (atomic compare-and-delete) so a worker that outlived the TTL cannot
-// clear a lock a newer worker has since acquired.
-var usageLockReleaseScript = redis.NewScript(`
-if redis.call("get", KEYS[1]) == ARGV[1] then
-    return redis.call("del", KEYS[1])
-end
-return 0
-`)
 
 func (h *BillingHandler) ensureOrganisationInBilling(w http.ResponseWriter, r *http.Request, orgID string) bool {
 	orgRepo := h.orgRepo()
@@ -240,11 +230,11 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 // path. An atomic Redis lock dedupes concurrent recomputes per org so a burst of
 // requests cannot stampede Postgres.
 func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey string, startTime, endTime time.Time) {
-	// Fail closed: without Redis we cannot dedupe, so skip the recompute rather
+	// Fail closed: without a distributed lock we cannot dedupe, so skip the recompute rather
 	// than risk concurrent heavy aggregations. The caller still gets a pending
-	// response and the figure resolves once Redis is available again.
-	if h.A.Redis == nil {
-		h.A.Logger.Error("skipping usage recompute: redis is not configured")
+	// response and the figure resolves once the lock backend is available again.
+	if h.A.UsageLocker == nil {
+		h.A.Logger.Error("skipping usage recompute: distributed lock is not configured")
 		return
 	}
 
@@ -258,54 +248,33 @@ func (h *BillingHandler) recomputeUsageInBackground(orgID, period, cacheKey stri
 		ctx, cancel := context.WithTimeout(context.Background(), usageRecomputeLockTTL)
 		defer cancel()
 
-		// Atomic acquire. Fail closed on Redis error (skip rather than run a
-		// duplicate aggregation); skip quietly if another recompute holds it.
-		token := ulid.Make().String()
-		acquired, err := h.A.Redis.SetNX(ctx, lockKey, token, usageRecomputeLockTTL).Result()
-		if err != nil {
-			h.A.Logger.Error("failed to acquire usage recompute lock", "error", err)
-			return
-		}
-		if !acquired {
-			h.A.Logger.Debug("usage recompute already running")
-			return
-		}
-		defer h.releaseUsageLock(lockKey, token)
+		err := h.A.UsageLocker.WithLock(ctx, lockKey, usageRecomputeLockTTL, func(ctx context.Context) error {
+			// Fail-to-placeholder: if the aggregation errors or exceeds the lock TTL,
+			// nothing is cached and the caller keeps seeing the pending sentinel.
+			usage, err := h.computeUsage(ctx, orgID, period, startTime, endTime)
+			if err != nil {
+				return fmt.Errorf("compute usage: %w", err)
+			}
 
-		// Fail-to-placeholder: if the aggregation errors or exceeds the lock TTL
-		// (e.g. a large window still falling back to payload scans for
-		// pre-migration rows), nothing is cached and the caller keeps seeing the
-		// pending sentinel. The dashboard polls a bounded number of times and
-		// then renders a placeholder. The figure resolves on a later recompute as
-		// more rows carry the persisted byte columns and the read goes index-only.
-		usage, err := h.computeUsage(ctx, orgID, period, startTime, endTime)
-		if err != nil {
-			h.A.Logger.Error("failed to compute usage", "error", err)
+			// Persist with a fresh short-lived context so a successful compute is
+			// not discarded when most of the lock budget was consumed.
+			setCtx, cancelSet := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancelSet()
+			return h.A.Cache.Set(setCtx, cacheKey, usage, usageCacheTTL)
+		})
+		if errors.Is(err, task.ErrLockBusy) {
+			// Routine: another recompute for this org is already running, or the
+			// lock pool is saturated. The caller keeps the pending sentinel and
+			// the next poll reads whichever run finishes.
+			h.A.Logger.Debug("usage recompute skipped, lock busy", "organisation_id", orgID)
 			return
 		}
-
-		// Persist with a fresh short-lived context: a compute that consumed most
-		// of the lock budget would otherwise fail Cache.Set on the already-expired
-		// context, discarding a successful result and leaving callers stuck on the
-		// pending sentinel.
-		setCtx, cancelSet := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancelSet()
-		if err := h.A.Cache.Set(setCtx, cacheKey, usage, usageCacheTTL); err != nil {
-			h.A.Logger.Error("failed to cache usage", "error", err)
+		if err != nil {
+			// Covers the aggregation and the cache write as well as the lock, so
+			// the message must not claim the lock was at fault.
+			h.A.Logger.Error("usage recompute failed", "error", err, "organisation_id", orgID)
 		}
 	}()
-}
-
-// releaseUsageLock releases the recompute lock with an owner check so a worker
-// that overran the TTL cannot delete a newer worker's lock. Uses a fresh
-// timeout so release still runs if the compute context was cancelled.
-func (h *BillingHandler) releaseUsageLock(lockKey, token string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	if err := usageLockReleaseScript.Run(ctx, h.A.Redis, []string{lockKey}, token).Err(); err != nil {
-		h.A.Logger.Error("failed to release usage recompute lock", "error", err)
-	}
 }
 
 // computeUsage aggregates usage from this instance's persisted byte columns for

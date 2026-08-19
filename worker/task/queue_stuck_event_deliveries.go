@@ -10,7 +10,6 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/redis"
 )
 
 func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDeliveryRepository, q queue.Queuer, logger log.Logger) {
@@ -29,7 +28,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 			return arr
 		}()
 
-		err = q.(*redis.RedisQueue).DeleteEventDeliveriesFromQueue(convoy.EventQueue, ids)
+		err = removeQueuedJobs(q, convoy.EventQueue, ids)
 		if err != nil {
 			logger.ErrorContext(ctx, "an error occurred removing task with id from the queue", "error", err)
 		}

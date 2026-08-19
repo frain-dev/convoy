@@ -2,12 +2,16 @@ package license
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
+
+	dbpostgres "github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/testenv"
 )
 
 func encryptWith(t *testing.T, orgID string, entitlements map[string]interface{}) string {
@@ -191,4 +195,63 @@ func TestTrialEventLimiter_Allow_NoCapWhenLimitZero(t *testing.T) {
 	exists, err := client.Exists(ctx, key).Result()
 	require.NoError(t, err)
 	require.Equal(t, int64(0), exists, "no-cap orgs must not create a counter key")
+}
+
+func TestPostgresTrialEventCounterIsAtomicAndResetsOnNewUTCDay(t *testing.T) {
+	env, cleanup, err := testenv.Launch(context.Background(), testenv.WithoutRedis())
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, cleanup()) })
+
+	conn, err := env.CloneTestDatabase(t, "convoy")
+	require.NoError(t, err)
+	db := dbpostgres.NewFromConnection(conn).GetDB()
+	limiter := NewPostgresTrialEventLimiter(db, nil)
+	counter, ok := limiter.counter.(*postgresTrialEventCounter)
+	require.True(t, ok)
+	ctx := context.Background()
+	orgID := "org-" + ulid.Make().String()
+	day1 := time.Date(2026, 8, 14, 0, 0, 0, 0, time.UTC)
+	const (
+		limit    = int64(20)
+		attempts = 100
+	)
+
+	type incrementResult struct {
+		allowed bool
+		err     error
+	}
+	start := make(chan struct{})
+	results := make(chan incrementResult, attempts)
+	var wg sync.WaitGroup
+	for range attempts {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			allowed, incrementErr := counter.Increment(ctx, orgID, day1, limit)
+			results <- incrementResult{allowed: allowed, err: incrementErr}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	allowed := 0
+	for result := range results {
+		require.NoError(t, result.err)
+		if result.allowed {
+			allowed++
+		}
+	}
+	require.Equal(t, int(limit), allowed)
+
+	day2 := day1.Add(24 * time.Hour)
+	nextDayAllowed, err := counter.Increment(ctx, orgID, day2, limit)
+	require.NoError(t, err)
+	require.True(t, nextDayAllowed)
+
+	var count int64
+	require.NoError(t, db.GetContext(ctx, &count,
+		`SELECT event_count FROM convoy.trial_event_counters WHERE org_id = $1`, orgID))
+	require.Equal(t, int64(1), count)
 }

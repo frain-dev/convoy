@@ -128,7 +128,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 
 	attributes["project.id"] = project.UID
 
-	broadcastEvent, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	broadcastEvent, err := eventForMatch(ctx, args.eventRepo, metadata, args.taskRetryCount)
 	if err != nil {
 		tracer.AddEvent(ctx, tracer.EventBroadcastSubscriptionMatchingErr, attributes)
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -186,6 +186,7 @@ func ProcessBroadcastEventCreation(
 		deps.EventRepo,
 		deps.ProjectRepo,
 		deps.EventQueue,
+		deps.TaskErrors,
 		deps.SubRepo,
 		deps.FilterRepo,
 		deps.Licenser,
@@ -193,7 +194,7 @@ func ProcessBroadcastEventCreation(
 		deps.FeatureFlag,
 		deps.FeatureFlagFetcher,
 		deps.EarlyAdopterFeatureFetcher,
-		deps.Redis,
+		deps.Acker,
 		deps.Logger,
 	)
 }

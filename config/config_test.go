@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -120,6 +121,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
+				QueueProvider:    RedisQueueProvider,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -216,6 +218,8 @@ func TestLoadConfig(t *testing.T) {
 				ApiRateLimit:               1000,
 				VerifyDynamicEventsTimeout: 30,
 				SSOService:                 DefaultConfiguration.SSOService,
+				Queue:                      DefaultConfiguration.Queue,
+				Cache:                      DefaultConfiguration.Cache,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -229,6 +233,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
+				QueueProvider:    RedisQueueProvider,
 				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
@@ -322,6 +327,8 @@ func TestLoadConfig(t *testing.T) {
 				VerifyDynamicEventsTimeout: 30,
 				WorkerExecutionMode:        DefaultExecutionMode,
 				SSOService:                 DefaultConfiguration.SSOService,
+				Queue:                      DefaultConfiguration.Queue,
+				Cache:                      DefaultConfiguration.Cache,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -336,6 +343,7 @@ func TestLoadConfig(t *testing.T) {
 				Host:             "localhost:5005",
 				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
 				ConsumerPoolSize: 100,
+				QueueProvider:    RedisQueueProvider,
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
 					ErrorTimeout:                30,
@@ -427,6 +435,8 @@ func TestLoadConfig(t *testing.T) {
 				VerifyDynamicEventsTimeout: 30,
 				WorkerExecutionMode:        DefaultExecutionMode,
 				SSOService:                 DefaultConfiguration.SSOService,
+				Queue:                      DefaultConfiguration.Queue,
+				Cache:                      DefaultConfiguration.Cache,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -835,4 +845,272 @@ func TestBillingUsageSource(t *testing.T) {
 	invalid := DefaultConfiguration
 	invalid.Billing.UsageSource = "clickhouse"
 	require.Error(t, invalid.Billing.Validate())
+}
+
+func Test_PostgresQueueProviderSkipsRedisDSN(t *testing.T) {
+	c := DefaultConfiguration
+	c.QueueProvider = PostgresQueueProvider
+	c.Redis = RedisConfiguration{}
+	c.Auth.Jwt.Secret = "test-access-secret"
+	c.Auth.Jwt.RefreshSecret = "test-refresh-secret"
+	require.NoError(t, validate(&c))
+}
+
+func Test_RedisQueueProviderRequiresDSN(t *testing.T) {
+	c := DefaultConfiguration
+	c.QueueProvider = RedisQueueProvider
+	c.Redis = RedisConfiguration{}
+	require.EqualError(t, validate(&c), "redis queue dsn is empty")
+}
+
+// postgresQueueBaseConfig is DefaultConfiguration with the unrelated required
+// fields satisfied, so these tests fail only on queue validation.
+func postgresQueueBaseConfig() Configuration {
+	c := DefaultConfiguration
+	c.Auth.Jwt.Secret = "test-secret"
+	c.Auth.Jwt.RefreshSecret = "test-refresh-secret"
+	return c
+}
+
+func Test_PostgresQueueDefaults(t *testing.T) {
+	c := postgresQueueBaseConfig()
+	c.QueueProvider = PostgresQueueProvider
+
+	require.NoError(t, validate(&c))
+
+	q := c.Queue.Postgres
+	require.Equal(t, DefaultPostgresQueueBatchSize, q.BatchSize)
+	require.Equal(t, DefaultPostgresQueueBatchWaitMs, q.BatchWaitMs)
+	require.Equal(t, DefaultPostgresQueueWriteConcurrency, q.WriteConcurrency)
+	require.Equal(t, DefaultPostgresQueueLeaseTimeoutSecs, q.LeaseTimeoutSeconds)
+	require.Equal(t, DefaultPostgresQueueClaimBatchSize, q.ClaimBatchSize)
+	require.Equal(t, DefaultPostgresQueuePollIdleMs, q.PollIdleMs)
+	require.Equal(t, 2*time.Millisecond, q.BatchWait())
+	require.Equal(t, 90*time.Second, q.LeaseTimeout())
+	require.Equal(t, 5*time.Millisecond, q.PollIdle())
+}
+
+func Test_PostgresQueueValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		queue   PostgresQueueConfiguration
+		pool    int
+		wantErr string
+	}{
+		{
+			name:  "explicit values are kept",
+			queue: PostgresQueueConfiguration{BatchSize: 128, BatchWaitMs: 5, WriteConcurrency: 4, LeaseTimeoutSeconds: 120},
+			pool:  50,
+		},
+		{
+			name:    "batch size below one",
+			queue:   PostgresQueueConfiguration{BatchSize: -1},
+			wantErr: "queue.postgres.batch_size must be between 1 and 10000, got -1",
+		},
+		{
+			name:    "batch size above the statement bound",
+			queue:   PostgresQueueConfiguration{BatchSize: 10001},
+			wantErr: "queue.postgres.batch_size must be between 1 and 10000, got 10001",
+		},
+		{
+			name:    "negative batch wait",
+			queue:   PostgresQueueConfiguration{BatchWaitMs: -1},
+			wantErr: "queue.postgres.batch_wait_ms must be at least 1, got -1",
+		},
+		{
+			name:    "write concurrency below one",
+			queue:   PostgresQueueConfiguration{WriteConcurrency: -2},
+			wantErr: "queue.postgres.write_concurrency must be at least 1, got -2",
+		},
+		{
+			name:    "lease below the floor",
+			queue:   PostgresQueueConfiguration{LeaseTimeoutSeconds: 5},
+			wantErr: "queue.postgres.lease_timeout_seconds must be at least 30, got 5",
+		},
+		{
+			// Flushers hold a pool connection each, so this is the setting that
+			// silently starves reads if it is allowed through.
+			name:    "write concurrency at the pool size",
+			queue:   PostgresQueueConfiguration{WriteConcurrency: 10},
+			pool:    10,
+			wantErr: "queue.postgres.write_concurrency (10) must be below database.max_open_conn (10) so queue writes cannot starve reads on the same pool",
+		},
+		{
+			name:    "write concurrency above the pool size",
+			queue:   PostgresQueueConfiguration{WriteConcurrency: 64},
+			pool:    50,
+			wantErr: "queue.postgres.write_concurrency (64) must be below database.max_open_conn (50) so queue writes cannot starve reads on the same pool",
+		},
+		{
+			// An unset pool is bounded at DefaultMaxOpenConnections, so the
+			// starvation check still applies and is measured against it.
+			name:    "unset pool is measured against the default",
+			queue:   PostgresQueueConfiguration{WriteConcurrency: DefaultMaxOpenConnections},
+			pool:    0,
+			wantErr: fmt.Sprintf("queue.postgres.write_concurrency (%d) must be below database.max_open_conn (%d) so queue writes cannot starve reads on the same pool", DefaultMaxOpenConnections, DefaultMaxOpenConnections),
+		},
+		{
+			name:  "unset pool admits concurrency below the default",
+			queue: PostgresQueueConfiguration{WriteConcurrency: 64},
+			pool:  0,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := postgresQueueBaseConfig()
+			c.QueueProvider = PostgresQueueProvider
+			c.Queue.Postgres = tc.queue
+			c.Database.SetMaxOpenConnections = tc.pool
+
+			err := validate(&c)
+			if tc.wantErr != "" {
+				require.EqualError(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_WorkerPoolUndersized(t *testing.T) {
+	tests := []struct {
+		name     string
+		provider QueueProvider
+		pool     int
+		workers  int
+		want     bool
+	}{
+		{
+			name:     "fewer connections than consumers",
+			provider: PostgresQueueProvider,
+			pool:     50,
+			workers:  100,
+			want:     true,
+		},
+		{
+			name:     "one connection per consumer",
+			provider: PostgresQueueProvider,
+			pool:     100,
+			workers:  100,
+		},
+		{
+			name:     "more connections than consumers",
+			provider: PostgresQueueProvider,
+			pool:     200,
+			workers:  100,
+		},
+		{
+			// An unset pool is not unlimited: the pool builder substitutes
+			// DefaultMaxOpenConnections, so the shortfall is real and the
+			// operator never named the number it is measured against.
+			name:     "unset pool below consumers",
+			provider: PostgresQueueProvider,
+			pool:     0,
+			workers:  DefaultMaxOpenConnections + 1,
+			want:     true,
+		},
+		{
+			name:     "unset pool above consumers",
+			provider: PostgresQueueProvider,
+			pool:     0,
+			workers:  DefaultMaxOpenConnections - 1,
+		},
+		{
+			// Redis mode draws no queue traffic from this pool, so the ratio
+			// carries no meaning there.
+			name:     "redis ignores the ratio",
+			provider: RedisQueueProvider,
+			pool:     50,
+			workers:  100,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := postgresQueueBaseConfig()
+			c.QueueProvider = tc.provider
+			c.Database.SetMaxOpenConnections = tc.pool
+			c.ConsumerPoolSize = tc.workers
+
+			require.Equal(t, tc.want, c.WorkerPoolUndersized())
+		})
+	}
+}
+
+// Redis deployments must not be held to the postgres queue's validation, since
+// none of those settings apply to them.
+func Test_PostgresQueueValidationSkippedForRedis(t *testing.T) {
+	c := postgresQueueBaseConfig()
+	c.QueueProvider = RedisQueueProvider
+	c.Queue.Postgres = PostgresQueueConfiguration{WriteConcurrency: 9999, LeaseTimeoutSeconds: 1}
+
+	require.NoError(t, validate(&c))
+}
+
+func Test_PostgresCacheDefaults(t *testing.T) {
+	c := postgresQueueBaseConfig()
+	c.QueueProvider = PostgresQueueProvider
+
+	require.NoError(t, validate(&c))
+
+	pc := c.Cache.Postgres
+	require.Equal(t, DefaultPostgresCacheLocalReadTTLMs, pc.LocalReadTTLMs)
+	require.Equal(t, DefaultPostgresCacheLocalReadSize, pc.LocalReadSize)
+	require.Equal(t, time.Second, pc.LocalReadTTL())
+}
+
+func Test_PostgresCacheLocalReadsDisabled(t *testing.T) {
+	c := postgresQueueBaseConfig()
+	c.QueueProvider = PostgresQueueProvider
+	c.Cache.Postgres.LocalReadTTLMs = -1
+
+	require.NoError(t, validate(&c))
+	require.Zero(t, c.Cache.Postgres.LocalReadTTL(), "a negative ttl must disable local reads, not shorten them")
+}
+
+func Test_PostgresCacheValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		cache   PostgresCacheConfiguration
+		wantErr string
+	}{
+		{
+			name:  "ttl at the ceiling is allowed",
+			cache: PostgresCacheConfiguration{LocalReadTTLMs: maxPostgresCacheLocalReadTTLMs},
+		},
+		{
+			name:    "ttl above the ceiling is rejected",
+			cache:   PostgresCacheConfiguration{LocalReadTTLMs: maxPostgresCacheLocalReadTTLMs + 1},
+			wantErr: "cache.postgres.local_read_ttl_ms must be at most",
+		},
+		{
+			name:    "negative size is rejected",
+			cache:   PostgresCacheConfiguration{LocalReadSize: -1},
+			wantErr: "cache.postgres.local_read_size must be at least 1",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := postgresQueueBaseConfig()
+			c.QueueProvider = PostgresQueueProvider
+			c.Cache.Postgres = tc.cache
+
+			err := validate(&c)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
+func Test_PostgresCacheValidationSkippedForRedis(t *testing.T) {
+	c := postgresQueueBaseConfig()
+	c.QueueProvider = RedisQueueProvider
+	c.Cache.Postgres.LocalReadTTLMs = maxPostgresCacheLocalReadTTLMs + 1
+
+	require.NoError(t, validate(&c), "postgres cache tuning is irrelevant in redis mode")
 }

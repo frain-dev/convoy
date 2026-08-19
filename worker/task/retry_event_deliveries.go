@@ -15,7 +15,6 @@ import (
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -26,7 +25,7 @@ func RetryEventDeliveries(logger log.Logger, db database.Database, eventQueue qu
 	RetryEventDeliveriesWithTracker(logger, db, eventQueue, projectID, statuses, lookBackDuration, eventId, "", nil)
 }
 
-func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, eventQueue queue.Queuer, projectID string, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker *batch_tracker.BatchTracker) {
+func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, eventQueue queue.Queuer, projectID string, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker batch_tracker.Tracker) {
 	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -47,12 +46,6 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 	// Initialize repositories and queue once
 	eventDeliveryRepo := event_deliveries.New(logger, db)
-	var q *redisqueue.RedisQueue
-	q, ok := eventQueue.(*redisqueue.RedisQueue)
-	if !ok {
-		logger.Error(fmt.Sprintf("Invalid queue type for requeing event deliveries: %T", eventQueue))
-		return
-	}
 
 	var allStatusesWg sync.WaitGroup
 
@@ -100,7 +93,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 			wg.Add(1)
 
-			go processEventDeliveryBatch(ctx, projectID, s, eventDeliveryRepo, deliveryChan, q, &wg, batchID, tracker, logger)
+			go processEventDeliveryBatch(ctx, projectID, s, eventDeliveryRepo, deliveryChan, eventQueue, &wg, batchID, tracker, logger)
 
 			counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, projectID, s, searchParams)
 			if err != nil {
@@ -149,7 +142,7 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, projectID string, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup, batchID string, t *batch_tracker.BatchTracker, l log.Logger) {
+func processEventDeliveryBatch(ctx context.Context, projectID string, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q queue.Queuer, wg *sync.WaitGroup, batchID string, t batch_tracker.Tracker, l log.Logger) {
 	defer wg.Done()
 
 	batchCount := 1
@@ -176,7 +169,7 @@ func processEventDeliveryBatch(ctx context.Context, projectID string, s datastor
 		}
 
 		// remove these event deliveries queue
-		err := q.DeleteEventDeliveriesFromQueue(convoy.EventQueue, batchIDs)
+		err := removeQueuedJobs(q, convoy.EventQueue, batchIDs)
 		if err != nil {
 			l.Error(fmt.Sprintf("batch %d: failed to delete event deliveries from zset", batchCount), "error", err, "ids", batchIDs)
 		}

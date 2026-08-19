@@ -110,7 +110,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	logger := log.New("convoy", log.LevelInfo)
-	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
+	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, &redisJobLocker{rd: rd.Client(), logger: logger}, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 	err = fn(context.Background(), task)
@@ -157,7 +157,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	logger := log.New("convoy", log.LevelInfo)
-	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
+	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, &redisJobLocker{rd: rd.Client(), logger: logger}, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 	err = fn(context.Background(), task)
@@ -197,7 +197,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	logger := log.New("convoy", log.LevelInfo)
-	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
+	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, &redisJobLocker{rd: rd.Client(), logger: logger}, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 	err = fn(context.Background(), task)
@@ -225,7 +225,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 
 	logger := log.New("convoy", log.LevelError)
 	testClient := newTestBillingClient()
-	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
+	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, &redisJobLocker{rd: rd.Client(), logger: logger}, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 	err = fn(context.Background(), task)
@@ -263,7 +263,7 @@ func (u *UpdateOrganisationStatusIntegrationTestSuite) Test_UpdateOrganisationSt
 	require.NoError(u.T(), err)
 
 	logger := log.New("convoy", log.LevelInfo)
-	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, rd, logger)
+	fn := UpdateOrganisationStatus(u.ConvoyApp.database, testClient, &redisJobLocker{rd: rd.Client(), logger: logger}, logger)
 
 	task := asynq.NewTask(string(convoy.UpdateOrganisationStatus), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 	err = fn(context.Background(), task)

@@ -7,11 +7,9 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
@@ -20,7 +18,6 @@ import (
 	pyro "github.com/grafana/pyroscope-go"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	dbhook "github.com/frain-dev/convoy/database/hooks"
@@ -31,20 +28,17 @@ import (
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/license/service"
 	licenseusage "github.com/frain-dev/convoy/internal/pkg/license/usage"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/internal/users"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -116,36 +110,18 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		var ca cache.Cache
-		var q queue.Queuer
-
-		redis, err := rdb.NewClientFromRedisConfig(cfg.Redis)
-		if err != nil {
-			return errors.New("failed to connect to redis with err: " + err.Error())
-		}
-
-		opts, err := getQueueOptions(&cfg, redis)
+		brokerDeps, err := broker.New(cfg, db.GetDB(), lo)
 		if err != nil {
 			return err
 		}
+		q := brokerDeps.Queue
+		ca := brokerDeps.Cache
 
 		if cfg.Pyroscope.EnableProfiling {
 			err = enableProfiling(cfg, cmd)
 			if err != nil {
 				return err
 			}
-		}
-
-		q = redisQueue.NewQueue(opts)
-
-		ca, err = cache.NewCache(cfg.Redis)
-		if err != nil {
-			return errors.New("failed to create cache with err: " + err.Error())
-		}
-
-		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
-		if err != nil {
-			return errors.New("failed to ping redis with err: " + err.Error())
 		}
 
 		hooks := dbhook.Init()
@@ -172,11 +148,19 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
-		app.Redis = redis.Client()
+		// Postgres cache writes convoy.kv_cache. Ping after the migration
+		// check so a missing table is pending-migrations, not a cache failure.
+		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
+		if err != nil {
+			return errors.New("failed to ping cache with err: " + err.Error())
+		}
+
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
 		app.Cache = ca
+		app.Rate = brokerDeps.RateLimiter
+		app.Broker = brokerDeps
 
 		if ok := shouldBootstrap(cmd); ok {
 			err = ensureDefaultUser(context.Background(), app)
@@ -203,13 +187,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 		}
-
-		rateLimiter, err := limiter.NewLimiter(cfg)
-		if err != nil {
-			return err
-		}
-
-		app.Rate = rateLimiter
 
 		// Load the instance configuration UID before building the license client
 		// so validation requests can include the deployment_id. If configuration
@@ -238,7 +215,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 		// Licensed instances only: attach cached anonymized usage on validate.
 		if !util.IsStringEmpty(cfg.LicenseKey) {
-			licenseClientCfg.UsageLoader = licenseusage.NewStore(app.DB, redis)
+			licenseClientCfg.UsageLoader = licenseusage.NewStore(app.DB, app.Cache)
 		}
 		licenseClient := service.NewClient(licenseClientCfg)
 
@@ -259,6 +236,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		licenseOverrideCfg(&cfg, app.Licenser)
 		if err := config.Override(&cfg); err != nil {
+			return err
+		}
+
+		if err := broker.AllowPostgresQueue(cfg, app.Licenser); err != nil {
 			return err
 		}
 
@@ -1074,39 +1055,4 @@ func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) 
 	}
 
 	return nil
-}
-func getQueueOptions(cfg *config.Configuration, redis *rdb.Redis) (queue.QueueOptions, error) {
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         5,
-		string(convoy.CreateEventQueue):   2,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-	}
-
-	opts := queue.QueueOptions{
-		Names:             queueNames,
-		RedisClient:       redis,
-		RedisAddress:      cfg.Redis.BuildDsn(),
-		Type:              string(config.RedisQueueProvider),
-		PrometheusAddress: cfg.Prometheus.Dsn,
-	}
-
-	if cfg.Redis.IsSentinel() {
-		db, err := strconv.Atoi(cfg.Redis.Database)
-		if err != nil {
-			return opts, err
-		}
-		opts.RedisFailoverOpt = &asynq.RedisFailoverClientOpt{
-			MasterName:       cfg.Redis.MasterName,
-			SentinelAddrs:    cfg.Redis.SentinelAddresses(),
-			Username:         cfg.Redis.Username,
-			Password:         cfg.Redis.Password,
-			SentinelPassword: cfg.Redis.SentinelPassword,
-			DB:               db,
-		}
-	}
-
-	return opts, nil
 }

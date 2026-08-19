@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
-	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel"
 
 	"github.com/frain-dev/convoy"
@@ -25,7 +24,7 @@ import (
 
 type CreateDynamicEventService struct {
 	Queue queue.Queuer
-	Redis redis.UniversalClient
+	Acker dynamiceventack.Acker
 
 	DynamicEvent *models.DynamicEvent
 	Project      *datastore.Project
@@ -85,9 +84,9 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 		return nil
 	}
 
-	// Failure policy: fail closed. Timeout / redis / resolve errors must not return 201.
-	if e.Redis == nil {
-		return util.NewServiceError(http.StatusServiceUnavailable, dynamiceventack.ErrNilRedis)
+	// Failure policy: fail closed. Timeout, broker, and resolve errors must not return 201.
+	if e.Acker == nil {
+		return util.NewServiceError(http.StatusServiceUnavailable, dynamiceventack.ErrNilAcker)
 	}
 
 	cfg, cfgErr := config.Get()
@@ -99,7 +98,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) (err error) {
 		timeout = 30 * time.Second
 	}
 
-	result, waitErr := dynamiceventack.Wait(ctx, e.Redis, e.Project.UID, id, timeout)
+	result, waitErr := e.Acker.Wait(ctx, e.Project.UID, id, timeout)
 	if waitErr != nil {
 		if errors.Is(waitErr, dynamiceventack.ErrTimeout) {
 			return util.NewServiceError(http.StatusGatewayTimeout, waitErr)

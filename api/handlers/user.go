@@ -159,7 +159,7 @@ func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request
 	rs := services.ResendEmailVerificationTokenService{
 		UserRepo:   userRepo,
 		Queue:      h.A.Queue,
-		ClaimStore: services.NewRedisResendClaimStore(h.A.Redis),
+		ClaimStore: h.A.ResendClaims,
 		BaseURL:    baseUrl,
 		User:       user,
 		Logger:     h.A.Logger,

@@ -13,25 +13,20 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
-	rcache "github.com/frain-dev/convoy/cache/redis"
 	cmdserver "github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/dataplane"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -138,42 +133,14 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	err = config.LoadCaCert("", "")
 	require.NoError(t, err)
 
-	// Create rdb client for queue
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
-	require.NoError(t, err)
-
 	// Always flush Redis to ensure complete test isolation.
 	// Each test has its own database clone, so we MUST ensure no jobs from
 	// previous tests leak through the shared Redis queue.
 	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
-	err = redis.Client().FlushDB(ctx).Err()
+	err = rd.FlushDB(ctx).Err()
 	require.NoError(t, err)
 
-	// Create cache
-	cache := rcache.NewRedisCacheFromClient(rd)
-
-	// Create queue
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         3,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.StreamQueue):        1,
-		string(convoy.MetaEventQueue):     1,
-	}
-
-	queueOpts := queue.QueueOptions{
-		RedisClient:  redis,
-		Names:        queueNames,
-		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
-	}
-
-	q := redisqueue.NewQueue(queueOpts)
-
-	// Create rate limiter
-	limiter := rlimiter.NewLimiterFromRedisClient(rd)
+	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger, conn, rd)
 
 	// Create licenser
 	licenser := noopLicenser.NewLicenser()
@@ -186,10 +153,11 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		Version:       "test",
 		DB:            pg,
 		Redis:         rd,
-		Queue:         q,
+		Queue:         brokerDeps.Queue,
 		Logger:        logger,
-		Cache:         cache,
-		Rate:          limiter,
+		Cache:         brokerDeps.Cache,
+		Rate:          brokerDeps.RateLimiter,
+		Broker:        brokerDeps,
 		Licenser:      licenser,
 		TracerBackend: tracer.NoOpBackend{},
 		JobTracker:    jobTracker,
@@ -367,42 +335,14 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	err = config.LoadCaCert("", "")
 	require.NoError(t, err)
 
-	// Create rdb client for queue
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
-	require.NoError(t, err)
-
 	// Always flush Redis to ensure complete test isolation.
 	// Each test has its own database clone, so we MUST ensure no jobs from
 	// previous tests leak through the shared Redis queue.
 	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
-	err = redis.Client().FlushDB(ctx).Err()
+	err = rd.FlushDB(ctx).Err()
 	require.NoError(t, err)
 
-	// Create cache
-	cache := rcache.NewRedisCacheFromClient(rd)
-
-	// Create queue
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         3,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.StreamQueue):        1,
-		string(convoy.MetaEventQueue):     1,
-	}
-
-	queueOpts := queue.QueueOptions{
-		RedisClient:  redis,
-		Names:        queueNames,
-		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
-	}
-
-	q := redisqueue.NewQueue(queueOpts)
-
-	// Create rate limiter
-	limiter := rlimiter.NewLimiterFromRedisClient(rd)
+	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger, conn, rd)
 
 	// Create licenser
 	licenser := noopLicenser.NewLicenser()
@@ -412,10 +352,11 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 		Version:       "test",
 		DB:            pg,
 		Redis:         rd,
-		Queue:         q,
+		Queue:         brokerDeps.Queue,
 		Logger:        logger,
-		Cache:         cache,
-		Rate:          limiter,
+		Cache:         brokerDeps.Cache,
+		Rate:          brokerDeps.RateLimiter,
+		Broker:        brokerDeps,
 		Licenser:      licenser,
 		TracerBackend: tracer.NoOpBackend{},
 	}
@@ -531,13 +472,13 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 func dataplaneOpts(app *cli.App) dataplane.RuntimeOpts {
 	return dataplane.RuntimeOpts{
 		DB:            app.DB,
-		Redis:         app.Redis,
 		Queue:         app.Queue,
 		Logger:        app.Logger,
 		Cache:         app.Cache,
 		Rate:          app.Rate,
 		Licenser:      app.Licenser,
 		TracerBackend: app.TracerBackend,
+		Broker:        app.Broker,
 		JobTracker:    app.JobTracker,
 		SetSubscriptionLoader: func(loader interface{}) {
 			app.SubscriptionLoader = loader

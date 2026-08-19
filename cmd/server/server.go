@@ -26,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker"
 )
 
 func AddServerCommand(a *cli.App) *cobra.Command {
@@ -136,25 +135,26 @@ func StartConvoyServer(a *cli.App) error {
 	}
 
 	lo := a.Logger
+	if a.Broker == nil {
+		return errors.New("broker dependencies are required")
+	}
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
-	handler, err := api.NewApplicationHandler(
-		&types.APIOptions{
-			FFlag:                      flag,
-			FeatureFlagFetcher:         featureFlagFetcher,
-			EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
-			DB:                         a.DB,
-			Queue:                      a.Queue,
-			Logger:                     lo,
-			Redis:                      a.Redis,
-			Cache:                      a.Cache,
-			Rate:                       a.Rate,
-			Licenser:                   a.Licenser,
-			Cfg:                        cfg,
-			TracerBackend:              a.TracerBackend,
-			ConfigRepo:                 configRepo,
-		})
+	apiOpts := &types.APIOptions{
+		FFlag:                      flag,
+		FeatureFlagFetcher:         featureFlagFetcher,
+		EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+		DB:                         a.DB,
+		Logger:                     lo,
+		Licenser:                   a.Licenser,
+		Cfg:                        cfg,
+		TracerBackend:              a.TracerBackend,
+		ConfigRepo:                 configRepo,
+	}
+	a.Broker.ApplyToAPIOptions(apiOpts)
+
+	handler, err := api.NewApplicationHandler(apiOpts)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func StartConvoyServer(a *cli.App) error {
 	srv.SetHandler(handler.BuildControlPlaneRoutes())
 
 	// initialize scheduler
-	s := worker.NewScheduler(a.Queue, lo)
+	s := a.Broker.Scheduler
 
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)

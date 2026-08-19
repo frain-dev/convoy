@@ -272,6 +272,16 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 		if err != nil {
 			return nil, err
 		}
+	case authUser.AuthenticatedByRealm == auth.FileRealmName && authUser.Role.Type == auth.RoleInstanceAdmin:
+		projectID := chi.URLParam(r, "projectID")
+		if util.IsStringEmpty(projectID) {
+			return nil, errors.New("project id not present in request")
+		}
+
+		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+		if err != nil {
+			return nil, err
+		}
 	case h.IsReqWithPortalLinkToken(authUser):
 		if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
 			svc := portal_links.New(h.A.Logger, h.A.DB)

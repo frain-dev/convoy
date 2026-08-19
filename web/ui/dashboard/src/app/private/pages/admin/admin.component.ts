@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
 
@@ -20,7 +20,7 @@ export class AdminComponent implements OnInit {
 		{ name: 'table indexes', icon: 'key', svg: 'fill' }
 	];
 
-	constructor(private route: ActivatedRoute) {}
+	constructor(private route: ActivatedRoute, private router: Router) {}
 
 	// Every class is written out in full because Tailwind reads these files as text:
 	// a name assembled from parts at runtime is never generated, and the missing
@@ -46,5 +46,21 @@ export class AdminComponent implements OnInit {
 	toggleActivePage(page: string) {
 		const known = this.adminMenu.some(menu => menu.name === page);
 		this.activePage = known ? (page as ADMIN_PAGE) : 'feature flags';
+		this.addPageToUrl();
+	}
+
+	// The tab is written back to the URL so a reload lands where the operator
+	// was. Reading the param without writing it is what sent every refresh to
+	// whichever tab the URL happened to be carrying. replaceUrl keeps the back
+	// button pointing outside admin rather than at each tab in turn, and
+	// merging leaves params the tabs themselves own, like the queue page's
+	// full-screen flag.
+	private addPageToUrl() {
+		this.router.navigate([], {
+			relativeTo: this.route,
+			queryParams: { activePage: this.activePage },
+			queryParamsHandling: 'merge',
+			replaceUrl: true
+		});
 	}
 }

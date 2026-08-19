@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -62,27 +63,27 @@ func (s *RedisLimiterIntegrationTestSuite) Test_RateLimitAllow() {
 			err := s.limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.NoError(s.T(), err)
 
-			dur := GetRetryAfter(err)
+			dur := limiter.GetRetryAfter(err)
 			require.Equal(s.T(), time.Duration(0), dur)
 
 			err = s.limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.NoError(s.T(), err)
 
-			dur = GetRetryAfter(err)
+			dur = limiter.GetRetryAfter(err)
 			require.Equal(s.T(), time.Duration(0), dur)
 
 			err = s.limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.Error(s.T(), err)
-			require.ErrorIs(s.T(), GetRawError(err), ErrRateLimitExceeded)
+			require.ErrorIs(s.T(), limiter.GetRawError(err), limiter.ErrRateLimitExceeded)
 
-			dur = GetRetryAfter(err)
+			dur = limiter.GetRetryAfter(err)
 			require.LessOrEqual(s.T(), time.Duration(duration), dur)
 
 			err = s.limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.Error(s.T(), err)
-			require.ErrorIs(s.T(), GetRawError(err), ErrRateLimitExceeded)
+			require.ErrorIs(s.T(), limiter.GetRawError(err), limiter.ErrRateLimitExceeded)
 
-			dur = GetRetryAfter(err)
+			dur = limiter.GetRetryAfter(err)
 			require.LessOrEqual(s.T(), time.Duration(duration), dur)
 		})
 	}

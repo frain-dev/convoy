@@ -17,6 +17,7 @@ type Licenser interface {
 
 	UseForwardProxy() bool
 	CanExportPrometheusMetrics() bool
+	PostgresQueue() bool
 	AdvancedEndpointMgmt() bool
 	AdvancedSubscriptions() bool
 	Transformations() bool
