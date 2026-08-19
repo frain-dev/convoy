@@ -1,0 +1,139 @@
+<div class="flex flex-col gap-4px mb-16px">
+  <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Table indexes</h3>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">An index build that is interrupted leaves the index behind marked invalid, and the planner ignores it from then on, so the table performs as if the index had never been created without any query failing to say so. Upgrades drop what they find, which is instant, and record the definition so the rebuild can happen here on your schedule.</p>
+</div>
+
+<div class="h-[1px] w-full bg-new.border mb-20px"></div>
+
+<div class="flex items-center justify-between mb-12px">
+  <h4 class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Awaiting a rebuild</h4>
+  <button
+    type="button"
+    class="font-body text-[13px] leading-[18px] text-new.primary-400 disabled:opacity-50"
+    [disabled]="isLoading"
+    (click)="load()"
+    >
+    Refresh
+  </button>
+</div>
+
+@if (dropped.length === 0) {
+  <div class="bg-white-100 border border-new.border rounded-12px p-20px mb-24px">
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+      @if (reportKnown) {
+        Nothing is waiting to be rebuilt.
+      } @else if (reportFailed) {
+        The index report could not be loaded, so this is not an all-clear. Refresh to try again.
+      } @else {
+        Reading the index report...
+      }
+    </p>
+  </div>
+}
+
+@if (dropped.length > 0) {
+  @if (uniqueDroppedCount > 0) {
+    <div class="bg-warning-500/5 border border-warning-500/20 rounded-12px p-16px mb-16px">
+      <p class="font-body font-semibold text-[14px] leading-normal text-new.text-primary mb-4px">A unique index is missing</p>
+      <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary">
+        Nothing stops a duplicate row on {{ uniqueDroppedCount === 1 ? 'one of these' : uniqueDroppedCount + ' of these' }} until it is rebuilt. Rebuild those first.
+      </p>
+    </div>
+  }
+
+  <div class="flex flex-col gap-12px mb-24px">
+    @for (index of dropped; track index.name) {
+      <div class="bg-white-100 border border-new.border rounded-12px p-16px">
+        <div class="flex items-center justify-between gap-12px">
+          <div class="min-w-0">
+            <div class="flex items-center gap-8px min-w-0">
+              @if (index.unique) {
+                <convoy-tag color="warning" size="sm">Unique</convoy-tag>
+              }
+              <span class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary truncate">{{ index.name }}</span>
+            </div>
+            <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary mt-4px">
+              On convoy.{{ index.table }}. {{ costs(index) }}.
+            </p>
+            <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px">Dropped {{ index.dropped_at | date: 'medium' }}</p>
+          </div>
+
+          <button
+            type="button"
+            class="shrink-0 px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none"
+            [disabled]="!canStart"
+            (click)="rebuild(index)"
+            >
+            @if (starting === index.name) {
+              <span>Starting...</span>
+            } @else {
+              <span>Rebuild</span>
+            }
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (activeRun) {
+    <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mb-24px">
+      A conversion or rebuild is already running. One runs at a time for the whole instance.
+    </p>
+  }
+}
+
+@if (invalid.length > 0) {
+  <div class="flex items-center justify-between mb-12px">
+    <h4 class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Invalid right now</h4>
+  </div>
+
+  <!-- Read from the catalog, whatever put them that way, so this covers indexes no
+       upgrade has dropped yet as well as a rebuild still in flight. There is no
+       button: dropping an index is the upgrade's job, and one being built now must
+       be left alone. -->
+  <div class="flex flex-col gap-12px mb-24px">
+    @for (index of invalid; track index.name) {
+      <div class="bg-white-100 border border-new.border rounded-12px p-16px">
+        <div class="flex items-center gap-8px min-w-0">
+          <convoy-tag [color]="index.busy ? 'neutral' : 'error'" size="sm">{{ index.busy ? 'Building' : 'Abandoned' }}</convoy-tag>
+          <span class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary truncate">{{ index.name }}</span>
+        </div>
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary mt-4px">
+          On convoy.{{ index.table }}, {{ state(index) }}.
+        </p>
+      </div>
+    }
+  </div>
+}
+
+<div class="flex items-center justify-between mb-12px">
+  <h4 class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Rebuilds</h4>
+  <button
+    type="button"
+    class="font-body text-[13px] leading-[18px] text-new.primary-400 disabled:opacity-50"
+    [disabled]="isLoadingRuns"
+    (click)="loadRuns()"
+    >
+    Refresh
+  </button>
+</div>
+
+@if (rebuildRuns.length === 0) {
+  <div class="bg-white-100 border border-new.border rounded-12px p-20px">
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+      @if (runsKnown) {
+        No rebuilds have been run on this instance.
+      } @else if (runsFailed) {
+        The rebuild history could not be loaded. Refresh to try again.
+      } @else {
+        Reading the rebuild history...
+      }
+    </p>
+  </div>
+}
+
+<div class="flex flex-col gap-12px">
+  @for (run of rebuildRuns; track run.uid) {
+    <app-admin-run-card [run]="run"></app-admin-run-card>
+  }
+</div>

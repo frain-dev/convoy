@@ -67,6 +67,12 @@ func (h *Handler) StartPartitionRun(w http.ResponseWriter, r *http.Request) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
 		}
+		// Nothing would stop a second conversion of this table, so the start is
+		// refused until the guard is back, and the message says how.
+		if errors.Is(err, partitions.ErrGuardMissing) {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusConflict))
+			return
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

@@ -42,6 +42,10 @@ const lockTimeout = "3s"
 // which is cheap next to leaving a session-wide timeout on a pooled connection.
 const resetTimeout = 5 * time.Second
 
+// ErrNotDropped means the name does not identify an index awaiting a rebuild,
+// either because nothing dropped it or because it has already been rebuilt.
+var ErrNotDropped = errors.New("index is not awaiting a rebuild")
+
 // Invalid is an index the planner is ignoring.
 type Invalid struct {
 	Table string
@@ -74,7 +78,13 @@ func (d Dropped) Unique() bool {
 }
 
 // ListInvalid reads the catalog, not convoy.dropped_indexes: these are indexes
-// that are invalid right now, whatever put them that way.
+// that are invalid right now that nothing has taken responsibility for yet.
+//
+// One already owed a rebuild is left out. A rebuild that fails leaves a fresh
+// invalid index behind under the same name, and the next attempt drops it before
+// building, so reporting it here as well would show one index as two pieces of
+// work: a rebuild to run, and an abandoned index to deal with separately. The
+// debt row is the one an operator can act on.
 //
 // Partitioned indexes are left out. One of those is invalid until every
 // partition has an index attached, which is an ordinary intermediate state of a
@@ -93,6 +103,8 @@ func ListInvalid(ctx context.Context, db *pgxpool.Pool) ([]Invalid, error) {
          WHERE n.nspname = 'convoy'
            AND c.relkind = 'i'
            AND NOT i.indisvalid
+           AND NOT EXISTS (SELECT 1 FROM convoy.dropped_indexes d
+                            WHERE d.index_name = c.relname AND d.rebuilt_at IS NULL)
          ORDER BY t.relname, c.relname`)
 	if err != nil {
 		return nil, fmt.Errorf("reading invalid indexes: %w", err)
@@ -110,19 +122,26 @@ func ListInvalid(ctx context.Context, db *pgxpool.Pool) ([]Invalid, error) {
 	return invalid, rows.Err()
 }
 
-// ListDropped returns the indexes still owed a rebuild, unique ones first.
+// ListDropped returns the indexes still owed a rebuild, in the order a rebuild
+// should run them.
 //
-// That order is the order a rebuild should run in, and this is the only place it
-// is decided, so the list an operator reads and the list --rebuild works through
-// cannot disagree. A unique index that is missing is not just slower, it is not
-// enforcing its key, and a rebuild that spends hours on a large non-unique index
-// first leaves that gap open for those hours.
+// The run guard comes first, ahead of even the other unique indexes: while it is
+// missing nothing refuses a second conversion or rebuild, and the runner refuses
+// to start anything else until it is back, so a rebuild that took another index
+// first would fail on every one of them. Unique indexes follow, because a missing
+// unique index is not just slower, it is not enforcing its key, and hours spent
+// on a large non-unique index first leaves that gap open for those hours.
+//
+// This is the only place the order is decided, so the list an operator reads and
+// the list --rebuild works through cannot disagree.
 func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
 	rows, err := db.Query(ctx, `
         SELECT table_name, index_name, definition, dropped_at
           FROM convoy.dropped_indexes
          WHERE rebuilt_at IS NULL
-         ORDER BY (definition LIKE 'CREATE UNIQUE %') DESC, dropped_at`)
+         ORDER BY (index_name = 'idx_partition_runs_single_active') DESC,
+                  (definition LIKE 'CREATE UNIQUE %') DESC,
+                  dropped_at`)
 	if err != nil {
 		return nil, fmt.Errorf("reading dropped indexes: %w", err)
 	}
@@ -137,6 +156,30 @@ func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
 		dropped = append(dropped, d)
 	}
 	return dropped, rows.Err()
+}
+
+// GetDropped reads one index still owed a rebuild.
+//
+// This is the read a caller-supplied name has to pass before any rebuild is
+// recorded or started. It returns ErrNotDropped for a name that is unknown and
+// for one already rebuilt alike, because neither is work this can do and the
+// caller has nothing different to offer for either. It is also what keeps the
+// definition out of the request: the SQL that gets executed comes from the
+// catalog capture, never from the caller.
+func GetDropped(ctx context.Context, db *pgxpool.Pool, name string) (Dropped, error) {
+	var d Dropped
+	err := db.QueryRow(ctx, `
+        SELECT table_name, index_name, definition, dropped_at
+          FROM convoy.dropped_indexes
+         WHERE index_name = $1 AND rebuilt_at IS NULL`, name).
+		Scan(&d.Table, &d.Name, &d.Definition, &d.DroppedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Dropped{}, fmt.Errorf("%w: %s", ErrNotDropped, name)
+	}
+	if err != nil {
+		return Dropped{}, fmt.Errorf("reading dropped index %s: %w", name, err)
+	}
+	return d, nil
 }
 
 // Rebuild builds one dropped index again and marks it rebuilt.

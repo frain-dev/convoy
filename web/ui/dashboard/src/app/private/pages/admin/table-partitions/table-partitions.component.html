@@ -116,6 +116,9 @@
     </div>
   </div>
 
+  <!-- Every maintenance run, not only conversions: a rebuild started from the
+       indexes page or a shell holds the same instance-wide slot, so an operator
+       looking for what is blocking a conversion has to see it here. -->
   <div class="flex items-center justify-between mb-12px">
     <h4 class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Runs</h4>
     <button
@@ -130,45 +133,21 @@
 
   @if (runs.length === 0) {
     <div class="bg-white-100 border border-new.border rounded-12px p-20px">
-      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">No conversions have been run on this instance.</p>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+        @if (runsKnown) {
+          No conversions or index rebuilds have been run on this instance.
+        } @else if (runsFailed) {
+          The run history could not be loaded. Refresh to try again.
+        } @else {
+          Reading the run history...
+        }
+      </p>
     </div>
   }
 
   <div class="flex flex-col gap-12px">
     @for (run of runs; track run.uid) {
-      <div class="bg-white-100 border border-new.border rounded-12px p-16px">
-        <div class="flex items-center justify-between gap-12px">
-          <div class="flex items-center gap-8px min-w-0">
-            <convoy-tag [color]="run.status | statuscolor" size="sm" class="capitalize">{{ run.status }}</convoy-tag>
-            <span class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary truncate">{{ runTitle(run) }}</span>
-          </div>
-          <span class="font-body font-normal text-[13px] leading-[18px] text-new.text-secondary shrink-0">{{ elapsed(run) }}</span>
-        </div>
-
-        @if (showsSteps(run)) {
-          <ol class="mt-8px flex flex-col gap-4px">
-            @for (step of run.steps; track $index) {
-              <li class="flex items-start justify-between gap-12px">
-                <span class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary break-words">{{ step.message }}</span>
-                <span class="font-body font-normal text-[12px] leading-[20px] text-new.text-secondary shrink-0">{{ step.at | date: 'mediumTime' }}</span>
-              </li>
-            }
-          </ol>
-        }
-
-        @if (run.error) {
-          <p class="font-body font-normal text-[13px] leading-[20px] text-error-500 mt-8px break-words">{{ run.error }}</p>
-        }
-
-        <div class="flex items-center gap-8px mt-8px">
-          <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">Started {{ run.started_at | date: 'medium' }}</p>
-          @if (run.status !== 'running' && stepCount(run) > 0) {
-            <button type="button" class="font-body text-[12px] leading-normal text-new.primary-400" (click)="toggleSteps(run)">
-              {{ showsSteps(run) ? 'Hide steps' : 'Show ' + stepCount(run) + ' steps' }}
-            </button>
-          }
-        </div>
-      </div>
+      <app-admin-run-card [run]="run"></app-admin-run-card>
     }
   </div>
 }
