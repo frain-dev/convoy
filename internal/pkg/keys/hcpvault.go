@@ -375,6 +375,13 @@ func NewHCPVaultKeyManagerFromConfig(cfg config.HCPVaultConfig, licenser license
 }
 
 func NewHCPVaultKeyManagerFromConfigWithLogger(cfg config.HCPVaultConfig, licenser license.Licenser, cache cache.Cache, logger log.Logger) *HCPVaultKeyManager {
+	if cfg.ClientID == "" && cfg.ClientSecret == "" && cfg.OrgID == "" && cfg.ProjectID == "" && cfg.AppName == "" && cfg.SecretName == "" {
+		return &HCPVaultKeyManager{
+			cache:    cache,
+			licenser: licenser,
+			isSet:    false,
+		}
+	}
 	if cfg.ClientID == "" || cfg.ClientSecret == "" || cfg.OrgID == "" || cfg.ProjectID == "" || cfg.AppName == "" || cfg.SecretName == "" {
 		logger.Warn("missing required HCP Vault configuration")
 		return &HCPVaultKeyManager{
