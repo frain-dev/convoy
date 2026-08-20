@@ -427,8 +427,6 @@ EOF
 "convoy" "pg_password"
 EOF
 
-  # App config: only create if missing so user customizations survive re-runs.
-  # Redis runs without TLS for this local quick-start (plain redis://).
   if [ ! -f "$dir/convoy.json" ]; then
     cat > "$dir/convoy.json" <<'EOF'
 {
@@ -465,8 +463,59 @@ EOF
 }
 EOF
   else
-    log "Existing convoy.json found; keeping it"
+    log "Existing convoy.json found; keeping host/auth settings"
+     normalize_redis_transport "$dir/convoy.json"
   fi
+}
+
+normalize_redis_transport() {
+  local config_path="$1"
+  local tmp_path="${config_path}.tmp"
+
+  [ -f "$config_path" ] || return 0
+
+  awk '
+    function emit_redis(ind, trailing) {
+      printf "%s\"redis\": {\n", ind
+      printf "%s    \"scheme\": \"redis\",\n", ind
+      printf "%s    \"port\": 6379,\n", ind
+      printf "%s    \"host\": \"redis_server\"\n", ind
+      printf "%s}%s\n", ind, trailing
+    }
+    BEGIN { state = 0 }
+    state == 0 {
+      if ($0 ~ /"redis"[[:space:]]*:[[:space:]]*\{/) {
+        match($0, /^[[:space:]]*/)
+        redis_ind = substr($0, 1, RLENGTH)
+        line = $0; opens = gsub(/\{/, "", line)
+        line = $0; closes = gsub(/\}/, "", line)
+        depth = opens - closes
+        if (depth <= 0) {
+          emit_redis(redis_ind, ($0 ~ /},[[:space:]]*$/) ? "," : "")
+        } else {
+          state = 1
+        }
+        next
+      }
+      print
+      next
+    }
+    state == 1 {
+      line = $0; opens = gsub(/\{/, "", line)
+      line = $0; closes = gsub(/\}/, "", line)
+      depth += opens - closes
+      if (depth <= 0) {
+        emit_redis(redis_ind, ($0 ~ /,[[:space:]]*$/) ? "," : "")
+        state = 0
+      }
+      next
+    }
+  ' "$config_path" > "$tmp_path" || {
+    rm -f "$tmp_path"
+    die "Failed to normalize Redis transport in $config_path."
+  }
+
+  mv "$tmp_path" "$config_path"
 }
 
 ensure_local_config() {
