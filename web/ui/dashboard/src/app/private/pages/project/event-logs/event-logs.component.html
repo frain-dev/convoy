@@ -101,7 +101,11 @@
       <div class="border-b border-new.border" [class.bg-new.surface-muted]="!canSearchEvents">
         @if (canSearchEvents) {
           <div class="flex items-center gap-8px px-12px h-40px">
-            <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0" alt="search" />
+            @if (isSearchingEvents) {
+              <img src="/assets/img/svg/deliveries-loading.svg" class="w-16px h-16px shrink-0 animate-spin" alt="" />
+            } @else {
+              <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0" alt="search" />
+            }
             <input
               type="search"
               placeholder="Search events..."
@@ -109,6 +113,8 @@
               (input)="onSearch()"
               [ngModelOptions]="{ standalone: true }"
               spellcheck="false"
+              [attr.aria-busy]="isSearchingEvents"
+              aria-label="Search events"
               class="event-log-search-input flex-1 min-w-0 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
               />
             <convoy-tooltip size="sm" position="bottom" class="shrink-0 ml-4px" className="!min-w-[300px] max-w-[340px] whitespace-normal !text-left !font-normal">
@@ -169,6 +175,7 @@
         }
       </div>
 
+      <div [class.opacity-60]="isSearchingEvents && !isloadingEvents" [class.pointer-events-none]="isSearchingEvents && !isloadingEvents">
       @if (isloadingEvents) {
         <!-- Loading state -->
         <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
@@ -319,10 +326,11 @@
           </div>
         </div>
       }
+      </div>
     </div>
 
     <!-- Details sidebar -->
-    <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-16px">
+    <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-16px" [class.opacity-60]="isSearchingEvents && !isloadingEvents">
       @if (isloadingEvents) {
         <div class="flex flex-col gap-16px">
           <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-80px"></div>
