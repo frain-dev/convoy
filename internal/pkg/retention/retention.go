@@ -18,6 +18,10 @@ import (
 // RetentionTables are the tables the partition retention policy manages.
 // They must be converted to partitioned parents (`convoy utils partition`) before
 // retention can run.
+//
+// convoy.events_endpoints is deliberately not one of them: it has no created_at
+// and no project_id, so there is no partition key to range on. It is reclaimed
+// by sweepOrphanedEventEndpoints instead, once these have been maintained.
 var RetentionTables = []string{"events", "events_search", "event_deliveries", "delivery_attempts"}
 
 const (
@@ -375,6 +379,7 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	}
 
 	r.dropExpiredAdoptedPartitions(ctx)
+	r.sweepOrphanedEventEndpoints(ctx)
 	return nil
 }
 
