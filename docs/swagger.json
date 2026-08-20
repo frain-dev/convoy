@@ -3862,7 +3862,7 @@
           },
           {
             "type": "string",
-            "description": "Payload filter: URL-encoded JSON object matched with jsonb @> against convoy.events.data.\nCombined with query= as AND when both are set. JSON-only dashboard searches stay on query=\nafter normalisation; mixed searches send leftover text as query= and the object as body=.",
+            "description": "URL-encoded JSON object matched against the event payload.\nCombined with query as AND when both are set.",
             "name": "body",
             "in": "query"
           },
@@ -3925,7 +3925,7 @@
           },
           {
             "type": "string",
-            "description": "Free-text list search when licensed (Event Search entitlement). Matches event id\nprefix, idempotency key, event type, and source name within the active date window.\nA strict JSON object value is promoted to payload containment (same as body).\nLeftover text plus a JSON object in the same query (or query= with body=) AND together.",
+            "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
             "in": "query"
           },
@@ -4266,7 +4266,7 @@
           },
           {
             "type": "string",
-            "description": "Payload filter: URL-encoded JSON object matched with jsonb @> against convoy.events.data.\nCombined with query= as AND when both are set. JSON-only dashboard searches stay on query=\nafter normalisation; mixed searches send leftover text as query= and the object as body=.",
+            "description": "URL-encoded JSON object matched against the event payload.\nCombined with query as AND when both are set.",
             "name": "body",
             "in": "query"
           },
@@ -4329,7 +4329,7 @@
           },
           {
             "type": "string",
-            "description": "Free-text list search when licensed (Event Search entitlement). Matches event id\nprefix, idempotency key, event type, and source name within the active date window.\nA strict JSON object value is promoted to payload containment (same as body).\nLeftover text plus a JSON object in the same query (or query= with body=) AND together.",
+            "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
             "in": "query"
           },
@@ -4606,7 +4606,7 @@
           },
           {
             "type": "string",
-            "description": "Payload filter: URL-encoded JSON object matched with jsonb @> against convoy.events.data.\nCombined with query= as AND when both are set. JSON-only dashboard searches stay on query=\nafter normalisation; mixed searches send leftover text as query= and the object as body=.",
+            "description": "URL-encoded JSON object matched against the event payload.\nCombined with query as AND when both are set.",
             "name": "body",
             "in": "query"
           },
@@ -4669,7 +4669,7 @@
           },
           {
             "type": "string",
-            "description": "Free-text list search when licensed (Event Search entitlement). Matches event id\nprefix, idempotency key, event type, and source name within the active date window.\nA strict JSON object value is promoted to payload containment (same as body).\nLeftover text plus a JSON object in the same query (or query= with body=) AND together.",
+            "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
             "in": "query"
           },

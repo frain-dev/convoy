@@ -57,12 +57,10 @@ func ApplyEventListSearch(filter *datastore.Filter, project *datastore.Project, 
 		if body, ok := queryAsPayloadBody(filter.Query); ok {
 			filter.Body = body
 			filter.Query = ""
-			hasQuery = false
 			hasBody = true
 		} else if rest, body, ok := splitQueryAndPayload(filter.Query); ok {
 			filter.Query = rest
 			filter.Body = body
-			hasQuery = true
 			hasBody = true
 		}
 	}

@@ -98,15 +98,12 @@ type SearchParams struct {
 }
 
 type QueryListEvent struct {
-	// Free-text list search when licensed (Event Search entitlement). Matches event id
-	// prefix, idempotency key, event type, and source name within the active date window.
-	// A strict JSON object value is promoted to payload containment (same as body).
-	// Leftover text plus a JSON object in the same query (or query= with body=) AND together.
+	// Matches event id prefix, idempotency key, event type, and source name.
+	// A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
 	Query string `json:"query"`
 
-	// Payload filter: URL-encoded JSON object matched with jsonb @> against convoy.events.data.
-	// Combined with query= as AND when both are set. JSON-only dashboard searches stay on query=
-	// after normalisation; mixed searches send leftover text as query= and the object as body=.
+	// URL-encoded JSON object matched against the event payload.
+	// Combined with query as AND when both are set.
 	Body string `json:"body"`
 
 	// A list of Source IDs to filter the events by.
