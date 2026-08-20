@@ -272,13 +272,19 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 			// Re-applied on every tick the breaker stays tripped, because the
 			// endpoint may have been re-activated while it is still failing.
-			if _, breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus); breakerErr != nil {
+			statusChanged, breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
+			if breakerErr != nil {
 				return false, breakerErr
 			}
 
-			// The alert, unlike the disable, is news only the first time. The
-			// manager counts it per observability window, so this is the tick that
-			// tells the endpoint's channels and the owner about the outage.
+			// Alerts fire on active-to-inactive transitions only, matching the
+			// retry-limit disable path. Disable itself stays idempotent.
+			if !statusChanged {
+				return false, nil
+			}
+
+			// The manager counts alerts per observability window so a steady outage
+			// is announced once per window rather than once per tick.
 			if b.NotificationsSent > 0 {
 				return false, nil
 			}
