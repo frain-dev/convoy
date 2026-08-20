@@ -22,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/attach"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
@@ -39,6 +40,9 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv("CONVOY_JWT_SECRET", "test-access-secret")
+	_ = os.Setenv("CONVOY_JWT_REFRESH_SECRET", "test-refresh-secret")
+
 	code := m.Run()
 	if testEnvCleanup != nil {
 		if err := testEnvCleanup(); err != nil {
@@ -1530,7 +1534,37 @@ func TestEventsPagedInnerDesc(t *testing.T) {
 	require.False(t, eventsPagedInnerDesc("DESC", "prev"))
 }
 
+func eventsTableKind(t *testing.T, ctx context.Context, db database.Database) string {
+	t.Helper()
+
+	var kind string
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events'`).Scan(&kind))
+	return kind
+}
+
+func eventRelation(t *testing.T, ctx context.Context, db database.Database, eventID string) string {
+	t.Helper()
+
+	var name string
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT tableoid::regclass::text FROM convoy.events WHERE id = $1`, eventID).Scan(&name))
+	return name
+}
+
 func TestLoadEventsPaged_PayloadContainment(t *testing.T) {
+	t.Run("heap", func(t *testing.T) {
+		runLoadEventsPagedPayloadContainment(t, false)
+	})
+	t.Run("partitioned", func(t *testing.T) {
+		runLoadEventsPagedPayloadContainment(t, true)
+	})
+}
+
+func runLoadEventsPagedPayloadContainment(t *testing.T, partition bool) {
+	t.Helper()
+
 	service, db := setupTestDB(t)
 	ctx := context.Background()
 
@@ -1547,6 +1581,21 @@ func TestLoadEventsPaged_PayloadContainment(t *testing.T) {
 	nested.Raw = `{"data":{"status":"paid"}}`
 	nested.Data = json.RawMessage(`{"data":{"status":"paid"}}`)
 	require.NoError(t, service.CreateEvent(ctx, nested))
+
+	noEndpoints := createTestEvent(t, project.UID, nil, source.UID)
+	noEndpoints.EventType = "test-event-searchable"
+	noEndpoints.Raw = `{"unique_search_term":"test12345"}`
+	noEndpoints.Data = json.RawMessage(`{"unique_search_term":"test12345"}`)
+	require.NoError(t, service.CreateEvent(ctx, noEndpoints))
+	require.NoError(t, service.UpdateEventStatus(ctx, noEndpoints, datastore.FailureStatus, "no subscription matched this event"))
+
+	if partition {
+		require.NoError(t, service.PartitionEventsTable(ctx))
+		require.Equal(t, "p", eventsTableKind(t, ctx, db))
+		require.Contains(t, eventRelation(t, ctx, db, flat.UID), "events_default")
+	} else {
+		require.Equal(t, "r", eventsTableKind(t, ctx, db))
+	}
 
 	pageable := datastore.Pageable{PerPage: 20, Direction: datastore.Next, Sort: "DESC"}
 
@@ -1578,7 +1627,7 @@ func TestLoadEventsPaged_PayloadContainment(t *testing.T) {
 			Pageable:     pageable,
 		})
 		require.NoError(t, err)
-		require.Len(t, events, 2)
+		require.Len(t, events, 3)
 	})
 
 	t.Run("two-key json containment hits flat", func(t *testing.T) {
@@ -1623,5 +1672,50 @@ func TestLoadEventsPaged_PayloadContainment(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Empty(t, events)
+	})
+
+	t.Run("no endpoints payload and failure reason", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"unique_search_term":"test12345"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, noEndpoints.UID, events[0].UID)
+		require.Equal(t, "no subscription matched this event", events[0].FailureReason)
+	})
+
+	if !partition {
+		return
+	}
+
+	t.Run("hits row on a forward daily partition", func(t *testing.T) {
+		after := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		after.Raw = `{"status":"paid","post_partition":true}`
+		after.Data = json.RawMessage(`{"status":"paid","post_partition":true}`)
+		require.NoError(t, service.CreateEvent(ctx, after))
+
+		// CreateEvent leaves created_at as now(), which still belongs to the
+		// adopted default. Move the row onto a pre-made forward day so search
+		// is proven on both children, not only events_default.
+		forwardAt := attach.Cutoff(time.Now()).Add(time.Hour)
+		_, err := db.GetDB().ExecContext(ctx, `
+            UPDATE convoy.events SET created_at = $1 WHERE id = $2 AND project_id = $3`,
+			forwardAt, after.UID, project.UID)
+		require.NoError(t, err)
+		require.NotContains(t, eventRelation(t, ctx, db, after.UID), "events_default")
+
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body: json.RawMessage(`{"post_partition":true}`),
+			SearchParams: datastore.SearchParams{
+				CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
+				CreatedAtEnd:   forwardAt.Add(24 * time.Hour).Unix(),
+			},
+			Pageable: pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, after.UID, events[0].UID)
 	})
 }
