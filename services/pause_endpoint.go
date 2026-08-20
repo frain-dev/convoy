@@ -31,7 +31,7 @@ func (s *PauseEndpointService) Run(ctx context.Context) (*datastore.Endpoint, er
 		return nil, &ServiceError{ErrMsg: fmt.Sprintf("current endpoint status - %s, does not support pausing or unpausing", endpoint.Status)}
 	}
 
-	err = s.EndpointRepo.UpdateEndpointStatus(ctx, s.ProjectID, endpoint.UID, endpoint.Status)
+	_, err = s.EndpointRepo.UpdateEndpointStatus(ctx, s.ProjectID, endpoint.UID, endpoint.Status)
 	if err != nil {
 		s.Logger.ErrorContext(ctx, "failed to update endpoint status", "error", err)
 		return nil, &ServiceError{ErrMsg: "failed to update endpoint status", Err: err}

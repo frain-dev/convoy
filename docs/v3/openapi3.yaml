@@ -6163,6 +6163,8 @@ components:
           type: integer
         support_email:
           type: string
+        teams_webhook_url:
+          type: string
         uid:
           type: string
         updated_at:
@@ -7241,6 +7243,14 @@ components:
 
             changes. You should always turn this on when disabling endpoints are enabled.
           type: string
+        teams_webhook_url:
+          description: >-
+            Microsoft Teams webhook URL is an alternative method to support email where endpoint
+
+            developers can receive failure notifications in a Teams channel. Use a Workflows
+
+            (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
+          type: string
         url:
           description: >-
             URL is the endpoint's URL prefixed with https. non-https urls are currently
@@ -7594,6 +7604,8 @@ components:
           nullable: true
           type: integer
         support_email:
+          type: string
+        teams_webhook_url:
           type: string
         uid:
           type: string
@@ -8553,6 +8565,14 @@ components:
             Endpoint developers support email. This is used for communicating endpoint state
 
             changes. You should always turn this on when disabling endpoints are enabled.
+          type: string
+        teams_webhook_url:
+          description: >-
+            Microsoft Teams webhook URL is an alternative method to support email where endpoint
+
+            developers can receive failure notifications in a Teams channel. Use a Workflows
+
+            (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
           type: string
         url:
           description: >-

@@ -441,6 +441,7 @@ type Endpoint struct {
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`
 	SlackWebhookURL    string  `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	TeamsWebhookURL    string  `json:"teams_webhook_url,omitempty" db:"teams_webhook_url"`
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 

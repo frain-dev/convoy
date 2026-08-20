@@ -119,6 +119,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					SupportEmail:    "endpoint@test.com",
 					IsDisabled:      false,
 					SlackWebhookURL: "https://google.com",
+					TeamsWebhookURL: "https://google.com",
 					HttpTimeout:     30,
 					Secret:          "1234",
 					URL:             "https://google.com",
@@ -147,6 +148,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Name:            "endpoint",
 				SupportEmail:    "endpoint@test.com",
 				SlackWebhookURL: "https://google.com",
+				TeamsWebhookURL: "https://google.com",
 				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
@@ -191,7 +193,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErrMsg: "mtls_client_cert requires both client_cert and client_key",
 		},
 		{
-			name: "should_default_http_timeout_endpoint_for_license_check_and_remove_slack_url_support_email",
+			name: "should_default_http_timeout_endpoint_for_license_check_and_remove_slack_url_teams_url_support_email",
 			args: args{
 				ctx: ctx,
 				e: models.CreateEndpoint{
@@ -199,6 +201,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					SupportEmail:    "endpoint@test.com",
 					IsDisabled:      false,
 					SlackWebhookURL: "https://google.com",
+					TeamsWebhookURL: "https://google.com",
 					Secret:          "1234",
 					URL:             "https://google.com",
 					HttpTimeout:     3,
@@ -227,6 +230,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Name:            "endpoint",
 				SupportEmail:    "",
 				SlackWebhookURL: "",
+				TeamsWebhookURL: "",
 				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
@@ -462,6 +466,33 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while adding endpoint",
+		},
+		{
+			// A Workflows webhook URL carries its authorisation in a sig query
+			// parameter, so the rejection must name the field and nothing else.
+			name: "should_reject_teams_webhook_url_targeting_a_private_address",
+			args: args{
+				ctx: ctx,
+				e: models.CreateEndpoint{
+					Name:            "endpoint",
+					Secret:          "1234",
+					URL:             "https://google.com",
+					Description:     "test_endpoint",
+					TeamsWebhookURL: "http://127.0.0.1/workflows/abc/triggers/manual/paths/invoke?sig=secret",
+				},
+				g: project,
+			},
+			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(project, nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid teams webhook url",
 		},
 	}
 	for _, tc := range tests {

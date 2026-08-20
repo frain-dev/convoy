@@ -211,7 +211,11 @@ type EndpointRepository interface {
 	FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*Endpoint, error)
 	FindEndpointsWithURLTemplates(ctx context.Context, projectID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
-	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
+	// UpdateEndpointStatus writes the status, re-applying one the endpoint
+	// already holds without erroring, because callers do that on a schedule. It
+	// reports whether the write changed the status, which is what callers alert
+	// on so a repeated write does not repeat the alert.
+	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) (bool, error)
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
 	LoadEndpointsPaged(ctx context.Context, projectID string, filter *Filter, pageable Pageable) ([]Endpoint, PaginationData, error)
