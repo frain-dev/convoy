@@ -604,7 +604,7 @@ SELECT
     COALESCE(s.name, '') AS "source_metadata.name"
 FROM convoy.event_deliveries ed
 LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
 LEFT JOIN convoy.devices d ON ed.device_id = d.id
 LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ed.deleted_at IS NULL
@@ -850,7 +850,7 @@ WITH filtered_deliveries AS (
         COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
     FROM convoy.event_deliveries ed
     LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+    LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
     LEFT JOIN convoy.devices d ON ed.device_id = d.id
     LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ed.deleted_at IS NULL
