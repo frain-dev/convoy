@@ -2959,6 +2959,29 @@
                 }
               ]
             }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
           }
         }
       }

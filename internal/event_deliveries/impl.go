@@ -375,7 +375,7 @@ func (s *Service) LoadEventDeliveriesPaged(
 		statuses[i] = string(st)
 	}
 
-	p := repo.LoadEventDeliveriesPagedParams{
+	p := repo.LoadEventDeliveriesPagedInnerDescParams{
 		SortOrder:          common.StringToPgText(sortOrder),
 		ProjectID:          common.StringToPgText(projectID),
 		EventID:            common.StringToPgText(eventID),
@@ -393,11 +393,10 @@ func (s *Service) LoadEventDeliveriesPaged(
 		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(idempotencyKey)),
 		IdempotencyKey:     common.StringToPgText(idempotencyKey),
 		Cursor:             common.StringToPgText(cursor),
-		Direction:          common.StringToPgText(direction),
 		PageLimit:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
 	}
 
-	rows, err := s.repo.LoadEventDeliveriesPaged(ctx, p)
+	rows, err := s.loadEventDeliveriesPagedRows(ctx, p, sortOrder, direction)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -436,6 +435,33 @@ func (s *Service) LoadEventDeliveriesPaged(
 	}
 
 	return deliveries, *pagination, nil
+}
+
+func eventDeliveriesPagedInnerDesc(sortOrder, direction string) bool {
+	return (sortOrder == "DESC" && direction == "next") || (sortOrder == "ASC" && direction == "prev")
+}
+
+func (s *Service) loadEventDeliveriesPagedRows(ctx context.Context, p repo.LoadEventDeliveriesPagedInnerDescParams, sortOrder, direction string) ([]any, error) {
+	if eventDeliveriesPagedInnerDesc(sortOrder, direction) {
+		rows, err := s.repo.LoadEventDeliveriesPagedInnerDesc(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]any, len(rows))
+		for i := range rows {
+			out[i] = rows[i]
+		}
+		return out, nil
+	}
+	rows, err := s.repo.LoadEventDeliveriesPagedInnerAsc(ctx, repo.LoadEventDeliveriesPagedInnerAscParams(p))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]any, len(rows))
+	for i := range rows {
+		out[i] = rows[i]
+	}
+	return out, nil
 }
 
 func (s *Service) countPrevDeliveries(ctx context.Context, projectID, eventID, eventType string,

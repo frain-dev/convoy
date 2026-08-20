@@ -999,6 +999,51 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 		}
 	})
 
+	t.Run("NextPageWhenCreatedAtAndIDDiverge", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+		ids := make([]string, 0, 3)
+		for i := 0; i < 3; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+			ids = append(ids, d.UID)
+			time.Sleep(2 * time.Millisecond)
+		}
+
+		_, err := db.GetConn().Exec(ctx,
+			`UPDATE convoy.event_deliveries SET created_at = NOW() - INTERVAL '2 hours' WHERE id = $1 AND project_id = $2`,
+			ids[2], project.UID)
+		require.NoError(t, err)
+
+		pageable := datastore.Pageable{PerPage: 1, Direction: datastore.Next, Sort: "DESC"}
+		page1, pagination1, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page1, 1)
+		require.Equal(t, ids[1], page1[0].UID)
+
+		pageable.NextCursor = pagination1.NextPageCursor
+		page2, pagination2, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page2, 1)
+		require.Equal(t, ids[0], page2[0].UID)
+
+		pageable.NextCursor = pagination2.NextPageCursor
+		page3, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page3, 1)
+		require.Equal(t, ids[2], page3[0].UID)
+	})
+
 	t.Run("WithEndpointFilter", func(t *testing.T) {
 		project := seedTestProject(t, db)
 		endpoint := seedTestEndpoint(t, db, project.UID)
