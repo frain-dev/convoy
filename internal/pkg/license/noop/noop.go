@@ -42,6 +42,10 @@ func (Licenser) CanExportPrometheusMetrics() bool {
 	return true
 }
 
+func (Licenser) PostgresQueue() bool {
+	return true
+}
+
 func (Licenser) AdvancedEndpointMgmt() bool {
 	return true
 }

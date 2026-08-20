@@ -7,16 +7,17 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
-	"github.com/redis/go-redis/v9"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/common"
+	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -66,6 +67,7 @@ type EventProcessorDeps struct {
 	EventRepo                  datastore.EventRepository
 	ProjectRepo                datastore.ProjectRepository
 	EventQueue                 queue.Queuer
+	TaskErrors                 TaskErrorReader
 	SubRepo                    datastore.SubscriptionRepository
 	FilterRepo                 datastore.FilterRepository
 	Licenser                   license.Licenser
@@ -73,7 +75,7 @@ type EventProcessorDeps struct {
 	FeatureFlag                *fflag.FFlag
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
-	Redis                      redis.UniversalClient
+	Acker                      dynamiceventack.Acker
 	Logger                     log.Logger
 }
 
@@ -141,29 +143,35 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	attributes["event.id"] = event.UID
 
-	_, err = args.eventRepo.FindEventByID(ctx, project.UID, event.UID)
-	if err != nil { // 404
-		err = updateEventMetadata(channel, event, createEvent.CreateSubscription, args.logger)
+	err = updateEventMetadata(channel, event, createEvent.CreateSubscription, args.logger)
+	if err != nil {
+		tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
+		return nil, err
+	}
+
+	// buildEvent checks idempotency for the params path; payload snapshots skip it.
+	if createEvent.Event != nil && len(event.IdempotencyKey) > 0 {
+		var isDuplicate bool
+		isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
 		if err != nil {
 			tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
-			return nil, err
-		}
-
-		var isDuplicate bool
-		if len(event.IdempotencyKey) > 0 {
-			isDuplicate, err = args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
-			if err != nil {
-				tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
-				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
-			}
+			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 		event.IsDuplicateEvent = isDuplicate
+	}
 
-		err = args.eventRepo.CreateEvent(ctx, event)
-		if err != nil {
-			tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
-			return nil, &EndpointError{Err: err, delay: defaultDelay}
+	err = args.eventRepo.CreateEvent(ctx, event)
+	if err != nil {
+		tracer.AddEvent(ctx, tracer.EventEventCreationError, attributes)
+		// A duplicate key means the row is already there. Hand the event back alongside
+		// the error so ProcessEventCreationByChannel applies the single status policy
+		// that decides whether match may run again: re-Writing the deterministic match
+		// job for a Success or Processing row deletes and requeues it, which can fan
+		// out deliveries a second time while the first match is still running.
+		if strings.Contains(err.Error(), "duplicate key") {
+			return event, &EndpointError{Err: err, delay: defaultDelay}
 		}
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
 	tracer.AddEvent(ctx, tracer.EventEventCreationSuccess, attributes)
@@ -196,7 +204,7 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	if err = license.EnsureProjectEnabled(args.licenser, project.UID); err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultEventDelay}
 	}
-	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	event, err := eventForMatch(ctx, args.eventRepo, metadata, args.taskRetryCount)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
@@ -239,6 +247,7 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 		deps.EventRepo,
 		deps.ProjectRepo,
 		deps.EventQueue,
+		deps.TaskErrors,
 		deps.SubRepo,
 		deps.FilterRepo,
 		deps.Licenser,
@@ -246,7 +255,7 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 		deps.FeatureFlag,
 		deps.FeatureFlagFetcher,
 		deps.EarlyAdopterFeatureFetcher,
-		deps.Redis,
+		deps.Acker,
 		deps.Logger,
 	)
 }
@@ -405,6 +414,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,
 				ProjectID:       eventDelivery.ProjectID,
+				Snapshot:        eventDelivery,
 			}
 
 			data, err := msgpack.EncodeMsgPack(payload)

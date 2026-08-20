@@ -2,10 +2,11 @@ package limiter
 
 import (
 	"context"
-
-	"github.com/frain-dev/convoy/config"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"errors"
+	"time"
 )
+
+var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type RateLimiter interface {
 	// Allow rate limits outgoing events to endpoints based on a rate in a specified time duration by the endpoint id
@@ -13,11 +14,29 @@ type RateLimiter interface {
 	AllowWithDuration(ctx context.Context, key string, rate int, duration int) error
 }
 
-func NewLimiter(cfg config.Configuration) (RateLimiter, error) {
-	r, err := rlimiter.NewRedisLimiterFromRedisConfig(cfg.Redis)
-	if err != nil {
-		return nil, err
-	}
+type RateLimitError struct {
+	delay time.Duration
+	err   error
+}
 
-	return r, nil
+func NewRateLimitExceeded(delay time.Duration) *RateLimitError {
+	return &RateLimitError{delay: delay, err: ErrRateLimitExceeded}
+}
+
+func (e *RateLimitError) Error() string {
+	return e.err.Error()
+}
+
+func GetRetryAfter(err error) time.Duration {
+	if rateLimitError, ok := err.(*RateLimitError); ok {
+		return rateLimitError.delay
+	}
+	return 0
+}
+
+func GetRawError(err error) error {
+	if rateLimitError, ok := err.(*RateLimitError); ok {
+		return rateLimitError.err
+	}
+	return nil
 }

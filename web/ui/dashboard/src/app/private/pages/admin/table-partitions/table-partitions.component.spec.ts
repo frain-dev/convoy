@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { TablePartitionsComponent } from './table-partitions.component';
+import { RunCardComponent } from '../runs/run-card.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
@@ -25,7 +26,7 @@ describe('TablePartitionsComponent', () => {
 
 	beforeEach(async () => {
 		await TestBed.configureTestingModule({
-			declarations: [TablePartitionsComponent],
+			declarations: [TablePartitionsComponent, RunCardComponent],
 			imports: [CommonModule, ReactiveFormsModule, SelectComponent, TagComponent, StatusColorModule, LabelComponent, InputFieldDirective, InputErrorComponent, InputDirective],
 			providers: [
 				// Left pending on purpose. ngOnInit still runs, and a stub that
@@ -107,5 +108,20 @@ describe('TablePartitionsComponent', () => {
 
 		expect(component.resolvedOperation).toBe('partition');
 		expect(renderedOperation()).toBe('partition');
+	});
+
+	// The confirmation is typed correctly in both halves, so the run list is the
+	// only thing deciding. An index rebuild or a conversion started from a shell
+	// takes the same instance-wide slot, so a history read that failed leaves the
+	// slot unknown, and an empty list from an earlier poll is not evidence it is
+	// free.
+	it('does not offer a start while the run history is unknown', () => {
+		component.partitionForm.patchValue({ confirmation: 'events' });
+
+		component.runsKnown = true;
+		expect(component.canStart).toBeTrue();
+
+		component.runsKnown = false;
+		expect(component.canStart).toBeFalse();
 	});
 });

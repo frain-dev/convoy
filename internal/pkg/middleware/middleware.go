@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,7 +28,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -148,27 +148,92 @@ type AuthorizedLogin struct {
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
-func RateLimiterHandler(rateLimiter limiter.RateLimiter, httpApiRateLimit int) func(next http.Handler) http.Handler {
+// Rate limit bucket keys. Every mount point of RateLimiterHandler passes its
+// own key so the knob behind it keeps its own bucket: CONVOY_API_RATE_LIMIT
+// governs the public API surface, CONVOY_INSTANCE_INGEST_RATE governs ingest.
+// The key is passed in rather than derived from the limit value, because keying
+// by value would re-merge two mounts that happen to be configured to the same
+// number.
+const (
+	RateLimitBucketAPI    = "http-api"
+	RateLimitBucketIngest = "instance-ingest"
+)
+
+// RateLimiterFailurePolicy selects what happens when the limiter backend itself
+// fails (unreachable, timed out, saturated), which is a different outcome from a
+// genuine over-limit result. A genuine over-limit result is always a 429,
+// whichever policy the mount carries.
+type RateLimiterFailurePolicy int
+
+const (
+	// FailClosed rejects with 429 when the limiter backend fails. Correct where
+	// a rejected request only costs the caller a retry.
+	FailClosed RateLimiterFailurePolicy = iota
+
+	// FailOpen admits the request when the limiter backend fails. Correct on
+	// event intake, where a rejected request destroys a customer event the
+	// sender usually cannot replay.
+	FailOpen
+)
+
+// RateLimiterHandler meters requests into bucketKey and applies policy when the
+// limiter backend fails. Every mount states its policy explicitly, because the
+// policy is a property of the request path: a fail-open mount buys nothing if a
+// sibling limiter on the same path still fails closed. The two rejection causes
+// are indistinguishable in the response, so they are logged and counted apart.
+func RateLimiterHandler(a *types.APIOptions, bucketKey string, httpApiRateLimit int, policy RateLimiterFailurePolicy) func(next http.Handler) http.Handler {
 	duration := 60
 	rateLimit := httpApiRateLimit * duration
-	rateLimitKey := "http-api"
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := rateLimiter.AllowWithDuration(r.Context(), rateLimitKey, rateLimit, duration)
+			err := a.Rate.AllowWithDuration(r.Context(), bucketKey, rateLimit, duration)
 			if err == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
+			if limiter.GetRawError(err) != limiter.ErrRateLimitExceeded {
+				metrics.GetDPInstance(a.Licenser).IncrementRateLimitTotal(bucketKey, metrics.RateLimitOutcomeBackendError)
+
+				if policy == FailOpen {
+					a.Logger.ErrorContext(r.Context(), "rate limiter backend failure, admitting request unmetered (fail open)",
+						"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path, "error", err.Error())
+					next.ServeHTTP(w, r)
+					return
+				}
+
+				a.Logger.ErrorContext(r.Context(), "rate limiter backend failure, rejecting with 429 (fail closed)",
+					"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path, "error", err.Error())
+			} else {
+				metrics.GetDPInstance(a.Licenser).IncrementRateLimitTotal(bucketKey, metrics.RateLimitOutcomeRejected)
+
+				a.Logger.DebugContext(r.Context(), "request rejected by rate limit",
+					"bucket", bucketKey, "limit", rateLimit, "method", r.Method, "path", r.URL.Path)
+			}
+
+			retryAfter := retryAfterSeconds(limiter.GetRetryAfter(err))
+
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
-			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", rlimiter.GetRetryAfter(err).Seconds()))
-			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%d", retryAfter))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfter))
 
 			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
 		})
 	}
+}
+
+// retryAfterSeconds converts a limiter delay into RFC 9110 delta-seconds. It
+// rounds up so a client never retries before the window reopens, and floors at
+// one second because a limiter that reports no delay (backend failure) must not
+// invite an immediate retry.
+func retryAfterSeconds(delay time.Duration) int {
+	if seconds := int(math.Ceil(delay.Seconds())); seconds > 1 {
+		return seconds
+	}
+
+	return 1
 }
 
 func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {

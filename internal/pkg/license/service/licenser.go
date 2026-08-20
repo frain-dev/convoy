@@ -521,6 +521,10 @@ func (l *Licenser) CanExportPrometheusMetrics() bool {
 	return l.hasFeature("export_prometheus_metrics")
 }
 
+func (l *Licenser) PostgresQueue() bool {
+	return l.hasFeature("postgres_queue")
+}
+
 func (l *Licenser) AdvancedEndpointMgmt() bool {
 	return l.hasFeature("advanced_endpoint_mgmt")
 }
@@ -714,6 +718,7 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	featureList["ConsumerPoolTuning"] = l.ConsumerPoolTuning()
 	featureList["GoogleOAuth"] = l.GoogleOAuth()
 	featureList["CanExportPrometheusMetrics"] = l.CanExportPrometheusMetrics()
+	featureList["PostgresQueue"] = l.PostgresQueue()
 	featureList["ReadReplica"] = l.ReadReplica()
 	featureList["CredentialEncryption"] = l.CredentialEncryption()
 	featureList["IpRules"] = l.IpRules()

@@ -171,11 +171,10 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src
 		return nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
 	}
 
-	// Set MaxConns - use configured value or default to 100 if not set
-	// This prevents unlimited connections when SetMaxOpenConnections is 0
-	maxConns := dbConfig.SetMaxOpenConnections
-	if maxConns <= 0 {
-		maxConns = 100
+	// Bound the pool even when unset, so a replica cannot open connections until
+	// the server refuses them.
+	maxConns := dbConfig.EffectiveMaxOpenConnections()
+	if dbConfig.SetMaxOpenConnections <= 0 {
 		pkgLogger.Warn(fmt.Sprintf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns))
 	}
 	pgxCfg.MaxConns = int32(maxConns)

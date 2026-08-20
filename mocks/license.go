@@ -252,6 +252,20 @@ func (mr *MockLicenserMockRecorder) CustomCertificateAuthority() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomCertificateAuthority", reflect.TypeOf((*MockLicenser)(nil).CustomCertificateAuthority))
 }
 
+// CustomUserAgent mocks base method.
+func (m *MockLicenser) CustomUserAgent() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomUserAgent")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CustomUserAgent indicates an expected call of CustomUserAgent.
+func (mr *MockLicenserMockRecorder) CustomUserAgent() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomUserAgent", reflect.TypeOf((*MockLicenser)(nil).CustomUserAgent))
+}
+
 // DatadogTracing mocks base method.
 func (m *MockLicenser) DatadogTracing() bool {
 	m.ctrl.T.Helper()
@@ -278,20 +292,6 @@ func (m *MockLicenser) EndpointURLTemplates() bool {
 func (mr *MockLicenserMockRecorder) EndpointURLTemplates() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointURLTemplates", reflect.TypeOf((*MockLicenser)(nil).EndpointURLTemplates))
-}
-
-// CustomUserAgent mocks base method.
-func (m *MockLicenser) CustomUserAgent() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CustomUserAgent")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// CustomUserAgent indicates an expected call of CustomUserAgent.
-func (mr *MockLicenserMockRecorder) CustomUserAgent() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomUserAgent", reflect.TypeOf((*MockLicenser)(nil).CustomUserAgent))
 }
 
 // EnterpriseSSO mocks base method.
@@ -420,6 +420,20 @@ func (m *MockLicenser) PortalLinks() bool {
 func (mr *MockLicenserMockRecorder) PortalLinks() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PortalLinks", reflect.TypeOf((*MockLicenser)(nil).PortalLinks))
+}
+
+// PostgresQueue mocks base method.
+func (m *MockLicenser) PostgresQueue() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PostgresQueue")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// PostgresQueue indicates an expected call of PostgresQueue.
+func (mr *MockLicenserMockRecorder) PostgresQueue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostgresQueue", reflect.TypeOf((*MockLicenser)(nil).PostgresQueue))
 }
 
 // ProjectEnabled mocks base method.

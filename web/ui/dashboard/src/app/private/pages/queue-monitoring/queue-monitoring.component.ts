@@ -1,37 +1,30 @@
-import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import axios from 'axios';
-import { apiOrigin } from 'src/app/services/api-origin';
-import { HttpService } from 'src/app/services/http/http.service';
+
+import { AdminService } from 'src/app/private/pages/admin/admin.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+
+import { QueueMonitoringAsynqmonComponent } from './queue-monitoring-asynqmon.component';
+import { QueueMonitoringBrokerComponent } from './queue-monitoring-broker.component';
+
+type QueueMonitoringSurface = 'loading' | 'postgres' | 'redis';
 
 @Component({
-    selector: 'convoy-queue-monitoring',
-    imports: [LoaderModule],
-    templateUrl: './queue-monitoring.component.html',
-    styleUrls: ['./queue-monitoring.component.scss']
+	selector: 'convoy-queue-monitoring',
+	imports: [CommonModule, QueueMonitoringAsynqmonComponent, QueueMonitoringBrokerComponent],
+	templateUrl: './queue-monitoring.component.html'
 })
 export class QueueMonitoringComponent implements OnInit {
-	private static readonly fullscreenStorageKey = 'CONVOY_QUEUE_MONITORING_FULLSCREEN';
-
-	/** Iframe loads here (session cookie path matches this prefix only). */
-	embedMonitoringUrl = '';
-
-	sessionStatus: 'idle' | 'minting' | 'ready' | 'error' = 'idle';
-	sessionError: string | null = null;
-	iframeVisible = false;
-	iframeFullscreen = false;
-
-	@ViewChild('monitorIframe') monitorIframe?: ElementRef<HTMLIFrameElement>;
+	licensed = false;
+	surface: QueueMonitoringSurface = 'loading';
 
 	constructor(
-		private readonly httpService: HttpService,
+		private readonly adminService: AdminService,
+		private readonly licenses: LicensesService,
 		private readonly rbacService: RbacService,
-		private readonly router: Router,
-		public readonly licenses: LicensesService
+		private readonly router: Router
 	) {}
 
 	async ngOnInit(): Promise<void> {
@@ -41,116 +34,29 @@ export class QueueMonitoringComponent implements OnInit {
 			return;
 		}
 
-		this.embedMonitoringUrl = this.buildEmbedMonitoringUrl();
-
-		this.loadFullscreenPreference();
-
 		await this.licenses.loadAllLicenses();
+		this.licensed = this.licenses.hasInstanceLicense('AsynqMonitoring');
+		if (!this.licensed) return;
 
-		if (this.hasAsynqLicense()) {
-			await this.mintSessionAndLoad();
-		}
+		await this.resolveSurface();
 	}
 
-	hasAsynqLicense(): boolean {
-		// Instance license carries asynq_monitoring for self-hosted Premium/Enterprise.
-		// Refreshed after trial start via loadAllLicenses() above.
-		return this.licenses.hasInstanceLicense('AsynqMonitoring');
+	get usePostgresUi(): boolean {
+		return this.surface === 'postgres';
 	}
 
-	@HostListener('document:keydown.escape')
-	onEscape(): void {
-		if (this.iframeFullscreen) {
-			this.iframeFullscreen = false;
-			this.persistFullscreenPreference();
-		}
-	}
-
-	toggleIframeFullscreen(): void {
-		this.iframeFullscreen = !this.iframeFullscreen;
-		this.persistFullscreenPreference();
-	}
-
-	async mintSessionAndLoad(): Promise<void> {
-		this.sessionStatus = 'minting';
-		this.sessionError = null;
-		this.iframeVisible = false;
-
-		const token = this.getSessionToken();
-		if (!token) {
-			this.sessionStatus = 'error';
-			this.sessionError = 'No dashboard user token found (log in again).';
-			return;
-		}
+	// Redis keeps the existing asynqmon iframe. Postgres uses the native broker
+	// page because asynqmon reads Redis directly and is not wired for queue_jobs.
+	private async resolveSurface(): Promise<void> {
+		this.surface = 'loading';
 
 		try {
-			const sessionUrl = this.buildSessionUrl();
-			await axios.post(sessionUrl, null, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'X-Convoy-Version': '2024-04-01'
-				},
-				withCredentials: true
-			});
-
-			this.sessionStatus = 'ready';
-			this.iframeVisible = true;
-
-			setTimeout(() => {
-				if (this.monitorIframe?.nativeElement) {
-					this.monitorIframe.nativeElement.src = this.buildEmbedReloadUrl();
-				}
-			}, 100);
-		} catch (e: unknown) {
-			this.sessionStatus = 'error';
-			this.sessionError = e instanceof Error ? e.message : String(e);
-		}
-	}
-
-	private getSessionToken(): string | null {
-		// Queue monitoring session minting requires the dashboard user token.
-		const userToken = this.httpService.authDetails()?.access_token || null;
-		if (!userToken) {
-			return null;
-		}
-
-		return this.normalizeToken(userToken);
-	}
-
-	private normalizeToken(token: string): string {
-		return token.replace(/^Bearer\s+/i, '').trim();
-	}
-
-	private apiBase(): string {
-		return apiOrigin();
-	}
-
-	private buildEmbedMonitoringUrl(): string {
-		return `${this.apiBase()}/queue/monitoring/embed/`;
-	}
-
-	private buildEmbedReloadUrl(): string {
-		const separator = this.embedMonitoringUrl.includes('?') ? '&' : '?';
-		return `${this.embedMonitoringUrl}${separator}_r=${Date.now()}`;
-	}
-
-	private buildSessionUrl(): string {
-		return `${this.apiBase()}/queue/monitoring/session`;
-	}
-
-	private loadFullscreenPreference(): void {
-		try {
-			this.iframeFullscreen = localStorage.getItem(QueueMonitoringComponent.fullscreenStorageKey) === 'true';
+			const response = await this.adminService.getQueueStats();
+			this.surface = response.data?.provider === 'postgres' ? 'postgres' : 'redis';
 		} catch {
-			this.iframeFullscreen = false;
-		}
-	}
-
-	private persistFullscreenPreference(): void {
-		try {
-			localStorage.setItem(QueueMonitoringComponent.fullscreenStorageKey, this.iframeFullscreen ? 'true' : 'false');
-		} catch {
-			/* private mode / quota */
+			// Fail open to the legacy iframe: Redis deployments always had it, and
+			// a transient stats read must not hide asynqmon behind an empty gate.
+			this.surface = 'redis';
 		}
 	}
 }

@@ -2,11 +2,8 @@ package task
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 
@@ -15,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/endpoints"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	log "github.com/frain-dev/convoy/pkg/logger"
@@ -24,79 +20,59 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
+func MonitorTwitterSources(db database.Database, queue queue.Queuer, locker JobLocker, logger log.Logger) func(context.Context, *asynq.Task) error {
 	sourceRepo := sources.New(logger, db)
 	subRepo := subscriptions.New(logger, db)
 	endpointRepo := endpoints.New(logger, db)
 
-	pool := goredis.NewPool(redis.Client())
-	rs := redsync.New(pool)
-
 	return func(ctx context.Context, t *asynq.Task) error {
-		const mutexName = "convoy:monitor_twitter_sources:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
+		// One page of at most 100 twitter sources, with per-source subscription
+		// and endpoint lookups plus notification enqueues; 5m is ample.
+		return locker.WithLock(ctx, "convoy:monitor_twitter_sources:mutex", 5*time.Minute, func(ctx context.Context) error {
+			p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
+			f := &datastore.SourceFilter{Provider: string(datastore.TwitterSourceProvider)}
 
-		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-		defer cancel()
-
-		err := mutex.LockContext(tctx)
-		if err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-
-		defer func() {
-			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-			defer cancel()
-
-			ok, err := mutex.UnlockContext(tctx)
-			if !ok || err != nil {
-				logger.Error("failed to release lock", "error", err)
+			sources, _, err := sourceRepo.LoadSourcesPaged(ctx, "", f, p)
+			if err != nil {
+				logger.Error("Failed to load sources paged")
+				return err
 			}
-		}()
 
-		p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
-		f := &datastore.SourceFilter{Provider: string(datastore.TwitterSourceProvider)}
+			for _, source := range sources {
+				now := time.Now()
+				crcExpiry := time.Now().Add(time.Hour * -2)
 
-		sources, _, err := sourceRepo.LoadSourcesPaged(context.Background(), "", f, p)
-		if err != nil {
-			logger.Error("Failed to load sources paged")
-			return err
-		}
-
-		for _, source := range sources {
-			now := time.Now()
-			crcExpiry := time.Now().Add(time.Hour * -2)
-
-			// the source needs to have been created at least one hour ago
-			if now.After(source.CreatedAt.Add(time.Hour)) {
-				expiry := source.ProviderConfig.Twitter.CrcVerifiedAt.Time
-				// the crc verified at timestamp must not be less than two hours ago
-				if crcExpiry.After(expiry) {
-					subscriptions, err := subRepo.FindSubscriptionsBySourceID(ctx, source.ProjectID, source.UID)
-					if err != nil {
-						logger.Error("Failed to load sources paged")
-						return err
-					}
-
-					for _, s := range subscriptions {
-						app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, s.ProjectID)
+				// the source needs to have been created at least one hour ago
+				if now.After(source.CreatedAt.Add(time.Hour)) {
+					expiry := source.ProviderConfig.Twitter.CrcVerifiedAt.Time
+					// the crc verified at timestamp must not be less than two hours ago
+					if crcExpiry.After(expiry) {
+						subscriptions, err := subRepo.FindSubscriptionsBySourceID(ctx, source.ProjectID, source.UID)
 						if err != nil {
 							logger.Error("Failed to load sources paged")
 							return err
 						}
 
-						if !util.IsStringEmpty(app.SupportEmail) {
-							err = sendNotificationEmail(ctx, source, app, queue, logger)
+						for _, s := range subscriptions {
+							app, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, s.ProjectID)
 							if err != nil {
-								logger.Error("failed to send notification")
+								logger.Error("Failed to load sources paged")
 								return err
+							}
+
+							if !util.IsStringEmpty(app.SupportEmail) {
+								err = sendNotificationEmail(ctx, source, app, queue, logger)
+								if err != nil {
+									logger.Error("failed to send notification")
+									return err
+								}
 							}
 						}
 					}
 				}
 			}
-		}
-		return nil
+			return nil
+		})
 	}
 }
 

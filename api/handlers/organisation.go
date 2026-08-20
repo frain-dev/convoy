@@ -20,7 +20,6 @@ import (
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
-	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -1036,17 +1035,17 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.A.Queue == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry is only available with Redis queue", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry requires a configured queue provider", http.StatusBadRequest))
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusBadRequest))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusBadRequest))
 		return
 	}
 
 	// Generate batch ID and create tracker
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 	batchID := tracker.GenerateBatchID()
 
 	// Run retry in background goroutine - don't block the response.
@@ -1165,12 +1164,12 @@ func (h *Handler) GetBatchProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusInternalServerError))
 		return
 	}
 
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 
 	// Sync counters before retrieving to get latest progress
 	if err := tracker.SyncCounters(r.Context(), batchID); err != nil {
@@ -1193,12 +1192,12 @@ func (h *Handler) ListBatchProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusInternalServerError))
 		return
 	}
 
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 
 	batches, err := tracker.ListBatches(r.Context())
 	if err != nil {
@@ -1234,12 +1233,12 @@ func (h *Handler) DeleteBatchProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusInternalServerError))
 		return
 	}
 
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 
 	if err := tracker.DeleteBatch(r.Context(), batchID); err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete batch", "error", err)

@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/indexes"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -76,6 +77,236 @@ func (c *blockingConverter) run(context.Context, Table, Operation) error {
 func newService(t *testing.T, db database.Database, c converter) *Service {
 	t.Helper()
 	return &Service{db: db, logger: log.New("partitions-test", log.LevelError), converter: c}
+}
+
+// blockingRebuilder stands in for the index build the same way blockingConverter
+// stands in for the DDL, and lets a lookup failure be asked for directly.
+type blockingRebuilder struct {
+	index      indexes.Dropped
+	lookupErr  error
+	rebuildErr error
+	release    chan struct{}
+	started    chan struct{}
+}
+
+func newBlockingRebuilder(table, index string) *blockingRebuilder {
+	return &blockingRebuilder{
+		index:   indexes.Dropped{Table: table, Name: index, Definition: "CREATE INDEX " + index + " ON convoy." + table + " (id)"},
+		release: make(chan struct{}),
+		started: make(chan struct{}, 1),
+	}
+}
+
+func (r *blockingRebuilder) dropped(context.Context, string) (indexes.Dropped, error) {
+	if r.lookupErr != nil {
+		return indexes.Dropped{}, r.lookupErr
+	}
+	return r.index, nil
+}
+
+func (r *blockingRebuilder) rebuild(context.Context, indexes.Dropped) error {
+	r.started <- struct{}{}
+	<-r.release
+	return r.rebuildErr
+}
+
+func newRebuildService(t *testing.T, db database.Database, r rebuilder) *Service {
+	t.Helper()
+	return &Service{db: db, logger: log.New("partitions-test", log.LevelError), converter: newBlockingConverter(), rebuilder: r}
+}
+
+// The run row has to name the index, because the table alone does not say which
+// of its indexes ran. The table comes from the dropped-index record rather than
+// from the caller, so a row cannot name a table the index is not on.
+func TestStartIndexRebuildRecordsTheIndexAndItsTable(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	s := newRebuildService(t, db, r)
+
+	run, err := s.StartIndexRebuild(ctx, "idx_event_deliveries_usage", "user-1")
+	require.NoError(t, err)
+	<-r.started
+
+	require.Equal(t, OperationRebuildIndex, run.Operation)
+	require.Equal(t, TableEventDeliveries, run.TableName)
+	require.NotNil(t, run.IndexName)
+	require.Equal(t, "idx_event_deliveries_usage", *run.IndexName)
+
+	close(r.release)
+	done := waitForStatus(t, s, ctx, run.UID, StatusCompleted)
+	require.NotNil(t, done.IndexName)
+	require.Equal(t, "idx_event_deliveries_usage", *done.IndexName)
+}
+
+// A rebuild and a conversion are the same kind of work on the same tables, so
+// they share the instance-wide slot. The index being rebuilt lives on a table a
+// conversion may be rewriting, and the two would contend for locks on it.
+func TestARebuildAndAConversionShareTheSingleActiveSlot(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	s := newRebuildService(t, db, r)
+
+	run, err := s.StartIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.NoError(t, err)
+	<-r.started
+
+	// A conversion of an unrelated table is refused while the rebuild holds the
+	// slot, which is what makes the dashboard's gate agree with the server.
+	c := newBlockingConverter()
+	_, err = newService(t, db, c).Start(ctx, TableDeliveryAttempts, OperationPartition, "user-2")
+	require.ErrorIs(t, err, ErrRunInProgress)
+
+	close(r.release)
+	waitForStatus(t, s, ctx, run.UID, StatusCompleted)
+
+	// And the other way round: a conversion in flight refuses a rebuild.
+	conversion := newBlockingConverter()
+	cs := newService(t, db, conversion)
+	converting, err := cs.Start(ctx, TableDeliveryAttempts, OperationPartition, "user-2")
+	require.NoError(t, err)
+	<-conversion.started
+
+	_, err = newRebuildService(t, db, newBlockingRebuilder("events", "idx_events_source_id")).
+		StartIndexRebuild(ctx, "idx_events_source_id", "user-3")
+	require.ErrorIs(t, err, ErrRunInProgress)
+
+	close(conversion.release)
+	waitForStatus(t, cs, ctx, converting.UID, StatusCompleted)
+}
+
+// A name that identifies no pending rebuild must be refused before the slot is
+// taken, or a mistyped index would lock the instance out of real work.
+func TestStartIndexRebuildLeavesTheSlotFreeWhenTheIndexIsUnknown(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	r.lookupErr = indexes.ErrNotDropped
+	s := newRebuildService(t, db, r)
+
+	_, err := s.StartIndexRebuild(ctx, "idx_typed_wrong", "user-1")
+	require.ErrorIs(t, err, indexes.ErrNotDropped)
+
+	runs, err := s.List(ctx, 20)
+	require.NoError(t, err)
+	require.Empty(t, runs, "a rejected rebuild recorded a run, which holds the instance-wide slot")
+
+	// The slot is provably still free.
+	c := newBlockingConverter()
+	close(c.release)
+	_, err = newService(t, db, c).Start(ctx, TableEvents, OperationPartition, "user-2")
+	require.NoError(t, err)
+}
+
+// A failed rebuild has to close its row out, or the row keeps the instance
+// blocked and an operator has to clear it by hand.
+func TestARebuildThatFailsClosesOutWithTheReason(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	r.rebuildErr = errors.New("could not create unique index, key is duplicated")
+	close(r.release)
+	s := newRebuildService(t, db, r)
+
+	run, err := s.StartIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.NoError(t, err)
+
+	failed := waitForStatus(t, s, ctx, run.UID, StatusFailed)
+	require.NotNil(t, failed.Error)
+	require.Equal(t, "could not create unique index, key is duplicated", *failed.Error)
+	require.NotNil(t, failed.CompletedAt)
+}
+
+// The single-active guard is a CONCURRENTLY-built unique index, so it is in the
+// class a killed build leaves invalid and the repair migration then drops. While
+// it is gone the insert has nothing to fail on, so a start must be refused here
+// instead of running beside whatever is already going.
+func TestNoRunStartsWhileTheSingleActiveGuardIsMissing(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	dropGuard(t, db, ctx)
+
+	_, err := newService(t, db, newBlockingConverter()).Start(ctx, TableEvents, OperationPartition, "user-1")
+	require.ErrorIs(t, err, ErrGuardMissing)
+
+	_, err = newRebuildService(t, db, newBlockingRebuilder("events", "idx_events_source_id")).
+		StartIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.ErrorIs(t, err, ErrGuardMissing)
+}
+
+// Rebuilding the guard is the exception, or an instance whose guard was dropped
+// could never convert or rebuild anything again: the only work that ends the
+// state would be refused by the state itself.
+func TestTheGuardCanBeRebuiltWithoutTheGuard(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	dropGuard(t, db, ctx)
+
+	r := newBlockingRebuilder("partition_runs", singleActiveGuard)
+	close(r.release)
+	s := newRebuildService(t, db, r)
+
+	run, err := s.StartIndexRebuild(ctx, singleActiveGuard, "user-1")
+	require.NoError(t, err)
+	waitForStatus(t, s, ctx, run.UID, StatusCompleted)
+}
+
+// Two guard rebuilds started at once are the case a read-then-insert check does
+// not cover: both can read no open run before either inserts. With the guard
+// index gone, nothing else refuses the second, so exactly one must win here.
+func TestOnlyOneOfTwoConcurrentGuardRebuildsTakesTheSlot(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	dropGuard(t, db, ctx)
+
+	const starts = 4
+	errs := make(chan error, starts)
+	begin := make(chan struct{})
+	for range starts {
+		go func() {
+			r := newBlockingRebuilder("partition_runs", singleActiveGuard)
+			<-begin
+			_, err := newRebuildService(t, db, r).StartIndexRebuild(ctx, singleActiveGuard, "user-1")
+			errs <- err
+		}()
+	}
+	close(begin)
+
+	won := 0
+	for range starts {
+		if err := <-errs; err == nil {
+			won++
+		} else {
+			require.ErrorIs(t, err, ErrRunInProgress)
+		}
+	}
+	require.Equal(t, 1, won, "more than one rebuild of the guard took the slot")
+
+	runs, err := newService(t, db, newBlockingConverter()).List(ctx, 20)
+	require.NoError(t, err)
+	require.Len(t, runs, 1)
+}
+
+// The same applies to a row left running from before the guard was dropped: the
+// rebuild has to refuse rather than build a unique index over two running rows
+// and fail on the key instead of on the reason.
+func TestAGuardRebuildIsRefusedWhileAnotherRunIsOpen(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	c := newBlockingConverter()
+	cs := newService(t, db, c)
+	converting, err := cs.Start(ctx, TableEvents, OperationPartition, "user-1")
+	require.NoError(t, err)
+	<-c.started
+
+	dropGuard(t, db, ctx)
+
+	_, err = newRebuildService(t, db, newBlockingRebuilder("partition_runs", singleActiveGuard)).
+		StartIndexRebuild(ctx, singleActiveGuard, "user-2")
+	require.ErrorIs(t, err, ErrRunInProgress)
+
+	close(c.release)
+	waitForStatus(t, cs, ctx, converting.UID, StatusCompleted)
+}
+
+func dropGuard(t *testing.T, db database.Database, ctx context.Context) {
+	t.Helper()
+	_, err := db.GetDB().ExecContext(ctx, `DROP INDEX convoy.`+singleActiveGuard)
+	require.NoError(t, err)
 }
 
 func waitForStatus(t *testing.T, s *Service, ctx context.Context, id string, want Status) *Run {

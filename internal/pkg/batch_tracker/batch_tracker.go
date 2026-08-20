@@ -24,17 +24,20 @@ const (
 )
 
 type BatchProgress struct {
-	BatchID        string      `json:"batch_id"`
-	Status         BatchStatus `json:"status"`
-	TotalCount     int64       `json:"total_count"`
-	ProcessedCount int64       `json:"processed_count"`
-	FailedCount    int64       `json:"failed_count"`
-	StartTime      time.Time   `json:"start_time"`
-	EndTime        *time.Time  `json:"end_time,omitempty"`
-	Error          string      `json:"error,omitempty"`
-	StatusFilter   string      `json:"status_filter,omitempty"` // The event delivery status that was filtered (e.g., "Retry", "Scheduled")
-	TimePeriod     string      `json:"time_period,omitempty"`   // The time period selected (e.g., "1h", "5h")
-	EventID        string      `json:"event_id,omitempty"`      // Optional event ID filter
+	// db tags are required, not decorative: the Postgres tracker scans this
+	// struct with sqlx, whose default mapper lowercases the field name, so
+	// BatchID would look for "batchid" and the scan would fail outright.
+	BatchID        string      `json:"batch_id" db:"batch_id"`
+	Status         BatchStatus `json:"status" db:"status"`
+	TotalCount     int64       `json:"total_count" db:"total_count"`
+	ProcessedCount int64       `json:"processed_count" db:"processed_count"`
+	FailedCount    int64       `json:"failed_count" db:"failed_count"`
+	StartTime      time.Time   `json:"start_time" db:"start_time"`
+	EndTime        *time.Time  `json:"end_time,omitempty" db:"end_time"`
+	Error          string      `json:"error,omitempty" db:"error"`
+	StatusFilter   string      `json:"status_filter,omitempty" db:"status_filter"` // The event delivery status that was filtered (e.g., "Retry", "Scheduled")
+	TimePeriod     string      `json:"time_period,omitempty" db:"time_period"`     // The time period selected (e.g., "1h", "5h")
+	EventID        string      `json:"event_id,omitempty" db:"event_id"`           // Optional event ID filter
 }
 
 type BatchTracker struct {

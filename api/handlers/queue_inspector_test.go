@@ -1,0 +1,496 @@
+package handlers
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	log "github.com/frain-dev/convoy/pkg/logger"
+	"github.com/frain-dev/convoy/queue"
+)
+
+type fakeInspector struct {
+	err     error
+	stats   queue.Stats
+	page    queue.TaskPage
+	history []queue.HistoryPoint
+	entries []queue.SchedulerEntry
+	bulk    queue.BulkResult
+
+	filter    queue.TaskFilter
+	days      int
+	retried   [2]string
+	ran       [2]string
+	archived  [2]string
+	deleted   [2]string
+	bulkCall  [2]string
+	bulkIDs   []string
+	pausedQ   string
+	resumedQ  string
+	historyOf string
+}
+
+func (f *fakeInspector) Stats(context.Context) (queue.Stats, error) {
+	return f.stats, f.err
+}
+
+func (f *fakeInspector) History(_ context.Context, queueName string, days int) ([]queue.HistoryPoint, error) {
+	f.historyOf, f.days = queueName, days
+	return f.history, f.err
+}
+
+func (f *fakeInspector) SchedulerEntries(context.Context) ([]queue.SchedulerEntry, error) {
+	return f.entries, f.err
+}
+
+func (f *fakeInspector) Tasks(_ context.Context, filter queue.TaskFilter) (queue.TaskPage, error) {
+	f.filter = filter
+	return f.page, f.err
+}
+
+func (f *fakeInspector) RetryTask(_ context.Context, queueName, taskID string) error {
+	f.retried = [2]string{queueName, taskID}
+	return f.err
+}
+
+func (f *fakeInspector) RunTask(_ context.Context, queueName, taskID string) error {
+	f.ran = [2]string{queueName, taskID}
+	return f.err
+}
+
+func (f *fakeInspector) ArchiveTask(_ context.Context, queueName, taskID string) error {
+	f.archived = [2]string{queueName, taskID}
+	return f.err
+}
+
+func (f *fakeInspector) DeleteTask(_ context.Context, queueName, taskID string) error {
+	f.deleted = [2]string{queueName, taskID}
+	return f.err
+}
+
+func (f *fakeInspector) BulkAction(_ context.Context, queueName, action string, taskIDs []string) (queue.BulkResult, error) {
+	f.bulkCall = [2]string{queueName, action}
+	f.bulkIDs = taskIDs
+	return f.bulk, f.err
+}
+
+func (f *fakeInspector) PauseQueue(_ context.Context, queueName string) error {
+	f.pausedQ = queueName
+	return f.err
+}
+
+func (f *fakeInspector) UnpauseQueue(_ context.Context, queueName string) error {
+	f.resumedQ = queueName
+	return f.err
+}
+
+func queueRequest(target string, params map[string]string, user *datastore.User) *http.Request {
+	req := httptest.NewRequest(http.MethodPost, target, nil)
+
+	rctx := chi.NewRouteContext()
+	for k, v := range params {
+		rctx.URLParams.Add(k, v)
+	}
+	ctx := context.WithValue(req.Context(), chi.RouteCtxKey, rctx)
+	if user != nil {
+		ctx = context.WithValue(ctx, convoy.AuthUserCtx, &auth.AuthenticatedUser{User: user})
+	}
+	return req.WithContext(ctx)
+}
+
+func queueTaskRequest(taskID string, user *datastore.User) *http.Request {
+	return queueRequest("/ui/admin/queue/EventQueue/tasks/"+taskID+"/retry",
+		map[string]string{"queueName": "EventQueue", "taskID": taskID}, user)
+}
+
+func newQueueHandler(t *testing.T, inspector queue.Inspector, expectRepo func(*mocks.MockOrganisationMemberRepository)) *Handler {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	repo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	if expectRepo != nil {
+		expectRepo(repo)
+	}
+	return &Handler{A: &types.APIOptions{
+		QueueInspector: inspector,
+		OrgMemberRepo:  repo,
+		Logger:         log.New("convoy", log.LevelInfo),
+	}}
+}
+
+func adminOnce(times int) func(*mocks.MockOrganisationMemberRepository) {
+	return func(repo *mocks.MockOrganisationMemberRepository) {
+		repo.EXPECT().FetchInstanceAdminByUserID(gomock.Any(), "user-1").Return(&datastore.OrganisationMember{
+			Role: auth.Role{Type: auth.RoleInstanceAdmin},
+		}, nil).Times(times)
+	}
+}
+
+// Queue contents span every org on the instance, so each endpoint answers to
+// the instance-admin policy on its own rather than trusting a route group.
+func TestQueueEndpointsRequireInstanceAdmin(t *testing.T) {
+	user := &datastore.User{UID: "user-1"}
+
+	principals := []struct {
+		name       string
+		user       *datastore.User
+		expectRepo func(*mocks.MockOrganisationMemberRepository)
+		wantStatus int
+	}{
+		{
+			// An API key authenticates but carries no user, so it lands here
+			// too: queue monitoring is for operators, not for integrations.
+			name:       "unauthenticated caller",
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "authenticated non-admin",
+			user: user,
+			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
+				repo.EXPECT().FetchInstanceAdminByUserID(gomock.Any(), "user-1").Return(nil, datastore.ErrOrgMemberNotFound)
+			},
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			// Fail closed: an unreadable membership is not an admin grant.
+			name: "membership lookup fails",
+			user: user,
+			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
+				repo.EXPECT().FetchInstanceAdminByUserID(gomock.Any(), "user-1").Return(nil, fmt.Errorf("db down"))
+			},
+			wantStatus: http.StatusForbidden,
+		},
+	}
+
+	endpoints := map[string]func(*Handler) http.HandlerFunc{
+		"stats":     func(h *Handler) http.HandlerFunc { return h.GetQueueStats },
+		"history":   func(h *Handler) http.HandlerFunc { return h.GetQueueHistory },
+		"scheduler": func(h *Handler) http.HandlerFunc { return h.GetQueueSchedulerEntries },
+		"tasks":     func(h *Handler) http.HandlerFunc { return h.GetQueueTasks },
+		"retry":     func(h *Handler) http.HandlerFunc { return h.RetryQueueTask },
+		"run":       func(h *Handler) http.HandlerFunc { return h.RunQueueTask },
+		"archive":   func(h *Handler) http.HandlerFunc { return h.ArchiveQueueTask },
+		"delete":    func(h *Handler) http.HandlerFunc { return h.DeleteQueueTask },
+		"bulk":      func(h *Handler) http.HandlerFunc { return h.BulkQueueTaskAction },
+		"pause":     func(h *Handler) http.HandlerFunc { return h.PauseQueue },
+		"resume":    func(h *Handler) http.HandlerFunc { return h.UnpauseQueue },
+	}
+
+	for name, endpoint := range endpoints {
+		for _, tc := range principals {
+			t.Run(name+"/"+tc.name, func(t *testing.T) {
+				inspector := &fakeInspector{}
+				h := newQueueHandler(t, inspector, tc.expectRepo)
+
+				rec := httptest.NewRecorder()
+				endpoint(h)(rec, queueTaskRequest("task-1", tc.user))
+
+				require.Equal(t, tc.wantStatus, rec.Code)
+				require.Empty(t, inspector.retried[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.ran[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.archived[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.deleted[1], "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.bulkIDs, "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.pausedQ, "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.resumedQ, "the action must not run for an unauthorized caller")
+				require.Empty(t, inspector.filter.Queue, "the read must not run for an unauthorized caller")
+				require.Empty(t, inspector.historyOf, "the read must not run for an unauthorized caller")
+			})
+		}
+	}
+}
+
+func TestGetQueueStats(t *testing.T) {
+	inspector := &fakeInspector{stats: queue.Stats{
+		Provider: queue.ProviderPostgres,
+		Statuses: []string{queue.StatusPending},
+		Queues:   []queue.QueueStat{{Queue: "EventQueue", Counts: map[string]int64{queue.StatusPending: 3}}},
+	}}
+	h := newQueueHandler(t, inspector, adminOnce(1))
+
+	rec := httptest.NewRecorder()
+	h.GetQueueStats(rec, queueTaskRequest("", &datastore.User{UID: "user-1"}))
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), `"provider":"postgres"`)
+	require.Contains(t, rec.Body.String(), `"pending":3`)
+}
+
+func TestGetQueueTasksPassesFilter(t *testing.T) {
+	inspector := &fakeInspector{page: queue.TaskPage{Page: 2}}
+	h := newQueueHandler(t, inspector, adminOnce(1))
+
+	req := queueRequest("/ui/admin/queue/EventQueue/tasks?status=archived&page=2",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+
+	rec := httptest.NewRecorder()
+	h.GetQueueTasks(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, queue.TaskFilter{Queue: "EventQueue", Status: queue.StatusArchived, Page: 2, PageSize: queue.TasksPerPage}, inspector.filter)
+}
+
+// An id pasted from a log carries whitespace often enough that rejecting it
+// would only teach the operator to trim by hand.
+func TestGetQueueTasksTrimsSearch(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(1))
+
+	req := queueRequest("/ui/admin/queue/EventQueue/tasks?status=pending&perPage=25&search=%20task-1%20",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+
+	rec := httptest.NewRecorder()
+	h.GetQueueTasks(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "task-1", inspector.filter.Search)
+	require.Equal(t, 25, inspector.filter.PageSize)
+}
+
+func TestGetQueueHistoryDefaultsWindow(t *testing.T) {
+	inspector := &fakeInspector{history: []queue.HistoryPoint{{Date: "2026-08-17", Processed: 5, Failed: 1}}}
+	h := newQueueHandler(t, inspector, adminOnce(2))
+
+	rec := httptest.NewRecorder()
+	h.GetQueueHistory(rec, queueRequest("/ui/admin/queue/EventQueue/history",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"}))
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "EventQueue", inspector.historyOf)
+	require.Equal(t, queue.DefaultHistoryDays, inspector.days)
+	require.Contains(t, rec.Body.String(), `"processed":5`)
+
+	// A caller that sent a window meant to have it, so an unparseable one is
+	// rejected rather than silently defaulted.
+	rec = httptest.NewRecorder()
+	h.GetQueueHistory(rec, queueRequest("/ui/admin/queue/EventQueue/history?days=lots",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"}))
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+// A bulk action reports per-id outcomes with 200: some rows did move, and the
+// caller needs to know which.
+func TestBulkQueueTaskAction(t *testing.T) {
+	inspector := &fakeInspector{bulk: queue.BulkResult{Succeeded: 2, Failures: map[string]string{"gone": "queue: task not found"}}}
+	h := newQueueHandler(t, inspector, adminOnce(2))
+
+	req := queueRequest("/ui/admin/queue/EventQueue/tasks/bulk",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+	req.Body = io.NopCloser(strings.NewReader(`{"action":"archive","task_ids":["a","b","gone"]}`))
+
+	rec := httptest.NewRecorder()
+	h.BulkQueueTaskAction(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, [2]string{"EventQueue", queue.ActionArchive}, inspector.bulkCall)
+	require.Equal(t, []string{"a", "b", "gone"}, inspector.bulkIDs)
+	require.Contains(t, rec.Body.String(), `"succeeded":2`)
+	require.Contains(t, rec.Body.String(), `"gone"`)
+
+	// An unparseable body is rejected before the broker is touched.
+	inspector.bulkIDs = nil
+	req = queueRequest("/ui/admin/queue/EventQueue/tasks/bulk",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+	req.Body = io.NopCloser(strings.NewReader(`not json`))
+
+	rec = httptest.NewRecorder()
+	h.BulkQueueTaskAction(rec, req)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.Empty(t, inspector.bulkIDs)
+}
+
+func TestPauseAndResumeQueue(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(2))
+	user := &datastore.User{UID: "user-1"}
+
+	rec := httptest.NewRecorder()
+	h.PauseQueue(rec, queueRequest("/ui/admin/queue/EventQueue/pause", map[string]string{"queueName": "EventQueue"}, user))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "EventQueue", inspector.pausedQ)
+
+	rec = httptest.NewRecorder()
+	h.UnpauseQueue(rec, queueRequest("/ui/admin/queue/EventQueue/resume", map[string]string{"queueName": "EventQueue"}, user))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "EventQueue", inspector.resumedQ)
+}
+
+// Each action reaches its own inspector method, so a button cannot silently run
+// a different transition than the one it is labelled with.
+func TestQueueTaskActionsAreDistinct(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(4))
+	user := &datastore.User{UID: "user-1"}
+
+	for _, run := range []func(http.ResponseWriter, *http.Request){h.RetryQueueTask, h.RunQueueTask, h.ArchiveQueueTask, h.DeleteQueueTask} {
+		run(httptest.NewRecorder(), queueTaskRequest("task-1", user))
+	}
+
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.retried)
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.ran)
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.archived)
+	require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.deleted)
+}
+
+func TestGetQueueTasksRejectsNonNumericPage(t *testing.T) {
+	inspector := &fakeInspector{}
+	h := newQueueHandler(t, inspector, adminOnce(1))
+
+	req := queueRequest("/ui/admin/queue/EventQueue/tasks?status=pending&page=abc",
+		map[string]string{"queueName": "EventQueue"}, &datastore.User{UID: "user-1"})
+
+	rec := httptest.NewRecorder()
+	h.GetQueueTasks(rec, req)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.Empty(t, inspector.filter.Queue)
+}
+
+func TestQueueTaskActionOutcomes(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantStatus int
+	}{
+		{
+			name:       "success",
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "task not found",
+			err:        queue.ErrTaskNotFound,
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "wrong status",
+			err:        fmt.Errorf("%w: task is pending, want archived", queue.ErrTaskStatusConflict),
+			wantStatus: http.StatusConflict,
+		},
+		{
+			name:       "scheduler row",
+			err:        queue.ErrCronTaskImmutable,
+			wantStatus: http.StatusConflict,
+		},
+		{
+			name:       "unknown status",
+			err:        fmt.Errorf("%w: %q", queue.ErrUnknownTaskStatus, "bogus"),
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "broker error",
+			err:        fmt.Errorf("pq: connection refused"),
+			wantStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			inspector := &fakeInspector{err: tc.err}
+			h := newQueueHandler(t, inspector, adminOnce(2))
+
+			rec := httptest.NewRecorder()
+			h.RetryQueueTask(rec, queueTaskRequest("task-1", &datastore.User{UID: "user-1"}))
+			require.Equal(t, tc.wantStatus, rec.Code)
+			require.Equal(t, [2]string{"EventQueue", "task-1"}, inspector.retried)
+
+			rec = httptest.NewRecorder()
+			h.ArchiveQueueTask(rec, queueTaskRequest("task-2", &datastore.User{UID: "user-1"}))
+			require.Equal(t, tc.wantStatus, rec.Code)
+			require.Equal(t, [2]string{"EventQueue", "task-2"}, inspector.archived)
+		})
+	}
+
+	// The raw failure carries broker and database detail, so it stays in the log.
+	t.Run("broker error is not echoed", func(t *testing.T) {
+		inspector := &fakeInspector{err: fmt.Errorf("pq: password authentication failed for user \"convoy\"")}
+		h := newQueueHandler(t, inspector, adminOnce(1))
+
+		rec := httptest.NewRecorder()
+		h.RetryQueueTask(rec, queueTaskRequest("task-1", &datastore.User{UID: "user-1"}))
+		require.Equal(t, http.StatusInternalServerError, rec.Code)
+		require.NotContains(t, rec.Body.String(), "password authentication failed")
+	})
+}
+
+// A deployment with no inspector wired must say so rather than panic or report
+// success.
+func TestQueueEndpointsWithoutInspector(t *testing.T) {
+	h := newQueueHandler(t, nil, adminOnce(2))
+
+	rec := httptest.NewRecorder()
+	h.GetQueueStats(rec, queueTaskRequest("", &datastore.User{UID: "user-1"}))
+	require.Equal(t, http.StatusNotImplemented, rec.Code)
+
+	rec = httptest.NewRecorder()
+	h.RetryQueueTask(rec, queueTaskRequest("task-1", &datastore.User{UID: "user-1"}))
+	require.Equal(t, http.StatusNotImplemented, rec.Code)
+}
+
+// Asynqmon is reached by a browser navigation with no Authorization header, so
+// its mount answers to the same policy through this middleware.
+func TestRequireQueueMonitoringAdmin(t *testing.T) {
+	tests := []struct {
+		name       string
+		user       *datastore.User
+		expectRepo func(*mocks.MockOrganisationMemberRepository)
+		wantStatus int
+		wantServed bool
+	}{
+		{
+			name:       "no user",
+			wantStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "non-admin",
+			user: &datastore.User{UID: "user-1"},
+			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
+				repo.EXPECT().HasInstanceAdminAccess(gomock.Any(), "user-1").Return(false, nil)
+			},
+			wantStatus: http.StatusForbidden,
+		},
+		{
+			name: "instance admin",
+			user: &datastore.User{UID: "user-1"},
+			expectRepo: func(repo *mocks.MockOrganisationMemberRepository) {
+				repo.EXPECT().HasInstanceAdminAccess(gomock.Any(), "user-1").Return(true, nil)
+			},
+			wantStatus: http.StatusOK,
+			wantServed: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newQueueHandler(t, &fakeInspector{}, tc.expectRepo)
+
+			served := false
+			next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				served = true
+				_, _ = w.Write([]byte("queue contents"))
+			})
+
+			rec := httptest.NewRecorder()
+			h.RequireQueueMonitoringAdmin()(next).ServeHTTP(rec, queueTaskRequest("task-1", tc.user))
+
+			require.Equal(t, tc.wantStatus, rec.Code)
+			require.Equal(t, tc.wantServed, served)
+			if !tc.wantServed {
+				require.NotContains(t, rec.Body.String(), "queue contents")
+			}
+		})
+	}
+}

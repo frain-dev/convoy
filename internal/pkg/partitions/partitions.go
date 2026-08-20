@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
 
@@ -31,6 +32,7 @@ import (
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
+	"github.com/frain-dev/convoy/internal/pkg/indexes"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
@@ -48,6 +50,11 @@ type Operation string
 const (
 	OperationPartition   Operation = "partition"
 	OperationUnpartition Operation = "unpartition"
+
+	// OperationRebuildIndex builds back an index a migration dropped for being
+	// invalid. It shares this runner because it is the same kind of work as a
+	// conversion, on the same tables, and must not run beside one.
+	OperationRebuildIndex Operation = "rebuild_index"
 )
 
 type Status string
@@ -57,6 +64,21 @@ const (
 	StatusCompleted Status = "completed"
 	StatusFailed    Status = "failed"
 )
+
+// runColumns is every column a Run scans, written once so the insert's RETURNING
+// and the reads cannot drift apart when a column is added.
+const runColumns = `id, table_name, operation, index_name, status, phase, steps,
+                    notice_count, error, triggered_by, started_at, updated_at, completed_at`
+
+// singleActiveGuard is the partial unique index that makes one run at a time
+// true. Nothing else enforces it: a second start is refused by that index
+// rejecting the insert, so the name is needed here to check the index is there.
+const singleActiveGuard = "idx_partition_runs_single_active"
+
+// guardRebuildLock serializes the one start the guard cannot: a rebuild of the
+// guard itself. Any constant works as long as nothing else in the schema picks
+// the same one, so it is defined here beside its only user.
+const guardRebuildLock int64 = 8267341982
 
 // maxSteps bounds the step list a run carries. A conversion reports around ten,
 // so this is only reached by a loop nobody intended, and it keeps one row from
@@ -71,6 +93,11 @@ var (
 	ErrRunInProgress = errors.New("a partition run is already in progress")
 
 	ErrRunNotFound = errors.New("partition run not found")
+
+	// ErrGuardMissing is returned when the unique index that enforces one run at
+	// a time is not valid, so a start cannot be refused by it.
+	ErrGuardMissing = errors.New("the single-active guard on convoy.partition_runs is missing, " +
+		"so a second run could not be refused; rebuild it with: convoy utils indexes --rebuild")
 
 	ErrUnknownTable = errors.New("unknown table")
 
@@ -119,9 +146,14 @@ func (t TableState) ValidOperation() Operation {
 }
 
 type Run struct {
-	UID         string     `json:"uid" db:"id"`
-	TableName   Table      `json:"table_name" db:"table_name"`
-	Operation   Operation  `json:"operation" db:"operation"`
+	UID       string    `json:"uid" db:"id"`
+	TableName Table     `json:"table_name" db:"table_name"`
+	Operation Operation `json:"operation" db:"operation"`
+
+	// IndexName is set only on a rebuild, where the table alone does not say
+	// what the run is doing. The database enforces the pairing.
+	IndexName *string `json:"index_name" db:"index_name"`
+
 	Status      Status     `json:"status" db:"status"`
 	Phase       *string    `json:"phase" db:"phase"`
 	Steps       Steps      `json:"steps" db:"steps"`
@@ -173,10 +205,21 @@ type converter interface {
 	run(ctx context.Context, table Table, op Operation) error
 }
 
+// rebuilder is the index half of the work this runner drives. It is a seam of its
+// own rather than a widening of converter, because the two take different
+// subjects: a conversion is named by its table, a rebuild by its index.
+type rebuilder interface {
+	// dropped resolves the name to the index awaiting a rebuild, and reports
+	// which table it is on so the run row names that table.
+	dropped(ctx context.Context, name string) (indexes.Dropped, error)
+	rebuild(ctx context.Context, d indexes.Dropped) error
+}
+
 type Service struct {
 	db        database.Database
 	logger    log.Logger
 	converter converter
+	rebuilder rebuilder
 }
 
 func New(db database.Database, logger log.Logger) *Service {
@@ -188,6 +231,7 @@ func New(db database.Database, logger log.Logger) *Service {
 			deliveries: event_deliveries.New(logger, db),
 			attempts:   delivery_attempts.New(logger, db),
 		},
+		rebuilder: &indexRebuilder{db: db},
 	}
 }
 
@@ -224,28 +268,198 @@ func (s *Service) Run(ctx context.Context, table Table, op Operation, triggeredB
 	return s.convert(ctx, run)
 }
 
+// StartIndexRebuild records a rebuild and runs it detached, for the dashboard.
+func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy string) (*Run, error) {
+	run, d, err := s.recordRebuild(ctx, indexName, triggeredBy)
+	if err != nil {
+		return nil, err
+	}
+
+	go s.rebuild(context.WithoutCancel(ctx), run, d)
+
+	return run, nil
+}
+
+// RunIndexRebuild rebuilds on the caller's goroutine, for the CLI.
+//
+// It goes through the same record step for the reason Run does: that record takes
+// the instance-wide single-active slot, and a rebuild started from a shell must
+// not run beside a conversion of the table the index is on.
+func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy string) error {
+	run, d, err := s.recordRebuild(ctx, indexName, triggeredBy)
+	if err != nil {
+		return err
+	}
+	return s.rebuild(ctx, run, d)
+}
+
+// checkGuard refuses a start when the index that enforces one run at a time is
+// not valid.
+//
+// That index is the whole mechanism, and it is created CONCURRENTLY by a
+// migration, which puts it in the class of index a killed build leaves invalid
+// and the repair migration then drops. While it is gone, insert has nothing to
+// fail on, so two conversions of the same table could run at once. Checked here
+// rather than trusted, and fail closed on a read error: starting a rewrite
+// without knowing whether anything would stop a second one is the worse outcome.
+func (s *Service) checkGuard(ctx context.Context) error {
+	var valid bool
+	err := s.db.GetDB().QueryRowxContext(ctx, `
+        SELECT COALESCE(bool_or(x.indisvalid), FALSE)
+        FROM pg_class i
+        JOIN pg_namespace n ON n.oid = i.relnamespace
+        LEFT JOIN pg_index x ON x.indexrelid = i.oid
+        WHERE n.nspname = 'convoy' AND i.relname = $1`, singleActiveGuard).Scan(&valid)
+	if err != nil {
+		return fmt.Errorf("reading the single-active guard: %w", err)
+	}
+	if !valid {
+		return ErrGuardMissing
+	}
+	return nil
+}
+
+// insertGuardRebuild takes the slot for a rebuild of the guard itself, which is
+// the one insert the guard cannot cover because it is what is missing.
+//
+// Reading "nothing is running" and then inserting would not serialize: two
+// starts can both read no open run and both insert, which is exactly what the
+// index was refusing. So the read and the insert share one transaction holding an
+// advisory lock, and the second start waits for the first, sees its row, and is
+// refused. The transaction only records the row; the build itself runs after the
+// commit, so nothing waits on the lock for longer than an insert.
+func (s *Service) insertGuardRebuild(ctx context.Context, run *Run) (*Run, error) {
+	tx, err := s.db.GetDB().BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("starting the run record: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// SET LOCAL, so the timeout goes with the transaction rather than back to the
+	// pool. Bounded because waiting forever here would look like a hung start.
+	if _, err = tx.ExecContext(ctx, `SET LOCAL lock_timeout = '5s'`); err != nil {
+		return nil, fmt.Errorf("bounding the run lock wait: %w", err)
+	}
+	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock($1)`, guardRebuildLock); err != nil {
+		// Someone else is holding it, which is the same answer the guard would
+		// have given, so it reads as one rather than as a lock error the caller
+		// cannot act on.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "55P03" {
+			return nil, ErrRunInProgress
+		}
+		return nil, fmt.Errorf("taking the run lock: %w", err)
+	}
+
+	var running bool
+	err = tx.QueryRowxContext(ctx, `
+        SELECT EXISTS (SELECT 1 FROM convoy.partition_runs WHERE status = $1)`, StatusRunning).Scan(&running)
+	if err != nil {
+		return nil, fmt.Errorf("reading open runs: %w", err)
+	}
+	if running {
+		return nil, ErrRunInProgress
+	}
+
+	if _, err = insertRun(ctx, tx, run); err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("recording the run: %w", err)
+	}
+	return run, nil
+}
+
+// record checks the conversion can change the table, then takes the slot.
 func (s *Service) record(ctx context.Context, table Table, op Operation, triggeredBy string) (*Run, error) {
+	if err := s.checkGuard(ctx); err != nil {
+		return nil, err
+	}
+
 	if err := s.checkOperation(ctx, table, op); err != nil {
 		return nil, err
 	}
 
-	run := &Run{
+	return s.insert(ctx, &Run{
 		UID:         ulid.Make().String(),
 		TableName:   table,
 		Operation:   op,
 		Status:      StatusRunning,
 		TriggeredBy: triggeredBy,
+	})
+}
+
+// recordRebuild resolves the index, then takes the slot.
+//
+// The subject is read here, at the decision, for the reason a conversion reads
+// the table's shape here: a name that identifies no pending rebuild must be
+// refused before the instance-wide slot is held, and a read that fails rejects
+// the start rather than beginning work whose subject is unconfirmed. The table
+// comes from that record, so a run row cannot name a table the index is not on.
+func (s *Service) recordRebuild(ctx context.Context, indexName, triggeredBy string) (*Run, indexes.Dropped, error) {
+	d, err := s.rebuilder.dropped(ctx, indexName)
+	if err != nil {
+		return nil, indexes.Dropped{}, err
 	}
 
+	// Rebuilding the guard is the exception, because it is the only work that
+	// ends the state the check is objecting to. Requiring the guard to rebuild
+	// the guard would leave an instance unable to convert or rebuild anything
+	// again. It is safe to allow: the guard is a small index on this table, so
+	// its build contends with nothing a conversion touches.
+	//
+	// What the missing guard would have refused is done in its place, because it
+	// is the one insert that is not protected by it. Without this, a second
+	// guard rebuild, or one started while a row from before the drop is still
+	// running, gets as far as a unique build over duplicate running rows and
+	// fails on the key rather than on the reason.
+	guardRebuild := indexName == singleActiveGuard
+	if !guardRebuild {
+		if err := s.checkGuard(ctx); err != nil {
+			return nil, indexes.Dropped{}, err
+		}
+	}
+
+	row := &Run{
+		UID:         ulid.Make().String(),
+		TableName:   Table(d.Table),
+		Operation:   OperationRebuildIndex,
+		IndexName:   &indexName,
+		Status:      StatusRunning,
+		TriggeredBy: triggeredBy,
+	}
+
+	insert := s.insert
+	if guardRebuild {
+		insert = s.insertGuardRebuild
+	}
+
+	run, err := insert(ctx, row)
+	if err != nil {
+		return nil, indexes.Dropped{}, err
+	}
+	return run, d, nil
+}
+
+func (s *Service) insert(ctx context.Context, run *Run) (*Run, error) {
+	return insertRun(ctx, s.db.GetDB(), run)
+}
+
+// rowQuerier is what both the pool and a transaction offer, so the insert has one
+// statement whether it runs on its own or inside the guard rebuild's lock.
+type rowQuerier interface {
+	QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row
+}
+
+func insertRun(ctx context.Context, q rowQuerier, run *Run) (*Run, error) {
 	// RETURNING rather than a second read: once the conversion is running, a failed
 	// read must not be reported as a failure to start, because the caller would be
 	// told nothing happened while a table was being rewritten.
-	err := s.db.GetDB().QueryRowxContext(ctx, `
-        INSERT INTO convoy.partition_runs (id, table_name, operation, status, triggered_by)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, table_name, operation, status, phase, steps, notice_count, error,
-                  triggered_by, started_at, updated_at, completed_at`,
-		run.UID, run.TableName, run.Operation, run.Status, run.TriggeredBy).StructScan(run)
+	err := q.QueryRowxContext(ctx, `
+        INSERT INTO convoy.partition_runs (id, table_name, operation, index_name, status, triggered_by)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING `+runColumns,
+		run.UID, run.TableName, run.Operation, run.IndexName, run.Status, run.TriggeredBy).StructScan(run)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -367,24 +581,42 @@ func (s *Service) checkOperation(ctx context.Context, table Table, op Operation)
 // the DDL pinned to a known connection, which means the repository exposing the
 // statement it runs rather than only a method that runs it.
 func (s *Service) convert(ctx context.Context, run *Run) error {
+	return s.execute(ctx, run, func(ctx context.Context) error {
+		return s.converter.run(ctx, run.TableName, run.Operation)
+	})
+}
+
+// rebuild builds the index back under the same reporting and close-out a
+// conversion gets. The rebuild raises notices of its own, including the one for
+// clearing a leftover from an earlier attempt, so the phase stream is as useful
+// here as it is for a conversion.
+func (s *Service) rebuild(ctx context.Context, run *Run, d indexes.Dropped) error {
+	return s.execute(ctx, run, func(ctx context.Context) error {
+		return s.rebuilder.rebuild(ctx, d)
+	})
+}
+
+// execute runs the work with this run observing notices, and closes the row out
+// however the work ends.
+func (s *Service) execute(ctx context.Context, run *Run, work func(context.Context) error) error {
 	if observer, ok := s.db.(noticeObserver); ok {
 		observer.OnNotice(func(n *pgconn.Notice) { s.recordPhase(ctx, run.UID, n) })
 		defer observer.OnNotice(nil)
 	}
 
 	// A panic here would otherwise leave the row at running forever, and one
-	// running row blocks every later conversion, so an operator would have to
-	// find and clear it by hand before the instance could convert anything
+	// running row blocks every later run, so an operator would have to find and
+	// clear it by hand before the instance could convert or rebuild anything
 	// again. Recorded as failed with the panic, then rethrown so it still
 	// reaches the process's handler and the stack is not swallowed.
 	defer func() {
 		if p := recover(); p != nil {
-			s.finish(ctx, run.UID, fmt.Errorf("conversion panicked: %v", p))
+			s.finish(ctx, run.UID, fmt.Errorf("run panicked: %v", p))
 			panic(p)
 		}
 	}()
 
-	err := s.converter.run(ctx, run.TableName, run.Operation)
+	err := work(ctx)
 	s.finish(ctx, run.UID, err)
 	return err
 }
@@ -462,8 +694,7 @@ func (s *Service) finish(ctx context.Context, id string, runErr error) {
 func (s *Service) Get(ctx context.Context, id string) (*Run, error) {
 	var run Run
 	err := s.db.GetDB().QueryRowxContext(ctx, `
-        SELECT id, table_name, operation, status, phase, steps, notice_count, error,
-               triggered_by, started_at, updated_at, completed_at
+        SELECT `+runColumns+`
         FROM convoy.partition_runs WHERE id = $1`, id).StructScan(&run)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrRunNotFound
@@ -483,13 +714,27 @@ func (s *Service) List(ctx context.Context, limit int) ([]Run, error) {
 
 	runs := make([]Run, 0)
 	err := s.db.GetDB().SelectContext(ctx, &runs, `
-        SELECT id, table_name, operation, status, phase, steps, notice_count, error,
-               triggered_by, started_at, updated_at, completed_at
+        SELECT `+runColumns+`
         FROM convoy.partition_runs ORDER BY started_at DESC LIMIT $1`, limit)
 	if err != nil {
 		return nil, err
 	}
 	return runs, nil
+}
+
+// indexRebuilder is the indexes package behind the rebuilder seam. It holds no
+// state of its own so that the pool is read at call time, the same way the
+// conversion repositories are.
+type indexRebuilder struct {
+	db database.Database
+}
+
+func (r *indexRebuilder) dropped(ctx context.Context, name string) (indexes.Dropped, error) {
+	return indexes.GetDropped(ctx, r.db.GetConn(), name)
+}
+
+func (r *indexRebuilder) rebuild(ctx context.Context, d indexes.Dropped) error {
+	return indexes.Rebuild(ctx, r.db.GetConn(), d)
 }
 
 // repoConverter maps a table and operation onto the repository method that owns

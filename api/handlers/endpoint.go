@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -273,14 +274,13 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	// failure_rate column never disagrees with whether rates are actually computed.
 	circuitBreakerEnabled := cbenablement.EnabledForOrg(
 		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, project.OrganisationID)
-	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
-		// fetch keys from redis and mutate endpoints slice
+	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 && h.A.CircuitBreakerStore != nil {
 		keys := make([]string, len(endpoints))
 		for i := 0; i < len(endpoints); i++ {
 			keys[i] = fmt.Sprintf("breaker:%s", endpoints[i].UID)
 		}
 
-		cbs, err := h.A.Redis.MGet(r.Context(), keys...).Result()
+		cbs, err := h.A.CircuitBreakerStore.GetMany(r.Context(), keys...)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
@@ -881,22 +881,26 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cbs, err := h.A.Redis.Get(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID)).Result()
-	if err != nil {
-		h.A.Logger.Error("failed to find circuit breaker", "error", err)
-	}
+	if h.A.CircuitBreakerStore != nil {
+		key := fmt.Sprintf("breaker:%s", endpoint.UID)
+		cbs, cbErr := h.A.CircuitBreakerStore.GetOne(r.Context(), key)
+		if cbErr != nil && !errors.Is(cbErr, circuit_breaker.ErrCircuitBreakerNotFound) {
+			h.A.Logger.Error("failed to find circuit breaker", "error", cbErr)
+		}
 
-	if len(cbs) > 0 {
-		c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger)
-		if innerErr != nil {
-			h.A.Logger.Error("failed to decode circuit breaker", "error", innerErr)
-		} else {
-			c.Reset(time.Now())
-			b, msgPackErr := msgpack.EncodeMsgPack(c)
-			if msgPackErr != nil {
-				h.A.Logger.Error("failed to encode circuit breaker", "error", msgPackErr)
+		if len(cbs) > 0 {
+			c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger)
+			if innerErr != nil {
+				h.A.Logger.Error("failed to decode circuit breaker", "error", innerErr)
+			} else {
+				c.Reset(time.Now())
+				b, msgPackErr := msgpack.EncodeMsgPack(c)
+				if msgPackErr != nil {
+					h.A.Logger.Error("failed to encode circuit breaker", "error", msgPackErr)
+				} else if setErr := h.A.CircuitBreakerStore.SetOne(r.Context(), key, b, time.Minute*5); setErr != nil {
+					h.A.Logger.Error("failed to persist circuit breaker", "error", setErr)
+				}
 			}
-			h.A.Redis.Set(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID), b, time.Minute*5)
 		}
 	}
 

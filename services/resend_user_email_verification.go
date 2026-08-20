@@ -2,12 +2,16 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/datastore"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
@@ -30,13 +34,17 @@ return 0
 // ResendClaimStore serializes verification-email resends per user.
 // TryClaim returns (true, token, nil) when the claim is acquired.
 // Release must use the same token (compare-and-delete).
-type ResendClaimStore interface {
-	TryClaim(ctx context.Context, userUID string) (ok bool, token string, err error)
-	Release(ctx context.Context, userUID, token string) error
-}
+//
+// It aliases the API-side contract rather than restating it: the broker builds
+// the store and hands the same value to both layers, so the two must not drift.
+type ResendClaimStore = types.ResendClaimStore
 
 type redisResendClaimStore struct {
 	rdb redis.UniversalClient
+}
+
+type postgresResendClaimStore struct {
+	db *sqlx.DB
 }
 
 func NewRedisResendClaimStore(rdb redis.UniversalClient) ResendClaimStore {
@@ -44,6 +52,13 @@ func NewRedisResendClaimStore(rdb redis.UniversalClient) ResendClaimStore {
 		return nil
 	}
 	return &redisResendClaimStore{rdb: rdb}
+}
+
+func NewPostgresResendClaimStore(db *sqlx.DB) ResendClaimStore {
+	if db == nil {
+		return nil
+	}
+	return &postgresResendClaimStore{db: db}
 }
 
 func (s *redisResendClaimStore) claimKey(userUID string) string {
@@ -66,6 +81,37 @@ func (s *redisResendClaimStore) Release(ctx context.Context, userUID, token stri
 	return resendClaimReleaseScript.Run(ctx, s.rdb, []string{s.claimKey(userUID)}, token).Err()
 }
 
+func (s *postgresResendClaimStore) TryClaim(ctx context.Context, userUID string) (bool, string, error) {
+	token := ulid.Make().String()
+	var claimedToken string
+	err := s.db.QueryRowContext(ctx, `
+		INSERT INTO convoy.email_verification_resend_claims (user_uid, token, expires_at)
+		VALUES ($1, $2, NOW() + make_interval(secs => $3))
+		ON CONFLICT (user_uid) DO UPDATE SET
+			token = EXCLUDED.token,
+			expires_at = EXCLUDED.expires_at
+		WHERE convoy.email_verification_resend_claims.expires_at <= NOW()
+		RETURNING token`,
+		userUID, token, emailVerificationResendCooldown.Seconds(),
+	).Scan(&claimedToken)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, "", nil
+	}
+	if err != nil {
+		return false, "", err
+	}
+	return true, claimedToken, nil
+}
+
+func (s *postgresResendClaimStore) Release(ctx context.Context, userUID, token string) error {
+	_, err := s.db.ExecContext(ctx, `
+		DELETE FROM convoy.email_verification_resend_claims
+		WHERE user_uid = $1 AND token = $2`,
+		userUID, token,
+	)
+	return err
+}
+
 type ResendEmailVerificationTokenService struct {
 	UserRepo   datastore.UserRepository
 	Queue      queue.Queuer
@@ -82,7 +128,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 	}
 
 	// Soft cooldown from the last mint time (ExpiresAt - TTL). Not atomic alone;
-	// ClaimStore below serializes concurrent resends when Redis is available.
+	// ClaimStore below serializes concurrent resends through the active broker.
 	if !u.User.EmailVerificationExpiresAt.IsZero() {
 		lastSent := u.User.EmailVerificationExpiresAt.Add(-emailVerificationTokenTTL)
 		if time.Now().Before(lastSent.Add(emailVerificationResendCooldown)) {
@@ -94,7 +140,7 @@ func (u *ResendEmailVerificationTokenService) Run(ctx context.Context) error {
 	if u.ClaimStore != nil {
 		ok, token, err := u.ClaimStore.TryClaim(ctx, u.User.UID)
 		if err != nil {
-			// Failure policy: Redis transport errors fail open to soft cooldown
+			// Failure policy: claim-store errors fail open to soft cooldown
 			// (already passed) so an outage does not block a legitimate resend.
 			if u.Logger != nil {
 				u.Logger.ErrorContext(ctx, "verification resend claim error; continuing with soft cooldown only", "error", err)

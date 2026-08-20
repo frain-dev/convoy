@@ -99,6 +99,7 @@ var EntitlementKeyMapping = map[string]string{
 	"consumer_pool_tuning":         "ConsumerPoolTuning",
 	"google_oauth":                 "GoogleOAuth",
 	"export_prometheus_metrics":    "CanExportPrometheusMetrics",
+	"postgres_queue":               "PostgresQueue",
 	"read_replica":                 "ReadReplica",
 	"credential_encryption":        "CredentialEncryption",
 	"ip_rules":                     "IpRules",

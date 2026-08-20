@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-redsync/redsync/v4"
-	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/config"
@@ -14,16 +12,12 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
 const orgStatusUpdatePerPage = 50
 
-func UpdateOrganisationStatus(db database.Database, billingClient billing.Client, rd *rdb.Redis, logger log.Logger) func(context.Context, *asynq.Task) error {
-	pool := goredis.NewPool(rd.Client())
-	rs := redsync.New(pool)
-
+func UpdateOrganisationStatus(db database.Database, billingClient billing.Client, locker JobLocker, logger log.Logger) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		if billingClient == nil {
 			logger.Info("Billing client not configured, skipping organisation status update")
@@ -40,70 +34,51 @@ func UpdateOrganisationStatus(db database.Database, billingClient billing.Client
 			return nil
 		}
 
-		const mutexName = "convoy:update_organisation_status:mutex"
-		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Minute*30), redsync.WithTries(1))
-
-		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-		defer cancel()
-
-		err = mutex.LockContext(tctx)
-		if err != nil {
-			return fmt.Errorf("failed to obtain lock: %v", err)
-		}
-
-		defer func() {
-			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
-			defer cancel()
-
-			ok, err := mutex.UnlockContext(tctx)
-			if !ok || err != nil {
-				logger.Error("failed to release lock", "error", err)
-			}
-		}()
-
-		orgRepo := organisations.New(logger, db)
-		orgs, err := getAllOrganisationsForStatusUpdate(ctx, orgRepo)
-		if err != nil {
-			return fmt.Errorf("failed to fetch organisations: %w", err)
-		}
-
-		logger.Infof("Updating status for %d organisations", len(orgs))
-
-		updatedCount := 0
-		errorCount := 0
-
-		for _, org := range orgs {
-			resp, err := billingClient.GetSubscription(ctx, org.UID)
+		return locker.WithLock(ctx, "convoy:update_organisation_status:mutex", time.Minute*30, func(ctx context.Context) error {
+			orgRepo := organisations.New(logger, db)
+			orgs, err := getAllOrganisationsForStatusUpdate(ctx, orgRepo)
 			if err != nil {
-				logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
-				errorCount++
-				continue
+				return fmt.Errorf("failed to fetch organisations: %w", err)
 			}
 
-			active := billing.HasActiveSubscription(resp.Data)
-			if !billing.ApplySubscriptionStatus(&org, active) {
-				continue
-			}
+			logger.Infof("Updating status for %d organisations", len(orgs))
 
-			if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
-				if active {
-					logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
-				} else {
-					logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
+			updatedCount := 0
+			errorCount := 0
+
+			for _, org := range orgs {
+				resp, err := billingClient.GetSubscription(ctx, org.UID)
+				if err != nil {
+					logger.Errorf("Failed to fetch subscription for organisation %s: %v", org.UID, err)
+					errorCount++
+					continue
 				}
-				errorCount++
-				continue
-			}
-			updatedCount++
-			if active {
-				logger.Infof("Cleared organisation %s disabled_at - subscription active", org.UID)
-			} else {
-				logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
-			}
-		}
 
-		logger.Infof("Organisation status update completed: %d updated, %d errors", updatedCount, errorCount)
-		return nil
+				active := billing.HasActiveSubscription(resp.Data)
+				if !billing.ApplySubscriptionStatus(&org, active) {
+					continue
+				}
+
+				if err := orgRepo.UpdateOrganisation(ctx, &org); err != nil {
+					if active {
+						logger.Errorf("Failed to clear organisation %s disabled_at: %v", org.UID, err)
+					} else {
+						logger.Errorf("Failed to set organisation %s disabled_at: %v", org.UID, err)
+					}
+					errorCount++
+					continue
+				}
+				updatedCount++
+				if active {
+					logger.Infof("Cleared organisation %s disabled_at - subscription active", org.UID)
+				} else {
+					logger.Infof("Set organisation %s disabled_at - subscription not active", org.UID)
+				}
+			}
+
+			logger.Infof("Organisation status update completed: %d updated, %d errors", updatedCount, errorCount)
+			return nil
+		})
 	}
 }
 

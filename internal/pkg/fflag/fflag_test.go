@@ -189,6 +189,7 @@ func TestNewFFlag(t *testing.T) {
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:           disabled,
+					PostgresQueue:        disabled,
 					FullTextSearch:       disabled,
 					CircuitBreaker:       disabled,
 					IpRules:              disabled,
@@ -212,6 +213,7 @@ func TestNewFFlag(t *testing.T) {
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:           enabled,
+					PostgresQueue:        disabled,
 					FullTextSearch:       disabled,
 					CircuitBreaker:       disabled,
 					IpRules:              disabled,
@@ -233,6 +235,31 @@ func TestNewFFlag(t *testing.T) {
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:           disabled,
+					PostgresQueue:        disabled,
+					FullTextSearch:       disabled,
+					CircuitBreaker:       disabled,
+					IpRules:              disabled,
+					ReadReplicas:         disabled,
+					CredentialEncryption: disabled,
+					MTLS:                 disabled,
+					OAuthTokenExchange:   disabled,
+					BasicAuthEndpoint:    disabled,
+					EndpointURLTemplates: disabled,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "enabled state - postgres-queue only",
+			args: args{
+				&config.Configuration{
+					EnableFeatureFlag: []string{"postgres-queue"},
+				},
+			},
+			want: &FFlag{
+				Features: map[FeatureFlagKey]FeatureFlagState{
+					Prometheus:           disabled,
+					PostgresQueue:        enabled,
 					FullTextSearch:       disabled,
 					CircuitBreaker:       disabled,
 					IpRules:              disabled,

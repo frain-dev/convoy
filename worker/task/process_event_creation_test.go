@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -138,8 +139,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
@@ -186,7 +186,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
-				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
@@ -232,7 +231,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
-				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
@@ -278,7 +276,6 @@ func TestProcessEventCreated(t *testing.T) {
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
-				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
@@ -323,11 +320,69 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
-				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				existing := &datastore.Event{
+					UID:       "01JMJ3WTZGP411PY39KSY8AFQF",
+					ProjectID: "project-id-1",
+					EventType: "*",
+					Status:    datastore.PendingStatus,
+				}
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("duplicate key value violates unique constraint"))
+				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(existing, nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
 
+			},
+			wantErr: false,
+		},
+		{
+			// Re-Writing the deterministic match job for a row that is already being
+			// matched deletes and requeues it, which can fan out deliveries twice.
+			name: "should_not_rematch_duplicate_event_already_processing",
+			createEvent: &CreateEvent{
+				JobID: "123:1234567890",
+				Event: &datastore.Event{
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					IdempotencyKey: "idem-key-1",
+				},
+			},
+			dbFn: func(args *testArgs) {
+				project := &datastore.Project{
+					UID:  "project-id-1",
+					Type: datastore.IncomingProject,
+					Config: &datastore.ProjectConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       datastore.LinearStrategyProvider,
+							Duration:   10,
+							RetryCount: 3,
+						},
+					},
+				}
+
+				g, _ := args.projectRepo.(*mocks.MockProjectRepository)
+				g.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(project, nil)
+
+				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				existing := &datastore.Event{
+					UID:       "01JMJ3WTZGP411PY39KSY8AFQF",
+					ProjectID: "project-id-1",
+					EventType: "*",
+					Status:    datastore.ProcessingStatus,
+				}
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(false, nil)
+				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("duplicate key value violates unique constraint"))
+				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(existing, nil)
+
+				q, _ := args.eventQueue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(0)
 			},
 			wantErr: false,
 		},
@@ -361,6 +416,7 @@ func TestProcessEventCreated(t *testing.T) {
 				FilterRepo:         args.filterRepo,
 				Licenser:           args.licenser,
 				OAuth2TokenService: args.oauth2TokenService,
+				Logger:             logger.New("convoy", logger.LevelError),
 			}
 			fn := ProcessEventCreation(deps)
 			err = fn(context.Background(), task)

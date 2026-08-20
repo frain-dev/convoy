@@ -5,6 +5,7 @@ go 1.26.2
 require (
 	cloud.google.com/go/pubsub v1.50.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.4
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/DataDog/datadog-go/v5 v5.7.1
 	github.com/Subomi/go-authz v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
@@ -27,6 +28,7 @@ require (
 	github.com/go-redsync/redsync/v4 v4.13.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/grafana/pyroscope-go v1.2.2
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/hashicorp/vault/api v1.21.0
 	github.com/hibiken/asynq v0.26.0
 	github.com/jackc/pglogrepl v0.0.0-20251213150135-2e8d0df862c1
@@ -48,6 +50,7 @@ require (
 	github.com/redis/go-redis/extra/redisotel/v9 v9.14.0
 	github.com/redis/go-redis/v9 v9.14.1
 	github.com/riandyrn/otelchi v0.12.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rubenv/sql-migrate v1.8.0
 	github.com/sebdah/goldie/v2 v2.5.5
 	github.com/segmentio/kafka-go v0.4.47
@@ -140,7 +143,6 @@ require (
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.2.0 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -234,7 +236,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.2 // indirect

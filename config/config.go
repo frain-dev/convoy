@@ -71,6 +71,22 @@ var DefaultConfiguration = Configuration{
 		Host:   "localhost",
 		Port:   6379,
 	},
+	Queue: QueueConfiguration{
+		Postgres: PostgresQueueConfiguration{
+			BatchSize:           DefaultPostgresQueueBatchSize,
+			BatchWaitMs:         DefaultPostgresQueueBatchWaitMs,
+			WriteConcurrency:    DefaultPostgresQueueWriteConcurrency,
+			LeaseTimeoutSeconds: DefaultPostgresQueueLeaseTimeoutSecs,
+			ClaimBatchSize:      DefaultPostgresQueueClaimBatchSize,
+			PollIdleMs:          DefaultPostgresQueuePollIdleMs,
+		},
+	},
+	Cache: CacheConfiguration{
+		Postgres: PostgresCacheConfiguration{
+			LocalReadTTLMs: DefaultPostgresCacheLocalReadTTLMs,
+			LocalReadSize:  DefaultPostgresCacheLocalReadSize,
+		},
+	},
 	Logger: LoggerConfiguration{
 		Level: "error",
 	},
@@ -116,6 +132,7 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	ConsumerPoolSize: 100,
+	QueueProvider:    RedisQueueProvider,
 	Tracer: TracerConfiguration{
 		OTel: OTelConfiguration{
 			SampleRate:         1.0,
@@ -176,6 +193,217 @@ type DatabaseConfiguration struct {
 	SetConnMaxLifetime    int `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
 
 	ReadReplicas ReadReplicaConfiguration `json:"read_replicas" envconfig:"CONVOY_DB_READ_REPLICAS"`
+}
+
+// DefaultMaxOpenConnections is the pool size an unset database.max_open_conn
+// resolves to. The pool builder substitutes it rather than leaving the pool
+// unbounded, so sizing checks must reason about it too.
+const DefaultMaxOpenConnections = 100
+
+// EffectiveMaxOpenConnections is the pool size a replica will actually run with.
+// Every check that compares concurrency against the pool must go through this
+// rather than reading SetMaxOpenConnections, which is 0 when unset and would
+// silently skip the comparison on the deployments most likely to need it.
+func (dc DatabaseConfiguration) EffectiveMaxOpenConnections() int {
+	if dc.SetMaxOpenConnections <= 0 {
+		return DefaultMaxOpenConnections
+	}
+	return dc.SetMaxOpenConnections
+}
+
+type QueueConfiguration struct {
+	Postgres PostgresQueueConfiguration `json:"postgres"`
+}
+
+// PostgresQueueConfiguration tunes the Postgres queue provider's write path.
+// The defaults are the measured values and suit a single mid-sized instance;
+// they are configurable because the right settings depend on the database
+// connection pool and the number of replicas, which vary per deployment.
+type PostgresQueueConfiguration struct {
+	// BatchSize is the maximum number of jobs coalesced into one insert.
+	BatchSize int `json:"batch_size" envconfig:"CONVOY_POSTGRES_QUEUE_BATCH_SIZE"`
+	// BatchWaitMs is how long a flush window waits to fill before writing.
+	// Lower trades throughput for latency; unset takes the default rather than
+	// meaning zero, so set 1 for the shortest supported wait.
+	BatchWaitMs int `json:"batch_wait_ms" envconfig:"CONVOY_POSTGRES_QUEUE_BATCH_WAIT_MS"`
+	// WriteConcurrency is how many flush windows may be in flight at once.
+	// Each one holds a pool connection for the duration of its insert.
+	WriteConcurrency int `json:"write_concurrency" envconfig:"CONVOY_POSTGRES_QUEUE_WRITE_CONCURRENCY"`
+	// LeaseTimeoutSeconds is how long a claimed job stays owned without a
+	// renewal before another consumer may take it. Raise it if handlers can run
+	// longer than the default between renewals; it bounds how quickly work is
+	// recovered from a worker that died. The renewal interval is derived from
+	// this value rather than configured separately, so the two cannot drift
+	// into a setting where a live worker loses its own job.
+	LeaseTimeoutSeconds int `json:"lease_timeout_seconds" envconfig:"CONVOY_POSTGRES_QUEUE_LEASE_TIMEOUT_SECONDS"`
+	// ClaimBatchSize is how many jobs one dequeue claim may take per round trip.
+	ClaimBatchSize int `json:"claim_batch_size" envconfig:"CONVOY_POSTGRES_QUEUE_CLAIM_BATCH_SIZE"`
+	// PollIdleMs is how long the consumer sleeps when a claim finds no work.
+	PollIdleMs int `json:"poll_idle_ms" envconfig:"CONVOY_POSTGRES_QUEUE_POLL_IDLE_MS"`
+}
+
+const (
+	DefaultPostgresQueueBatchSize        = 64
+	DefaultPostgresQueueBatchWaitMs      = 2
+	DefaultPostgresQueueWriteConcurrency = 8
+	DefaultPostgresQueueLeaseTimeoutSecs = 90
+	DefaultPostgresQueueClaimBatchSize   = 64
+	DefaultPostgresQueuePollIdleMs       = 5
+
+	maxPostgresQueueClaimBatchSize = 1000
+
+	// maxPostgresQueueBatchSize bounds the arrays bound into a single insert.
+	maxPostgresQueueBatchSize = 10000
+
+	// minPostgresQueueLeaseTimeoutSecs keeps the derived renewal interval far
+	// enough above zero that a handful of slow renewals cannot expire the lease
+	// of a worker that is still alive.
+	minPostgresQueueLeaseTimeoutSecs = 30
+)
+
+// applyDefaults fills unset fields. Bounds are checked in validatePostgresQueue.
+func (q *PostgresQueueConfiguration) applyDefaults() {
+	if q.BatchSize == 0 {
+		q.BatchSize = DefaultPostgresQueueBatchSize
+	}
+	if q.BatchWaitMs == 0 {
+		q.BatchWaitMs = DefaultPostgresQueueBatchWaitMs
+	}
+	if q.WriteConcurrency == 0 {
+		q.WriteConcurrency = DefaultPostgresQueueWriteConcurrency
+	}
+	if q.LeaseTimeoutSeconds == 0 {
+		q.LeaseTimeoutSeconds = DefaultPostgresQueueLeaseTimeoutSecs
+	}
+	if q.ClaimBatchSize == 0 {
+		q.ClaimBatchSize = DefaultPostgresQueueClaimBatchSize
+	}
+	if q.PollIdleMs == 0 {
+		q.PollIdleMs = DefaultPostgresQueuePollIdleMs
+	}
+}
+
+// BatchWait is BatchWaitMs as a duration.
+func (q PostgresQueueConfiguration) BatchWait() time.Duration {
+	return time.Duration(q.BatchWaitMs) * time.Millisecond
+}
+
+// LeaseTimeout is LeaseTimeoutSeconds as a duration.
+func (q PostgresQueueConfiguration) LeaseTimeout() time.Duration {
+	return time.Duration(q.LeaseTimeoutSeconds) * time.Second
+}
+
+// PollIdle is PollIdleMs as a duration.
+func (q PostgresQueueConfiguration) PollIdle() time.Duration {
+	return time.Duration(q.PollIdleMs) * time.Millisecond
+}
+
+// validatePostgresQueue checks the queue tuning against the pool it draws from.
+// Flushers hold a connection for the length of their insert, so a concurrency
+// at or above the pool size starves reads on the same pool, which is the
+// failure this guard exists to prevent.
+func validatePostgresQueue(c *Configuration) error {
+	q := &c.Queue.Postgres
+	q.applyDefaults()
+
+	if q.BatchSize < 1 || q.BatchSize > maxPostgresQueueBatchSize {
+		return fmt.Errorf("queue.postgres.batch_size must be between 1 and %d, got %d", maxPostgresQueueBatchSize, q.BatchSize)
+	}
+	if q.BatchWaitMs < 1 {
+		return fmt.Errorf("queue.postgres.batch_wait_ms must be at least 1, got %d", q.BatchWaitMs)
+	}
+	if q.WriteConcurrency < 1 {
+		return fmt.Errorf("queue.postgres.write_concurrency must be at least 1, got %d", q.WriteConcurrency)
+	}
+	if q.LeaseTimeoutSeconds < minPostgresQueueLeaseTimeoutSecs {
+		return fmt.Errorf(
+			"queue.postgres.lease_timeout_seconds must be at least %d, got %d",
+			minPostgresQueueLeaseTimeoutSecs, q.LeaseTimeoutSeconds,
+		)
+	}
+	if q.ClaimBatchSize < 1 || q.ClaimBatchSize > maxPostgresQueueClaimBatchSize {
+		return fmt.Errorf(
+			"queue.postgres.claim_batch_size must be between 1 and %d, got %d",
+			maxPostgresQueueClaimBatchSize, q.ClaimBatchSize,
+		)
+	}
+	if q.PollIdleMs < 1 {
+		return fmt.Errorf("queue.postgres.poll_idle_ms must be at least 1, got %d", q.PollIdleMs)
+	}
+
+	if pool := c.Database.EffectiveMaxOpenConnections(); q.WriteConcurrency >= pool {
+		return fmt.Errorf(
+			"queue.postgres.write_concurrency (%d) must be below database.max_open_conn (%d) so queue writes cannot starve reads on the same pool",
+			q.WriteConcurrency, pool,
+		)
+	}
+	return nil
+}
+
+type CacheConfiguration struct {
+	Postgres PostgresCacheConfiguration `json:"postgres"`
+}
+
+// PostgresCacheConfiguration tunes how much of the cache a replica may answer
+// from its own memory. This exists only for Postgres: in Redis mode the cache
+// already lives outside the database, while here every read competes with the
+// queue and the application for the same connection pool.
+type PostgresCacheConfiguration struct {
+	// LocalReadTTLMs bounds how long a replica may serve a value from memory
+	// before reading the table again. An invalidation takes effect immediately
+	// on the replica that performed it and within this window on the others, so
+	// keep it well below the minutes-long TTLs the cached entities already use.
+	// Unset takes the default; a negative value disables local reads entirely
+	// and sends every read to the table.
+	LocalReadTTLMs int `json:"local_read_ttl_ms" envconfig:"CONVOY_POSTGRES_CACHE_LOCAL_READ_TTL_MS"`
+	// LocalReadSize is how many keys a replica may hold in memory. The oldest
+	// are evicted first, so this caps memory rather than correctness.
+	LocalReadSize int `json:"local_read_size" envconfig:"CONVOY_POSTGRES_CACHE_LOCAL_READ_SIZE"`
+}
+
+const (
+	DefaultPostgresCacheLocalReadTTLMs = 1000
+	DefaultPostgresCacheLocalReadSize  = 10000
+
+	// maxPostgresCacheLocalReadTTLMs bounds how far an invalidation on one
+	// replica may lag on another. Past a few seconds this stops being an
+	// optimisation and becomes behaviour an operator would not predict.
+	maxPostgresCacheLocalReadTTLMs = 30000
+)
+
+// applyDefaults fills unset fields. Bounds are checked in validatePostgresCache.
+func (c *PostgresCacheConfiguration) applyDefaults() {
+	if c.LocalReadTTLMs == 0 {
+		c.LocalReadTTLMs = DefaultPostgresCacheLocalReadTTLMs
+	}
+	if c.LocalReadSize == 0 {
+		c.LocalReadSize = DefaultPostgresCacheLocalReadSize
+	}
+}
+
+// LocalReadTTL is LocalReadTTLMs as a duration. It is zero when local reads are
+// disabled, which is the form the cache constructor expects.
+func (c PostgresCacheConfiguration) LocalReadTTL() time.Duration {
+	if c.LocalReadTTLMs < 0 {
+		return 0
+	}
+	return time.Duration(c.LocalReadTTLMs) * time.Millisecond
+}
+
+func validatePostgresCache(c *Configuration) error {
+	pc := &c.Cache.Postgres
+	pc.applyDefaults()
+
+	if pc.LocalReadTTLMs > maxPostgresCacheLocalReadTTLMs {
+		return fmt.Errorf(
+			"cache.postgres.local_read_ttl_ms must be at most %d, got %d",
+			maxPostgresCacheLocalReadTTLMs, pc.LocalReadTTLMs,
+		)
+	}
+	if pc.LocalReadSize < 1 {
+		return fmt.Errorf("cache.postgres.local_read_size must be at least 1, got %d", pc.LocalReadSize)
+	}
+	return nil
 }
 
 func (dc DatabaseConfiguration) BuildDsn() string {
@@ -462,6 +690,7 @@ const (
 
 const (
 	RedisQueueProvider       QueueProvider           = "redis"
+	PostgresQueueProvider    QueueProvider           = "postgres"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	DefaultRequestIDHeader   RequestIDHeaderProvider = "X-Convoy-Idempotency-Key"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
@@ -533,6 +762,9 @@ type Configuration struct {
 	Analytics          AnalyticsConfiguration       `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration   `json:"storage_policy"`
 	ConsumerPoolSize   int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	QueueProvider      QueueProvider                `json:"queue_provider" envconfig:"CONVOY_QUEUE_PROVIDER"`
+	Queue              QueueConfiguration           `json:"queue"`
+	Cache              CacheConfiguration           `json:"cache"`
 	EnableProfiling    bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
 	InstanceIngestRate int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
@@ -548,6 +780,23 @@ type Configuration struct {
 	Dispatcher                 DispatcherConfiguration     `json:"dispatcher"`
 	HCPVault                   HCPVaultConfig              `json:"hcp_vault"`
 	Billing                    BillingConfiguration        `json:"billing"`
+}
+
+// WorkerPoolUndersized reports whether a worker will run more consumers than
+// the connection pool can serve. In Postgres mode every consumer needs a
+// connection to claim and complete work, so below that ratio consumers block in
+// pgxpool.Acquire rather than on the database: 100 consumers against 50
+// connections halved drain rate in the lab.
+//
+// Failure policy: warn, do not reject. An undersized pool costs throughput but
+// stays correct, and the sizing rule pulls against the server's max_connections
+// on a small deployment, so an operator may have to make that trade
+// deliberately.
+func (c Configuration) WorkerPoolUndersized() bool {
+	if c.QueueProvider != PostgresQueueProvider {
+		return false
+	}
+	return c.Database.EffectiveMaxOpenConnections() < c.ConsumerPoolSize
 }
 
 func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {
@@ -888,8 +1137,23 @@ func ensureMaxResponseSize(c *Configuration) {
 func validate(c *Configuration) error {
 	ensureMaxResponseSize(c)
 
-	if err := ensureQueueConfig(c.Redis); err != nil {
-		return err
+	switch c.QueueProvider {
+	case "", RedisQueueProvider:
+		c.QueueProvider = RedisQueueProvider
+		if err := ensureQueueConfig(c.Redis); err != nil {
+			return err
+		}
+	case PostgresQueueProvider:
+		// Postgres owns queue, cache, limiter, circuit breaker, locks, and
+		// queue monitoring. Redis DSN is not required.
+		if err := validatePostgresQueue(c); err != nil {
+			return err
+		}
+		if err := validatePostgresCache(c); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown queue_provider %q (want redis or postgres)", c.QueueProvider)
 	}
 
 	if err := ensureSSL(c.Server); err != nil {

@@ -3,14 +3,18 @@ package services
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	dbpostgres "github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/testenv"
 )
 
 type stubResendClaimStore struct {
@@ -213,4 +217,61 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPostgresResendClaimStoreIsAtomicAndTokenMatched(t *testing.T) {
+	env, cleanup, err := testenv.Launch(context.Background(), testenv.WithoutRedis())
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, cleanup()) })
+
+	conn, err := env.CloneTestDatabase(t, "convoy")
+	require.NoError(t, err)
+	db := dbpostgres.NewFromConnection(conn)
+	store := NewPostgresResendClaimStore(db.GetDB())
+	require.NotNil(t, store)
+
+	type claimResult struct {
+		ok    bool
+		token string
+		err   error
+	}
+	const attempts = 20
+	userUID := "user-" + ulid.Make().String()
+	start := make(chan struct{})
+	results := make(chan claimResult, attempts)
+	var wg sync.WaitGroup
+	for range attempts {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			ok, token, claimErr := store.TryClaim(context.Background(), userUID)
+			results <- claimResult{ok: ok, token: token, err: claimErr}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	acquired := 0
+	claimToken := ""
+	for result := range results {
+		require.NoError(t, result.err)
+		if result.ok {
+			acquired++
+			claimToken = result.token
+		}
+	}
+	require.Equal(t, 1, acquired)
+	require.NotEmpty(t, claimToken)
+
+	require.NoError(t, store.Release(context.Background(), userUID, "wrong-token"))
+	ok, _, err := store.TryClaim(context.Background(), userUID)
+	require.NoError(t, err)
+	require.False(t, ok)
+
+	require.NoError(t, store.Release(context.Background(), userUID, claimToken))
+	ok, _, err = store.TryClaim(context.Background(), userUID)
+	require.NoError(t, err)
+	require.True(t, ok)
 }

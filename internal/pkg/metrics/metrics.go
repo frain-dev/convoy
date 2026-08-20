@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 )
 
 var reg *prometheus.Registry
@@ -39,9 +38,12 @@ func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitB
 		return err
 	}
 
-	redisQueue, ok := q.(*redisqueue.RedisQueue)
-	if !ok {
-		return errors.New("failed to assert redis queue")
+	registry := Reg()
+
+	if collector, ok := q.(prometheus.Collector); ok {
+		if err := registry.Register(collector); err != nil {
+			return fmt.Errorf("failed to register queue: %w", err)
+		}
 	}
 
 	postgresDB, ok := db.(*postgres.Postgres)
@@ -49,12 +51,6 @@ func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitB
 		return errors.New("failed to assert postgres database")
 	}
 
-	registry := Reg()
-
-	// Register queue and database collectors
-	if err := registry.Register(redisQueue); err != nil {
-		return fmt.Errorf("failed to register redis queue: %w", err)
-	}
 	if err := registry.Register(postgresDB); err != nil {
 		return fmt.Errorf("failed to register postgres database: %w", err)
 	}

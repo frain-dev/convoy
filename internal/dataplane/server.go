@@ -33,21 +33,22 @@ func StartServer(opts RuntimeOpts, cfg config.Configuration) error {
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
+	if opts.Broker == nil {
+		return fmt.Errorf("broker dependencies are required")
+	}
 
-	evHandler, err := api.NewApplicationHandler(
-		&types.APIOptions{
-			FFlag:         flag,
-			DB:            opts.DB,
-			Queue:         opts.Queue,
-			Logger:        lo,
-			Cache:         opts.Cache,
-			Rate:          opts.Rate,
-			Redis:         opts.Redis,
-			Licenser:      opts.Licenser,
-			Cfg:           cfg,
-			TracerBackend: opts.TracerBackend,
-			ConfigRepo:    configRepo,
-		})
+	apiOpts := &types.APIOptions{
+		FFlag:         flag,
+		DB:            opts.DB,
+		Logger:        lo,
+		Licenser:      opts.Licenser,
+		Cfg:           cfg,
+		TracerBackend: opts.TracerBackend,
+		ConfigRepo:    configRepo,
+	}
+	opts.Broker.ApplyToAPIOptions(apiOpts)
+
+	evHandler, err := api.NewApplicationHandler(apiOpts)
 	if err != nil {
 		return fmt.Errorf("failed to create application handler: %w", err)
 	}
