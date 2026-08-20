@@ -223,12 +223,27 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 	if e.SlackWebhookURL != nil && a.Licenser.AdvancedEndpointMgmt() {
 		// Reject a slack_webhook_url that targets loopback/private/reserved
 		// addresses (SSRF); the worker POSTs to it outside request scope.
+		//
+		// The underlying error is dropped rather than wrapped: both webhook URLs
+		// are bearer secrets (a Slack URL's path token, a Teams Workflows URL's
+		// `sig` query parameter), and url.Parse errors quote the URL they failed
+		// on, which would echo the secret back to the caller.
 		if !util.IsStringEmpty(*e.SlackWebhookURL) {
 			if _, err := util.ValidateOutboundURL(*e.SlackWebhookURL, false); err != nil {
-				return nil, &ServiceError{ErrMsg: "invalid slack webhook url", Err: err}
+				return nil, &ServiceError{ErrMsg: "invalid slack webhook url"}
 			}
 		}
 		endpoint.SlackWebhookURL = *e.SlackWebhookURL
+	}
+
+	if e.TeamsWebhookURL != nil && a.Licenser.AdvancedEndpointMgmt() {
+		// Same SSRF guard and same redaction policy as slack_webhook_url.
+		if !util.IsStringEmpty(*e.TeamsWebhookURL) {
+			if _, err := util.ValidateOutboundURL(*e.TeamsWebhookURL, false); err != nil {
+				return nil, &ServiceError{ErrMsg: "invalid teams webhook url"}
+			}
+		}
+		endpoint.TeamsWebhookURL = *e.TeamsWebhookURL
 	}
 
 	if e.RateLimit >= 0 {

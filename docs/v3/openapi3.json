@@ -11352,6 +11352,9 @@
           "support_email": {
             "type": "string"
           },
+          "teams_webhook_url": {
+            "type": "string"
+          },
           "uid": {
             "type": "string"
           },
@@ -12892,6 +12895,10 @@
             "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
             "type": "string"
           },
+          "teams_webhook_url": {
+            "description": "Microsoft Teams webhook URL is an alternative method to support email where endpoint\ndevelopers can receive failure notifications in a Teams channel. Use a Workflows\n(Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.",
+            "type": "string"
+          },
           "url": {
             "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
             "type": "string"
@@ -13365,6 +13372,9 @@
             "type": "integer"
           },
           "support_email": {
+            "type": "string"
+          },
+          "teams_webhook_url": {
             "type": "string"
           },
           "uid": {
@@ -14755,6 +14765,10 @@
           },
           "support_email": {
             "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
+            "type": "string"
+          },
+          "teams_webhook_url": {
+            "description": "Microsoft Teams webhook URL is an alternative method to support email where endpoint\ndevelopers can receive failure notifications in a Teams channel. Use a Workflows\n(Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.",
             "type": "string"
           },
           "url": {

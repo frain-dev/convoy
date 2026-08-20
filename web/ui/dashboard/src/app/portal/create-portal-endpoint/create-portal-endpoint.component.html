@@ -420,6 +420,18 @@
                   <span class="font-body text-[12px] text-new.error-500">URL is invalid</span>
                 }
               </div>
+              <div class="flex flex-col gap-8px">
+                <label for="teams-url" class="font-body font-normal text-[14px] leading-normal text-new.text-secondary" title="We use this to send notifications to your Microsoft Teams channel when a failure happens">Microsoft Teams webhook URL</label>
+                <input
+                  id="teams-url"
+                  formControlName="teams_webhook_url"
+                  placeholder="Enter Microsoft Teams webhook URL"
+                  class="h-40px w-full px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none focus:border-new.primary-400 transition-colors"
+                  />
+                @if (endpointForm.get('teams_webhook_url')?.touched && endpointForm.get('teams_webhook_url')?.invalid) {
+                  <span class="font-body text-[12px] text-new.error-500">URL is invalid</span>
+                }
+              </div>
             </div>
           }
         </div>

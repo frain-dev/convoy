@@ -104,7 +104,7 @@ INSERT INTO convoy.endpoints (
     mtls_client_cert, mtls_client_cert_cipher,
     oauth2_config, oauth2_config_cipher,
     basic_auth_config, basic_auth_config_cipher,
-    content_type
+    content_type, teams_webhook_url
 )
 VALUES (
     $1, $2, $3,
@@ -123,7 +123,8 @@ VALUES (
     CASE WHEN $4::boolean THEN pgp_sym_encrypt($22::TEXT, $20) END,
     CASE WHEN $4::boolean THEN NULL ELSE $23::jsonb END,
     CASE WHEN $4::boolean THEN pgp_sym_encrypt($23::TEXT, $20) END,
-    CAST($24 AS text)::convoy.endpoint_content_types
+    CAST($24 AS text)::convoy.endpoint_content_types,
+    $25
 )
 `
 
@@ -152,6 +153,7 @@ type CreateEndpointParams struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         pgtype.Text
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 // Endpoints Queries
@@ -181,6 +183,7 @@ func (q *Queries) CreateEndpoint(ctx context.Context, arg CreateEndpointParams) 
 		arg.Oauth2Config,
 		arg.BasicAuthConfig,
 		arg.ContentType,
+		arg.TeamsWebhookUrl,
 	)
 	return err
 }
@@ -284,7 +287,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL
     AND e.project_id = $2
@@ -334,6 +337,7 @@ type FetchEndpointsPagedBackwardRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 // Note: Returns results in ASC order. Caller must reverse to get DESC order.
@@ -382,6 +386,7 @@ func (q *Queries) FetchEndpointsPagedBackward(ctx context.Context, arg FetchEndp
 			&i.Oauth2Config,
 			&i.BasicAuthConfig,
 			&i.ContentType,
+			&i.TeamsWebhookUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -421,7 +426,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL
     AND e.project_id = $2
@@ -471,6 +476,7 @@ type FetchEndpointsPagedForwardRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 func (q *Queries) FetchEndpointsPagedForward(ctx context.Context, arg FetchEndpointsPagedForwardParams) ([]FetchEndpointsPagedForwardRow, error) {
@@ -518,6 +524,7 @@ func (q *Queries) FetchEndpointsPagedForward(ctx context.Context, arg FetchEndpo
 			&i.Oauth2Config,
 			&i.BasicAuthConfig,
 			&i.ContentType,
+			&i.TeamsWebhookUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -557,7 +564,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.id = $2 AND e.project_id = $3
 `
@@ -593,6 +600,7 @@ type FindEndpointByIDRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 func (q *Queries) FindEndpointByID(ctx context.Context, arg FindEndpointByIDParams) (FindEndpointByIDRow, error) {
@@ -623,6 +631,7 @@ func (q *Queries) FindEndpointByID(ctx context.Context, arg FindEndpointByIDPara
 		&i.Oauth2Config,
 		&i.BasicAuthConfig,
 		&i.ContentType,
+		&i.TeamsWebhookUrl,
 	)
 	return i, err
 }
@@ -655,7 +664,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.url = $2 AND e.project_id = $3
 `
@@ -691,6 +700,7 @@ type FindEndpointByTargetURLRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 func (q *Queries) FindEndpointByTargetURL(ctx context.Context, arg FindEndpointByTargetURLParams) (FindEndpointByTargetURLRow, error) {
@@ -721,6 +731,7 @@ func (q *Queries) FindEndpointByTargetURL(ctx context.Context, arg FindEndpointB
 		&i.Oauth2Config,
 		&i.BasicAuthConfig,
 		&i.ContentType,
+		&i.TeamsWebhookUrl,
 	)
 	return i, err
 }
@@ -753,7 +764,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.app_id = $2 AND e.project_id = $3
 ORDER BY e.id
@@ -790,6 +801,7 @@ type FindEndpointsByAppIDRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 func (q *Queries) FindEndpointsByAppID(ctx context.Context, arg FindEndpointsByAppIDParams) ([]FindEndpointsByAppIDRow, error) {
@@ -826,6 +838,7 @@ func (q *Queries) FindEndpointsByAppID(ctx context.Context, arg FindEndpointsByA
 			&i.Oauth2Config,
 			&i.BasicAuthConfig,
 			&i.ContentType,
+			&i.TeamsWebhookUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -865,7 +878,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.id = ANY($2::text[]) AND e.project_id = $3
 ORDER BY e.id
@@ -902,6 +915,7 @@ type FindEndpointsByIDsRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 func (q *Queries) FindEndpointsByIDs(ctx context.Context, arg FindEndpointsByIDsParams) ([]FindEndpointsByIDsRow, error) {
@@ -938,6 +952,7 @@ func (q *Queries) FindEndpointsByIDs(ctx context.Context, arg FindEndpointsByIDs
 			&i.Oauth2Config,
 			&i.BasicAuthConfig,
 			&i.ContentType,
+			&i.TeamsWebhookUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -977,7 +992,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.project_id = $2 AND e.owner_id = $3
 ORDER BY e.id
@@ -1014,6 +1029,7 @@ type FindEndpointsByOwnerIDRow struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 func (q *Queries) FindEndpointsByOwnerID(ctx context.Context, arg FindEndpointsByOwnerIDParams) ([]FindEndpointsByOwnerIDRow, error) {
@@ -1050,6 +1066,7 @@ func (q *Queries) FindEndpointsByOwnerID(ctx context.Context, arg FindEndpointsB
 			&i.Oauth2Config,
 			&i.BasicAuthConfig,
 			&i.ContentType,
+			&i.TeamsWebhookUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -1105,8 +1122,9 @@ UPDATE convoy.endpoints SET
     basic_auth_config_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt($19::TEXT, $15)
     END,
-    updated_at = NOW(), content_type = CAST($20 AS text)::convoy.endpoint_content_types
-WHERE id = $21 AND project_id = $22 AND deleted_at IS NULL
+    updated_at = NOW(), content_type = CAST($20 AS text)::convoy.endpoint_content_types,
+    teams_webhook_url = $21
+WHERE id = $22 AND project_id = $23 AND deleted_at IS NULL
 `
 
 type UpdateEndpointParams struct {
@@ -1130,6 +1148,7 @@ type UpdateEndpointParams struct {
 	Oauth2ConfigText                    []byte
 	BasicAuthConfigText                 []byte
 	ContentType                         pgtype.Text
+	TeamsWebhookUrl                     pgtype.Text
 	ID                                  pgtype.Text
 	ProjectID                           pgtype.Text
 }
@@ -1156,6 +1175,7 @@ func (q *Queries) UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) 
 		arg.Oauth2ConfigText,
 		arg.BasicAuthConfigText,
 		arg.ContentType,
+		arg.TeamsWebhookUrl,
 		arg.ID,
 		arg.ProjectID,
 	)
@@ -1193,6 +1213,7 @@ func (q *Queries) UpdateEndpointSecrets(ctx context.Context, arg UpdateEndpointS
 const updateEndpointStatus = `-- name: UpdateEndpointStatus :execresult
 UPDATE convoy.endpoints SET status = $1
 WHERE id = $2 AND project_id = $3 AND deleted_at IS NULL
+    AND status IS DISTINCT FROM $1
 `
 
 type UpdateEndpointStatusParams struct {
@@ -1201,6 +1222,12 @@ type UpdateEndpointStatusParams struct {
 	ProjectID pgtype.Text
 }
 
+// Matches nothing when the endpoint already holds this status, so the rows
+// affected tell the caller whether the status actually changed. Callers re-apply
+// a status on a schedule and only alert on the transition.
+//
+// IS DISTINCT FROM rather than <>: status is NOT NULL today, and this keeps the
+// predicate correct rather than silently matching nothing if that changes.
 func (q *Queries) UpdateEndpointStatus(ctx context.Context, arg UpdateEndpointStatusParams) (pgconn.CommandTag, error) {
 	return q.db.Exec(ctx, updateEndpointStatus, arg.Status, arg.ID, arg.ProjectID)
 }

@@ -288,6 +288,7 @@ function transform(payload) {
             url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)])],
             support_email: ['', Validators.email],
             slack_webhook_url: ['', Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
+            teams_webhook_url: ['', Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
             secret: [null],
             http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
             description: [null],
@@ -426,7 +427,7 @@ function transform(payload) {
             // Set the configuration toggles based on endpoint details
             if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
             if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
-            if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
+            if (endpointDetails.support_email || endpointDetails.slack_webhook_url || endpointDetails.teams_webhook_url) this.toggleConfigForm('alert_config');
             if (endpointDetails.authentication?.api_key?.header_value || endpointDetails.authentication?.api_key?.header_name) this.toggleConfigForm('auth');
             if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
 
@@ -522,7 +523,7 @@ function transform(payload) {
             http_timeout: ['http_timeout'],
             signature: ['advanced_signatures'],
             rate_limit: ['rate_limit', 'rate_limit_duration'],
-            alert_config: ['support_email', 'slack_webhook_url'],
+            alert_config: ['support_email', 'slack_webhook_url', 'teams_webhook_url'],
             auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value']
         };
 

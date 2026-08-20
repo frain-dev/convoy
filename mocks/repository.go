@@ -1846,11 +1846,12 @@ func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpoint(ctx, endpoint, proj
 }
 
 // UpdateEndpointStatus mocks base method.
-func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
+func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateEndpointStatus", ctx, projectID, endpointID, status)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateEndpointStatus indicates an expected call of UpdateEndpointStatus.

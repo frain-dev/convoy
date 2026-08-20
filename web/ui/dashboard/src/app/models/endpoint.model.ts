@@ -79,6 +79,8 @@ export interface ENDPOINT {
 	rate_limit_duration: string;
 	http_timeout?: string;
 	support_email: string;
+	slack_webhook_url?: string;
+	teams_webhook_url?: string;
 	content_type?: string;
 	mtls_client_cert?: {
 		client_cert?: string;

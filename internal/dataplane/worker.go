@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/endpoints/disable"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/filters"
@@ -233,46 +234,65 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		cb.ClockOption(clock.NewRealClock()),
 		cb.LoggerOption(lo),
 		cb.EnabledFuncOption(cbEnablement.EnabledAnywhere),
-		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b cb.CircuitBreaker) error {
+		// Returns true only when the alert was dispatched, so the manager counts an
+		// alert that this tick actually produced. Every other exit reports false and
+		// leaves the window's one alert unspent.
+		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b cb.CircuitBreaker) (bool, error) {
+			// This handler only knows how to disable a resource. A type it does
+			// not recognise must not fall through to the disable side effect, so
+			// it is rejected rather than silently deactivating the endpoint.
+			if n != cb.TypeDisableResource {
+				return false, fmt.Errorf("unsupported circuit breaker notification type: %s", n)
+			}
+
 			endpointId := strings.Split(b.Key, ":")[1]
 			project, funcErr := projectRepo.FetchProjectByID(ctx, b.TenantId)
 			if funcErr != nil {
-				return funcErr
+				return false, funcErr
 			}
 
 			endpoint, funcErr := endpointRepo.FindEndpointByID(ctx, endpointId, b.TenantId)
 			if funcErr != nil {
-				return funcErr
+				return false, funcErr
 			}
 
-			switch n {
-			case cb.TypeDisableResource:
-				// Honor per-org enablement (override wins) for the disable side effect,
-				// matching the enforcement path. The sampler computes globally, but an
-				// org with circuit breaking disabled (e.g. a disabled override while env
-				// forces the instance default on) must not have its endpoints auto-disabled.
-				if !cbEnablement.EnabledForOrg(ctx, project.OrganisationID) {
-					return nil
-				}
-
-				breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
-				if breakerErr != nil {
-					return breakerErr
-				}
-
-				orgRepo := organisations.New(lo, opts.DB)
-				ownerEmail := ""
-				if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
-					if owner, err := users.New(opts.Logger, opts.DB).FindUserByID(ctx, org.OwnerID); err == nil {
-						ownerEmail = owner.Email
-					}
-				}
-				_ = EnqueueCircuitBreakerEmails(ctx, opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
-
-			default:
-				return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
+			// Honor per-org enablement (override wins) for the disable side effect,
+			// matching the enforcement path. The sampler computes globally, but an
+			// org with circuit breaking disabled (e.g. a disabled override while env
+			// forces the instance default on) must not have its endpoints auto-disabled.
+			if !cbEnablement.EnabledForOrg(ctx, project.OrganisationID) {
+				return false, nil
 			}
-			return nil
+
+			// Circuit breaker auto-disable requires project.Config.DisableEndpoint,
+			// matching per-delivery enforcement (see internal/endpoints/disable).
+			if !disable.CircuitBreakerOwnsEndpointDisable(ctx, opts.Licenser, cbEnablement, project) {
+				return false, nil
+			}
+
+			// Re-applied on every tick the breaker stays tripped, because the
+			// endpoint may have been re-activated while it is still failing.
+			if _, breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus); breakerErr != nil {
+				return false, breakerErr
+			}
+
+			// The alert, unlike the disable, is news only the first time. The
+			// manager counts it per observability window, so this is the tick that
+			// tells the endpoint's channels and the owner about the outage.
+			if b.NotificationsSent > 0 {
+				return false, nil
+			}
+
+			ownerEmail := ""
+			orgRepo := organisations.New(lo, opts.DB)
+			if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
+				if owner, err := users.New(opts.Logger, opts.DB).FindUserByID(ctx, org.OwnerID); err == nil {
+					ownerEmail = owner.Email
+				}
+			}
+
+			sent := EnqueueCircuitBreakerNotifications(ctx, opts.Queue, lo, opts.Licenser, project, endpoint, ownerEmail, b.FailureRate)
+			return sent, nil
 		}),
 	)
 	if err != nil {

@@ -92,6 +92,7 @@ export class CreateEndpointComponent implements OnInit {
 		url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%{}]*)?$`)])],
 		support_email: ['', Validators.email],
 		slack_webhook_url: ['', Validators.pattern(`^$|^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
+		teams_webhook_url: ['', Validators.pattern(`^$|^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
 		secret: [null],
 		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],
@@ -700,7 +701,7 @@ export class CreateEndpointComponent implements OnInit {
 
 		if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
 
-			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
+			if (endpointDetails.support_email || endpointDetails.slack_webhook_url || endpointDetails.teams_webhook_url) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication?.api_key?.header_value || endpointDetails.authentication?.api_key?.header_name || endpointDetails.authentication?.oauth2 || endpointDetails.authentication?.basic_auth) {
 				this.toggleConfigForm('auth');
 			}

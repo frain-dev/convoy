@@ -120,6 +120,7 @@ func (s *Service) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		Oauth2Config:                        oauth2Config,
 		BasicAuthConfig:                     basicAuthConfig,
 		ContentType:                         common.StringToPgText(contentType),
+		TeamsWebhookUrl:                     common.StringToPgTextNullable(endpoint.TeamsWebhookURL),
 	}
 
 	err = s.repo.CreateEndpoint(ctx, params)
@@ -332,7 +333,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, $1)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL
     AND e.project_id = $2
@@ -375,6 +376,7 @@ ORDER BY e.id DESC`, common.StringToPgTextNullable(key), common.StringToPgTextNu
 			&f.Oauth2Config,
 			&f.BasicAuthConfig,
 			&f.ContentType,
+			&f.TeamsWebhookUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -447,6 +449,7 @@ func (s *Service) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 		Oauth2ConfigText:                    oauth2Config,
 		BasicAuthConfigText:                 basicAuthConfig,
 		ContentType:                         common.StringToPgText(contentType),
+		TeamsWebhookUrl:                     common.StringToPgTextNullable(endpoint.TeamsWebhookURL),
 		ID:                                  common.StringToPgTextNullable(endpoint.UID),
 		ProjectID:                           common.StringToPgTextNullable(projectID),
 	}
@@ -468,14 +471,20 @@ func (s *Service) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoi
 	return nil
 }
 
-// UpdateEndpointStatus updates only the status of an endpoint.
-func (s *Service) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
-	_, err := s.repo.UpdateEndpointStatus(ctx, repo.UpdateEndpointStatusParams{
+// UpdateEndpointStatus updates only the status of an endpoint and reports whether
+// that changed it. Re-applying a status the endpoint already holds is not an
+// error; callers do it on a schedule and only alert on the transition.
+func (s *Service) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) (bool, error) {
+	tag, err := s.repo.UpdateEndpointStatus(ctx, repo.UpdateEndpointStatusParams{
 		Status:    common.StringToPgTextNullable(string(status)),
 		ID:        common.StringToPgTextNullable(endpointID),
 		ProjectID: common.StringToPgTextNullable(projectID),
 	})
-	return err
+	if err != nil {
+		return false, err
+	}
+
+	return tag.RowsAffected() > 0, nil
 }
 
 // DeleteEndpoint soft-deletes an endpoint and its associated subscriptions

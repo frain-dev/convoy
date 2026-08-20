@@ -45,6 +45,11 @@ type CreateEndpoint struct {
 	// can receive failure notifications on a slack channel.
 	SlackWebhookURL string `json:"slack_webhook_url"`
 
+	// Microsoft Teams webhook URL is an alternative method to support email where endpoint
+	// developers can receive failure notifications in a Teams channel. Use a Workflows
+	// (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
+	TeamsWebhookURL string `json:"teams_webhook_url"`
+
 	// Define endpoint http timeout in seconds.
 	HttpTimeout uint64 `json:"http_timeout" copier:"-"`
 
@@ -108,6 +113,11 @@ type UpdateEndpoint struct {
 	// Slack webhook URL is an alternative method to support email where endpoint developers
 	// can receive failure notifications on a slack channel.
 	SlackWebhookURL *string `json:"slack_webhook_url"`
+
+	// Microsoft Teams webhook URL is an alternative method to support email where endpoint
+	// developers can receive failure notifications in a Teams channel. Use a Workflows
+	// (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
+	TeamsWebhookURL *string `json:"teams_webhook_url"`
 
 	// Define endpoint http timeout in seconds.
 	HttpTimeout uint64 `json:"http_timeout" copier:"-"`

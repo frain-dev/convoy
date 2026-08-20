@@ -155,12 +155,15 @@ func (r *CachedEndpointRepository) UpdateEndpoint(ctx context.Context, endpoint 
 	return err
 }
 
-func (r *CachedEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
-	err := r.inner.UpdateEndpointStatus(ctx, projectID, endpointID, status)
+// UpdateEndpointStatus invalidates on any successful write, including one that
+// changed nothing. A no-op in the database says nothing about the cache, which
+// can still hold a stale status written before this process observed the row.
+func (r *CachedEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) (bool, error) {
+	changed, err := r.inner.UpdateEndpointStatus(ctx, projectID, endpointID, status)
 	if err == nil {
 		cachedrepo.Invalidate(ctx, r.cache, r.logger, "endpoints:"+projectID+":"+endpointID)
 	}
-	return err
+	return changed, err
 }
 
 // DeleteEndpoint also drops the endpoint's subscription list. Deleting an

@@ -870,6 +870,9 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	aes := services.ActivateEndpointService{
 		EndpointRepo: h.endpointWriteRepo(),
+		Queue:        h.A.Queue,
+		Licenser:     h.A.Licenser,
+		Project:      project,
 		ProjectID:    project.UID,
 		EndpointId:   endpointID,
 		Logger:       h.A.Logger,

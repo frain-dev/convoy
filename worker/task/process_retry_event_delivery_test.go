@@ -268,14 +268,13 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				m.EXPECT().
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -314,7 +313,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -366,8 +365,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -452,14 +450,13 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				m.EXPECT().
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -513,7 +510,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				o.EXPECT().
 					FetchProjectByID(gomock.Any(), gomock.Any()).
@@ -551,8 +548,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -606,7 +602,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				o.EXPECT().
 					FetchProjectByID(gomock.Any(), gomock.Any()).
@@ -644,8 +640,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -700,7 +695,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				o.EXPECT().
 					FetchProjectByID(gomock.Any(), gomock.Any()).
@@ -738,8 +733,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(false)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -823,14 +817,13 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				m.EXPECT().
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
@@ -915,7 +908,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(true, nil).Times(1)
 
 				m.EXPECT().
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -925,7 +918,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
@@ -1012,7 +1005,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(true, nil).Times(1)
 
 				m.EXPECT().
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -1022,7 +1015,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
@@ -1138,6 +1131,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 			l := mocks.NewMockLicenser(ctrl)
 			l.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
+			l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 			l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			mt := mocks.NewMockBackend(ctrl)
 
