@@ -154,6 +154,30 @@ func TestSweepIsANoopOnACleanTable(t *testing.T) {
 // only copies the rows back under the live name on a later statement. Reading
 // convoy.events during that window reports live events as missing, so the sweep
 // has to stand down until the leftover name is gone.
+// Retention and conversion use different locks, so a conversion can start after
+// the sweep's first settlement check. Re-checking before each batch keeps later
+// iterations from deleting rows whose events still live on leftover relations.
+func TestSweepStopsWhenSettlementBecomesFalseMidRun(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	projectID := seedProjectWithEvent(t, db)
+	endpointID := seedEndpoint(t, db, projectID)
+	const excess = 200
+	seedOrphanedEventEndpoints(t, ctx, db, endpointID, orphanBatchRows+excess)
+
+	afterOrphanSweepBatchHook = func() {
+		_, err := db.GetDB().ExecContext(ctx,
+			`CREATE TABLE convoy.events_partitioned (LIKE convoy.events)`)
+		require.NoError(t, err)
+	}
+	t.Cleanup(func() { afterOrphanSweepBatchHook = nil })
+
+	newDropPolicy(t, db, 24*time.Hour).sweepOrphanedEventEndpoints(ctx)
+
+	require.Equal(t, excess, countEventEndpoints(t, ctx, db),
+		"the sweep kept deleting after event tables became unsettled")
+}
+
 func TestSweepSkipsWhileADetachHasNotDrained(t *testing.T) {
 	db, ctx := setupTestDB(t)
 

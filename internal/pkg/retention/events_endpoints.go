@@ -29,6 +29,11 @@ const (
 	orphanSweepBudget = 5 * time.Minute
 )
 
+// afterOrphanSweepBatchHook runs after each successful batch in
+// sweepOrphanedEventEndpoints. Tests set it to simulate a conversion starting
+// mid-sweep; production leaves it nil.
+var afterOrphanSweepBatchHook func()
+
 // sweepOrphanedEventEndpoints removes convoy.events_endpoints rows whose event
 // retention has already dropped.
 //
@@ -50,18 +55,24 @@ func (r *PartitionRetentionPolicy) sweepOrphanedEventEndpoints(ctx context.Conte
 	ctx, cancel := context.WithTimeout(ctx, orphanSweepBudget)
 	defer cancel()
 
-	settled, err := r.eventTablesSettled(ctx)
-	if err != nil {
-		r.reportSweepStopped(0, err)
-		return
-	}
-	if !settled {
-		r.logger.Info("skipped the convoy.events_endpoints sweep: a conversion has not finished draining")
-		return
-	}
-
 	var removed int64
 	for {
+		settled, err := r.eventTablesSettled(ctx)
+		if err != nil {
+			r.reportSweepStopped(removed, err)
+			return
+		}
+		if !settled {
+			if removed > 0 {
+				r.logger.Info(fmt.Sprintf(
+					"stopped the convoy.events_endpoints sweep after removing %d rows: a conversion has not finished draining",
+					removed))
+			} else {
+				r.logger.Info("skipped the convoy.events_endpoints sweep: a conversion has not finished draining")
+			}
+			return
+		}
+
 		deleted, err := r.deleteOrphanedEventEndpoints(ctx)
 		removed += deleted
 		if err != nil {
@@ -74,6 +85,10 @@ func (r *PartitionRetentionPolicy) sweepOrphanedEventEndpoints(ctx context.Conte
 		// the schema moved between them, and neither leaves progress to make.
 		if deleted == 0 {
 			break
+		}
+
+		if afterOrphanSweepBatchHook != nil {
+			afterOrphanSweepBatchHook()
 		}
 	}
 
