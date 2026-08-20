@@ -523,7 +523,7 @@ function transform(payload) {
             http_timeout: ['http_timeout'],
             signature: ['advanced_signatures'],
             rate_limit: ['rate_limit', 'rate_limit_duration'],
-            alert_config: ['support_email', 'slack_webhook_url', 'teams_webhook_url'],
+            alert_config: [],
             auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value']
         };
 
