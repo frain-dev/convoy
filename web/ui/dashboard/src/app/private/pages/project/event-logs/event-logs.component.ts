@@ -19,6 +19,7 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { ProjectService } from '../project.service';
+import { classifyEventLogsFetchError } from './event-logs-fetch-error';
 
 @Component({
     selector: 'convoy-event-logs',
@@ -476,14 +477,12 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			}
 
 			return eventsResponse;
-		} catch (error: any) {
+		} catch (error: unknown) {
 			this.isloadingEvents = false;
 			this.fetchError = true;
-			const msg = typeof error === 'string' ? error : String(error?.message || error || '');
-			this.searchTimedOut = /search took too long|504|timed out/i.test(msg);
-			this.fetchErrorMessage = this.searchTimedOut
-				? 'Search took too long. Narrow the date range, simplify your JSON filter, or try a shorter search term.'
-				: 'Check your connection and try again.';
+			const classified = classifyEventLogsFetchError(error);
+			this.searchTimedOut = classified.searchTimedOut;
+			this.fetchErrorMessage = classified.fetchErrorMessage;
 			return error;
 		}
 	}

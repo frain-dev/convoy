@@ -4457,6 +4457,17 @@ paths:
                       - $ref: '#/definitions/handlers.Stub'
                     x-nullable: true
                 type: object
+        "504":
+          description: Gateway Timeout
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
       security:
         - ApiKeyAuth: []
       summary: List all event deliveries

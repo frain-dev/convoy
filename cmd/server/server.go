@@ -203,8 +203,12 @@ func StartConvoyServer(a *cli.App) error {
 
 	a.Logger.Infof("Started convoy server in %s", time.Since(start))
 
-	// Fail open: JSON search seq-scans until the GIN is valid. Do not block listen.
-	partitions.New(a.DB, a.Logger).StartQueuedPayloadGIN(context.Background())
+	// Fail open: dashboard list and JSON search seq-scan until those indexes
+	// are valid. Do not block listen. Start the deliveries index first so it
+	// takes the single-active slot ahead of the hours-long payload GIN.
+	p := partitions.New(a.DB, a.Logger)
+	p.StartQueuedEventDeliveriesProjectCreated(context.Background())
+	p.StartQueuedPayloadGIN(context.Background())
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {

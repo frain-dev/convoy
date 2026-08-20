@@ -184,7 +184,7 @@
           <img src="/assets/img/svg/deliveries-error.svg" class="w-48px h-48px" alt="" />
           <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
             <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">We couldn&rsquo;t load events</p>
-            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ fetchErrorMessage || 'Check your connection and try again.' }}</p>
+            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ fetchErrorMessage || 'Try again.' }}</p>
             @if (searchTimedOut) {
               <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Try a shorter date range or a simpler JSON filter.</p>
             }

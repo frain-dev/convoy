@@ -54,8 +54,12 @@ func (r *Runtime) Run(ctx context.Context) error {
 		return fmt.Errorf("worker failed to become ready within 30 seconds")
 	}
 
-	// Fail open: JSON search seq-scans until the GIN is valid. Do not block ingest.
-	partitions.New(r.opts.DB, r.opts.Logger).StartQueuedPayloadGIN(ctx)
+	// Fail open: dashboard list and JSON search seq-scan until those indexes
+	// are valid. Do not block ingest. Start the deliveries index first so it
+	// takes the single-active slot ahead of the hours-long payload GIN.
+	p := partitions.New(r.opts.DB, r.opts.Logger)
+	p.StartQueuedEventDeliveriesProjectCreated(ctx)
+	p.StartQueuedPayloadGIN(ctx)
 
 	if err := StartIngest(ctx, r.opts, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane ingest component: %w", err)

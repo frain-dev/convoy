@@ -452,12 +452,13 @@ func names(invalid []Invalid) []string {
 	return out
 }
 
-// sql/1787200001.sql queues the payload GIN on every migrated test DB. Repair
-// assertions that count operator-dropped indexes have to look past that row.
+// sql/1787200001.sql and sql/1787251200.sql queue boot-rebuild indexes on
+// every migrated test DB. Repair assertions that count operator-dropped
+// indexes have to look past those rows.
 func exceptPayloadGIN(owed []Dropped) []Dropped {
 	out := make([]Dropped, 0, len(owed))
 	for _, d := range owed {
-		if d.Name != PayloadGIN {
+		if !BootQueued(d.Name) {
 			out = append(out, d)
 		}
 	}

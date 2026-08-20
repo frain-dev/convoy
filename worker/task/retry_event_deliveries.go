@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
+	"github.com/frain-dev/convoy/internal/projects"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -43,6 +44,16 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	then := now.Add(-d)
 
 	ctx := context.Background()
+
+	// LoadEventDeliveriesPaged requires a real project_id (equality, not the
+	// old empty-string wildcard) so the dashboard list can range-scan.
+	// Instance-admin retry still passes "" for the whole instance; resolve
+	// that to every live project and page each one.
+	projectIDs, err := retryProjectIDs(ctx, logger, db, projectID)
+	if err != nil {
+		logger.Error("Failed to resolve projects for event delivery retry", "error", err)
+		return
+	}
 
 	// Initialize repositories and queue once
 	eventDeliveryRepo := event_deliveries.New(logger, db)
@@ -80,12 +91,6 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 				CreatedAtEnd:   now.Unix(),
 			}
 
-			pageable := datastore.Pageable{
-				Direction:  datastore.Next,
-				PerPage:    1000,
-				NextCursor: datastore.DefaultCursor,
-			}
-
 			deliveryChan := make(chan []datastore.EventDelivery, 4)
 			count := 0
 
@@ -101,27 +106,38 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 			}
 			logger.Info(fmt.Sprintf("Total number of event deliveries to requeue is %d", counter))
 
-			for {
-				deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, projectID, []string{}, eventId, "", []datastore.EventDeliveryStatus{s}, searchParams, pageable, "", "", "")
-				if err != nil {
-					logger.Error(fmt.Sprintf("successfully fetched %d event deliveries but with error: %v", count, err))
-					close(deliveryChan)
-					logger.Info("closed delivery channel")
+			fetchErr := false
+			for _, pid := range projectIDs {
+				pageable := datastore.Pageable{
+					Direction:  datastore.Next,
+					PerPage:    1000,
+					NextCursor: datastore.DefaultCursor,
+				}
+				for {
+					deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, pid, []string{}, eventId, "", []datastore.EventDeliveryStatus{s}, searchParams, pageable, "", "", "")
+					if err != nil {
+						logger.Error(fmt.Sprintf("successfully fetched %d event deliveries but with error: %v", count, err))
+						fetchErr = true
+						break
+					}
+
+					if len(deliveries) == 0 {
+						break
+					}
+
+					count += len(deliveries)
+					deliveryChan <- deliveries
+					pageable.NextCursor = pagination.NextPageCursor
+				}
+				if fetchErr {
 					break
 				}
-
-				// stop when len(deliveries) is 0
-				if len(deliveries) == 0 {
-					logger.Warn("no deliveries received from db, exiting")
-					close(deliveryChan)
-					logger.Info("closed delivery channel")
-					break
-				}
-
-				count += len(deliveries)
-				deliveryChan <- deliveries
-				pageable.NextCursor = pagination.NextPageCursor
 			}
+			if count == 0 && !fetchErr {
+				logger.Warn("no deliveries received from db, exiting")
+			}
+			close(deliveryChan)
+			logger.Info("closed delivery channel")
 
 			logger.Info("waiting for batch processor to finish")
 			wg.Wait()
@@ -140,6 +156,26 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 			logger.Error("Failed to complete batch tracking", "error", err)
 		}
 	}
+}
+
+// retryProjectIDs returns the single project when scoped, or every live
+// project when projectID is empty (instance-admin / --all-projects).
+func retryProjectIDs(ctx context.Context, logger log.Logger, db database.Database, projectID string) ([]string, error) {
+	if !util.IsStringEmpty(projectID) {
+		return []string{projectID}, nil
+	}
+	listed, err := projects.New(logger, db).LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(listed))
+	for _, p := range listed {
+		if p == nil || util.IsStringEmpty(p.UID) {
+			continue
+		}
+		ids = append(ids, p.UID)
+	}
+	return ids, nil
 }
 
 func processEventDeliveryBatch(ctx context.Context, projectID string, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q queue.Queuer, wg *sync.WaitGroup, batchID string, t batch_tracker.Tracker, l log.Logger) {
