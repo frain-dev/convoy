@@ -74,6 +74,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	private eventsFetchId = 0;
 	private sidebarFetchId = 0;
 	private sidebarLoadedForEventId = '';
+	private sidebarLoadedRange = '';
 
 	constructor(
 		private eventsLogService: EventLogsService,
@@ -440,6 +441,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 	getEventsAtInterval() {
 		this.getEventsInterval = setInterval(() => {
+			if (this.isSearchingEvents) return;
 			this.getEventLogs();
 		}, 5000);
 	}
@@ -454,7 +456,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	async getEventLogs(requestDetails?: { showLoader?: boolean; showSearchProgress?: boolean }) {
 		const fetchId = ++this.eventsFetchId;
 		if (requestDetails?.showLoader) this.isloadingEvents = true;
-		this.isSearchingEvents = requestDetails?.showSearchProgress === true;
+		if (requestDetails?.showSearchProgress) this.isSearchingEvents = true;
 		this.fetchError = false;
 		this.fetchErrorMessage = '';
 		this.searchTimedOut = false;
@@ -476,7 +478,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			}
 
 			if (this.eventsDetailsItem?.uid) {
-				if (this.sidebarLoadedForEventId !== this.eventsDetailsItem.uid) {
+				if (this.sidebarLoadedForEventId !== this.eventsDetailsItem.uid || this.sidebarLoadedRange !== this.sidebarDateWindowKey()) {
 					this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 					this.getDuplicateEvents(this.eventsDetailsItem);
 				}
@@ -485,6 +487,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 				this.isLoadingSidebarDeliveries = false;
 				this.sidebarEventDeliveries = [];
 				this.sidebarLoadedForEventId = '';
+				this.sidebarLoadedRange = '';
 			}
 
 			this.isloadingEvents = false;
@@ -523,16 +526,19 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			this.isLoadingSidebarDeliveries = false;
 			this.sidebarEventDeliveries = [];
 			this.sidebarLoadedForEventId = '';
+			this.sidebarLoadedRange = '';
 			return;
 		}
 
 		const fetchId = ++this.sidebarFetchId;
+		const range = this.eventsListQueryParams();
+		const rangeKey = this.sidebarDateWindowKey(range);
 		this.isLoadingSidebarDeliveries = true;
 		this.sidebarEventDeliveries = [];
 		this.sidebarLoadedForEventId = '';
+		this.sidebarLoadedRange = '';
 
 		try {
-			const range = this.eventsListQueryParams();
 			const response = await this.eventsService.getEventDeliveries({
 				eventId,
 				startDate: range.startDate,
@@ -542,6 +548,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			this.sidebarEventDeliveries = response.data?.content || [];
 			this.isLoadingSidebarDeliveries = false;
 			this.sidebarLoadedForEventId = eventId;
+			this.sidebarLoadedRange = rangeKey;
 			return;
 		} catch (error) {
 			if (fetchId !== this.sidebarFetchId) return;
@@ -549,6 +556,10 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			this.isLoadingSidebarDeliveries = false;
 			return error;
 		}
+	}
+
+	private sidebarDateWindowKey(range: FILTER_QUERY_PARAM = this.eventsListQueryParams()): string {
+		return `${range.startDate || ''}\0${range.endDate || ''}`;
 	}
 
 	// ------- pagination -------
