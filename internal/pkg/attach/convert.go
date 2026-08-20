@@ -126,7 +126,7 @@ func preflight(ctx context.Context, db *pgxpool.Pool, spec Spec) error {
             END IF;
         END $$;`,
 		pgLit(table), table, table,
-		pgLit(table+"_new"), table,
+		pgLit(table+copyNewSuffix), table,
 		pgLit(spec.defaultName()), table,
 		pgLit(spec.pkIndex()), quoteIdent(spec.pkIndex())))
 	if err != nil {

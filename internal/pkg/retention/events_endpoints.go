@@ -5,7 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/attach"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 )
+
+// eventTables are the tables that decide whether an event still exists. The
+// sweep reads both, so a conversion of either one has to hold it off.
+var eventTables = []string{"events", "events_search"}
 
 const (
 	// orphanBatchRows is how many orphaned rows one sweep reads at a time. The
@@ -161,21 +168,43 @@ func (r *PartitionRetentionPolicy) expiredEvents(ctx context.Context) ([]string,
 	return ids, nil
 }
 
-// eventTablesSettled reports that neither event table is mid-conversion.
+// eventTablesSettled reports that convoy.events and convoy.events_search each
+// hold every event they are meant to, so absence from them is a verdict.
 //
-// Detaching renames the partitioned parent to <table>_partitioned and only
-// copies the rows back under the live name on a later statement, so for the
-// length of that drain convoy.events does not hold every event. A sweep reading
-// it then would find live rows whose event it could not see and delete them.
-// The same leftover name is what the stand-in foreign key trigger looks in, so
-// its absence is the signal this codebase already uses for "the swap is done".
+// Two separate things can make that false and neither implies the other, so
+// both are required rather than one standing in for the other.
+//
+// A conversion that is running now. convoy.partition_runs carries a row at
+// status running for the whole of it, written by the server on its own
+// connection precisely so it is visible to other sessions while the DDL's own
+// transaction is not. That covers every direction and every intermediate name
+// at once, which name checks cannot: attach, detach, the copy rewrite, and
+// whatever a later conversion adds. The check is instance-wide rather than
+// narrowed to these two tables, because a run is already instance-wide
+// single-active and rare, so the cost of standing down for a conversion of
+// some other table is one night of sweeping, against a table filter that
+// silently stops matching the day the conversion code renames something.
+//
+// A conversion that already ended and left the rows split. A drain that failed
+// after the swap committed leaves the run at failed, not running, with
+// convoy.events still short of everything on convoy.events_partitioned. The
+// names come from attach.Leftovers so the conversion code stays their only
+// author.
 //
 // Fail closed: a read that fails is not a verdict that the tables are settled.
 func (r *PartitionRetentionPolicy) eventTablesSettled(ctx context.Context) (bool, error) {
+	var leftovers []string
+	for _, table := range eventTables {
+		for _, name := range attach.Leftovers(table) {
+			leftovers = append(leftovers, retentionSchema+"."+name)
+		}
+	}
+
 	var settled bool
 	err := r.db.GetConn().QueryRow(ctx, `
-        SELECT to_regclass('convoy.events_partitioned') IS NULL
-           AND to_regclass('convoy.events_search_partitioned') IS NULL`).Scan(&settled)
+        SELECT NOT EXISTS (SELECT 1 FROM convoy.partition_runs WHERE status = $1)
+           AND NOT EXISTS (SELECT 1 FROM unnest($2::TEXT[]) n WHERE to_regclass(n) IS NOT NULL)`,
+		partitions.StatusRunning, leftovers).Scan(&settled)
 	if err != nil {
 		return false, fmt.Errorf("checking for an unfinished conversion: %w", err)
 	}
