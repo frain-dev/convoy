@@ -138,3 +138,13 @@ func TestPayloadGINDefinitionMatchesMigration(t *testing.T) {
 	require.Contains(t, string(body), PayloadGINDefinition)
 	require.NotRegexp(t, `(?m)^CREATE INDEX`, string(body))
 }
+
+func TestEventPayloadJsonbIsParallelUnsafe(t *testing.T) {
+	for _, name := range []string{"../../../sql/1787200000.sql", "../../../sql/1787200002.sql"} {
+		body, err := os.ReadFile(name)
+		require.NoError(t, err)
+		up := strings.SplitN(string(body), "-- +migrate Down", 2)[0]
+		require.Contains(t, up, "PARALLEL UNSAFE")
+		require.NotRegexp(t, `(?m)^\s*PARALLEL SAFE\s*$`, up)
+	}
+}
