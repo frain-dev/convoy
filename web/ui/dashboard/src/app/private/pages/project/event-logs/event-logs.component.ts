@@ -1,5 +1,6 @@
 import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -16,6 +17,8 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { ProjectService } from '../project.service';
 
 @Component({
     selector: 'convoy-event-logs',
@@ -29,7 +32,8 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
         DialogDirective,
         DatePickerComponent,
         DropdownComponent,
-        DropdownOptionDirective
+        DropdownOptionDirective,
+        TooltipComponent
     ],
     templateUrl: './event-logs.component.html',
     styleUrls: ['./event-logs.component.scss']
@@ -40,6 +44,8 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 	isloadingEvents: boolean = false;
 	fetchError = false;
+	fetchErrorMessage = '';
+	searchTimedOut = false;
 	displayedEvents: { date: string; content: EVENT[] }[] = [];
 	events?: { pagination: PAGINATION; content: EVENT[] };
 	duplicateEvents!: EVENT[];
@@ -59,6 +65,8 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	sortOrder: 'asc' | 'desc' | string = 'desc';
 	searchString = '';
 	currentPage = 1;
+	customDateRange = false;
+	payloadAutoScrollKey = '';
 
 	private searchTimeout: any;
 
@@ -69,18 +77,17 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		private router: Router,
 		public privateService: PrivateService,
 		private eventsService: EventsService,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private projectService: ProjectService,
+		private sanitizer: DomSanitizer
 	) {}
 
 	ngOnInit() {
-		this.queryParams = { ...this.route.snapshot.queryParams };
-		this.searchString = this.queryParams.query || '';
-		this.sortOrder = this.queryParams.sort || 'desc';
-
+		this.syncFiltersFromRoute(this.route.snapshot.queryParams);
 		this.enableTailMode = this.checkIfTailModeIsEnabled();
 		if (this.enableTailMode) this.getEventsAtInterval();
 
-		if (this.privateService.getProjectDetails?.type === 'incoming') this.getSourcesForFilter();
+		if (this.projectConfig?.type === 'incoming') this.getSourcesForFilter();
 
 		this.getEventLogs({ showLoader: true });
 	}
@@ -91,18 +98,212 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	}
 
 	get isIncomingProject(): boolean {
-		return this.privateService.getProjectDetails?.type === 'incoming';
+		return this.projectConfig?.type === 'incoming';
+	}
+
+	get canSearchEvents(): boolean {
+		return this.licenseService.hasLicense('EventSearch');
+	}
+
+	private syncFiltersFromRoute(params: FILTER_QUERY_PARAM) {
+		this.queryParams = { ...params };
+		const query = this.queryParamString(params.query);
+		const body = this.queryParamString(params.body);
+		this.searchString = query && body ? `${query} ${body}` : query || body || '';
+		this.sortOrder = params.sort || 'desc';
+		this.customDateRange = !!(params.startDate && params.endDate);
+	}
+
+	private queryParamString(value?: string | string[]): string {
+		if (Array.isArray(value)) return value.join(',');
+		return value || '';
+	}
+
+	get trimmedSearchInput(): string {
+		return this.searchString.trim();
+	}
+
+	get hasActiveSearch(): boolean {
+		return !!(this.queryParams.query || this.queryParams.body);
+	}
+
+	get activeMetadataSearchTerm(): string {
+		const raw = (this.queryParams.query || '').trim();
+		if (!raw || raw.startsWith('{')) return '';
+		return raw;
+	}
+
+	highlightSearchText(value?: string): SafeHtml {
+		const text = value || '';
+		const term = this.activeMetadataSearchTerm;
+		if (!term || !text) {
+			return this.sanitizer.bypassSecurityTrustHtml(this.escapeHtml(text));
+		}
+		const parts = text.split(new RegExp(`(${this.escapeRegExp(term)})`, 'ig'));
+		const html = parts
+			.map(part => (part.toLowerCase() === term.toLowerCase() ? `<mark class="search-hit">${this.escapeHtml(part)}</mark>` : this.escapeHtml(part)))
+			.join('');
+		return this.sanitizer.bypassSecurityTrustHtml(html);
+	}
+
+	get payloadSearchHighlightKeys(): string[] {
+		const keys: string[] = [];
+		const obj = this.payloadSearchFilterObject();
+		if (obj) {
+			this.collectJsonSearchHighlightTerms(obj, keys, []);
+		}
+		return [...new Set(keys.filter(k => k.length > 0))].sort((a, b) => b.length - a.length);
+	}
+
+	get payloadSearchHighlightValues(): string[] {
+		const values: string[] = [];
+		const meta = this.activeMetadataSearchTerm;
+		if (meta) values.push(meta);
+
+		const obj = this.payloadSearchFilterObject();
+		if (obj) {
+			this.collectJsonSearchHighlightTerms(obj, [], values);
+		}
+
+		return [...new Set(values.filter(v => v.length > 0))].sort((a, b) => b.length - a.length);
+	}
+
+	get isJsonPayloadSearch(): boolean {
+		return !!this.payloadSearchFilterObject();
+	}
+
+	private payloadSearchFilterObject(): Record<string, unknown> | null {
+		const fromBody = this.queryParamString(this.queryParams.body).trim();
+		if (fromBody) {
+			try {
+				const parsed = JSON.parse(fromBody);
+				if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+					return parsed as Record<string, unknown>;
+				}
+			} catch {
+				// body is not JSON; fall through to query
+			}
+		}
+		const raw = (this.queryParamString(this.queryParams.query) || this.searchString).trim();
+		if (!raw) return null;
+		return this.parseRelaxedJsonObject(raw);
+	}
+
+	private collectJsonSearchHighlightTerms(value: unknown, keys: string[], values: string[], depth = 0): void {
+		if (depth > 12 || value == null) return;
+
+		switch (typeof value) {
+			case 'string':
+			case 'number':
+			case 'boolean':
+				values.push(String(value));
+				return;
+			case 'object':
+				if (Array.isArray(value)) {
+					value.forEach(item => this.collectJsonSearchHighlightTerms(item, keys, values, depth + 1));
+					return;
+				}
+				Object.entries(value as Record<string, unknown>).forEach(([key, nested]) => {
+					keys.push(key);
+					this.collectJsonSearchHighlightTerms(nested, keys, values, depth + 1);
+				});
+		}
+	}
+
+	private escapeHtml(value: string): string {
+		return value
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
+
+	private escapeRegExp(value: string): string {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	private updatePayloadAutoScrollKey(eventUid?: string) {
+		if (!this.hasActiveSearch) {
+			this.payloadAutoScrollKey = '';
+			return;
+		}
+
+		const uid = eventUid || this.eventsDetailsItem?.uid;
+		if (!uid) {
+			return;
+		}
+
+		this.payloadAutoScrollKey = `${this.queryParams.query || ''}\0${this.queryParams.body || ''}\0${uid}`;
+	}
+
+	selectEvent(event: EVENT) {
+		this.eventsDetailsItem = event;
+		this.getEventDeliveriesForSidebar(event.uid);
+		this.getDuplicateEvents(event);
+		this.updatePayloadAutoScrollKey(event.uid);
+	}
+
+	private looksLikePayloadSearchInput(raw: string): boolean {
+		const trimmed = raw.trim();
+		if (!trimmed) return false;
+		if (trimmed.startsWith('{')) return true;
+		if (/^data\s*:/i.test(trimmed) && trimmed.includes('{')) return true;
+		return trimmed.includes('{') && trimmed.includes('}');
+	}
+
+	private normalizePayloadSearchQuery(raw: string): string | null {
+		const trimmed = raw.trim();
+		if (!trimmed) return null;
+
+		const dataLabelMatch = trimmed.match(/^data\s*:\s*([\s\S]+)$/i);
+		if (dataLabelMatch) {
+			const inner = this.parseRelaxedJsonObject(dataLabelMatch[1]);
+			if (inner) return JSON.stringify({ data: inner });
+		}
+
+		const obj = this.parseRelaxedJsonObject(trimmed);
+		if (!obj || Object.keys(obj).length === 0) return null;
+		return JSON.stringify(obj);
+	}
+
+	private parseRelaxedJsonObject(raw: string): Record<string, unknown> | null {
+		let candidate = raw.trim();
+		const start = candidate.indexOf('{');
+		const end = candidate.lastIndexOf('}');
+		if (start === -1 || end === -1 || end <= start) return null;
+		candidate = candidate.slice(start, end + 1);
+
+		const tryParse = (value: string): Record<string, unknown> | null => {
+			try {
+				const parsed = JSON.parse(value);
+				if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+					return parsed as Record<string, unknown>;
+				}
+			} catch {}
+			return null;
+		};
+
+		const strict = tryParse(candidate);
+		if (strict) return strict;
+
+		const quotedKeys = candidate.replace(/([{,]\s*)([A-Za-z_][\w]*)\s*:/g, '$1"$2":');
+		return tryParse(quotedKeys);
 	}
 
 	// ------- filters -------
 
 	get hasActiveFilters(): boolean {
-		const keys = Object.keys(this.queryParams || {}).filter(k => !['sort', 'token', 'next_page_cursor', 'prev_page_cursor', 'direction', 'showLoader'].includes(k));
+		const keys = Object.keys(this.queryParams || {}).filter(
+			k => !['sort', 'token', 'next_page_cursor', 'prev_page_cursor', 'direction', 'showLoader', 'startDate', 'endDate'].includes(k)
+		);
 		return keys.length > 0;
 	}
 
 	get dateRangeLabel(): string {
-		if (!this.queryParams.startDate || !this.queryParams.endDate) return 'All time';
+		if (!this.customDateRange || !this.queryParams.startDate || !this.queryParams.endDate) {
+			return this.eventLogDefaultDateRangeLabel();
+		}
 		const format = (value: string) => new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 		return `${format(this.queryParams.startDate)} - ${format(this.queryParams.endDate)}`;
 	}
@@ -115,18 +316,58 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		this.getEventLogs({ showLoader });
 	}
 
+	private payloadSearchLeftoverText(raw: string): string {
+		const trimmed = raw.trim();
+		const dataLabelMatch = trimmed.match(/^data\s*:\s*([\s\S]+)$/i);
+		if (dataLabelMatch && this.parseRelaxedJsonObject(dataLabelMatch[1])) {
+			return '';
+		}
+		const start = trimmed.indexOf('{');
+		const end = trimmed.lastIndexOf('}');
+		if (start === -1 || end === -1 || end <= start) return '';
+		return (trimmed.slice(0, start) + trimmed.slice(end + 1)).trim();
+	}
+
 	onSearch() {
+		if (!this.canSearchEvents) return;
 		clearTimeout(this.searchTimeout);
 		this.searchTimeout = setTimeout(() => {
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: this.searchString.trim() });
+			const raw = this.searchString.trim();
+			if (!raw) {
+				this.payloadAutoScrollKey = '';
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '', body: '' });
+				this.refreshEvents();
+				return;
+			}
+
+			const payloadQuery = this.normalizePayloadSearchQuery(raw);
+			if (payloadQuery) {
+				const leftover = this.payloadSearchLeftoverText(raw);
+				this.updatePayloadAutoScrollKey();
+				this.queryParams = this.generalService.addFilterToURL({
+					...this.queryParams,
+					query: leftover || payloadQuery,
+					body: leftover ? payloadQuery : ''
+				});
+				this.refreshEvents();
+				return;
+			}
+			if (this.looksLikePayloadSearchInput(raw)) {
+				return;
+			}
+
+			this.updatePayloadAutoScrollKey();
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: raw, body: '' });
 			this.refreshEvents();
 		}, 400);
 	}
 
 	getSelectedDateRange(dateRange?: { startDate: string; endDate: string }) {
 		if (dateRange) {
+			this.customDateRange = true;
 			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
 		} else {
+			this.customDateRange = false;
 			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' });
 		}
 		this.refreshEvents();
@@ -164,9 +405,20 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 	clearAllFilters() {
 		this.searchString = '';
+		this.payloadAutoScrollKey = '';
 		this.selectedSourceData = undefined;
 		this.datePicker?.clearDate();
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '', sourceId: '', startDate: '', endDate: '', eventId: '', idempotencyKey: '' });
+		this.customDateRange = false;
+		this.queryParams = this.generalService.addFilterToURL({
+			...this.queryParams,
+			query: '',
+			body: '',
+			sourceId: '',
+			startDate: '',
+			endDate: '',
+			eventId: '',
+			idempotencyKey: ''
+		});
 		this.refreshEvents();
 	}
 
@@ -197,29 +449,41 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	async getEventLogs(requestDetails?: { showLoader?: boolean }) {
 		if (requestDetails?.showLoader) this.isloadingEvents = true;
 		this.fetchError = false;
+		this.fetchErrorMessage = '';
+		this.searchTimedOut = false;
 
 		try {
 			const cleanedQuery: any = JSON.parse(JSON.stringify(this.queryParams));
 			delete cleanedQuery.showLoader;
-			const eventsResponse = await this.eventsService.getEvents(cleanedQuery);
+			if (cleanedQuery.query) cleanedQuery.query = this.queryParamString(cleanedQuery.query);
+			if (cleanedQuery.body) cleanedQuery.body = this.queryParamString(cleanedQuery.body);
+			const eventsResponse = await this.eventsService.getEvents(this.eventsListQueryParams(cleanedQuery));
 			this.events = eventsResponse.data;
 
 			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.queryParams?.sort || 'desc');
 			this.isloadingEvents = false;
 
-			if (this.eventsDetailsItem) return;
-			else {
-				this.eventsDetailsItem = this.events?.content[0];
+			const selectedStillVisible = !!this.events?.content?.some(event => event.uid === this.eventsDetailsItem?.uid);
+			if (!this.eventsDetailsItem || !selectedStillVisible) {
+				this.eventsDetailsItem = this.events?.content?.[0];
 				if (this.eventsDetailsItem?.uid) {
 					this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
 					this.getDuplicateEvents(this.eventsDetailsItem);
-				} else this.isLoadingSidebarDeliveries = false;
+					this.updatePayloadAutoScrollKey(this.eventsDetailsItem.uid);
+				} else {
+					this.isLoadingSidebarDeliveries = false;
+				}
 			}
 
 			return eventsResponse;
 		} catch (error: any) {
 			this.isloadingEvents = false;
 			this.fetchError = true;
+			const msg = typeof error === 'string' ? error : String(error?.message || error || '');
+			this.searchTimedOut = /search took too long|504|timed out/i.test(msg);
+			this.fetchErrorMessage = this.searchTimedOut
+				? 'Search took too long. Narrow the date range, simplify your JSON filter, or try a shorter search term.'
+				: 'Check your connection and try again.';
 			return error;
 		}
 	}
@@ -276,7 +540,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		const perPage = this.events?.pagination?.per_page || contentLength;
 		const start = (this.currentPage - 1) * perPage + 1;
 		const end = start + contentLength - 1;
-		const total = this.events?.pagination?.total;
+		const total = this.hasActiveSearch ? undefined : this.events?.pagination?.total;
 
 		return total ? `${start}-${end} of ${total}` : `${start}-${end}`;
 	}
@@ -290,7 +554,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	async fetchRetryCount() {
 		this.fetchingCount = true;
 		try {
-			const response = await this.eventsLogService.getRetryCount(this.queryParams);
+			const response = await this.eventsLogService.getRetryCount(this.eventsListQueryParams());
 
 			this.batchRetryCount = response.data.num;
 			this.fetchingCount = false;
@@ -317,7 +581,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		this.isRetrying = true;
 
 		try {
-			const response = await this.eventsLogService.batchRetryEvent(this.queryParams);
+			const response = await this.eventsLogService.batchRetryEvent(this.eventsListQueryParams());
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.batchDialog.nativeElement.close();
@@ -367,5 +631,38 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		if (event?.failure_reason) return event.failure_reason;
 		if (this.hasMatchedSubscription(event)) return 'No event delivery attempt for this event yet.';
 		return 'No matching subscription. This event was accepted but did not match any subscription event type or filter.';
+	}
+
+	private get projectConfig() {
+		return this.projectService.activeProjectDetails || this.privateService.getProjectDetails;
+	}
+
+	private formatApiDate(date: Date): string {
+		return date.toISOString().slice(0, -5);
+	}
+
+	/** Default list window matches the API when no custom date range is selected. */
+	eventLogDefaultDateRange(): { startDate: string; endDate: string } {
+		const now = new Date();
+		const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+		const start = new Date(now);
+		start.setDate(start.getDate() - 7);
+		start.setHours(0, 0, 0, 0);
+
+		return {
+			startDate: this.formatApiDate(start),
+			endDate: this.formatApiDate(end)
+		};
+	}
+
+	eventLogDefaultDateRangeLabel(): string {
+		return 'Last 7 days';
+	}
+
+	private eventsListQueryParams(base: FILTER_QUERY_PARAM = this.queryParams): FILTER_QUERY_PARAM {
+		if (this.customDateRange && base.startDate && base.endDate) {
+			return base;
+		}
+		return { ...base, ...this.eventLogDefaultDateRange() };
 	}
 }

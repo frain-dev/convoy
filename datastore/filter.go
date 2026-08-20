@@ -7,6 +7,7 @@ import (
 
 type Filter struct {
 	Query           string
+	Body            json.RawMessage
 	OwnerID         string
 	UserID          string
 	KeyType         KeyType
@@ -24,6 +25,7 @@ type Filter struct {
 	BrokerMessageId string
 	Status          []EventDeliveryStatus
 	SearchParams    SearchParams
+	EventSearchLicensed bool `json:"-"`
 }
 
 func (f *Filter) Scan(v interface{}) error {

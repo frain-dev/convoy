@@ -213,6 +213,17 @@ WITH filtered_events AS (
       AND (CASE
                WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
                ELSE true END)
+      AND (CASE
+               WHEN @has_search::BOOLEAN THEN (
+                   (CASE WHEN @has_body::BOOLEAN THEN convoy.event_payload_jsonb(ev.data) @> @body::jsonb ELSE true END)
+                   AND (CASE WHEN @has_query::BOOLEAN THEN (
+                       ev.id ILIKE @search_id_prefix ESCAPE '\'
+                       OR COALESCE(ev.idempotency_key, '') ILIKE @search_contains ESCAPE '\'
+                       OR ev.event_type ILIKE @search_contains ESCAPE '\'
+                       OR COALESCE(s.name, '') ILIKE @search_contains ESCAPE '\'
+                   ) ELSE true END)
+               )
+               ELSE true END)
       AND (
         CASE
             WHEN @cursor = '' THEN true
@@ -284,6 +295,17 @@ WITH filtered_events AS (
       AND (CASE WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[]) ELSE true END)
       AND (CASE
                WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
+               ELSE true END)
+      AND (CASE
+               WHEN @has_search::BOOLEAN THEN (
+                   (CASE WHEN @has_body::BOOLEAN THEN convoy.event_payload_jsonb(ev.data) @> @body::jsonb ELSE true END)
+                   AND (CASE WHEN @has_query::BOOLEAN THEN (
+                       ev.id ILIKE @search_id_prefix ESCAPE '\'
+                       OR COALESCE(ev.idempotency_key, '') ILIKE @search_contains ESCAPE '\'
+                       OR ev.event_type ILIKE @search_contains ESCAPE '\'
+                       OR COALESCE(s.name, '') ILIKE @search_contains ESCAPE '\'
+                   ) ELSE true END)
+               )
                ELSE true END)
       AND (
         CASE
@@ -390,6 +412,7 @@ ORDER BY
 -- "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 SELECT COALESCE(COUNT(*), 0) AS count
 FROM convoy.events ev
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ev.deleted_at IS NULL
   AND ev.project_id = @project_id
   AND (CASE
@@ -420,6 +443,17 @@ WHERE ev.deleted_at IS NULL
   -- Broker message ID filter
   AND (CASE
            WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
+           ELSE true END)
+  AND (CASE
+           WHEN @has_search::BOOLEAN THEN (
+               (CASE WHEN @has_body::BOOLEAN THEN convoy.event_payload_jsonb(ev.data) @> @body::jsonb ELSE true END)
+               AND (CASE WHEN @has_query::BOOLEAN THEN (
+                   ev.id ILIKE @search_id_prefix ESCAPE '\'
+                   OR COALESCE(ev.idempotency_key, '') ILIKE @search_contains ESCAPE '\'
+                   OR ev.event_type ILIKE @search_contains ESCAPE '\'
+                   OR COALESCE(s.name, '') ILIKE @search_contains ESCAPE '\'
+               ) ELSE true END)
+           )
            ELSE true END)
   AND (CASE
            WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor

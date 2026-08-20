@@ -341,32 +341,25 @@ func (s *Service) LoadEventsPaged(ctx context.Context, projectID string, filter 
 		filter.EndpointIDs = append(filter.EndpointIDs, filter.EndpointID)
 	}
 
-	// Decide query path: empty search query uses EXISTS path for better index usage
-	useExistsPath := util.IsStringEmpty(filter.Query)
-
-	var events []datastore.Event
-	var err error
-
-	if useExistsPath {
-		// EXISTS path: Fast pagination without GROUP BY
-		events, err = s.loadEventsPagedExists(ctx, projectID, filter, startDate, endDate)
-	} else {
-		// CTE path: Full-text search with GROUP BY
-		events, err = s.loadEventsPagedSearch(ctx, projectID, filter, startDate, endDate)
-	}
-
+	// List search runs on convoy.events within the active date window.
+	events, err := s.loadEventsPagedExists(ctx, projectID, filter, startDate, endDate)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	// Calculate PrevRowCount if not first page
+	// Calculate PrevRowCount if not first page. Skip the COUNT when payload search
+	// is active so the timeout budget is spent on the page query, not a second scan.
 	var rowCount datastore.PrevRowCount
 	isFirstPage := util.IsStringEmpty(filter.Pageable.Cursor())
 	if len(events) > 0 && !isFirstPage {
-		first := events[0]
-		rowCount, err = s.countPrevEvents(ctx, projectID, filter, first.UID, startDate, endDate, useExistsPath)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
+		if NeedsSearchTimeout(filter, filter.Project) {
+			rowCount = datastore.PrevRowCount{Count: 1}
+		} else {
+			first := events[0]
+			rowCount, err = s.countPrevEvents(ctx, projectID, filter, first.UID, startDate, endDate)
+			if err != nil {
+				return nil, datastore.PaginationData{}, err
+			}
 		}
 	}
 
@@ -388,7 +381,7 @@ func (s *Service) LoadEventsPaged(ctx context.Context, projectID string, filter 
 	return events, *pagination, nil
 }
 
-// loadEventsPagedExists handles EXISTS path pagination (no search query)
+// loadEventsPagedExists handles EXISTS path pagination including unified list search.
 func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, filter *datastore.Filter, startDate, endDate time.Time) ([]datastore.Event, error) {
 	cursor := filter.Pageable.Cursor()
 	direction := "next"
@@ -396,8 +389,9 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 		direction = "prev"
 	}
 	sortOrder := filter.Pageable.SortOrder()
+	search := ListSearchSQLFromFilter(filter, filter.Project)
 
-	params := repo.LoadEventsPagedExistsParams{
+	base := existsPagedQueryBase{
 		HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
 		HasOwnerID:               common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID)),
 		OwnerID:                  common.StringToPgTextNullable(filter.OwnerID),
@@ -412,13 +406,19 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 		SourceIds:                filter.SourceIDs,
 		HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
 		BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
+		HasSearch:                common.BoolToPgBool(search.HasSearch),
+		HasQuery:                 common.BoolToPgBool(search.HasQuery),
+		SearchIDPrefix:           common.StringToPgTextNullable(search.SearchIDPrefix),
+		SearchContains:           common.StringToPgTextNullable(search.SearchContains),
+		HasBody:                  common.BoolToPgBool(search.HasBody),
+		Body:                     search.Body,
 		Cursor:                   common.StringToPgText(cursor),
 		Direction:                common.StringToPgText(direction),
 		SortOrder:                common.StringToPgText(sortOrder),
 		PageLimit:                pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
 	}
 
-	rows, err := s.loadEventsPagedExistsRows(ctx, params)
+	rows, err := s.loadEventsPagedExistsRows(ctx, base)
 	if err != nil {
 		return nil, err
 	}
@@ -435,17 +435,78 @@ func (s *Service) loadEventsPagedExists(ctx context.Context, projectID string, f
 	return events, nil
 }
 
+type existsPagedQueryBase struct {
+	SortOrder                pgtype.Text
+	HasEndpointOrOwnerFilter pgtype.Bool
+	HasOwnerID               pgtype.Bool
+	OwnerID                  pgtype.Text
+	HasEndpointIds           pgtype.Bool
+	EndpointIds              []string
+	ProjectID                pgtype.Text
+	HasIdempotencyKey        pgtype.Bool
+	IdempotencyKey           pgtype.Text
+	StartDate                pgtype.Timestamptz
+	EndDate                  pgtype.Timestamptz
+	HasSourceIds             pgtype.Bool
+	SourceIds                []string
+	HasBrokerMessageID       pgtype.Bool
+	BrokerMessageID          pgtype.Text
+	HasSearch                pgtype.Bool
+	HasBody                  pgtype.Bool
+	Body                     []byte
+	HasQuery                 pgtype.Bool
+	SearchIDPrefix           pgtype.Text
+	SearchContains           pgtype.Text
+	Cursor                   pgtype.Text
+	Direction                pgtype.Text
+	PageLimit                pgtype.Int8
+}
+
+func (b existsPagedQueryBase) toInnerDescParams() repo.LoadEventsPagedExistsInnerDescParams {
+	return repo.LoadEventsPagedExistsInnerDescParams(b)
+}
+
+func (b existsPagedQueryBase) toInnerAscParams() repo.LoadEventsPagedExistsInnerAscParams {
+	return repo.LoadEventsPagedExistsInnerAscParams(b)
+}
+
 func eventsPagedInnerDesc(sortOrder, direction string) bool {
 	return (sortOrder == "DESC" && direction == "next") || (sortOrder == "ASC" && direction == "prev")
 }
 
-func (s *Service) loadEventsPagedExistsRows(ctx context.Context, params repo.LoadEventsPagedExistsParams) ([]repo.LoadEventsPagedExistsRow, error) {
-	sortOrder := params.SortOrder.String
-	direction := params.Direction.String
+func applyListSearchCountParams(params *repo.CountPrevEventsParams, filter *datastore.Filter) {
+	search := ListSearchSQLFromFilter(filter, filter.Project)
+	params.HasSearch = common.BoolToPgBool(search.HasSearch)
+	params.HasQuery = common.BoolToPgBool(search.HasQuery)
+	params.SearchIDPrefix = common.StringToPgTextNullable(search.SearchIDPrefix)
+	params.SearchContains = common.StringToPgTextNullable(search.SearchContains)
+	params.HasBody = common.BoolToPgBool(search.HasBody)
+	params.Body = search.Body
+}
+
+func (s *Service) loadEventsPagedExistsRows(ctx context.Context, base existsPagedQueryBase) ([]any, error) {
+	sortOrder := base.SortOrder.String
+	direction := base.Direction.String
 	if eventsPagedInnerDesc(sortOrder, direction) {
-		return s.repo.LoadEventsPagedExistsInnerDesc(ctx, params)
+		rows, err := s.repo.LoadEventsPagedExistsInnerDesc(ctx, base.toInnerDescParams())
+		if err != nil {
+			return nil, err
+		}
+		out := make([]any, len(rows))
+		for i := range rows {
+			out[i] = rows[i]
+		}
+		return out, nil
 	}
-	return s.repo.LoadEventsPagedExistsInnerAsc(ctx, params)
+	rows, err := s.repo.LoadEventsPagedExistsInnerAsc(ctx, base.toInnerAscParams())
+	if err != nil {
+		return nil, err
+	}
+	out := make([]any, len(rows))
+	for i := range rows {
+		out[i] = rows[i]
+	}
+	return out, nil
 }
 
 // loadEventsPagedSearch handles CTE path pagination (with search query)
@@ -496,56 +557,30 @@ func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, f
 
 // countPrevEvents checks if there are events before cursor (for HasPrevPage)
 // "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter *datastore.Filter, cursor string, startDate, endDate time.Time, useExistsPath bool) (datastore.PrevRowCount, error) {
+func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter *datastore.Filter, cursor string, startDate, endDate time.Time) (datastore.PrevRowCount, error) {
 	sortOrder := filter.Pageable.SortOrder()
 
-	if useExistsPath {
-		params := repo.CountPrevEventsParams{
-			ProjectID:                common.StringToPgTextNullable(projectID),
-			HasIdempotencyKey:        common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
-			IdempotencyKey:           common.StringToPgTextNullable(filter.IdempotencyKey),
-			StartDate:                common.TimeToPgTimestamptz(startDate),
-			EndDate:                  common.TimeToPgTimestamptz(endDate),
-			HasSourceIds:             common.BoolToPgBool(len(filter.SourceIDs) > 0),
-			SourceIds:                filter.SourceIDs,
-			HasOwnerID:               common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID)),
-			OwnerID:                  common.StringToPgTextNullable(filter.OwnerID),
-			HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
-			HasEndpointIds:           common.BoolToPgBool(len(filter.EndpointIDs) > 0),
-			EndpointIds:              filter.EndpointIDs,
-			HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
-			BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
-			SortOrder:                common.StringToPgText(sortOrder),
-			Cursor:                   common.StringToPgTextNullable(cursor),
-		}
-
-		count, err := s.repo.CountPrevEvents(ctx, params)
-		if err != nil {
-			return datastore.PrevRowCount{}, err
-		}
-		return datastore.PrevRowCount{Count: int(count.Int64)}, nil
+	params := repo.CountPrevEventsParams{
+		ProjectID:                common.StringToPgTextNullable(projectID),
+		HasIdempotencyKey:        common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
+		IdempotencyKey:           common.StringToPgTextNullable(filter.IdempotencyKey),
+		StartDate:                common.TimeToPgTimestamptz(startDate),
+		EndDate:                  common.TimeToPgTimestamptz(endDate),
+		HasSourceIds:             common.BoolToPgBool(len(filter.SourceIDs) > 0),
+		SourceIds:                filter.SourceIDs,
+		HasOwnerID:               common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID)),
+		OwnerID:                  common.StringToPgTextNullable(filter.OwnerID),
+		HasEndpointOrOwnerFilter: common.BoolToPgBool(!util.IsStringEmpty(filter.OwnerID) || len(filter.EndpointIDs) > 0),
+		HasEndpointIds:           common.BoolToPgBool(len(filter.EndpointIDs) > 0),
+		EndpointIds:              filter.EndpointIDs,
+		HasBrokerMessageID:       common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
+		BrokerMessageID:          common.StringToPgTextNullable(filter.BrokerMessageId),
+		SortOrder:                common.StringToPgText(sortOrder),
+		Cursor:                   common.StringToPgTextNullable(cursor),
 	}
+	applyListSearchCountParams(&params, filter)
 
-	// Search path
-	params := repo.CountPrevEventsSearchParams{
-		ProjectID:          common.StringToPgTextNullable(projectID),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
-		IdempotencyKey:     common.StringToPgTextNullable(filter.IdempotencyKey),
-		StartDate:          common.TimeToPgTimestamptz(startDate),
-		EndDate:            common.TimeToPgTimestamptz(endDate),
-		HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
-		SourceIds:          filter.SourceIDs,
-		HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
-		EndpointIds:        filter.EndpointIDs,
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
-		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
-		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
-		Query:              common.StringToPgTextNullable(filter.Query),
-		SortOrder:          common.StringToPgText(sortOrder),
-		Cursor:             common.StringToPgTextNullable(cursor),
-	}
-
-	count, err := s.repo.CountPrevEventsSearch(ctx, params)
+	count, err := s.repo.CountPrevEvents(ctx, params)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}

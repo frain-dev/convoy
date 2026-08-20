@@ -50,7 +50,6 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 	case config.DatadogTracerProvider:
 		dt := NewDatadogTracer(tCfg.Datadog, licenser)
 		if !licenser.DatadogTracing() {
-			pkgLogger.Error(ErrTracerFeatureUnavailable.Error())
 			return dt, nil
 		}
 		if tCfg.Datadog == (config.DatadogConfiguration{}) {

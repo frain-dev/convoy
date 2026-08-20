@@ -2295,6 +2295,13 @@ paths:
           required: true
           schema:
             type: string
+        - description: |-
+            URL-encoded JSON object matched against the event payload.
+            Combined with query as AND when both are set.
+          in: query
+          name: body
+          schema:
+            type: string
         - in: query
           name: direction
           schema:
@@ -2342,7 +2349,10 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
-        - description: Any arbitrary value to filter the events payload
+        - description: >-
+            Matches event id prefix, idempotency key, event type, and source name.
+
+            A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
           schema:
@@ -2412,6 +2422,19 @@ paths:
                         nullable: true
                     type: object
           description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Forbidden
         '404':
           content:
             application/json:
@@ -2425,6 +2448,19 @@ paths:
                         nullable: true
                     type: object
           description: Not Found
+        '504':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Gateway Timeout
       security:
         - ApiKeyAuth: []
       tags:
@@ -2516,6 +2552,13 @@ paths:
           required: true
           schema:
             type: string
+        - description: |-
+            URL-encoded JSON object matched against the event payload.
+            Combined with query as AND when both are set.
+          in: query
+          name: body
+          schema:
+            type: string
         - in: query
           name: direction
           schema:
@@ -2563,7 +2606,10 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
-        - description: Any arbitrary value to filter the events payload
+        - description: >-
+            Matches event id prefix, idempotency key, event type, and source name.
+
+            A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
           schema:
@@ -2730,6 +2776,13 @@ paths:
           required: true
           schema:
             type: string
+        - description: |-
+            URL-encoded JSON object matched against the event payload.
+            Combined with query as AND when both are set.
+          in: query
+          name: body
+          schema:
+            type: string
         - in: query
           name: direction
           schema:
@@ -2777,7 +2830,10 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
-        - description: Any arbitrary value to filter the events payload
+        - description: >-
+            Matches event id prefix, idempotency key, event type, and source name.
+
+            A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
           schema:
@@ -6682,6 +6738,12 @@ components:
         request_id_header:
           $ref: '#/components/schemas/config.RequestIDHeaderProvider'
         search_policy:
+          description: >-
+            SearchPolicy is an optional Go duration (e.g. "24h") shown in project settings.
+
+            When set, the dashboard explains that payload/JSON search is additionally clamped
+
+            to this lookback intersected with the Events log date picker. Empty means opt-out.
           type: string
         signature:
           allOf:

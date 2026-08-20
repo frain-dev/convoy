@@ -12,7 +12,8 @@
 // Migrations drop what they find instead, which is instant, and record the
 // definition in convoy.dropped_indexes so the build can happen here, when an
 // operator chooses. Rebuilding is the expensive half: hours on a large table, and
-// it must not run at boot.
+// it must not run at boot — except PayloadGIN, which migrate queues on purpose
+// so server and agent can start that one rebuild in the background.
 package indexes
 
 import (
@@ -41,6 +42,14 @@ const lockTimeout = "3s"
 // pool. It is short because the alternative to waiting is closing the connection,
 // which is cheap next to leaving a session-wide timeout on a pooled connection.
 const resetTimeout = 5 * time.Second
+
+// PayloadGIN is the events payload search index. sql/1787200001.sql inserts this
+// name into dropped_indexes instead of CREATE INDEX at migrate.
+const PayloadGIN = "idx_events_payload_gin"
+
+// PayloadGINDefinition is the statement the rebuild must execute. It has to match
+// the row sql/1787200001.sql inserts, including USING so indexShape can read it.
+const PayloadGINDefinition = `CREATE INDEX idx_events_payload_gin ON convoy.events USING gin (convoy.event_payload_jsonb(data) jsonb_path_ops) WHERE (deleted_at IS NULL)`
 
 // ErrNotDropped means the name does not identify an index awaiting a rebuild,
 // either because nothing dropped it or because it has already been rebuilt.

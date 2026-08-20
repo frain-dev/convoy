@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
@@ -200,6 +202,9 @@ func StartConvoyServer(a *cli.App) error {
 	s.Start()
 
 	a.Logger.Infof("Started convoy server in %s", time.Since(start))
+
+	// Fail open: JSON search seq-scans until the GIN is valid. Do not block listen.
+	partitions.New(a.DB, a.Logger).StartQueuedPayloadGIN(context.Background())
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {

@@ -7,17 +7,28 @@
 				<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ projects.length }} {{ projects.length === 1 ? 'project' : 'projects' }}</p>
 			</div>
 
-			<button
-				convoy-permission="Project Settings|MANAGE"
-				type="button"
-				class="flex items-center gap-4px justify-center min-w-[100px] px-16px py-8px rounded-full bg-new.primary-400 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-				[disabled]="shouldBlockProjectCreation"
-				[title]="getProjectLimitMessage() || (isDisabled ? disabledOrganisationMessage : '')"
-				(click)="openCreateProjectModal()"
-			>
-				<img src="/assets/img/svg/plus-white.svg" class="w-16px h-16px" alt="" />
-				<span class="font-body font-medium text-[14px] leading-[16px] text-white-100">Add Project</span>
-			</button>
+			@if (shouldBlockProjectCreation && getProjectCreationTooltip()) {
+				<convoy-tooltip [withIcon]="false" position="bottom" className="!min-w-[220px] max-w-[280px] whitespace-normal text-left !z-[60]">
+					{{ getProjectCreationTooltip() }}
+					<span tooltipToggle class="inline-flex">
+						<span convoy-permission="Project Settings|MANAGE" class="flex items-center gap-4px justify-center min-w-[100px] px-16px py-8px rounded-full bg-new.primary-400 opacity-50 cursor-not-allowed">
+							<img src="/assets/img/svg/plus-white.svg" class="w-16px h-16px" alt="" />
+							<span class="font-body font-medium text-[14px] leading-[16px] text-white-100">Add Project</span>
+						</span>
+					</span>
+				</convoy-tooltip>
+			} @else {
+				<button
+					convoy-permission="Project Settings|MANAGE"
+					type="button"
+					class="flex items-center gap-4px justify-center min-w-[100px] px-16px py-8px rounded-full bg-new.primary-400 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+					[disabled]="shouldBlockProjectCreation"
+					(click)="openCreateProjectModal()"
+				>
+					<img src="/assets/img/svg/plus-white.svg" class="w-16px h-16px" alt="" />
+					<span class="font-body font-medium text-[14px] leading-[16px] text-white-100">Add Project</span>
+				</button>
+			}
 		</div>
 
 		<div class="h-px w-full bg-new.border"></div>
@@ -104,15 +115,26 @@
 					} @else if (!ctaResolved) {
 						<convoy-loader position="relative"></convoy-loader>
 					} @else {
-						<button
-							type="button"
-							convoy-permission="Project Settings|MANAGE"
-							class="min-w-[100px] rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-							[disabled]="emptyStateCreateDisabled"
-							(click)="openCreateProjectModal()"
-						>
-							Create a Project
-						</button>
+						@if (emptyStateCreateDisabled && getProjectCreationTooltip()) {
+							<convoy-tooltip [withIcon]="false" position="bottom" className="!min-w-[220px] max-w-[280px] whitespace-normal text-left !z-[60]">
+								{{ getProjectCreationTooltip() }}
+								<span tooltipToggle class="inline-flex">
+									<span convoy-permission="Project Settings|MANAGE" class="min-w-[100px] rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 opacity-50 cursor-not-allowed">
+										Create a Project
+									</span>
+								</span>
+							</convoy-tooltip>
+						} @else {
+							<button
+								type="button"
+								convoy-permission="Project Settings|MANAGE"
+								class="min-w-[100px] rounded-full py-12px px-16px bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all duration-300 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+								[disabled]="emptyStateCreateDisabled"
+								(click)="openCreateProjectModal()"
+							>
+								Create a Project
+							</button>
+						}
 						@if (canStartCloudTrial) {
 							<p class="font-body text-12 text-new.text-secondary text-center">
 								{{ cloudTrialUpsellLead }}
@@ -123,18 +145,6 @@
 								{{ selfHostedTrialUpsellLead }}
 								<button type="button" convoy-permission="Billing|MANAGE" class="font-body text-12 font-medium text-new.primary-400 hover:underline bg-transparent border-0 p-0 cursor-pointer inline" (click)="openTrialModal()">Start a free trial</button>
 							</p>
-						} @else if (shouldBlockProjectCreation) {
-							<div class="flex flex-col items-center gap-8px text-center">
-								@if (getProjectLimitMessageForEmptyState()) {
-									<p class="font-body text-12 text-new.primary-400 font-medium">{{ getProjectLimitMessageForEmptyState() }}</p>
-								}
-								@if (isDisabled) {
-									<p class="font-body text-12 text-new.text-secondary">{{ disabledOrganisationMessage }}</p>
-								}
-								@if (canOpenBillingForProjectLimit) {
-									<a routerLink="/settings" [queryParams]="{ activePage: 'usage and billing' }" class="font-body text-12 font-medium text-new.text-secondary hover:text-new.primary-400 underline hover:no-underline">Go to Billing</a>
-								}
-							</div>
 						}
 					}
 				</div>

@@ -303,7 +303,7 @@ const (
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		SearchPolicy:           "720h",
+		SearchPolicy:           "",
 		MaxIngestSize:          config.MaxResponseSize,
 		ReplayAttacks:          false,
 		DisableEndpoint:        false,
@@ -645,6 +645,9 @@ type ProjectConfig struct {
 	// project's endpoint URL templates auto-create an endpoint. Default false
 	// rejects unmatched URLs.
 	AllowUnmatchedDynamicURLs bool                           `json:"allow_unmatched_dynamic_urls" db:"allow_unmatched_dynamic_urls"`
+	// SearchPolicy is an optional Go duration (e.g. "24h") shown in project settings.
+	// When set, the dashboard explains that payload/JSON search is additionally clamped
+	// to this lookback intersected with the Events log date picker. Empty means opt-out.
 	SearchPolicy              string                         `json:"search_policy" db:"search_policy"`
 	SSL                       *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
 	RateLimit                 *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`

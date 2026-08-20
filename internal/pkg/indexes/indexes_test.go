@@ -1,6 +1,7 @@
 package indexes
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -116,4 +117,24 @@ func TestChildNameIsStable(t *testing.T) {
 func TestIndexShapeRejectsUnreadableDefinition(t *testing.T) {
 	_, _, err := indexShape(`CREATE INDEX broken ON convoy.events (created_at)`)
 	require.Error(t, err)
+}
+
+func TestPayloadGINDefinitionIsRebuildable(t *testing.T) {
+	stmt, err := concurrently(PayloadGINDefinition)
+	require.NoError(t, err)
+	require.Equal(t, `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_payload_gin `+
+		`ON convoy.events USING gin (convoy.event_payload_jsonb(data) jsonb_path_ops) `+
+		`WHERE (deleted_at IS NULL)`, stmt)
+
+	parent, err := parentStatement(PayloadGIN, "events", PayloadGINDefinition)
+	require.NoError(t, err)
+	require.Contains(t, parent, " ON ONLY ")
+	require.NotContains(t, parent, "CONCURRENTLY")
+}
+
+func TestPayloadGINDefinitionMatchesMigration(t *testing.T) {
+	body, err := os.ReadFile("../../../sql/1787200001.sql")
+	require.NoError(t, err)
+	require.Contains(t, string(body), PayloadGINDefinition)
+	require.NotRegexp(t, `(?m)^CREATE INDEX`, string(body))
 }

@@ -293,6 +293,26 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 	return s.rebuild(ctx, run, d)
 }
 
+const bootTriggeredBy = "boot"
+
+// StartQueuedPayloadGIN starts the concurrent rebuild of indexes.PayloadGIN if
+// migrate queued it. Failure policy: fail open. Search seq-scans until the
+// index is valid; ingest and HTTP must not wait on the build. A replica that
+// finds the slot taken, or a name that is already rebuilt, is success. Any
+// other error is logged and ignored so the process still listens. Only this
+// name is started at boot; other dropped_indexes rows stay operator-scheduled.
+func (s *Service) StartQueuedPayloadGIN(ctx context.Context) {
+	_, err := s.StartIndexRebuild(ctx, indexes.PayloadGIN, bootTriggeredBy)
+	if err == nil {
+		s.logger.Info("started payload search index rebuild", "index", indexes.PayloadGIN)
+		return
+	}
+	if errors.Is(err, indexes.ErrNotDropped) || errors.Is(err, ErrRunInProgress) {
+		return
+	}
+	s.logger.Error("payload search index rebuild did not start", "index", indexes.PayloadGIN, "error", err.Error())
+}
+
 // checkGuard refuses a start when the index that enforces one run at a time is
 // not valid.
 //

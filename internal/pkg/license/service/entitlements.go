@@ -93,6 +93,7 @@ var EntitlementKeyMapping = map[string]string{
 	"advanced_subscriptions":       "AdvancedSubscriptions",
 	"webhook_analytics":            "WebhookAnalytics",
 	"advanced_webhook_filtering":   "AdvancedWebhookFiltering",
+	"event_search":                 "EventSearch",
 	"advanced_endpoint_mgmt":       "AdvancedEndpointMgmt",
 	"webhook_archiving":            "WebhookArchiving",
 	"circuit_breaking":             "CircuitBreaking",

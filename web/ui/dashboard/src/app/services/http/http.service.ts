@@ -67,21 +67,26 @@ export class HttpService {
 		Object.keys(cleanedQuery).forEach(q => {
 			const queryValue = safeQuery[q];
 			if (queryValue === undefined) return;
+			// Event search terms are opaque user text; never expand query/body via JSON.parse.
+			if (q === 'query' || q === 'body') {
+				parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(queryValue))}`);
+				return;
+			}
 			try {
 				const queryItem = JSON.parse(queryValue);
 				if (Array.isArray(queryItem)) {
-					queryItem.forEach((item: any) => parts.push(`${q}=${item}`));
+					queryItem.forEach((item: any) => parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(item))}`));
 					return;
 				}
 			} catch (error) {}
-			parts.push(`${q}=${queryValue}`);
+			parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(queryValue))}`);
 		});
 
 		// query items that are real arrays (filtered out of cleanedQuery above)
 		Object.keys(safeQuery).forEach((key: any) => {
 			const queryValue = safeQuery[key];
 			if (queryValue !== undefined && queryValue !== null && typeof queryValue === 'object') {
-				queryValue?.forEach?.((item: any) => parts.push(`${key}=${item}`));
+				queryValue?.forEach?.((item: any) => parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`));
 			}
 		});
 

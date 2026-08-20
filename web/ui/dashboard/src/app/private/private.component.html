@@ -7,7 +7,7 @@
         </a>
 
         @if (hasOrganisations) {
-          <div convoy-dropdown size="lg" position="center" #organisationDropdown>
+          <div convoy-dropdown size="lg" position="center" className="!overflow-visible" #organisationDropdown>
             <button dropdownTrigger class="flex items-center gap-10px p-4px rounded-full transition-colors hover:bg-new.surface-muted">
               @if (userOrganization?.name) {
                 <span class="max-w-[160px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ userOrganization?.name }}</span>
@@ -73,23 +73,22 @@
                   </li>
                 }
               </ul>
-              <li class="border-t border-new.border relative">
-                <button convoy-permission="Organisations|ADD" convoy-dropdown-option type="button" class="w-full flex items-center px-12px py-12px font-body font-medium text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="dialog.nativeElement.showModal()">
-                  <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
-                  Add {{ organisations?.length ? 'another' : 'an' }} Organization
-                </button>
-                @if (!licenseService.hasLicense('org_limit') && getOrgLimitMessage()) {
-                  <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center absolute top-0 h-full w-full">
-                    <convoy-tooltip [withIcon]="false" position="top" className="!min-w-fit whitespace-nowrap !left-0 !translate-x-0">
-                      {{ getOrgLimitMessage() }}
-                      <div tooltipToggle class="flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px">
-                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                          <use xlink:href="#lock-icon"></use>
-                        </svg>
-                        {{ getOrgLimitPillText() }}
+              <li class="border-t border-new.border overflow-visible">
+                @if (isAddOrganisationBlocked()) {
+                  <convoy-tooltip [withIcon]="false" position="bottom" className="!min-w-[220px] max-w-[280px] whitespace-normal text-left !z-[60]">
+                    {{ getOrgLimitTooltip() }}
+                    <span tooltipToggle class="block w-full">
+                      <div class="w-full flex items-center px-12px py-12px font-body font-medium text-[14px] text-new.text-secondary opacity-60 cursor-not-allowed">
+                        <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px opacity-60" />
+                        Add {{ organisations?.length ? 'another' : 'an' }} Organization
                       </div>
-                    </convoy-tooltip>
-                  </div>
+                    </span>
+                  </convoy-tooltip>
+                } @else {
+                  <button convoy-permission="Organisations|ADD" convoy-dropdown-option type="button" class="w-full flex items-center px-12px py-12px font-body font-medium text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="dialog.nativeElement.showModal()">
+                    <img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
+                    Add {{ organisations?.length ? 'another' : 'an' }} Organization
+                  </button>
                 }
               </li>
             </ul>

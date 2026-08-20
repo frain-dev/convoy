@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -97,8 +98,13 @@ type SearchParams struct {
 }
 
 type QueryListEvent struct {
-	// Any arbitrary value to filter the events payload
+	// Matches event id prefix, idempotency key, event type, and source name.
+	// A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
 	Query string `json:"query"`
+
+	// URL-encoded JSON object matched against the event payload.
+	// Combined with query as AND when both are set.
+	Body string `json:"body"`
 
 	// A list of Source IDs to filter the events by.
 	SourceIDs []string `json:"sourceId"`
@@ -123,10 +129,16 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 		return nil, err
 	}
 
+	var body json.RawMessage
+	if raw := strings.TrimSpace(r.URL.Query().Get("body")); raw != "" {
+		body = json.RawMessage(raw)
+	}
+
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
 			OwnerID:         r.URL.Query().Get("ownerId"),
 			Query:           r.URL.Query().Get("query"),
+			Body:            body,
 			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EndpointIDs:     getEndpointIDs(r),
