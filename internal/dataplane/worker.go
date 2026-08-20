@@ -237,7 +237,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		// Returns true only when the alert was dispatched, so the manager counts an
 		// alert that this tick actually produced. Every other exit reports false and
 		// leaves the window's one alert unspent.
-		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b cb.CircuitBreaker) (bool, error) {
+		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b *cb.CircuitBreaker) (bool, error) {
 			// This handler only knows how to disable a resource. A type it does
 			// not recognise must not fall through to the disable side effect, so
 			// it is rejected rather than silently deactivating the endpoint.
@@ -276,16 +276,13 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 			if breakerErr != nil {
 				return false, breakerErr
 			}
-
-			// Alerts fire on active-to-inactive transitions only, matching the
-			// retry-limit disable path. Disable itself stays idempotent.
-			if !statusChanged {
-				return false, nil
+			if statusChanged {
+				b.DisableAlertPending = true
 			}
 
-			// The manager counts alerts per observability window so a steady outage
-			// is announced once per window rather than once per tick.
-			if b.NotificationsSent > 0 {
+			// Alerts fire on active-to-inactive transitions only, but keep retrying
+			// within the window when enqueue failed on the transition tick.
+			if b.NotificationsSent > 0 || !b.DisableAlertPending {
 				return false, nil
 			}
 

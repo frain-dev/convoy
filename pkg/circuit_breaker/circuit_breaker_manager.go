@@ -83,7 +83,7 @@ type CircuitBreakerManager struct {
 	logger         log.Logger
 	clock          clock.Clock
 	store          CircuitBreakerStore
-	notificationFn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) (bool, error)
+	notificationFn func(NotificationType, CircuitBreakerConfig, *CircuitBreaker) (bool, error)
 	configProvider func(projectID string) *CircuitBreakerConfig
 	masterConfig   CircuitBreakerConfig
 	skipSleep      bool
@@ -170,7 +170,7 @@ func LoggerOption(logger log.Logger) CircuitBreakerOption {
 // the manager counts it into NotificationsSent, which gates the next tick's alert
 // and is exported as a metric. A handler that declines to act (feature disabled,
 // already announced) returns false so it does not spend an alert it never sent.
-func NotificationFunctionOption(fn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) (bool, error)) CircuitBreakerOption {
+func NotificationFunctionOption(fn func(NotificationType, CircuitBreakerConfig, *CircuitBreaker) (bool, error)) CircuitBreakerOption {
 	return func(cb *CircuitBreakerManager) error {
 		if fn == nil {
 			return ErrNotificationFunctionMustNotBeNil
@@ -287,12 +287,13 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		// tick that declined to alert does not spend the window's one alert.
 		if cb.notificationFn != nil && breaker.State != StateOpen {
 			if breaker.ConsecutiveFailures >= projectConfig.ConsecutiveFailureThreshold {
-				sent, innerErr := cb.notificationFn(TypeDisableResource, projectConfig, breaker)
+				sent, innerErr := cb.notificationFn(TypeDisableResource, projectConfig, &breaker)
 				switch {
 				case innerErr != nil:
 					cb.logger.Errorf("[circuit breaker] failed to execute disable resource notification function"+": %v", innerErr)
 				case sent:
 					breaker.NotificationsSent++
+					breaker.DisableAlertPending = false
 					cb.logger.Debug("[circuit breaker] executed disable resource notification function")
 				}
 			}
