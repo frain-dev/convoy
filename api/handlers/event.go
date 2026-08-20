@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -473,6 +475,11 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 		ownedEndpointIDs = allowed
 	}
 
+	if !util.IsStringEmpty(data.Filter.Query) || len(data.Filter.Body) > 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("batch replay does not support search filters", http.StatusBadRequest))
+		return
+	}
+
 	ep := datastore.Pageable{}
 	if data.Filter.Pageable == ep {
 		data.Filter.Pageable.PerPage = 2000000000
@@ -535,10 +542,10 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Id				GetEventsPaged
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			request		query		models.QueryListEvent	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventResponse}}
-//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID			path		string					true	"Project ID"
+//	@Param			request				query		models.QueryListEvent	false	"Query Params"
+//	@Success		200					{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventResponse}}
+//	@Failure		400,401,403,404,504	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [get]
 func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
@@ -580,12 +587,28 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 
 	data.Filter.Project = project
 
-	if !h.A.Licenser.AdvancedWebhookFiltering() {
-		data.Filter.Query = "" // event payload search is not allowed
+	if err := events.ApplyEventListSearch(data.Filter, project, h.A.Licenser.EventSearch(), time.Now()); err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, events.ErrSearchUnlicensed) {
+			status = http.StatusForbidden
+		}
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), status))
+		return
 	}
 
-	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	ctx := r.Context()
+	if events.NeedsSearchTimeout(data.Filter, project) {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, events.SearchTimeout)
+		defer cancel()
+	}
+
+	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(ctx, project.UID, data.Filter)
 	if err != nil {
+		if events.IsSearchTimeout(err) {
+			_ = render.Render(w, r, util.NewErrorResponse("Search took too long. Narrow the time range or search term.", http.StatusGatewayTimeout))
+			return
+		}
 		h.A.Logger.ErrorContext(r.Context(), "failed to fetch events", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
 		return
@@ -646,6 +669,11 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data.Filter.EndpointIDs = endpointIDs
+	}
+
+	if !util.IsStringEmpty(data.Filter.Query) || len(data.Filter.Body) > 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("batch replay count does not support search filters", http.StatusBadRequest))
+		return
 	}
 
 	count, err := events.New(h.A.Logger, h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)

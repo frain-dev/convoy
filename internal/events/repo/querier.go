@@ -44,15 +44,16 @@ type Querier interface {
 	// Group 4: Deletion & Maintenance (2 queries)
 	// ============================================================================
 	HardDeleteTokenizedEvents(ctx context.Context, arg HardDeleteTokenizedEventsParams) error
+	// Same as LoadEventsPagedExistsInnerDesc but inner scan uses ORDER BY id ASC.
+	LoadEventsPagedExistsInnerAsc(ctx context.Context, arg LoadEventsPagedExistsInnerAscParams) ([]LoadEventsPagedExistsInnerAscRow, error)
 	// ============================================================================
 	// Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
 	// ============================================================================
 	// Fast pagination using EXISTS subquery (no search query)
-	// Inner scan uses plain ORDER BY id DESC or ASC for index-friendly generic plans.
+	// Inner scan uses plain ORDER BY id DESC so generic plans keep the events_pkey index.
 	// @direction: 'next' or 'prev' (pagination direction)
-	// @sort_order: 'ASC' or 'DESC' (user-requested sort order)
-	LoadEventsPagedExistsInnerDesc(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
-	LoadEventsPagedExistsInnerAsc(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
+	// @sort_order: 'ASC' or 'DESC' (user-requested sort order for cursor + outer re-sort)
+	LoadEventsPagedExistsInnerDesc(ctx context.Context, arg LoadEventsPagedExistsInnerDescParams) ([]LoadEventsPagedExistsInnerDescRow, error)
 	// Full-text search pagination using CTE + JOIN + GROUP BY
 	// Uses convoy.events_search table for search_token matching
 	// @direction: 'next' or 'prev' (pagination direction)

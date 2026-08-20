@@ -31,28 +31,41 @@ import (
 	"github.com/frain-dev/convoy/testenv"
 )
 
-var testEnv *testenv.Environment
+var (
+	testEnv        *testenv.Environment
+	testEnvCleanup func() error
+	testEnvOnce    sync.Once
+	testEnvErr     error
+)
 
 func TestMain(m *testing.M) {
-	res, cleanup, err := testenv.Launch(context.Background())
-	if err != nil {
-		fmt.Printf("Failed to launch test environment: %v\n", err)
-		os.Exit(1)
-	}
-
-	testEnv = res
-
 	code := m.Run()
-
-	if err := cleanup(); err != nil {
-		fmt.Printf("Failed to cleanup test infrastructure: %v\n", err)
+	if testEnvCleanup != nil {
+		if err := testEnvCleanup(); err != nil {
+			fmt.Printf("Failed to cleanup test infrastructure: %v\n", err)
+		}
 	}
-
 	os.Exit(code)
+}
+
+func launchTestEnv() {
+	testEnvOnce.Do(func() {
+		res, cleanup, err := testenv.Launch(context.Background())
+		if err != nil {
+			testEnvErr = err
+			return
+		}
+		testEnv = res
+		testEnvCleanup = cleanup
+	})
 }
 
 func setupTestDB(t *testing.T) (*Service, database.Database) {
 	t.Helper()
+	launchTestEnv()
+	if testEnvErr != nil {
+		t.Fatalf("Failed to launch test environment: %v", testEnvErr)
+	}
 
 	err := config.LoadConfig("")
 	require.NoError(t, err)
@@ -1515,4 +1528,100 @@ func TestEventsPagedInnerDesc(t *testing.T) {
 	require.True(t, eventsPagedInnerDesc("ASC", "prev"))
 	require.False(t, eventsPagedInnerDesc("ASC", "next"))
 	require.False(t, eventsPagedInnerDesc("DESC", "prev"))
+}
+
+func TestLoadEventsPaged_PayloadContainment(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	flat := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	flat.Raw = `{"status":"paid","amount":10}`
+	flat.Data = json.RawMessage(`{"status":"paid","amount":10}`)
+	require.NoError(t, service.CreateEvent(ctx, flat))
+
+	nested := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	nested.Raw = `{"data":{"status":"paid"}}`
+	nested.Data = json.RawMessage(`{"data":{"status":"paid"}}`)
+	require.NoError(t, service.CreateEvent(ctx, nested))
+
+	pageable := datastore.Pageable{PerPage: 20, Direction: datastore.Next, Sort: "DESC"}
+
+	t.Run("hits flat key", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"status":"paid"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, flat.UID, events[0].UID)
+	})
+
+	t.Run("nested path misses a flat body", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"data":{"status":"paid"}}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, nested.UID, events[0].UID)
+	})
+
+	t.Run("empty body does not filter", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 2)
+	})
+
+	t.Run("two-key json containment hits flat", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"status":"paid","amount":10}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, flat.UID, events[0].UID)
+	})
+
+	t.Run("two-key json misses wrong amount", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"status":"paid","amount":99}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Empty(t, events)
+	})
+
+	t.Run("mix and hits matching type and body", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Query:        "test.event",
+			Body:         json.RawMessage(`{"status":"paid"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, flat.UID, events[0].UID)
+	})
+
+	t.Run("mix and misses wrong type", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Query:        "nope.event",
+			Body:         json.RawMessage(`{"status":"paid"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Empty(t, events)
+	})
 }

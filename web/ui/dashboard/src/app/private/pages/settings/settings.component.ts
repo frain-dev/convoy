@@ -213,25 +213,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
 	}
 
 	getTeamUpgradeMessage(): string {
-		const pill = this.getUserLimitPillText();
-		if (pill && pill !== 'Premium') {
-			return `You've reached your user limit (${pill}). Upgrade to Premium for more team seats.`;
-		}
-		return 'Upgrade to Premium to use team features.';
+		return this.licenseService.limitActionTooltip('user_limit', 'team member');
 	}
 
-	// Compact pill text so the tag fits the 200px sidebar: "1/1" for a reached limit,
-	// or "Premium" for the upsell. Full message stays available as the tooltip.
-	getUserLimitPillText(): string {
-		return this.licenseService.limitPillText('user_limit');
-	}
-
-	onTeamPremiumClick(event: Event) {
-		event.preventDefault();
-		event.stopPropagation();
-		this.generalService.showNotification({ message: this.getTeamUpgradeMessage(), style: 'warning' });
-		if (this.canAccessBilling) {
-			this.toggleActivePage(SETTINGS_PAGE.BILLING);
-		}
+	isTeamMenuBlocked(): boolean {
+		return !this.licenseService.hasLicense('user_limit') && !!this.licenseService.limitMessage('user_limit');
 	}
 }

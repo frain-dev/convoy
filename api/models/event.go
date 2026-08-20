@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -97,8 +98,16 @@ type SearchParams struct {
 }
 
 type QueryListEvent struct {
-	// Any arbitrary value to filter the events payload
+	// Free-text list search when licensed (Event Search entitlement). Matches event id
+	// prefix, idempotency key, event type, and source name within the active date window.
+	// A strict JSON object value is promoted to payload containment (same as body).
+	// Leftover text plus a JSON object in the same query (or query= with body=) AND together.
 	Query string `json:"query"`
+
+	// Payload filter: URL-encoded JSON object matched with jsonb @> against convoy.events.data.
+	// Combined with query= as AND when both are set. JSON-only dashboard searches stay on query=
+	// after normalisation; mixed searches send leftover text as query= and the object as body=.
+	Body string `json:"body"`
 
 	// A list of Source IDs to filter the events by.
 	SourceIDs []string `json:"sourceId"`
@@ -123,10 +132,16 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 		return nil, err
 	}
 
+	var body json.RawMessage
+	if raw := strings.TrimSpace(r.URL.Query().Get("body")); raw != "" {
+		body = json.RawMessage(raw)
+	}
+
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
 			OwnerID:         r.URL.Query().Get("ownerId"),
 			Query:           r.URL.Query().Get("query"),
+			Body:            body,
 			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EndpointIDs:     getEndpointIDs(r),

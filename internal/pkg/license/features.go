@@ -16,6 +16,7 @@ var featureKeys = []struct {
 	{"advanced_subscriptions", "AdvancedSubscriptions"},
 	{"webhook_analytics", "WebhookAnalytics"},
 	{"advanced_webhook_filtering", "AdvancedWebhookFiltering"},
+	{"event_search", "EventSearch"},
 	{"advanced_endpoint_mgmt", "AdvancedEndpointMgmt"},
 	{"circuit_breaking", "CircuitBreaking"},
 	{"consumer_pool_tuning", "ConsumerPoolTuning"},

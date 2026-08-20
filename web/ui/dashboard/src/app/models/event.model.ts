@@ -86,6 +86,7 @@ export interface FILTER_QUERY_PARAM {
 	direction?: 'next' | 'prev';
 	showLoader?: boolean;
 	query?: string;
+	body?: string;
 	name?: string;
 	sort?: string;
 	eventType?: string;

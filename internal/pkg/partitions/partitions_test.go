@@ -138,6 +138,81 @@ func TestStartIndexRebuildRecordsTheIndexAndItsTable(t *testing.T) {
 	require.Equal(t, "idx_event_deliveries_usage", *done.IndexName)
 }
 
+func TestStartQueuedPayloadGINStartsTheNamedIndex(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedPayloadGIN(ctx)
+	<-r.started
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.NotEmpty(t, runs)
+	require.Equal(t, OperationRebuildIndex, runs[0].Operation)
+	require.NotNil(t, runs[0].IndexName)
+	require.Equal(t, indexes.PayloadGIN, *runs[0].IndexName)
+	require.Equal(t, bootTriggeredBy, runs[0].TriggeredBy)
+
+	close(r.release)
+	waitForStatus(t, s, ctx, runs[0].UID, StatusCompleted)
+}
+
+func TestStartQueuedPayloadGINNoopsWhenNotQueued(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	r.lookupErr = indexes.ErrNotDropped
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedPayloadGIN(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("rebuild started for an index that was not queued")
+	default:
+	}
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.Empty(t, runs)
+}
+
+func TestStartQueuedPayloadGINNoopsWhenTheSlotIsTaken(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	c := newBlockingConverter()
+	running := newService(t, db, c)
+	run, err := running.Start(ctx, TableEvents, OperationPartition, "user-1")
+	require.NoError(t, err)
+	<-c.started
+
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	newRebuildService(t, db, r).StartQueuedPayloadGIN(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("payload GIN rebuild started while a conversion held the slot")
+	default:
+	}
+
+	close(c.release)
+	waitForStatus(t, running, ctx, run.UID, StatusCompleted)
+}
+
+func TestStartQueuedPayloadGINFailsOpenOnLookupError(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	r.lookupErr = errors.New("database unreachable")
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedPayloadGIN(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("rebuild started after a lookup error")
+	default:
+	}
+}
+
 // A rebuild and a conversion are the same kind of work on the same tables, so
 // they share the instance-wide slot. The index being rebuilt lives on a table a
 // conversion may be rewriting, and the two would contend for locks on it.

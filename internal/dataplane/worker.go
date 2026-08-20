@@ -125,7 +125,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	metaEventRepo := meta_events.New(opts.Logger, opts.DB)
 	endpointRepo := cached.NewCachedEndpointRepository(endpoints.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultEndpointTTL, lo)
 	eventRepo := events.New(opts.Logger, opts.DB)
-	jobRepo := postgres.NewJobRepo(opts.DB)
 	eventDeliveryRepo := event_deliveries.New(opts.Logger, opts.DB)
 	subRepo := cached.NewCachedSubscriptionRepository(subscriptions.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultSubscriptionTTL, lo)
 	configRepo := configuration.New(opts.Logger, opts.DB)
@@ -428,10 +427,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && opts.Licenser.AdvancedWebhookFiltering() {
-		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, locker, lo), nil)
-		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo, lo), nil)
-	}
+	// events_search tokenization is legacy FTS copy; unified list search (PDE-1009) reads
+	// convoy.events directly and no longer enqueues TokenizeSearch jobs.
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher), nil)
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo), nil)

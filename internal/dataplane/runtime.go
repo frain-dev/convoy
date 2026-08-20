@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 )
 
 type Runtime struct {
@@ -52,6 +53,9 @@ func (r *Runtime) Run(ctx context.Context) error {
 	case <-time.After(30 * time.Second):
 		return fmt.Errorf("worker failed to become ready within 30 seconds")
 	}
+
+	// Fail open: JSON search seq-scans until the GIN is valid. Do not block ingest.
+	partitions.New(r.opts.DB, r.opts.Logger).StartQueuedPayloadGIN(ctx)
 
 	if err := StartIngest(ctx, r.opts, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane ingest component: %w", err)
