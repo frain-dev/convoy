@@ -160,7 +160,7 @@
           @if (isLoadingDeliveryCounts) {
             <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
           } @else {
-            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.success === null ? '—' : (deliveryCounts.success | number) }}</span>
+            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.success === null ? '–' : (deliveryCounts.success | number) }}</span>
           }
           <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Successful deliveries</span>
         </div>
@@ -168,7 +168,7 @@
           @if (isLoadingDeliveryCounts) {
             <convoy-skeleton-loader className="w-100px h-32px mb-4px"></convoy-skeleton-loader>
           } @else {
-            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.failure === null ? '—' : (deliveryCounts.failure | number) }}</span>
+            <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.failure === null ? '–' : (deliveryCounts.failure | number) }}</span>
           }
           <span class="font-body font-normal text-[14px] leading-normal" [class]="(deliveryCounts.failure ?? 0) > 0 ? 'text-[#df3520]' : 'text-new.text-secondary'">Failed deliveries</span>
         </div>
