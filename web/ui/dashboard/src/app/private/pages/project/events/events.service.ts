@@ -134,4 +134,28 @@ export class EventsService {
 			}
 		});
 	}
+
+	// Success/failure totals for the summary cards, served from the daily rollup
+	// rather than the batch retry count endpoint's live scan of event_deliveries.
+	//
+	// null means the total could not be determined. A status missing from a
+	// successful response had no deliveries in the window and is a real 0, but a
+	// failed request must not render as "no successful deliveries", so the caller
+	// shows a dash. Shared by the project and portal delivery screens, which
+	// display the same cards.
+	async getSummaryDeliveryCounts(requestDetails: { startDate?: string; endDate?: string; endpointId?: string }): Promise<{ success: number | null; failure: number | null }> {
+		try {
+			const response = await this.http.request({
+				url: `/eventdeliveries/statustotals`,
+				method: 'get',
+				level: 'org_project',
+				query: requestDetails
+			});
+
+			const totals = response?.data?.totals || {};
+			return { success: totals['Success'] ?? 0, failure: totals['Failure'] ?? 0 };
+		} catch (error) {
+			return { success: null, failure: null };
+		}
+	}
 }

@@ -690,6 +690,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
 							eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+							eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -894,6 +895,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
 			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+			eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -1104,6 +1106,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 							eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
 							eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+							eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -1147,6 +1150,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+			eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)

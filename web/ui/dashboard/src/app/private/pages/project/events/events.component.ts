@@ -46,10 +46,12 @@ export class EventsComponent implements OnInit {
 	isPageLoading = false;
 	reloadSubscription: any;
 
-	// 2026 UI refresh: success/failure totals for the metric cards (from the
-	// delivery count endpoint) and an endpoint scope for those counts.
-	deliveryCounts = { success: 0, failure: 0 };
+	// 2026 UI refresh: success/failure totals for the metric cards and an
+	// endpoint scope for those counts. null means the total is unknown, which
+	// the cards render as a dash; 0 means the window really held none.
+	deliveryCounts: { success: number | null; failure: number | null } = { success: null, failure: null };
 	isLoadingDeliveryCounts = false;
+	private deliveryCountsFetchId = 0;
 	summaryEndpoints: ENDPOINT[] = [];
 	selectedSummaryEndpoint?: ENDPOINT;
 
@@ -161,23 +163,21 @@ export class EventsComponent implements OnInit {
 		}
 	}
 
-	// Successful/Failed totals come from the delivery count endpoint since the
-	// dashboard summary API doesn't break events down by status.
+	// Successful/Failed totals, served from the daily rollup. null renders as a
+	// dash, so a failed request cannot read as "no successful deliveries".
 	async fetchDeliveryCounts() {
 		const { startDate, endDate } = this.statsDateRangeForRequest;
 		const endpointId = this.selectedSummaryEndpoint?.uid;
+		const fetchId = ++this.deliveryCountsFetchId;
 
 		this.isLoadingDeliveryCounts = true;
-		try {
-			const [successResponse, failureResponse] = await Promise.all([
-				this.eventsService.getRetryCount({ startDate, endDate, endpointId, status: '["Success"]' }),
-				this.eventsService.getRetryCount({ startDate, endDate, endpointId, status: '["Failure"]' })
-			]);
-			this.deliveryCounts = { success: successResponse.data.num, failure: failureResponse.data.num };
-		} catch (error) {
-		} finally {
-			this.isLoadingDeliveryCounts = false;
-		}
+		const counts = await this.eventsService.getSummaryDeliveryCounts({ startDate, endDate, endpointId });
+
+		// Only the latest request may write the cards or clear the flag, or an
+		// earlier reply overwrites newer totals and hides the running spinner.
+		if (fetchId !== this.deliveryCountsFetchId) return;
+		this.deliveryCounts = counts;
+		this.isLoadingDeliveryCounts = false;
 	}
 
 	async getEndpointsForSummary() {

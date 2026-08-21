@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -1432,8 +1433,8 @@ func TestPruneDailyCountsBeforeLiveHistoryDropsRetainedDays(t *testing.T) {
 	today := utcDate(time.Now())
 	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
 	_, err := db.GetDB().ExecContext(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		VALUES ($1, $2, '2020-01-01', 99)`, project.UID, endpoint.UID)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, $2, '2020-01-01', 'Success', 99)`, project.UID, endpoint.UID)
 	require.NoError(t, err)
 
 	require.NoError(t, service.PruneDailyCountsBeforeLiveHistory(ctx))
@@ -1463,8 +1464,8 @@ func TestMaybePruneDailyCountsSkipsWithin24Hours(t *testing.T) {
 		WHERE name = 'backfill'`)
 	require.NoError(t, err)
 	_, err = db.GetDB().ExecContext(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		VALUES ($1, $2, '2020-01-01', 99)`, project.UID, endpoint.UID)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, $2, '2020-01-01', 'Success', 99)`, project.UID, endpoint.UID)
 	require.NoError(t, err)
 
 	require.NoError(t, service.maybePruneDailyCountsBeforeLiveHistory(ctx))
@@ -1483,8 +1484,8 @@ func TestLoadEventDeliveriesIntervalsFromRollupWeeklyIgnoresSessionTimeZone(t *t
 	project := seedTestProject(t, db)
 	monday := time.Date(2026, time.August, 17, 0, 0, 0, 0, time.UTC)
 	_, err := db.GetDB().ExecContext(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		VALUES ($1, 'ep', $2, 4)`, project.UID, monday)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, 'ep', $2, 'Success', 4)`, project.UID, monday)
 	require.NoError(t, err)
 	_, err = db.GetDB().ExecContext(ctx, `
 		UPDATE convoy.event_delivery_daily_counts_meta
@@ -1589,6 +1590,356 @@ func TestAdvanceDailyCountsBackfillWalksHistoryToCompletion(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	require.Equal(t, 3, rollupRowCount(t, db, project.UID))
+}
+
+// The dashboard's Successful/Failed cards read these totals. They used to come
+// from one live COUNT(*) per status, and a timeout on either rendered as a
+// confident zero, so the rollup has to reproduce the live numbers per status.
+func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, src.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, src.UID)
+
+	seed := func(status datastore.EventDeliveryStatus, n int) {
+		for i := 0; i < n; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+			d.Status = status
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+		}
+	}
+	seed(datastore.SuccessEventStatus, 3)
+	seed(datastore.FailureEventStatus, 2)
+
+	// Until the backfill completes the totals come off a live scan, which is the
+	// number the rollup then has to match.
+	live, liveSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromLive, liveSource)
+	require.Equal(t, int64(3), live[datastore.SuccessEventStatus])
+	require.Equal(t, int64(2), live[datastore.FailureEventStatus])
+
+	// A status with no deliveries is absent rather than zero, so the caller can
+	// tell an empty window from a failed request.
+	_, present := live[datastore.DiscardedEventStatus]
+	require.False(t, present, "a status with no deliveries must not be reported as 0")
+
+	// Twice, because the worker rewrites the same days every minute and the
+	// second pass is the one carrying keys the first pass already wrote.
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+	}
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	fromRollup, rollupSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromRollup, rollupSource)
+	require.Equal(t, live, fromRollup, "rollup disagrees with the live scan")
+
+	// A delivery landing after the rollup was first written must show up on the
+	// next refresh, which only holds if a populated day can be rewritten.
+	seed(datastore.SuccessEventStatus, 1)
+	require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+
+	updated, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, int64(4), updated[datastore.SuccessEventStatus])
+	require.Equal(t, int64(2), updated[datastore.FailureEventStatus])
+}
+
+func TestStatusTotalsScopeToEndpoint(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	scoped := seedTestEndpoint(t, db, project.UID)
+	other := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	event := seedEvent(t, db, project.UID, scoped.UID, src.UID)
+
+	seed := func(endpointID string, n int) {
+		sub := seedSubscription(t, db, project.UID, endpointID, src.UID)
+		for i := 0; i < n; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpointID, sub.UID)
+			d.Status = datastore.SuccessEventStatus
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+		}
+	}
+	seed(scoped.UID, 2)
+	seed(other.UID, 5)
+
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+	}
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	totals, source, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), []string{scoped.UID})
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromRollup, source)
+	require.Equal(t, int64(2), totals[datastore.SuccessEventStatus])
+
+	all, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, int64(7), all[datastore.SuccessEventStatus])
+}
+
+// staleDays reads the days the writers flagged for the per-status rollup.
+func staleDays(t *testing.T, db database.Database) []time.Time {
+	t.Helper()
+
+	rows, err := db.GetConn().Query(context.Background(),
+		`SELECT day FROM convoy.event_delivery_daily_counts_stale ORDER BY day`)
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var days []time.Time
+	for rows.Next() {
+		var day pgtype.Date
+		require.NoError(t, rows.Scan(&day))
+		days = append(days, day.Time)
+	}
+	require.NoError(t, rows.Err())
+	return days
+}
+
+// closedDayFixture is a project with deliveries seeded on days that have left
+// the refresh window, which is where per-status drift shows up.
+type closedDayFixture struct {
+	service  *Service
+	db       database.Database
+	project  *datastore.Project
+	endpoint *datastore.Endpoint
+	sub      *datastore.Subscription
+	event    *datastore.Event
+}
+
+func newClosedDayFixture(t *testing.T) *closedDayFixture {
+	t.Helper()
+
+	service, db := setupTestDB(t)
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+
+	return &closedDayFixture{
+		service:  service,
+		db:       db,
+		project:  project,
+		endpoint: endpoint,
+		sub:      seedSubscription(t, db, project.UID, endpoint.UID, src.UID),
+		event:    seedEvent(t, db, project.UID, endpoint.UID, src.UID),
+	}
+}
+
+func (f *closedDayFixture) seedOn(t *testing.T, day time.Time, status datastore.EventDeliveryStatus) *datastore.EventDelivery {
+	t.Helper()
+	ctx := context.Background()
+
+	d := createTestEventDelivery(t, f.project.UID, f.event.UID, f.endpoint.UID, f.sub.UID)
+	d.Status = status
+	require.NoError(t, f.service.CreateEventDelivery(ctx, d))
+
+	at := day.Add(12 * time.Hour)
+	_, err := f.db.GetConn().Exec(ctx,
+		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2", at, d.UID)
+	require.NoError(t, err)
+
+	d.CreatedAt = at
+	return d
+}
+
+// rollForward brings the rollup up to date for every seeded day and closes the
+// backfill, so later reads come from the rollup rather than a live scan.
+func (f *closedDayFixture) rollForward(t *testing.T, days ...time.Time) {
+	t.Helper()
+	ctx := context.Background()
+
+	for _, day := range days {
+		require.NoError(t, f.service.RefreshDailyCounts(ctx, day, day.AddDate(0, 0, 1)))
+	}
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.NoError(t, f.service.markDailyCountsBackfillCompleted(ctx))
+}
+
+func (f *closedDayFixture) totals(t *testing.T) map[datastore.EventDeliveryStatus]int64 {
+	t.Helper()
+
+	params := datastore.SearchParams{
+		CreatedAtStart: time.Now().AddDate(0, 0, -30).Unix(),
+		CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+	}
+	totals, source, err := f.service.StatusTotals(context.Background(), f.project.UID, params, nil)
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromRollup, source)
+	return totals
+}
+
+func TestStatusTotalsFollowARetryOnAClosedDay(t *testing.T) {
+	f := newClosedDayFixture(t)
+	ctx := context.Background()
+
+	// Five days back: past the window the refresh rewrites, so nothing but the
+	// stale marker can bring this day's split up to date.
+	day := utcDate(time.Now()).AddDate(0, 0, -5)
+	retried := f.seedOn(t, day, datastore.FailureEventStatus)
+	f.seedOn(t, day, datastore.FailureEventStatus)
+	f.rollForward(t, day)
+
+	require.Equal(t, int64(2), f.totals(t)[datastore.FailureEventStatus])
+	require.Empty(t, staleDays(t, f.db), "seeding alone must not flag a day")
+
+	require.NoError(t, f.service.UpdateStatusOfEventDelivery(ctx, f.project.UID, *retried, datastore.SuccessEventStatus))
+	require.Equal(t, []time.Time{day}, staleDays(t, f.db), "the retried day was not flagged")
+
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	after := f.totals(t)
+	require.Equal(t, int64(1), after[datastore.FailureEventStatus])
+	require.Equal(t, int64(1), after[datastore.SuccessEventStatus])
+	require.Empty(t, staleDays(t, f.db), "the drain left its own marker behind")
+
+	// Second pass over a day the first pass already rewrote, which is what the
+	// every-minute job actually does.
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.Equal(t, after, f.totals(t))
+}
+
+func TestForceResendFlagsEveryClosedDayItTouches(t *testing.T) {
+	f := newClosedDayFixture(t)
+	ctx := context.Background()
+
+	older := utcDate(time.Now()).AddDate(0, 0, -9)
+	newer := utcDate(time.Now()).AddDate(0, 0, -3)
+	first := f.seedOn(t, older, datastore.FailureEventStatus)
+	second := f.seedOn(t, newer, datastore.FailureEventStatus)
+	f.rollForward(t, older, newer)
+
+	require.Equal(t, int64(2), f.totals(t)[datastore.FailureEventStatus])
+
+	// One statement spanning both days, the shape force resend and batch retry
+	// use. A marker for only the day in the diff would leave the other adrift.
+	require.NoError(t, f.service.UpdateStatusOfEventDeliveries(ctx, f.project.UID,
+		[]string{first.UID, second.UID}, datastore.SuccessEventStatus))
+	require.Equal(t, []time.Time{older, newer}, staleDays(t, f.db))
+
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	after := f.totals(t)
+	require.Equal(t, int64(2), after[datastore.SuccessEventStatus])
+	_, present := after[datastore.FailureEventStatus]
+	require.False(t, present, "both closed days should have been rewritten")
+}
+
+func TestStatusChangeInsideTheWindowFlagsNothing(t *testing.T) {
+	f := newClosedDayFixture(t)
+	ctx := context.Background()
+
+	// Today is rewritten by every run regardless, so the delivery hot path must
+	// not pay for a marker.
+	d := createTestEventDelivery(t, f.project.UID, f.event.UID, f.endpoint.UID, f.sub.UID)
+	require.NoError(t, f.service.CreateEventDelivery(ctx, d))
+	require.NoError(t, f.service.UpdateStatusOfEventDelivery(ctx, f.project.UID, *d, datastore.SuccessEventStatus))
+
+	require.Empty(t, staleDays(t, f.db))
+}
+
+func TestStaleDayDrainIsBoundedAndResumes(t *testing.T) {
+	f := newClosedDayFixture(t)
+	ctx := context.Background()
+
+	// Two days more than one run may drain, all of them clear of the window.
+	const closedDays = staleDailyCountsDrainLimit + 2
+
+	var days []time.Time
+	var ids []string
+	for i := closedDays; i >= 1; i-- {
+		day := utcDate(time.Now()).AddDate(0, 0, -(i + 2))
+		days = append(days, day)
+		ids = append(ids, f.seedOn(t, day, datastore.FailureEventStatus).UID)
+	}
+	f.rollForward(t, days...)
+
+	require.NoError(t, f.service.UpdateStatusOfEventDeliveries(ctx, f.project.UID, ids, datastore.SuccessEventStatus))
+	require.Len(t, staleDays(t, f.db), len(days))
+
+	// A resend spanning months must not hold the job for as long as rewriting
+	// every day it touched takes, so one run drains a bounded slice.
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.Equal(t, days[staleDailyCountsDrainLimit:], staleDays(t, f.db), "the oldest days should have drained first")
+
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.Empty(t, staleDays(t, f.db))
+	require.Equal(t, int64(len(days)), f.totals(t)[datastore.SuccessEventStatus])
+}
+
+func TestRefreshCatchesUpDaysTheWindowSkipped(t *testing.T) {
+	f := newClosedDayFixture(t)
+	ctx := context.Background()
+
+	today := utcDate(time.Now())
+	const outageDays = 5
+	for i := outageDays; i >= 1; i-- {
+		f.seedOn(t, today.AddDate(0, 0, -i), datastore.FailureEventStatus)
+	}
+	d := createTestEventDelivery(t, f.project.UID, f.event.UID, f.endpoint.UID, f.sub.UID)
+	d.Status = datastore.FailureEventStatus
+	require.NoError(t, f.service.CreateEventDelivery(ctx, d))
+
+	// The worker last ran five days ago and the API kept ingesting. Its two-day
+	// window cannot reach those days, and with the backfill closed nothing else
+	// revisits them, so they would stay missing from the rollup for good.
+	_, err := f.db.GetConn().Exec(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET last_refreshed_day = $1, completed_at = NOW(), next_day = NULL
+		WHERE name = 'backfill'`, today.AddDate(0, 0, -outageDays))
+	require.NoError(t, err)
+
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.Equal(t, int64(outageDays+1), f.totals(t)[datastore.FailureEventStatus],
+		"days the window skipped were never rolled up")
+	require.Empty(t, staleDays(t, f.db))
+
+	var watermark pgtype.Date
+	require.NoError(t, f.db.GetConn().QueryRow(ctx, `
+		SELECT last_refreshed_day FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = 'backfill'`).Scan(&watermark))
+	require.True(t, watermark.Valid)
+	require.Equal(t, today, utcDate(watermark.Time))
+
+	// A second run in the same day has no gap to close and must not requeue.
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.Empty(t, staleDays(t, f.db))
+	require.Equal(t, int64(outageDays+1), f.totals(t)[datastore.FailureEventStatus])
+}
+
+func TestRefreshWatermarkStaysUntilRefreshSucceeds(t *testing.T) {
+	f := newClosedDayFixture(t)
+	ctx := context.Background()
+
+	today := utcDate(time.Now())
+	old := today.AddDate(0, 0, -5)
+	_, err := f.db.GetConn().Exec(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET last_refreshed_day = $1, completed_at = NOW(), next_day = NULL
+		WHERE name = 'backfill'`, old)
+	require.NoError(t, err)
+
+	require.NoError(t, f.service.queueDaysTheWindowSkipped(ctx, today))
+
+	var watermark pgtype.Date
+	require.NoError(t, f.db.GetConn().QueryRow(ctx, `
+		SELECT last_refreshed_day FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = 'backfill'`).Scan(&watermark))
+	require.True(t, watermark.Valid)
+	require.Equal(t, old, utcDate(watermark.Time), "queueing alone must not advance the watermark")
+
+	require.NoError(t, f.service.RefreshRecentDailyCounts(ctx))
+	require.NoError(t, f.db.GetConn().QueryRow(ctx, `
+		SELECT last_refreshed_day FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = 'backfill'`).Scan(&watermark))
+	require.Equal(t, today, utcDate(watermark.Time))
 }
 
 func TestExportRecords(t *testing.T) {

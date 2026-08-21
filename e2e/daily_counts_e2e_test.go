@@ -22,8 +22,18 @@ import (
 // state a real instance leaves after sixty seconds and never returns to, which
 // is how a rollup that could not be rewritten still read correctly under test
 // while failing on every run in production.
+//
+// The number the rollup has to reproduce comes from the live table, through the
+// same wait that settles the deliveries, and not from an early read of the
+// summary endpoint. That endpoint switches to the rollup the moment the backfill
+// is marked complete, and on a database holding no deliveries the backfill
+// completes on its first run with nothing to walk, so whether an early read is
+// live or rollup depends only on where the scheduler's minute boundary fell
+// during setup. Live and rollup agreement per status is asserted in
+// TestStatusTotalsAgreePerStatusAcrossSources, where nothing competes.
 func TestE2E_DailyCounts_SummaryMatchesLiveAcrossRepeatedRefreshes(t *testing.T) {
 	env := SetupE2E(t)
+	ctx := context.Background()
 
 	manifest := NewEventManifest()
 	done := make(chan bool, 1)
@@ -47,21 +57,32 @@ func TestE2E_DailyCounts_SummaryMatchesLiveAcrossRepeatedRefreshes(t *testing.T)
 	start := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02T15:04:05")
 	end := time.Now().UTC().AddDate(0, 0, 1).Format("2006-01-02T15:04:05")
 
-	// Before backfill completes the API answers from a live scan. That is the
-	// number the rollup has to reproduce.
-	live := fetchPortalSummary(t, env, link, "daily", start, end)
-	require.Equal(t, uint64(sent), live.EventsSent)
-
 	// Three runs of the real job: the first writes today, the rest rewrite it.
 	job := dailyCountsJob(env)
 	for i := 0; i < 3; i++ {
 		runWorkerJob(t, job)
 	}
 
+	// The summary only reads the rollup once the backfill is marked complete, so
+	// without this the assertions below could pass on a live scan and say nothing
+	// about the rollup.
+	var completed bool
+	require.NoError(t, env.App.DB.GetDB().QueryRowContext(ctx, `
+		SELECT completed_at IS NOT NULL
+		FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = 'backfill'`).Scan(&completed))
+	require.True(t, completed, "summary is still answering from a live scan")
+
 	fromRollup := fetchPortalSummary(t, env, link, "daily", start, end)
-	require.Equal(t, live.EventsSent, fromRollup.EventsSent, "rollup disagrees with the live scan")
-	require.Equal(t, live.Applications, fromRollup.Applications)
-	require.Equal(t, nonZeroBuckets(live), nonZeroBuckets(fromRollup))
+	require.Equal(t, uint64(sent), fromRollup.EventsSent, "rollup disagrees with the deliveries the project holds")
+
+	// Summed rather than pinned to one bucket: a run that crosses UTC midnight
+	// splits these deliveries across two days.
+	var bucketed uint64
+	for _, in := range nonZeroBuckets(fromRollup) {
+		bucketed += in.Count
+	}
+	require.Equal(t, uint64(sent), bucketed, "chart buckets disagree with the summary total")
 
 	// A delivery that lands after the rollup was first written must appear on
 	// the next refresh, which only holds if a populated day can be rewritten.
