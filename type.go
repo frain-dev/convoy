@@ -118,7 +118,6 @@ const (
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
 	BulkOnboardProcessor             TaskName = "BulkOnboardProcessor"
 	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
-	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
 	TokenCacheKey   CacheKey = "tokens"
 	ProjectCacheKey CacheKey = "projects"

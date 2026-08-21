@@ -54,6 +54,7 @@ func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitB
 	if err := registry.Register(postgresDB); err != nil {
 		return fmt.Errorf("failed to register postgres database: %w", err)
 	}
+	postgresDB.StartMetricsCollection()
 
 	// Register circuit breaker if provided
 	if cbm != nil {
