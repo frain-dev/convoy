@@ -14,38 +14,49 @@ const dailyCountsBackfillName = "backfill"
 
 // RefreshDailyCounts replaces UTC daily counts for [start, end).
 func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) error {
-	startDay := utcDate(start)
-	endDay := utcDate(end)
-	if !endDay.After(startDay) {
+	startDay := pgtype.Date{Time: utcDate(start), Valid: true}
+	endDay := pgtype.Date{Time: utcDate(end), Valid: true}
+	if !endDay.Time.After(startDay.Time) {
 		return nil
 	}
 
-	_, err := s.db.Exec(ctx, `
-		WITH bounds AS (
-			SELECT $1::date AS start_day, $2::date AS end_day
-		),
-		deleted AS (
-			DELETE FROM convoy.event_delivery_daily_counts d
-			USING bounds b
-			WHERE d.day >= b.start_day AND d.day < b.end_day
-			RETURNING 1
-		),
-		aggregated AS (
-			SELECT
-				ed.project_id,
-				COALESCE(ed.endpoint_id, '') AS endpoint_id,
-				(ed.created_at AT TIME ZONE 'UTC')::date AS day,
-				COUNT(*)::bigint AS count
-			FROM convoy.event_deliveries ed, bounds b
-			WHERE ed.deleted_at IS NULL
-			  AND ed.created_at >= (b.start_day::timestamp AT TIME ZONE 'UTC')
-			  AND ed.created_at < (b.end_day::timestamp AT TIME ZONE 'UTC')
-			GROUP BY ed.project_id, COALESCE(ed.endpoint_id, ''), (ed.created_at AT TIME ZONE 'UTC')::date
-		)
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		SELECT project_id, endpoint_id, day, count FROM aggregated`,
-		startDay, endDay)
+	// The delete and the insert must be separate statements. Sub-statements of
+	// one data-modifying CTE share a snapshot, so an insert of the same keys
+	// cannot see the delete and collides on the primary key.
+	tx, err := s.db.Begin(ctx)
 	if err != nil {
+		return fmt.Errorf("refresh event delivery daily counts: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Reaps keys that no longer aggregate to anything, which the upsert below
+	// would otherwise leave at their stale count.
+	_, err = tx.Exec(ctx, `
+		DELETE FROM convoy.event_delivery_daily_counts
+		WHERE day >= $1 AND day < $2`, startDay, endDay)
+	if err != nil {
+		return fmt.Errorf("refresh event delivery daily counts: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
+		SELECT
+			ed.project_id,
+			COALESCE(ed.endpoint_id, ''),
+			(ed.created_at AT TIME ZONE 'UTC')::date,
+			COUNT(*)::bigint
+		FROM convoy.event_deliveries ed
+		WHERE ed.deleted_at IS NULL
+		  AND ed.created_at >= ($1::timestamp AT TIME ZONE 'UTC')
+		  AND ed.created_at < ($2::timestamp AT TIME ZONE 'UTC')
+		GROUP BY ed.project_id, COALESCE(ed.endpoint_id, ''), (ed.created_at AT TIME ZONE 'UTC')::date
+		ON CONFLICT (project_id, day, endpoint_id)
+		DO UPDATE SET count = EXCLUDED.count`, startDay, endDay)
+	if err != nil {
+		return fmt.Errorf("refresh event delivery daily counts: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("refresh event delivery daily counts: %w", err)
 	}
 	return nil
