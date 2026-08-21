@@ -298,6 +298,16 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 		return '';
 	}
 
+	getProjectCreationTooltip(): string {
+		if (this.isDisabled) {
+			return this.disabledOrganisationMessage;
+		}
+		if (this.isProjectLimitReached || this.canShowCloudProjectLimitUpgrade) {
+			return this.licenseService.limitActionTooltip('project_limit', 'project');
+		}
+		return '';
+	}
+
 	/** Message for the empty state only (improved, billing-aware copy). */
 	getProjectLimitMessageForEmptyState(): string {
 		if (this.isProjectLimitReached) {

@@ -176,39 +176,6 @@
                 </div>
               </div>
             }
-
-            @if (showConfig('search_policy')) {
-              <div class="bg-white-100 border border-new.border rounded-16px p-24px">
-                <div class="flex items-start justify-between gap-16px mb-24px">
-                  <div class="flex flex-col gap-2px">
-                    <div class="flex items-center gap-8px">
-                      <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-new.text-primary">Search period</h3>
-                      @if (!licenseService.hasLicense('AdvancedWebhookFiltering')) {
-                        <div convoy-tag size="sm" color="primary">
-                          <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                            <use xlink:href="#lock-icon"></use>
-                          </svg>
-                          Business
-                        </div>
-                      }
-                    </div>
-                    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Triggers search re-tokenization; only events within this period will be available for search.</p>
-                  </div>
-                  <button convoy-permission="Project Settings|MANAGE" type="button" class="shrink-0 px-14px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] text-new.text-primary transition-colors hover:bg-new.surface-subtle" (click)="toggleConfigForm('search_policy', true)">Remove setting</button>
-                </div>
-                @if (licenseService.hasLicense('AdvancedWebhookFiltering')) {
-                  <convoy-input-field className="mb-0 max-w-[420px]">
-                    <div class="relative">
-                      <input type="number" id="search_policy" convoy-input autocomplete="search_policy" formControlName="search_policy" placeholder="e.g. 720" />
-                      <div class="absolute top-[50%] right-14px font-body text-[12px] text-new.text-secondary opacity-40 translate-y-[-50%]">hour(s)</div>
-                    </div>
-                    @if (projectForm.get('config.search_policy')?.touched && projectForm.get('config.search_policy')?.invalid) {
-                      <convoy-input-error>Enter search policy value</convoy-input-error>
-                    }
-                  </convoy-input-field>
-                }
-              </div>
-            }
           </div>
 
           @if (shouldShowBorder < configurations.length) {

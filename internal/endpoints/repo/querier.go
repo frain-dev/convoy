@@ -31,6 +31,12 @@ type Querier interface {
 	FindEndpointsByOwnerID(ctx context.Context, arg FindEndpointsByOwnerIDParams) ([]FindEndpointsByOwnerIDRow, error)
 	UpdateEndpoint(ctx context.Context, arg UpdateEndpointParams) (pgconn.CommandTag, error)
 	UpdateEndpointSecrets(ctx context.Context, arg UpdateEndpointSecretsParams) (pgconn.CommandTag, error)
+	// Matches nothing when the endpoint already holds this status, so the rows
+	// affected tell the caller whether the status actually changed. Callers re-apply
+	// a status on a schedule and only alert on the transition.
+	//
+	// IS DISTINCT FROM rather than <>: status is NOT NULL today, and this keeps the
+	// predicate correct rather than silently matching nothing if that changes.
 	UpdateEndpointStatus(ctx context.Context, arg UpdateEndpointStatusParams) (pgconn.CommandTag, error)
 }
 

@@ -553,6 +553,10 @@ func (l *Licenser) AdvancedWebhookFiltering() bool {
 	return l.hasFeature("advanced_webhook_filtering")
 }
 
+func (l *Licenser) EventSearch() bool {
+	return l.hasFeature("event_search")
+}
+
 func (l *Licenser) CircuitBreaking() bool {
 	return l.hasFeature("circuit_breaking")
 }
@@ -713,6 +717,7 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	featureList["AdvancedSubscriptions"] = l.AdvancedSubscriptions()
 	featureList["WebhookAnalytics"] = l.WebhookAnalytics()
 	featureList["AdvancedWebhookFiltering"] = l.AdvancedWebhookFiltering()
+	featureList["EventSearch"] = l.EventSearch()
 	featureList["AdvancedEndpointMgmt"] = l.AdvancedEndpointMgmt()
 	featureList["CircuitBreaking"] = l.CircuitBreaking()
 	featureList["ConsumerPoolTuning"] = l.ConsumerPoolTuning()

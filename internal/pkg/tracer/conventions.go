@@ -33,32 +33,31 @@ const (
 
 	// worker.task.* — one per convoy.TaskName the consumer dispatches on.
 	// SpanForTaskName below maps the runtime TaskName to the right constant.
-	SpanWorkerTaskProcessEventDelivery            = "worker.task.process_event_delivery"
-	SpanWorkerTaskProcessRetryEventDelivery       = "worker.task.process_retry_event_delivery"
-	SpanWorkerTaskProcessEventCreation            = "worker.task.process_event_creation"
-	SpanWorkerTaskProcessDynamicEventCreation     = "worker.task.process_dynamic_event_creation"
-	SpanWorkerTaskProcessBroadcastEventCreation   = "worker.task.process_broadcast_event_creation"
-	SpanWorkerTaskMatchEventSubscriptions         = "worker.task.match_event_subscriptions"
-	SpanWorkerTaskProcessMetaEvent                = "worker.task.process_meta_event"
-	SpanWorkerTaskProcessNotification             = "worker.task.process_notification"
-	SpanWorkerTaskProcessEmail                    = "worker.task.process_email"
-	SpanWorkerTaskExpireSecrets                   = "worker.task.expire_secrets"
-	SpanWorkerTaskMonitorTwitterSources           = "worker.task.monitor_twitter_sources"
-	SpanWorkerTaskTokenizeSearch                  = "worker.task.tokenize_search"
-	SpanWorkerTaskTokenizeSearchForProject        = "worker.task.tokenize_search_for_project"
-	SpanWorkerTaskRetentionPolicies               = "worker.task.retention_policies"
-	SpanWorkerTaskEnqueueBackupJobs               = "worker.task.enqueue_backup_jobs"
-	SpanWorkerTaskProcessBackupJob                = "worker.task.process_backup_job"
-	SpanWorkerTaskManualBackupJob                 = "worker.task.manual_backup_job"
-	SpanWorkerTaskDailyAnalytics                  = "worker.task.daily_analytics"
-	SpanWorkerTaskSnapshotUsage                   = "worker.task.snapshot_usage"
-	SpanWorkerTaskStreamCliEvents                 = "worker.task.stream_cli_events"
-	SpanWorkerTaskDeleteArchivedTasks             = "worker.task.delete_archived_tasks"
-	SpanWorkerTaskBatchRetry                      = "worker.task.batch_retry"
-	SpanWorkerTaskBulkOnboard                     = "worker.task.bulk_onboard"
-	SpanWorkerTaskUpdateOrganisationStatus        = "worker.task.update_organisation_status"
-	SpanWorkerTaskRefreshMetricsMaterializedViews = "worker.task.refresh_metrics_materialized_views"
-	SpanWorkerTaskUnknown                         = "worker.task.unknown"
+	SpanWorkerTaskProcessEventDelivery          = "worker.task.process_event_delivery"
+	SpanWorkerTaskProcessRetryEventDelivery     = "worker.task.process_retry_event_delivery"
+	SpanWorkerTaskProcessEventCreation          = "worker.task.process_event_creation"
+	SpanWorkerTaskProcessDynamicEventCreation   = "worker.task.process_dynamic_event_creation"
+	SpanWorkerTaskProcessBroadcastEventCreation = "worker.task.process_broadcast_event_creation"
+	SpanWorkerTaskMatchEventSubscriptions       = "worker.task.match_event_subscriptions"
+	SpanWorkerTaskProcessMetaEvent              = "worker.task.process_meta_event"
+	SpanWorkerTaskProcessNotification           = "worker.task.process_notification"
+	SpanWorkerTaskProcessEmail                  = "worker.task.process_email"
+	SpanWorkerTaskExpireSecrets                 = "worker.task.expire_secrets"
+	SpanWorkerTaskMonitorTwitterSources         = "worker.task.monitor_twitter_sources"
+	SpanWorkerTaskTokenizeSearch                = "worker.task.tokenize_search"
+	SpanWorkerTaskTokenizeSearchForProject      = "worker.task.tokenize_search_for_project"
+	SpanWorkerTaskRetentionPolicies             = "worker.task.retention_policies"
+	SpanWorkerTaskEnqueueBackupJobs             = "worker.task.enqueue_backup_jobs"
+	SpanWorkerTaskProcessBackupJob              = "worker.task.process_backup_job"
+	SpanWorkerTaskManualBackupJob               = "worker.task.manual_backup_job"
+	SpanWorkerTaskDailyAnalytics                = "worker.task.daily_analytics"
+	SpanWorkerTaskSnapshotUsage                 = "worker.task.snapshot_usage"
+	SpanWorkerTaskStreamCliEvents               = "worker.task.stream_cli_events"
+	SpanWorkerTaskDeleteArchivedTasks           = "worker.task.delete_archived_tasks"
+	SpanWorkerTaskBatchRetry                    = "worker.task.batch_retry"
+	SpanWorkerTaskBulkOnboard                   = "worker.task.bulk_onboard"
+	SpanWorkerTaskUpdateOrganisationStatus      = "worker.task.update_organisation_status"
+	SpanWorkerTaskUnknown                       = "worker.task.unknown"
 )
 
 // taskNameSpans maps every convoy.TaskName to its span constant. Adding a new
@@ -89,7 +88,6 @@ var taskNameSpans = map[convoy.TaskName]string{
 	convoy.BatchRetryProcessor:              SpanWorkerTaskBatchRetry,
 	convoy.BulkOnboardProcessor:             SpanWorkerTaskBulkOnboard,
 	convoy.UpdateOrganisationStatus:         SpanWorkerTaskUpdateOrganisationStatus,
-	convoy.RefreshMetricsMaterializedViews:  SpanWorkerTaskRefreshMetricsMaterializedViews,
 }
 
 // SpanForTaskName returns the span name constant that should wrap a worker

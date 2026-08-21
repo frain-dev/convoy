@@ -134,8 +134,9 @@ export class GeneralService {
 		if (!params?.prev_page_cursor) delete queryParams.prev_page_cursor;
 
 		const cleanedQuery: any = Object.fromEntries(Object.entries(queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-		const cleanedQueryParams = new URLSearchParams(cleanedQuery).toString();
-		this._location.go(`${location.pathname}?${cleanedQueryParams}`);
+		const parts = Object.entries(cleanedQuery).map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+		const path = this._location.path().split('?')[0];
+		this._location.go(parts.length ? `${path}?${parts.join('&')}` : path);
 
 		return queryParams;
 	}

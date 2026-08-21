@@ -416,9 +416,11 @@ export class PrivateComponent implements OnInit {
 		return this.licenseService.limitMessage('org_limit');
 	}
 
-	// Compact pill text for the org-switcher dropdown overlay: "2/2" for a reached
-	// limit, the upsell label unchanged. Full message stays available as the tooltip.
-	getOrgLimitPillText(): string {
-		return this.licenseService.limitPillText('org_limit');
+	getOrgLimitTooltip(): string {
+		return this.licenseService.limitActionTooltip('org_limit', 'organization');
+	}
+
+	isAddOrganisationBlocked(): boolean {
+		return !this.licenseService.hasLicense('org_limit') && !!this.getOrgLimitMessage();
 	}
 }

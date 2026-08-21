@@ -49,12 +49,20 @@ type Querier interface {
 	// faithful and does not clobber a stored description with an empty value.
 	FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error)
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status pgtype.Text) ([]FindStuckEventDeliveriesByStatusRow, error)
+	// Same as LoadEventDeliveriesPagedInnerDesc but inner scan uses ORDER BY created_at ASC, id ASC.
+	LoadEventDeliveriesPagedInnerAsc(ctx context.Context, arg LoadEventDeliveriesPagedInnerAscParams) ([]LoadEventDeliveriesPagedInnerAscRow, error)
 	// ============================================================================
 	// Group 4: Pagination
 	// ============================================================================
-	// TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
-	// Consider a "slim" paginated query variant that omits heavy columns for list views.
-	LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDeliveriesPagedParams) ([]LoadEventDeliveriesPagedRow, error)
+	// Page ids first (no JSONB, no joins), then hydrate. Inner ORDER BY is plain
+	// created_at/id so generic plans can range-scan
+	// idx_event_deliveries_project_created_id_deleted and stop at LIMIT. ORDER BY
+	// CASE or ORDER BY id on the PK walks the whole table when the date window is
+	// empty. Split Desc/Asc for the same reason as LoadEventsPagedExistsInner*.
+	// Cursor is the delivery id; keyset uses that row's (created_at, id). An
+	// empty cursor, or one that does not resolve (SetCursors' first-page
+	// sentinel), applies no keyset.
+	LoadEventDeliveriesPagedInnerDesc(ctx context.Context, arg LoadEventDeliveriesPagedInnerDescParams) ([]LoadEventDeliveriesPagedInnerDescRow, error)
 	// ============================================================================
 	// Group 5: Intervals
 	// ============================================================================

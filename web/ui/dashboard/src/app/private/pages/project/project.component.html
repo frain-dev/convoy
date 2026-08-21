@@ -3,7 +3,7 @@
     <nav class="flex items-center justify-between gap-16px max-w-[1449px] m-auto px-24px h-60px">
       <div class="flex items-center gap-8px flex-1 min-w-0">
         <!-- Project selector -->
-        <div convoy-dropdown position="center" class="shrink-0" size="lg">
+        <div convoy-dropdown position="center" class="shrink-0" size="lg" className="!overflow-visible">
           <button dropdownTrigger class="flex items-center gap-8px py-4px px-8px rounded-full transition-colors hover:bg-new.surface-muted">
             <span class="max-w-[160px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ projectDetails?.name }}</span>
             <img src="/assets/img/svg/chevron-grabber.svg" class="w-16px h-16px" alt="" />
@@ -41,35 +41,39 @@
               <hr class="border-t border-new.border" />
             }
 
-            <div class="flex items-center">
-              <div class="w-full relative">
-                <a [routerLink]="isDisabled ? null : '../new'" convoy-permission="Project Settings|MANAGE" class="py-12px px-12px whitespace-nowrap w-full text-left hover:bg-new.surface-muted flex items-center font-body font-normal text-[14px] text-new.text-primary transition-colors" [class.pointer-events-none]="isDisabled" [class.opacity-50]="isDisabled">
-                  <svg width="16" height="16" class="mr-4px fill-new.text-primary scale-75">
-                    <use xlink:href="#plus-icon"></use>
-                  </svg>
-                  New Project
-                </a>
-
-                @if (!licenseService.hasLicense('project_limit') && getProjectLimitMessage()) {
-                  <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center absolute top-0 h-full w-full">
-                    <convoy-tooltip [withIcon]="false" position="top" className="!min-w-fit whitespace-nowrap !left-0 !translate-x-0">
-                      {{ getProjectLimitMessage() }}
-                      <div tooltipToggle class="flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px">
-                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                          <use xlink:href="#lock-icon"></use>
+            <div class="flex items-center overflow-visible">
+              <div class="w-full overflow-visible">
+                @if (isNewProjectBlocked()) {
+                  <convoy-tooltip [withIcon]="false" position="bottom" className="!min-w-[220px] max-w-[280px] whitespace-normal text-left !z-[60]">
+                    {{ getProjectLimitTooltip() }}
+                    <span tooltipToggle class="block w-full">
+                      <div class="py-12px px-12px whitespace-nowrap w-full flex items-center font-body font-normal text-[14px] text-new.text-secondary opacity-60 cursor-not-allowed">
+                        <svg width="16" height="16" class="mr-4px fill-new.text-secondary scale-75 opacity-60">
+                          <use xlink:href="#plus-icon"></use>
                         </svg>
-                        {{ getProjectLimitPillText() }}
+                        New Project
                       </div>
-                    </convoy-tooltip>
-                  </div>
-                }
-                @if (isDisabled && !getProjectLimitMessage()) {
-                  <div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full px-16px text-center">
-                    <svg width="10" height="10" class="fill-new.primary-400 scale-150 shrink-0">
-                      <use xlink:href="#lock-icon"></use>
-                    </svg>
+                    </span>
+                  </convoy-tooltip>
+                } @else if (isDisabled) {
+                  <convoy-tooltip [withIcon]="false" position="bottom" className="!min-w-[220px] max-w-[280px] whitespace-normal text-left !z-[60]">
                     {{ disabledOrganisationMessage }}
-                  </div>
+                    <span tooltipToggle class="block w-full">
+                      <div class="py-12px px-12px whitespace-nowrap w-full flex items-center font-body font-normal text-[14px] text-new.text-secondary opacity-60 cursor-not-allowed">
+                        <svg width="16" height="16" class="mr-4px fill-new.text-secondary scale-75 opacity-60">
+                          <use xlink:href="#plus-icon"></use>
+                        </svg>
+                        New Project
+                      </div>
+                    </span>
+                  </convoy-tooltip>
+                } @else {
+                  <a routerLink="../new" convoy-permission="Project Settings|MANAGE" class="py-12px px-12px whitespace-nowrap w-full text-left hover:bg-new.surface-muted flex items-center font-body font-normal text-[14px] text-new.text-primary transition-colors">
+                    <svg width="16" height="16" class="mr-4px fill-new.text-primary scale-75">
+                      <use xlink:href="#plus-icon"></use>
+                    </svg>
+                    New Project
+                  </a>
                 }
               </div>
               <div class="h-44px w-2px bg-new.border"></div>

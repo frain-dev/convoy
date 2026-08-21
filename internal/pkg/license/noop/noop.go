@@ -106,6 +106,10 @@ func (Licenser) AdvancedWebhookFiltering() bool {
 	return true
 }
 
+func (Licenser) EventSearch() bool {
+	return true
+}
+
 func (Licenser) PortalLinks() bool {
 	return true
 }

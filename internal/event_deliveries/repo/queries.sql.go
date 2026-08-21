@@ -159,10 +159,15 @@ func (q *Queries) CountExportedEventDeliveries(ctx context.Context, arg CountExp
 }
 
 const countPrevEventDeliveries = `-- name: CountPrevEventDeliveries :one
+WITH cursor_row AS (
+    SELECT created_at, id
+    FROM convoy.event_deliveries
+    WHERE id = $17 AND project_id = $1 AND deleted_at IS NULL
+)
 SELECT COALESCE(COUNT(*), 0) AS count
 FROM convoy.event_deliveries ed
 WHERE ed.deleted_at IS NULL
-  AND (ed.project_id = $1 OR $1 = '')
+  AND ed.project_id = $1
   AND (ed.event_id = $2 OR $2 = '')
   AND (ed.event_type = $3 OR $3 = '')
   AND ed.created_at >= $4
@@ -172,10 +177,11 @@ WHERE ed.deleted_at IS NULL
   AND (CASE WHEN $10::BOOLEAN THEN ed.subscription_id = $11 ELSE true END)
   AND (CASE WHEN $12::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $13 ELSE true END)
   AND (CASE WHEN $14::BOOLEAN THEN ed.idempotency_key = $15 ELSE true END)
+  AND EXISTS (SELECT 1 FROM cursor_row)
   AND (CASE
-           WHEN $16::text = 'DESC' THEN ed.id > $17
-           WHEN $16::text = 'ASC' THEN ed.id < $17
-           ELSE ed.id > $17 END)
+           WHEN $16::text = 'DESC' THEN (ed.created_at, ed.id) > (SELECT cr.created_at, cr.id FROM cursor_row cr)
+           WHEN $16::text = 'ASC' THEN (ed.created_at, ed.id) < (SELECT cr.created_at, cr.id FROM cursor_row cr)
+           ELSE (ed.created_at, ed.id) > (SELECT cr.created_at, cr.id FROM cursor_row cr) END)
 `
 
 type CountPrevEventDeliveriesParams struct {
@@ -604,7 +610,7 @@ SELECT
     COALESCE(s.name, '') AS "source_metadata.name"
 FROM convoy.event_deliveries ed
 LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
 LEFT JOIN convoy.devices d ON ed.device_id = d.id
 LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ed.deleted_at IS NULL
@@ -816,94 +822,82 @@ func (q *Queries) FindStuckEventDeliveriesByStatus(ctx context.Context, status p
 	return items, nil
 }
 
-const loadEventDeliveriesPaged = `-- name: LoadEventDeliveriesPaged :many
-
-WITH filtered_deliveries AS (
-    SELECT
-        ed.id, ed.project_id, ed.event_id, ed.subscription_id,
-        ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
-        COALESCE(ed.target_url, '') AS target_url,
-        COALESCE(ed.url_query_params, '') AS url_query_params,
-        COALESCE(ed.idempotency_key, '') AS idempotency_key,
-        ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
-        COALESCE(ed.event_type, '') AS event_type,
-        COALESCE(ed.device_id, '') AS device_id,
-        COALESCE(ed.endpoint_id, '') AS endpoint_id,
-        COALESCE(ed.delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
-        COALESCE(ed.latency_seconds, 0) AS latency_seconds,
-        COALESCE(ep.id, '') AS "endpoint_metadata.id",
-        COALESCE(ep.name, '') AS "endpoint_metadata.name",
-        COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
-        COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
-        COALESCE(ep.url, '') AS "endpoint_metadata.url",
-        COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
-        COALESCE(ep.status, '') AS "endpoint_metadata.status",
-        ep.deleted_at AS "endpoint_metadata.deleted_at",
-        ev.id AS "event_metadata.id",
-        ev.event_type AS "event_metadata.event_type",
-        ev.created_at AS "event_metadata.created_at",
-        COALESCE(d.id, '') AS "device_metadata.id",
-        COALESCE(d.status, '') AS "device_metadata.status",
-        COALESCE(d.host_name, '') AS "device_metadata.host_name",
-        COALESCE(s.id, '') AS "source_metadata.id",
-        COALESCE(s.name, '') AS "source_metadata.name",
-        COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
+const loadEventDeliveriesPagedInnerAsc = `-- name: LoadEventDeliveriesPagedInnerAsc :many
+WITH cursor_row AS (
+    SELECT created_at, id
+    FROM convoy.event_deliveries
+    WHERE id = $3 AND project_id = $1 AND deleted_at IS NULL
+),
+page AS (
+    SELECT ed.id
     FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
-    LEFT JOIN convoy.devices d ON ed.device_id = d.id
-    LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ed.deleted_at IS NULL
-      AND (ed.project_id = $2 OR $2 = '')
-      AND (ed.event_id = $3 OR $3 = '')
-      AND (ed.event_type = $4 OR $4 = '')
-      AND ed.created_at >= $5
-      AND ed.created_at <= $6
-      -- Endpoint filter
-      AND (CASE WHEN $7::BOOLEAN THEN ed.endpoint_id = ANY($8::TEXT[]) ELSE true END)
-      -- Status filter
-      AND (CASE WHEN $9::BOOLEAN THEN ed.status = ANY($10::TEXT[]) ELSE true END)
-      -- Subscription filter
-      AND (CASE WHEN $11::BOOLEAN THEN ed.subscription_id = $12 ELSE true END)
-      -- Broker message ID filter
-      -- TODO(perf): consider GIN index on metadata->>'broker_message_id' (cross-cutting concern across 9+ files)
-      AND (CASE WHEN $13::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $14 ELSE true END)
-      -- Idempotency key filter
-      AND (CASE WHEN $15::BOOLEAN THEN ed.idempotency_key = $16 ELSE true END)
-      -- Cursor pagination
+      AND ed.project_id = $1
+      AND (ed.event_id = $4 OR $4 = '')
+      AND (ed.event_type = $5 OR $5 = '')
+      AND ed.created_at >= $6
+      AND ed.created_at <= $7
+      AND (CASE WHEN $8::BOOLEAN THEN ed.endpoint_id = ANY($9::TEXT[]) ELSE true END)
+      AND (CASE WHEN $10::BOOLEAN THEN ed.status = ANY($11::TEXT[]) ELSE true END)
+      AND (CASE WHEN $12::BOOLEAN THEN ed.subscription_id = $13 ELSE true END)
+      AND (CASE WHEN $14::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $15 ELSE true END)
+      AND (CASE WHEN $16::BOOLEAN THEN ed.idempotency_key = $17 ELSE true END)
       AND (
         CASE
-            WHEN $17 = '' THEN true
-            WHEN ($1::text = 'DESC' AND $18::text = 'next') OR ($1::text = 'ASC' AND $18::text = 'prev') THEN ed.id <= $17
-            WHEN ($1::text = 'ASC' AND $18::text = 'next') OR ($1::text = 'DESC' AND $18::text = 'prev') THEN ed.id >= $17
-            ELSE true
+            WHEN $3 = '' THEN true
+            WHEN NOT EXISTS (SELECT 1 FROM cursor_row) THEN true
+            ELSE (ed.created_at, ed.id) >= (SELECT cr.created_at, cr.id FROM cursor_row cr)
         END
       )
-    ORDER BY
-        CASE WHEN ($1::text = 'DESC' AND $18::text = 'next') OR ($1::text = 'ASC' AND $18::text = 'prev') THEN ed.id END DESC,
-        CASE WHEN ($1::text = 'ASC' AND $18::text = 'next') OR ($1::text = 'DESC' AND $18::text = 'prev') THEN ed.id END ASC
-    LIMIT $19
+    ORDER BY ed.created_at ASC, ed.id ASC
+    LIMIT $18
 )
-SELECT id, project_id, event_id, subscription_id,
-       headers, attempts, status, metadata, cli_metadata,
-       target_url, url_query_params, idempotency_key, description,
-       created_at, updated_at, acknowledged_at,
-       event_type, device_id, endpoint_id, delivery_mode, latency_seconds,
-       "endpoint_metadata.id", "endpoint_metadata.name", "endpoint_metadata.project_id",
-       "endpoint_metadata.support_email", "endpoint_metadata.url", "endpoint_metadata.owner_id",
-       "endpoint_metadata.status", "endpoint_metadata.deleted_at",
-       "event_metadata.id", "event_metadata.event_type", "event_metadata.created_at",
-       "device_metadata.id", "device_metadata.status", "device_metadata.host_name",
-       "source_metadata.id", "source_metadata.name", "source_metadata.idempotency_keys"
-FROM filtered_deliveries
+SELECT
+    ed.id, ed.project_id, ed.event_id, ed.subscription_id,
+    ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
+    COALESCE(ed.target_url, '') AS target_url,
+    COALESCE(ed.url_query_params, '') AS url_query_params,
+    COALESCE(ed.idempotency_key, '') AS idempotency_key,
+    ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
+    COALESCE(ed.event_type, '') AS event_type,
+    COALESCE(ed.device_id, '') AS device_id,
+    COALESCE(ed.endpoint_id, '') AS endpoint_id,
+    COALESCE(ed.delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
+    COALESCE(ed.latency_seconds, 0) AS latency_seconds,
+    COALESCE(ep.id, '') AS "endpoint_metadata.id",
+    COALESCE(ep.name, '') AS "endpoint_metadata.name",
+    COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
+    COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
+    COALESCE(ep.url, '') AS "endpoint_metadata.url",
+    COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
+    COALESCE(ep.status, '') AS "endpoint_metadata.status",
+    ep.deleted_at AS "endpoint_metadata.deleted_at",
+    ev.id AS "event_metadata.id",
+    ev.event_type AS "event_metadata.event_type",
+    ev.created_at AS "event_metadata.created_at",
+    COALESCE(d.id, '') AS "device_metadata.id",
+    COALESCE(d.status, '') AS "device_metadata.status",
+    COALESCE(d.host_name, '') AS "device_metadata.host_name",
+    COALESCE(s.id, '') AS "source_metadata.id",
+    COALESCE(s.name, '') AS "source_metadata.name",
+    COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
+FROM page
+JOIN convoy.event_deliveries ed ON ed.id = page.id AND ed.project_id = $1
+LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
+LEFT JOIN convoy.devices d ON ed.device_id = d.id
+LEFT JOIN convoy.sources s ON s.id = ev.source_id
 ORDER BY
-    CASE WHEN $1::text = 'DESC' THEN id END DESC,
-    CASE WHEN $1::text = 'ASC' THEN id END ASC
+    CASE WHEN $2::text = 'DESC' THEN ed.created_at END DESC,
+    CASE WHEN $2::text = 'DESC' THEN ed.id END DESC,
+    CASE WHEN $2::text = 'ASC' THEN ed.created_at END ASC,
+    CASE WHEN $2::text = 'ASC' THEN ed.id END ASC
 `
 
-type LoadEventDeliveriesPagedParams struct {
-	SortOrder          pgtype.Text
+type LoadEventDeliveriesPagedInnerAscParams struct {
 	ProjectID          pgtype.Text
+	SortOrder          pgtype.Text
+	Cursor             pgtype.Text
 	EventID            pgtype.Text
 	EventType          pgtype.Text
 	StartDate          pgtype.Timestamptz
@@ -918,12 +912,225 @@ type LoadEventDeliveriesPagedParams struct {
 	BrokerMessageID    pgtype.Text
 	HasIdempotencyKey  pgtype.Bool
 	IdempotencyKey     pgtype.Text
-	Cursor             pgtype.Text
-	Direction          pgtype.Text
 	PageLimit          pgtype.Int8
 }
 
-type LoadEventDeliveriesPagedRow struct {
+type LoadEventDeliveriesPagedInnerAscRow struct {
+	ID                            string
+	ProjectID                     string
+	EventID                       string
+	SubscriptionID                string
+	Headers                       []byte
+	Attempts                      []byte
+	Status                        string
+	Metadata                      []byte
+	CliMetadata                   []byte
+	TargetUrl                     pgtype.Text
+	UrlQueryParams                pgtype.Text
+	IdempotencyKey                pgtype.Text
+	Description                   string
+	CreatedAt                     pgtype.Timestamptz
+	UpdatedAt                     pgtype.Timestamptz
+	AcknowledgedAt                pgtype.Timestamptz
+	EventType                     pgtype.Text
+	DeviceID                      pgtype.Text
+	EndpointID                    pgtype.Text
+	DeliveryMode                  pgtype.Text
+	LatencySeconds                pgtype.Numeric
+	EndpointMetadataID            pgtype.Text
+	EndpointMetadataName          pgtype.Text
+	EndpointMetadataProjectID     pgtype.Text
+	EndpointMetadataSupportEmail  pgtype.Text
+	EndpointMetadataUrl           pgtype.Text
+	EndpointMetadataOwnerID       pgtype.Text
+	EndpointMetadataStatus        pgtype.Text
+	EndpointMetadataDeletedAt     pgtype.Timestamptz
+	EventMetadataID               string
+	EventMetadataEventType        string
+	EventMetadataCreatedAt        pgtype.Timestamptz
+	DeviceMetadataID              pgtype.Text
+	DeviceMetadataStatus          pgtype.Text
+	DeviceMetadataHostName        pgtype.Text
+	SourceMetadataID              pgtype.Text
+	SourceMetadataName            pgtype.Text
+	SourceMetadataIdempotencyKeys []string
+}
+
+// Same as LoadEventDeliveriesPagedInnerDesc but inner scan uses ORDER BY created_at ASC, id ASC.
+func (q *Queries) LoadEventDeliveriesPagedInnerAsc(ctx context.Context, arg LoadEventDeliveriesPagedInnerAscParams) ([]LoadEventDeliveriesPagedInnerAscRow, error) {
+	rows, err := q.db.Query(ctx, loadEventDeliveriesPagedInnerAsc,
+		arg.ProjectID,
+		arg.SortOrder,
+		arg.Cursor,
+		arg.EventID,
+		arg.EventType,
+		arg.StartDate,
+		arg.EndDate,
+		arg.HasEndpointIds,
+		arg.EndpointIds,
+		arg.HasStatus,
+		arg.Statuses,
+		arg.HasSubscriptionID,
+		arg.SubscriptionID,
+		arg.HasBrokerMessageID,
+		arg.BrokerMessageID,
+		arg.HasIdempotencyKey,
+		arg.IdempotencyKey,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LoadEventDeliveriesPagedInnerAscRow
+	for rows.Next() {
+		var i LoadEventDeliveriesPagedInnerAscRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventID,
+			&i.SubscriptionID,
+			&i.Headers,
+			&i.Attempts,
+			&i.Status,
+			&i.Metadata,
+			&i.CliMetadata,
+			&i.TargetUrl,
+			&i.UrlQueryParams,
+			&i.IdempotencyKey,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.AcknowledgedAt,
+			&i.EventType,
+			&i.DeviceID,
+			&i.EndpointID,
+			&i.DeliveryMode,
+			&i.LatencySeconds,
+			&i.EndpointMetadataID,
+			&i.EndpointMetadataName,
+			&i.EndpointMetadataProjectID,
+			&i.EndpointMetadataSupportEmail,
+			&i.EndpointMetadataUrl,
+			&i.EndpointMetadataOwnerID,
+			&i.EndpointMetadataStatus,
+			&i.EndpointMetadataDeletedAt,
+			&i.EventMetadataID,
+			&i.EventMetadataEventType,
+			&i.EventMetadataCreatedAt,
+			&i.DeviceMetadataID,
+			&i.DeviceMetadataStatus,
+			&i.DeviceMetadataHostName,
+			&i.SourceMetadataID,
+			&i.SourceMetadataName,
+			&i.SourceMetadataIdempotencyKeys,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const loadEventDeliveriesPagedInnerDesc = `-- name: LoadEventDeliveriesPagedInnerDesc :many
+
+WITH cursor_row AS (
+    SELECT created_at, id
+    FROM convoy.event_deliveries
+    WHERE id = $3 AND project_id = $1 AND deleted_at IS NULL
+),
+page AS (
+    SELECT ed.id
+    FROM convoy.event_deliveries ed
+    WHERE ed.deleted_at IS NULL
+      AND ed.project_id = $1
+      AND (ed.event_id = $4 OR $4 = '')
+      AND (ed.event_type = $5 OR $5 = '')
+      AND ed.created_at >= $6
+      AND ed.created_at <= $7
+      AND (CASE WHEN $8::BOOLEAN THEN ed.endpoint_id = ANY($9::TEXT[]) ELSE true END)
+      AND (CASE WHEN $10::BOOLEAN THEN ed.status = ANY($11::TEXT[]) ELSE true END)
+      AND (CASE WHEN $12::BOOLEAN THEN ed.subscription_id = $13 ELSE true END)
+      -- TODO(perf): consider GIN index on metadata->>'broker_message_id' (cross-cutting concern across 9+ files)
+      AND (CASE WHEN $14::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $15 ELSE true END)
+      AND (CASE WHEN $16::BOOLEAN THEN ed.idempotency_key = $17 ELSE true END)
+      AND (
+        CASE
+            WHEN $3 = '' THEN true
+            WHEN NOT EXISTS (SELECT 1 FROM cursor_row) THEN true
+            ELSE (ed.created_at, ed.id) <= (SELECT cr.created_at, cr.id FROM cursor_row cr)
+        END
+      )
+    ORDER BY ed.created_at DESC, ed.id DESC
+    LIMIT $18
+)
+SELECT
+    ed.id, ed.project_id, ed.event_id, ed.subscription_id,
+    ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
+    COALESCE(ed.target_url, '') AS target_url,
+    COALESCE(ed.url_query_params, '') AS url_query_params,
+    COALESCE(ed.idempotency_key, '') AS idempotency_key,
+    ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
+    COALESCE(ed.event_type, '') AS event_type,
+    COALESCE(ed.device_id, '') AS device_id,
+    COALESCE(ed.endpoint_id, '') AS endpoint_id,
+    COALESCE(ed.delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
+    COALESCE(ed.latency_seconds, 0) AS latency_seconds,
+    COALESCE(ep.id, '') AS "endpoint_metadata.id",
+    COALESCE(ep.name, '') AS "endpoint_metadata.name",
+    COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
+    COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
+    COALESCE(ep.url, '') AS "endpoint_metadata.url",
+    COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
+    COALESCE(ep.status, '') AS "endpoint_metadata.status",
+    ep.deleted_at AS "endpoint_metadata.deleted_at",
+    ev.id AS "event_metadata.id",
+    ev.event_type AS "event_metadata.event_type",
+    ev.created_at AS "event_metadata.created_at",
+    COALESCE(d.id, '') AS "device_metadata.id",
+    COALESCE(d.status, '') AS "device_metadata.status",
+    COALESCE(d.host_name, '') AS "device_metadata.host_name",
+    COALESCE(s.id, '') AS "source_metadata.id",
+    COALESCE(s.name, '') AS "source_metadata.name",
+    COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
+FROM page
+JOIN convoy.event_deliveries ed ON ed.id = page.id AND ed.project_id = $1
+LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
+LEFT JOIN convoy.devices d ON ed.device_id = d.id
+LEFT JOIN convoy.sources s ON s.id = ev.source_id
+ORDER BY
+    CASE WHEN $2::text = 'DESC' THEN ed.created_at END DESC,
+    CASE WHEN $2::text = 'DESC' THEN ed.id END DESC,
+    CASE WHEN $2::text = 'ASC' THEN ed.created_at END ASC,
+    CASE WHEN $2::text = 'ASC' THEN ed.id END ASC
+`
+
+type LoadEventDeliveriesPagedInnerDescParams struct {
+	ProjectID          pgtype.Text
+	SortOrder          pgtype.Text
+	Cursor             pgtype.Text
+	EventID            pgtype.Text
+	EventType          pgtype.Text
+	StartDate          pgtype.Timestamptz
+	EndDate            pgtype.Timestamptz
+	HasEndpointIds     pgtype.Bool
+	EndpointIds        []string
+	HasStatus          pgtype.Bool
+	Statuses           []string
+	HasSubscriptionID  pgtype.Bool
+	SubscriptionID     pgtype.Text
+	HasBrokerMessageID pgtype.Bool
+	BrokerMessageID    pgtype.Text
+	HasIdempotencyKey  pgtype.Bool
+	IdempotencyKey     pgtype.Text
+	PageLimit          pgtype.Int8
+}
+
+type LoadEventDeliveriesPagedInnerDescRow struct {
 	ID                            string
 	ProjectID                     string
 	EventID                       string
@@ -967,12 +1174,19 @@ type LoadEventDeliveriesPagedRow struct {
 // ============================================================================
 // Group 4: Pagination
 // ============================================================================
-// TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
-// Consider a "slim" paginated query variant that omits heavy columns for list views.
-func (q *Queries) LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDeliveriesPagedParams) ([]LoadEventDeliveriesPagedRow, error) {
-	rows, err := q.db.Query(ctx, loadEventDeliveriesPaged,
-		arg.SortOrder,
+// Page ids first (no JSONB, no joins), then hydrate. Inner ORDER BY is plain
+// created_at/id so generic plans can range-scan
+// idx_event_deliveries_project_created_id_deleted and stop at LIMIT. ORDER BY
+// CASE or ORDER BY id on the PK walks the whole table when the date window is
+// empty. Split Desc/Asc for the same reason as LoadEventsPagedExistsInner*.
+// Cursor is the delivery id; keyset uses that row's (created_at, id). An
+// empty cursor, or one that does not resolve (SetCursors' first-page
+// sentinel), applies no keyset.
+func (q *Queries) LoadEventDeliveriesPagedInnerDesc(ctx context.Context, arg LoadEventDeliveriesPagedInnerDescParams) ([]LoadEventDeliveriesPagedInnerDescRow, error) {
+	rows, err := q.db.Query(ctx, loadEventDeliveriesPagedInnerDesc,
 		arg.ProjectID,
+		arg.SortOrder,
+		arg.Cursor,
 		arg.EventID,
 		arg.EventType,
 		arg.StartDate,
@@ -987,17 +1201,15 @@ func (q *Queries) LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDel
 		arg.BrokerMessageID,
 		arg.HasIdempotencyKey,
 		arg.IdempotencyKey,
-		arg.Cursor,
-		arg.Direction,
 		arg.PageLimit,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []LoadEventDeliveriesPagedRow
+	var items []LoadEventDeliveriesPagedInnerDescRow
 	for rows.Next() {
-		var i LoadEventDeliveriesPagedRow
+		var i LoadEventDeliveriesPagedInnerDescRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,

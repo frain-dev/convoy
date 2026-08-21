@@ -308,6 +308,20 @@ func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
 }
 
+// EventSearch mocks base method.
+func (m *MockLicenser) EventSearch() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EventSearch")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// EventSearch indicates an expected call of EventSearch.
+func (mr *MockLicenserMockRecorder) EventSearch() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventSearch", reflect.TypeOf((*MockLicenser)(nil).EventSearch))
+}
+
 // FeatureListJSON mocks base method.
 func (m *MockLicenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	m.ctrl.T.Helper()

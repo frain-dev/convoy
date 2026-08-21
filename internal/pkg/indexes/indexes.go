@@ -12,7 +12,9 @@
 // Migrations drop what they find instead, which is instant, and record the
 // definition in convoy.dropped_indexes so the build can happen here, when an
 // operator chooses. Rebuilding is the expensive half: hours on a large table, and
-// it must not run at boot.
+// it must not run at boot — except the names migrate queues on purpose
+// (PayloadGIN, EventDeliveriesProjectCreated) so server and agent can start
+// those rebuilds in the background.
 package indexes
 
 import (
@@ -41,6 +43,39 @@ const lockTimeout = "3s"
 // pool. It is short because the alternative to waiting is closing the connection,
 // which is cheap next to leaving a session-wide timeout on a pooled connection.
 const resetTimeout = 5 * time.Second
+
+// PayloadGIN is the events payload search index. sql/1787200001.sql inserts this
+// name into dropped_indexes instead of CREATE INDEX at migrate.
+const PayloadGIN = "idx_events_payload_gin"
+
+// PayloadGINDefinition is the statement the rebuild must execute. It has to match
+// the row sql/1787200001.sql inserts, including USING so indexShape can read it.
+const PayloadGINDefinition = `CREATE INDEX idx_events_payload_gin ON convoy.events USING gin (convoy.event_payload_jsonb(data) jsonb_path_ops) WHERE (deleted_at IS NULL)`
+
+// EventDeliveriesProjectCreated is the Event Deliveries list/chart index.
+// sql/1787251200.sql inserts this name into dropped_indexes instead of CREATE INDEX at migrate.
+const EventDeliveriesProjectCreated = "idx_event_deliveries_project_created_id_deleted"
+
+// EventDeliveriesProjectCreatedDefinition is the statement the rebuild must execute.
+// It has to match the row sql/1787251200.sql inserts.
+const EventDeliveriesProjectCreatedDefinition = `CREATE INDEX idx_event_deliveries_project_created_id_deleted ON convoy.event_deliveries USING btree (project_id, created_at DESC, id DESC) WHERE (deleted_at IS NULL)`
+
+// BootQueuedNames is the boot rebuild order: dashboard list first, then the
+// hours-long payload GIN. StartQueued* walks this at process start; a finished
+// boot rebuild walks it again so a name that hit the single-active slot still
+// starts when the slot frees, without waiting for the next process start.
+var BootQueuedNames = []string{EventDeliveriesProjectCreated, PayloadGIN}
+
+// BootQueued reports whether migrate queued this name for a boot rebuild rather
+// than leaving it for the operator --rebuild path.
+func BootQueued(name string) bool {
+	for _, n := range BootQueuedNames {
+		if n == name {
+			return true
+		}
+	}
+	return false
+}
 
 // ErrNotDropped means the name does not identify an index awaiting a rebuild,
 // either because nothing dropped it or because it has already been rebuilt.

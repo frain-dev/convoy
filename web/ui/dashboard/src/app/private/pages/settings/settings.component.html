@@ -16,32 +16,34 @@
 
   <div class="flex flex-col md:flex-row gap-24px md:gap-40px">
     <!-- Sidebar nav -->
-    <div class="min-w-[200px] shrink-0 settings-sidebar">
-      <ul class="flex flex-col gap-4px">
+    <div class="min-w-[200px] shrink-0 settings-sidebar overflow-visible">
+      <ul class="flex flex-col gap-4px overflow-visible">
         @for (menu of settingsMenu; track $index) {
-          <li class="!list-none flex items-center gap-12px">
-            <button
-              type="button"
-              class="w-full flex items-center gap-10px px-12px py-8px rounded-8px font-body text-[14px] leading-[20px] text-left transition-colors disabled:opacity-60"
-              [class]="activePage === menu.name ? 'bg-new.surface-muted text-new.text-primary font-medium' : 'text-new.text-secondary hover:bg-new.surface-subtle'"
-              (click)="toggleActivePage(menu.name)"
-              [disabled]="menu.name === 'team' && !licenseService.hasLicense('user_limit')"
-              >
-              <svg width="16" height="16" class="transition-all shrink-0" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-11'">
-                <use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
-              </svg>
-              <span class="capitalize">{{ menu.name }}</span>
-            </button>
-            @if (menu.name === 'team' && !licenseService.hasLicense('user_limit') && getUserLimitPillText()) {
-              <convoy-tooltip [withIcon]="false" position="right" className="!min-w-fit max-w-[220px] whitespace-normal">
+          <li class="!list-none overflow-visible">
+            @if (menu.name === 'team' && isTeamMenuBlocked()) {
+              <convoy-tooltip [withIcon]="false" position="right" className="!min-w-[220px] max-w-[280px] whitespace-normal text-left !z-[60]">
                 {{ getTeamUpgradeMessage() }}
-                <button type="button" tooltipToggle convoy-tag size="sm" color="primary" class="whitespace-nowrap cursor-pointer" (click)="onTeamPremiumClick($event)">
-                  <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                    <use xlink:href="#lock-icon"></use>
-                  </svg>
-                  {{ getUserLimitPillText() }}
-                </button>
+                <span tooltipToggle class="block w-full">
+                  <div class="w-full flex items-center gap-10px px-12px py-8px rounded-8px font-body text-[14px] leading-[20px] text-left text-new.text-secondary opacity-60 cursor-not-allowed">
+                    <svg width="16" height="16" class="transition-all shrink-0 stroke-neutral-11">
+                      <use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
+                    </svg>
+                    <span class="capitalize">{{ menu.name }}</span>
+                  </div>
+                </span>
               </convoy-tooltip>
+            } @else {
+              <button
+                type="button"
+                class="w-full flex items-center gap-10px px-12px py-8px rounded-8px font-body text-[14px] leading-[20px] text-left transition-colors"
+                [class]="activePage === menu.name ? 'bg-new.surface-muted text-new.text-primary font-medium' : 'text-new.text-secondary hover:bg-new.surface-subtle'"
+                (click)="toggleActivePage(menu.name)"
+                >
+                <svg width="16" height="16" class="transition-all shrink-0" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-11'">
+                  <use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
+                </svg>
+                <span class="capitalize">{{ menu.name }}</span>
+              </button>
             }
           </li>
         }

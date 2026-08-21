@@ -12,7 +12,7 @@
     <button
       type="button"
       class="flex items-center gap-4px min-w-[100px] px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50 disabled:pointer-events-none"
-      [disabled]="!hasActiveFilters || fetchingCount"
+      [disabled]="!hasActiveFilters || fetchingCount || !!queryParams.query || !!queryParams.body"
       title="Retry all events matching the current filters"
       (click)="fetchRetryCount()"
       >
@@ -98,20 +98,84 @@
     <!-- Table card -->
     <div class="bg-white-100 border border-new.border rounded-12px">
       <!-- Search -->
-      @if (licenseService.hasLicense('AdvancedWebhookFiltering')) {
-        <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
-          <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="search" />
-          <input
-            type="search"
-            placeholder="Search events..."
-            [(ngModel)]="searchString"
-            (input)="onSearch()"
-            [ngModelOptions]="{ standalone: true }"
-            class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
-            />
-        </div>
-      }
+      <div class="border-b border-new.border" [class.bg-new.surface-muted]="!canSearchEvents">
+        @if (canSearchEvents) {
+          <div class="flex items-center gap-8px px-12px h-40px">
+            @if (isSearchingEvents) {
+              <img src="/assets/img/svg/deliveries-loading.svg" class="w-16px h-16px shrink-0 animate-spin" alt="" />
+            } @else {
+              <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0" alt="search" />
+            }
+            <input
+              type="search"
+              placeholder="Search events..."
+              [(ngModel)]="searchString"
+              (input)="onSearch()"
+              [ngModelOptions]="{ standalone: true }"
+              spellcheck="false"
+              [attr.aria-busy]="isSearchingEvents"
+              aria-label="Search events"
+              class="event-log-search-input flex-1 min-w-0 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+              />
+            <convoy-tooltip size="sm" position="bottom" class="shrink-0 ml-4px" className="!min-w-[300px] max-w-[340px] whitespace-normal !text-left !font-normal">
+              <p class="font-heading font-medium text-[13px] leading-[18px] text-new.text-primary mb-8px">How event search works</p>
+              <p class="mb-8px leading-[18px]">
+                <span class="font-medium text-new.text-primary">Text</span>
+                matches event ID, event type, source name, and idempotency key.
+              </p>
+              <p class="mb-8px leading-[18px]">
+                <span class="font-medium text-new.text-primary">JSON object</span>
+                filters the payload with exact JSON containment. Every key and value you include must match the stored body at the same path.
+              </p>
+              <p class="mb-8px leading-[18px] text-new.text-secondary">
+                Examples:
+                <span class="font-menlo text-[11px] text-new.text-primary">&#123;"status": "paid"&#125;</span>
+                or nested
+                <span class="font-menlo text-[11px] text-new.text-primary">&#123;"data": &#123;"status": "paid"&#125;&#125;</span>.
+                Relaxed input such as
+                <span class="font-menlo text-[11px] text-new.text-primary">&#123;status: "paid"&#125;</span>
+                or
+                <span class="font-menlo text-[11px] text-new.text-primary">data: &#123;status: "paid"&#125;</span>
+                is also accepted. Bare
+                <span class="font-menlo text-[11px] text-new.text-primary">status: "paid"</span>
+                is text search, not payload.
+              </p>
+              <p class="mb-8px leading-[18px] text-new.text-secondary">
+                Mix text and JSON to require both, for example
+                <span class="font-menlo text-[11px] text-new.text-primary">invoice.paid &#123;"status": "paid"&#125;</span>.
+              </p>
+              <p class="mb-8px leading-[18px] text-new.text-secondary">
+                Open an event and mirror the field paths shown in the payload panel. A nested field is not the same as a top-level field with the same name.
+              </p>
+              <p class="leading-[18px] text-new.text-secondary">
+                Search uses the date range above (default last 7 days). Narrow the range if a search times out.
+              </p>
+            </convoy-tooltip>
+          </div>
+        } @else {
+          <div
+            class="flex items-center gap-8px px-12px h-40px cursor-not-allowed select-none"
+            title="Event search requires a Business plan."
+            >
+            <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0 opacity-50" alt="" />
+            <span class="flex-1 min-w-0 font-body font-normal text-[14px] text-new.text-placeholder select-none">Search events...</span>
+            <div convoy-tag size="sm" color="primary" class="shrink-0">
+              <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                <use xlink:href="#lock-icon"></use>
+              </svg>
+              Business
+            </div>
+            <convoy-tooltip size="sm" position="bottom" class="shrink-0 ml-4px" className="!min-w-[300px] max-w-[340px] whitespace-normal !text-left !font-normal">
+              <p class="font-heading font-medium text-[13px] leading-[18px] text-new.text-primary mb-8px">Event search</p>
+              <p class="leading-[18px] text-new.text-secondary">
+                Search event metadata and payload within the selected date range on Business plans.
+              </p>
+            </convoy-tooltip>
+          </div>
+        }
+      </div>
 
+      <div [class.opacity-60]="isSearchingEvents && !isloadingEvents" [class.pointer-events-none]="isSearchingEvents && !isloadingEvents">
       @if (isloadingEvents) {
         <!-- Loading state -->
         <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
@@ -125,9 +189,12 @@
         <!-- Error state -->
         <div class="flex flex-col items-center justify-center gap-16px py-56px px-32px">
           <img src="/assets/img/svg/deliveries-error.svg" class="w-48px h-48px" alt="" />
-          <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
+          <div class="flex flex-col items-center gap-4px text-center max-w-[360px]">
             <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">We couldn&rsquo;t load events</p>
-            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Check your connection and try again.</p>
+            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ fetchErrorMessage || 'Try again.' }}</p>
+            @if (searchTimedOut) {
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Try a shorter date range or a simpler JSON filter.</p>
+            }
           </div>
           <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="getEventLogs({ showLoader: true })">Try again</button>
         </div>
@@ -137,7 +204,18 @@
           <img src="/assets/img/svg/deliveries-no-results.svg" class="w-48px h-48px" alt="" />
           <div class="flex flex-col items-center gap-4px text-center max-w-[320px]">
             <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No events match</p>
-            <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Adjust the filters or date range to see more results.</p>
+            @if (isJsonPayloadSearch) {
+              <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+                Your JSON filter must match the stored payload structure. Use the same keys, values, and nesting. Open an event and copy the paths from the payload panel. For example, use
+                <span class="font-menlo text-[12px]">&#123;"data": &#123;"status": "paid"&#125;&#125;</span>
+                when
+                <span class="font-menlo text-[12px]">status</span>
+                is nested under
+                <span class="font-menlo text-[12px]">data</span>.
+              </p>
+            } @else {
+              <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Adjust the filters or date range to see more results.</p>
+            }
           </div>
           <button type="button" class="min-w-[100px] rounded-full py-12px px-16px bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all duration-300 hover:opacity-80" (click)="clearAllFilters()">Clear filters</button>
         </div>
@@ -178,14 +256,16 @@
             <div
               class="grid w-full grid-cols-[minmax(0,1.7fr)_minmax(0,1.2fr)_110px_100px_110px] items-center border-b border-new.border last:border-b-0 cursor-pointer transition-colors group"
               [class]="event.uid === eventsDetailsItem?.uid ? 'bg-new.primary-25' : 'hover:bg-new.surface-subtle'"
-              (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
+              (click)="selectEvent(event)"
               >
               <!-- Event ID -->
-              <div class="flex items-center gap-8px px-20px h-40px min-w-0">
-                <span class="font-menlo text-[13px] text-new.text-primary truncate">{{ event.uid }}</span>
-                <button type="button" class="w-24px h-24px shrink-0 flex items-center justify-center rounded-[6px] opacity-0 group-hover:opacity-100 transition-all hover:bg-new.surface-muted" title="Copy event ID" (click)="copyText(event.uid, 'Event ID', $event)">
-                  <img src="/assets/img/svg/copy-gray.svg" class="w-14px h-14px" alt="copy id" />
-                </button>
+              <div class="flex items-center px-20px h-40px min-w-0">
+                <div class="flex items-center gap-8px min-w-0">
+                  <span class="font-menlo text-[13px] text-new.text-primary truncate" [innerHTML]="highlightSearchText(event.uid)"></span>
+                  <button type="button" class="w-24px h-24px shrink-0 flex items-center justify-center rounded-[6px] opacity-0 group-hover:opacity-100 transition-all hover:bg-new.surface-muted" title="Copy event ID" (click)="copyText(event.uid, 'Event ID', $event)">
+                    <img src="/assets/img/svg/copy-gray.svg" class="w-14px h-14px" alt="copy id" />
+                  </button>
+                </div>
               </div>
 
               <!-- Source -->
@@ -194,8 +274,8 @@
                   class="font-body font-normal text-[14px] leading-normal truncate"
                   [class]="!portalToken && event.source_metadata?.name ? 'text-new.primary-400 cursor-pointer hover:underline' : 'text-new.text-secondary'"
                   (click)="viewSource(event?.source_metadata?.uid); $event.stopPropagation()"
+                  [innerHTML]="highlightSearchText(event.source_metadata?.name || 'Rest API')"
                   >
-                  {{ event.source_metadata?.name || 'Rest API' }}
                 </span>
               </div>
 
@@ -246,10 +326,11 @@
           </div>
         </div>
       }
+      </div>
     </div>
 
     <!-- Details sidebar -->
-    <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-16px">
+    <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-16px" [class.opacity-60]="isSearchingEvents && !isloadingEvents">
       @if (isloadingEvents) {
         <div class="flex flex-col gap-16px">
           <div class="bg-new.surface-muted rounded-[24px] animate-pulse h-4 w-80px"></div>
@@ -356,7 +437,14 @@
 
         <!-- Payload + headers -->
         <div class="flex flex-col gap-12px">
-          <prism title="Event" language="json" [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data)"></prism>
+          <prism
+            title="Event"
+            language="json"
+            [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data)"
+            [highlightKeyTerms]="payloadSearchHighlightKeys"
+            [highlightValueTerms]="payloadSearchHighlightValues"
+            [autoScrollKey]="payloadAutoScrollKey"
+          ></prism>
           @if (eventsDetailsItem?.headers) {
             <prism title="Headers" language="json" type="headers" [code]="eventsDetailsItem?.headers"></prism>
           }

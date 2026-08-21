@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/endpoints/disable"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/filters"
@@ -124,7 +125,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	metaEventRepo := meta_events.New(opts.Logger, opts.DB)
 	endpointRepo := cached.NewCachedEndpointRepository(endpoints.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultEndpointTTL, lo)
 	eventRepo := events.New(opts.Logger, opts.DB)
-	jobRepo := postgres.NewJobRepo(opts.DB)
 	eventDeliveryRepo := event_deliveries.New(opts.Logger, opts.DB)
 	subRepo := cached.NewCachedSubscriptionRepository(subscriptions.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultSubscriptionTTL, lo)
 	configRepo := configuration.New(opts.Logger, opts.DB)
@@ -233,46 +233,68 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		cb.ClockOption(clock.NewRealClock()),
 		cb.LoggerOption(lo),
 		cb.EnabledFuncOption(cbEnablement.EnabledAnywhere),
-		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b cb.CircuitBreaker) error {
+		// Returns true only when the alert was dispatched, so the manager counts an
+		// alert that this tick actually produced. Every other exit reports false and
+		// leaves the window's one alert unspent.
+		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b *cb.CircuitBreaker) (bool, error) {
+			// This handler only knows how to disable a resource. A type it does
+			// not recognise must not fall through to the disable side effect, so
+			// it is rejected rather than silently deactivating the endpoint.
+			if n != cb.TypeDisableResource {
+				return false, fmt.Errorf("unsupported circuit breaker notification type: %s", n)
+			}
+
 			endpointId := strings.Split(b.Key, ":")[1]
 			project, funcErr := projectRepo.FetchProjectByID(ctx, b.TenantId)
 			if funcErr != nil {
-				return funcErr
+				return false, funcErr
 			}
 
 			endpoint, funcErr := endpointRepo.FindEndpointByID(ctx, endpointId, b.TenantId)
 			if funcErr != nil {
-				return funcErr
+				return false, funcErr
 			}
 
-			switch n {
-			case cb.TypeDisableResource:
-				// Honor per-org enablement (override wins) for the disable side effect,
-				// matching the enforcement path. The sampler computes globally, but an
-				// org with circuit breaking disabled (e.g. a disabled override while env
-				// forces the instance default on) must not have its endpoints auto-disabled.
-				if !cbEnablement.EnabledForOrg(ctx, project.OrganisationID) {
-					return nil
-				}
-
-				breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
-				if breakerErr != nil {
-					return breakerErr
-				}
-
-				orgRepo := organisations.New(lo, opts.DB)
-				ownerEmail := ""
-				if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
-					if owner, err := users.New(opts.Logger, opts.DB).FindUserByID(ctx, org.OwnerID); err == nil {
-						ownerEmail = owner.Email
-					}
-				}
-				_ = EnqueueCircuitBreakerEmails(ctx, opts.Queue, lo, project, endpoint, ownerEmail, b.FailureRate)
-
-			default:
-				return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
+			// Honor per-org enablement (override wins) for the disable side effect,
+			// matching the enforcement path. The sampler computes globally, but an
+			// org with circuit breaking disabled (e.g. a disabled override while env
+			// forces the instance default on) must not have its endpoints auto-disabled.
+			if !cbEnablement.EnabledForOrg(ctx, project.OrganisationID) {
+				return false, nil
 			}
-			return nil
+
+			// Circuit breaker auto-disable requires project.Config.DisableEndpoint,
+			// matching per-delivery enforcement (see internal/endpoints/disable).
+			if !disable.CircuitBreakerOwnsEndpointDisable(ctx, opts.Licenser, cbEnablement, project) {
+				return false, nil
+			}
+
+			// Re-applied on every tick the breaker stays tripped, because the
+			// endpoint may have been re-activated while it is still failing.
+			statusChanged, breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
+			if breakerErr != nil {
+				return false, breakerErr
+			}
+			if statusChanged {
+				b.DisableAlertPending = true
+			}
+
+			// Alerts fire on active-to-inactive transitions only, but keep retrying
+			// within the window when enqueue failed on the transition tick.
+			if b.NotificationsSent > 0 || !b.DisableAlertPending {
+				return false, nil
+			}
+
+			ownerEmail := ""
+			orgRepo := organisations.New(lo, opts.DB)
+			if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
+				if owner, err := users.New(opts.Logger, opts.DB).FindUserByID(ctx, org.OwnerID); err == nil {
+					ownerEmail = owner.Email
+				}
+			}
+
+			sent := EnqueueCircuitBreakerNotifications(ctx, opts.Queue, lo, opts.Licenser, project, endpoint, ownerEmail, b.FailureRate)
+			return sent, nil
 		}),
 	)
 	if err != nil {
@@ -405,10 +427,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && opts.Licenser.AdvancedWebhookFiltering() {
-		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, locker, lo), nil)
-		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo, lo), nil)
-	}
+	// events_search tokenization is legacy FTS copy; unified list search (PDE-1009) reads
+	// convoy.events directly and no longer enqueues TokenizeSearch jobs.
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher), nil)
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo), nil)

@@ -68,7 +68,8 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 
 	projectConfig := newProject.Config.Transform()
 	if projectConfig == nil {
-		projectConfig = &datastore.DefaultProjectConfig
+		cfg := datastore.DefaultProjectConfig
+		projectConfig = &cfg
 	} else {
 		if projectConfig.Signature != nil {
 			checkSignatureVersions(projectConfig.Signature.Versions)
@@ -106,7 +107,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		}
 	}
 
-	if !ps.Licenser.AdvancedWebhookFiltering() {
+	if !ps.Licenser.EventSearch() {
 		projectConfig.SearchPolicy = ""
 	}
 
@@ -209,7 +210,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 		project.LogoURL = update.LogoURL
 	}
 
-	if !ps.Licenser.AdvancedWebhookFiltering() {
+	if !ps.Licenser.EventSearch() {
 		project.Config.SearchPolicy = ""
 	}
 
@@ -266,13 +267,13 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 	if patch.CircuitBreaker != nil {
 		merged.CircuitBreaker = incoming.CircuitBreaker
 	}
-	if !util.IsStringEmpty(patch.SearchPolicy) {
-		merged.SearchPolicy = incoming.SearchPolicy
-	}
 	if patch.MaxIngestSize > 0 {
 		merged.MaxIngestSize = incoming.MaxIngestSize
 	}
 	if present != nil {
+		if _, ok := present["search_policy"]; ok {
+			merged.SearchPolicy = incoming.SearchPolicy
+		}
 		if _, ok := present["request_id_header"]; ok {
 			merged.RequestIDHeader = incoming.RequestIDHeader
 		}
@@ -294,9 +295,14 @@ func applyProjectConfigPatch(existing *datastore.ProjectConfig, patch *models.Pr
 		if _, ok := present["allow_unmatched_dynamic_urls"]; ok {
 			merged.AllowUnmatchedDynamicURLs = incoming.AllowUnmatchedDynamicURLs
 		}
-	} else if patch.RequestIDHeader != "" {
-		// Legacy callers without present-key tracking still apply non-empty values.
-		merged.RequestIDHeader = incoming.RequestIDHeader
+	} else {
+		if !util.IsStringEmpty(patch.SearchPolicy) {
+			merged.SearchPolicy = incoming.SearchPolicy
+		}
+		if patch.RequestIDHeader != "" {
+			// Legacy callers without present-key tracking still apply non-empty values.
+			merged.RequestIDHeader = incoming.RequestIDHeader
+		}
 	}
 	return &merged
 }

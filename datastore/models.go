@@ -303,7 +303,7 @@ const (
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		SearchPolicy:           "720h",
+		SearchPolicy:           "",
 		MaxIngestSize:          config.MaxResponseSize,
 		ReplayAttacks:          false,
 		DisableEndpoint:        false,
@@ -441,6 +441,7 @@ type Endpoint struct {
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`
 	SlackWebhookURL    string  `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	TeamsWebhookURL    string  `json:"teams_webhook_url,omitempty" db:"teams_webhook_url"`
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
@@ -644,6 +645,9 @@ type ProjectConfig struct {
 	// project's endpoint URL templates auto-create an endpoint. Default false
 	// rejects unmatched URLs.
 	AllowUnmatchedDynamicURLs bool                           `json:"allow_unmatched_dynamic_urls" db:"allow_unmatched_dynamic_urls"`
+	// SearchPolicy is an optional Go duration (e.g. "24h") shown in project settings.
+	// When set, the dashboard explains that payload/JSON search is additionally clamped
+	// to this lookback intersected with the Events log date picker. Empty means opt-out.
 	SearchPolicy              string                         `json:"search_policy" db:"search_policy"`
 	SSL                       *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
 	RateLimit                 *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`

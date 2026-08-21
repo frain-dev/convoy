@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -270,10 +271,10 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 //	@Accept			json
 //	@Id				GetEventDeliveriesPaged
 //	@Produce		json
-//	@Param			projectID	path		string							true	"Project ID"
-//	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventDeliveryResponse}}
-//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID		path		string							true	"Project ID"
+//	@Param			request			query		models.QueryListEventDelivery	false	"Query Params"
+//	@Success		200				{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.EventDeliveryResponse}}
+//	@Failure		400,401,404,504	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/eventdeliveries [get]
 func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request) {
@@ -326,8 +327,14 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	f := data.Filter
 
-	ed, paginationData, err := event_deliveries.New(h.A.Logger, h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
+	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
+	defer cancel()
+
+	ed, paginationData, err := event_deliveries.New(h.A.Logger, h.A.DB).LoadEventDeliveriesPaged(ctx, project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
 	if err != nil {
+		if renderEventDeliveriesTimeout(w, r, err) {
+			return
+		}
 		h.A.Logger.ErrorContext(r.Context(), "failed to fetch event deliveries", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
 		return
@@ -380,14 +387,36 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	}
 
 	f := data.Filter
-	count, err := event_deliveries.New(h.A.Logger, h.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
+
+	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
+	defer cancel()
+
+	count, err := event_deliveries.New(h.A.Logger, h.A.DB).CountEventDeliveries(ctx, project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
+		if renderEventDeliveriesTimeout(w, r, err) {
+			return
+		}
 		h.A.Logger.ErrorContext(r.Context(), "an error occurred while fetching event deliveries", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("event deliveries count successful", map[string]interface{}{"num": count}, http.StatusOK))
+}
+
+const eventDeliveriesTimeoutMsg = "Event deliveries took too long. Narrow the date range."
+
+// renderEventDeliveriesTimeout maps a query deadline to 504.
+// Failure policy: fail closed. DeadlineExceeded and Postgres 57014 are
+// timeouts; other errors are left to the caller. The timeout is
+// events.SearchTimeout so a wide date range cannot sit until WriteTimeout
+// and return a 500 from a canceled request context.
+func renderEventDeliveriesTimeout(w http.ResponseWriter, r *http.Request, err error) bool {
+	if !events.IsSearchTimeout(err) {
+		return false
+	}
+	_ = render.Render(w, r, util.NewErrorResponse(eventDeliveriesTimeoutMsg, http.StatusGatewayTimeout))
+	return true
 }
 
 func (h *Handler) retrieveEventDelivery(r *http.Request) (*datastore.EventDelivery, error) {

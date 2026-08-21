@@ -49,7 +49,7 @@ func TestPauseEndpointService_Run(t *testing.T) {
 					&datastore.Endpoint{UID: "123", Status: datastore.ActiveEndpointStatus}, nil,
 				)
 
-				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.PausedEndpointStatus).Times(1).Return(nil)
+				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.PausedEndpointStatus).Times(1).Return(false, nil)
 			},
 			wantEndpoint: &datastore.Endpoint{UID: "123", Status: datastore.PausedEndpointStatus},
 		},
@@ -66,7 +66,7 @@ func TestPauseEndpointService_Run(t *testing.T) {
 					&datastore.Endpoint{UID: "123", Status: datastore.PausedEndpointStatus}, nil,
 				)
 
-				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.ActiveEndpointStatus).Times(1).Return(nil)
+				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.ActiveEndpointStatus).Times(1).Return(false, nil)
 			},
 			wantEndpoint: &datastore.Endpoint{UID: "123", Status: datastore.ActiveEndpointStatus},
 		},
@@ -102,7 +102,7 @@ func TestPauseEndpointService_Run(t *testing.T) {
 					&datastore.Endpoint{UID: "123", Status: datastore.ActiveEndpointStatus}, nil,
 				)
 
-				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.PausedEndpointStatus).Times(1).Return(errors.New("failed"))
+				e.EXPECT().UpdateEndpointStatus(gomock.Any(), "abc", "123", datastore.PausedEndpointStatus).Times(1).Return(false, errors.New("failed"))
 
 				ml, _ := es.Logger.(*mocks.MockLogger)
 				ml.EXPECT().ErrorContext(gomock.Any(), "failed to update endpoint status", "error", gomock.Any()).Times(1)

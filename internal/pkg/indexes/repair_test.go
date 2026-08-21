@@ -81,7 +81,7 @@ func TestInvalidIndexIsReportedDroppedAndRebuilt(t *testing.T) {
 
 	owed, err := ListDropped(ctx, db)
 	require.NoError(t, err)
-	require.Len(t, owed, 1)
+	require.Len(t, exceptPayloadGIN(owed), 1)
 	require.Equal(t, "idx_test_heap_project", owed[0].Name)
 	require.Equal(t, "idx_test_heap", owed[0].Table)
 	require.Contains(t, owed[0].Definition, "CREATE UNIQUE INDEX")
@@ -92,7 +92,7 @@ func TestInvalidIndexIsReportedDroppedAndRebuilt(t *testing.T) {
 	require.Error(t, Rebuild(ctx, db, owed[0]))
 	owed, err = ListDropped(ctx, db)
 	require.NoError(t, err)
-	require.Len(t, owed, 1, "a rebuild that failed still owes the index")
+	require.Len(t, exceptPayloadGIN(owed), 1, "a rebuild that failed still owes the index")
 
 	// The failed build left an invalid index behind under the same name. It is
 	// one piece of work, and the debt row is the actionable one, so it must not
@@ -111,7 +111,7 @@ func TestInvalidIndexIsReportedDroppedAndRebuilt(t *testing.T) {
 
 	owed, err = ListDropped(ctx, db)
 	require.NoError(t, err)
-	require.Empty(t, owed, "a rebuilt index must not be offered again")
+	require.Empty(t, exceptPayloadGIN(owed), "a rebuilt index must not be offered again")
 }
 
 // GetDropped is what a caller-supplied index name has to pass before a rebuild is
@@ -342,7 +342,7 @@ func TestAPartitionsCopyIsNotQueuedAsItsOwnDebt(t *testing.T) {
 		queued = append(queued, name)
 	}
 	require.NoError(t, rows.Err())
-	require.Empty(t, queued, "the parent is rebuilt and its partitions were never debts of their own")
+	require.NotContains(t, queued, child, "the parent is rebuilt and its partitions were never debts of their own")
 }
 
 // A rebuild works through this list in order, and a unique index that is missing
@@ -362,7 +362,7 @@ func TestDroppedIndexesAreOfferedUniqueFirst(t *testing.T) {
 
 	owed, err := ListDropped(ctx, db)
 	require.NoError(t, err)
-	require.Len(t, owed, 2)
+	require.Len(t, exceptPayloadGIN(owed), 2)
 	require.Equal(t, "idx_test_uniq", owed[0].Name, "the unique index waited two days less and still goes first")
 	require.True(t, owed[0].Unique())
 }
@@ -384,7 +384,7 @@ func TestTheRunGuardIsOfferedAheadOfOtherUniqueIndexes(t *testing.T) {
 
 	owed, err := ListDropped(ctx, db)
 	require.NoError(t, err)
-	require.Len(t, owed, 2)
+	require.Len(t, exceptPayloadGIN(owed), 2)
 	require.Equal(t, "idx_partition_runs_single_active", owed[0].Name,
 		"the guard blocks every other rebuild, so it cannot be second")
 }
@@ -448,6 +448,19 @@ func names(invalid []Invalid) []string {
 	out := make([]string, 0, len(invalid))
 	for _, i := range invalid {
 		out = append(out, i.Name)
+	}
+	return out
+}
+
+// sql/1787200001.sql and sql/1787251200.sql queue boot-rebuild indexes on
+// every migrated test DB. Repair assertions that count operator-dropped
+// indexes have to look past those rows.
+func exceptPayloadGIN(owed []Dropped) []Dropped {
+	out := make([]Dropped, 0, len(owed))
+	for _, d := range owed {
+		if !BootQueued(d.Name) {
+			out = append(out, d)
+		}
 	}
 	return out
 }

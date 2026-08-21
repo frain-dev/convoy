@@ -97,9 +97,12 @@ func newBlockingRebuilder(table, index string) *blockingRebuilder {
 	}
 }
 
-func (r *blockingRebuilder) dropped(context.Context, string) (indexes.Dropped, error) {
+func (r *blockingRebuilder) dropped(_ context.Context, name string) (indexes.Dropped, error) {
 	if r.lookupErr != nil {
 		return indexes.Dropped{}, r.lookupErr
+	}
+	if r.index.Name != name {
+		return indexes.Dropped{}, indexes.ErrNotDropped
 	}
 	return r.index, nil
 }
@@ -108,6 +111,26 @@ func (r *blockingRebuilder) rebuild(context.Context, indexes.Dropped) error {
 	r.started <- struct{}{}
 	<-r.release
 	return r.rebuildErr
+}
+
+type multiRebuilder struct {
+	byName map[string]*blockingRebuilder
+}
+
+func (m *multiRebuilder) dropped(ctx context.Context, name string) (indexes.Dropped, error) {
+	r, ok := m.byName[name]
+	if !ok {
+		return indexes.Dropped{}, indexes.ErrNotDropped
+	}
+	return r.dropped(ctx, name)
+}
+
+func (m *multiRebuilder) rebuild(ctx context.Context, d indexes.Dropped) error {
+	r, ok := m.byName[d.Name]
+	if !ok {
+		return fmt.Errorf("unexpected rebuild %s", d.Name)
+	}
+	return r.rebuild(ctx, d)
 }
 
 func newRebuildService(t *testing.T, db database.Database, r rebuilder) *Service {
@@ -136,6 +159,155 @@ func TestStartIndexRebuildRecordsTheIndexAndItsTable(t *testing.T) {
 	done := waitForStatus(t, s, ctx, run.UID, StatusCompleted)
 	require.NotNil(t, done.IndexName)
 	require.Equal(t, "idx_event_deliveries_usage", *done.IndexName)
+}
+
+func TestStartQueuedPayloadGINStartsTheNamedIndex(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedPayloadGIN(ctx)
+	<-r.started
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.NotEmpty(t, runs)
+	require.Equal(t, OperationRebuildIndex, runs[0].Operation)
+	require.NotNil(t, runs[0].IndexName)
+	require.Equal(t, indexes.PayloadGIN, *runs[0].IndexName)
+	require.Equal(t, bootTriggeredBy, runs[0].TriggeredBy)
+
+	close(r.release)
+	waitForStatus(t, s, ctx, runs[0].UID, StatusCompleted)
+}
+
+func TestStartQueuedEventDeliveriesProjectCreatedStartsTheNamedIndex(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectCreated)
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedEventDeliveriesProjectCreated(ctx)
+	<-r.started
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.NotEmpty(t, runs)
+	require.Equal(t, OperationRebuildIndex, runs[0].Operation)
+	require.NotNil(t, runs[0].IndexName)
+	require.Equal(t, indexes.EventDeliveriesProjectCreated, *runs[0].IndexName)
+	require.Equal(t, bootTriggeredBy, runs[0].TriggeredBy)
+
+	close(r.release)
+	waitForStatus(t, s, ctx, runs[0].UID, StatusCompleted)
+}
+
+func TestBootRebuildStartsTheNextQueuedIndexWhenTheSlotFrees(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	deliveries := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectCreated)
+	gin := newBlockingRebuilder("events", indexes.PayloadGIN)
+	s := newRebuildService(t, db, &multiRebuilder{byName: map[string]*blockingRebuilder{
+		indexes.EventDeliveriesProjectCreated: deliveries,
+		indexes.PayloadGIN:                    gin,
+	}})
+
+	s.StartQueuedEventDeliveriesProjectCreated(ctx)
+	s.StartQueuedPayloadGIN(ctx)
+	<-deliveries.started
+	select {
+	case <-gin.started:
+		t.Fatal("payload GIN started while the deliveries rebuild held the slot")
+	default:
+	}
+
+	close(deliveries.release)
+	<-gin.started
+	close(gin.release)
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, runs, 2)
+	names := make(map[string]string, 2)
+	for _, run := range runs {
+		require.NotNil(t, run.IndexName)
+		waitForStatus(t, s, ctx, run.UID, StatusCompleted)
+		names[*run.IndexName] = run.TriggeredBy
+	}
+	require.Equal(t, bootTriggeredBy, names[indexes.EventDeliveriesProjectCreated])
+	require.Equal(t, bootTriggeredBy, names[indexes.PayloadGIN])
+}
+
+func TestStartQueuedEventDeliveriesProjectCreatedNoopsWhenNotQueued(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectCreated)
+	r.lookupErr = indexes.ErrNotDropped
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedEventDeliveriesProjectCreated(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("rebuild started for an index that was not queued")
+	default:
+	}
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.Empty(t, runs)
+}
+
+func TestStartQueuedPayloadGINNoopsWhenNotQueued(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	r.lookupErr = indexes.ErrNotDropped
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedPayloadGIN(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("rebuild started for an index that was not queued")
+	default:
+	}
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.Empty(t, runs)
+}
+
+func TestStartQueuedPayloadGINNoopsWhenTheSlotIsTaken(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	c := newBlockingConverter()
+	running := newService(t, db, c)
+	run, err := running.Start(ctx, TableEvents, OperationPartition, "user-1")
+	require.NoError(t, err)
+	<-c.started
+
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	newRebuildService(t, db, r).StartQueuedPayloadGIN(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("payload GIN rebuild started while a conversion held the slot")
+	default:
+	}
+
+	close(c.release)
+	waitForStatus(t, running, ctx, run.UID, StatusCompleted)
+}
+
+func TestStartQueuedPayloadGINFailsOpenOnLookupError(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	r.lookupErr = errors.New("database unreachable")
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedPayloadGIN(ctx)
+
+	select {
+	case <-r.started:
+		t.Fatal("rebuild started after a lookup error")
+	default:
+	}
 }
 
 // A rebuild and a conversion are the same kind of work on the same tables, so

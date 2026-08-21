@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -122,6 +123,11 @@ func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
 	return project
 }
 
+// teamsWebhookURL is seeded on every fixture endpoint so each reader (single
+// fetch, batch fetch, by app, by owner, paged list) is exercised against the
+// column, not just the writer.
+const teamsWebhookURL = "https://example.logic.azure.com:443/workflows/abc/triggers/manual/paths/invoke?sig=redacted"
+
 func seedEndpoint(t *testing.T, svc *Service, projectID string) *datastore.Endpoint {
 	t.Helper()
 
@@ -142,6 +148,8 @@ func seedEndpoint(t *testing.T, svc *Service, projectID string) *datastore.Endpo
 		HttpTimeout:       30,
 		RateLimit:         100,
 		RateLimitDuration: 60,
+		SlackWebhookURL:   "https://hooks.example.com/services/T/B/X",
+		TeamsWebhookURL:   teamsWebhookURL,
 	}
 	err := svc.CreateEndpoint(context.Background(), endpoint, projectID)
 	require.NoError(t, err)
@@ -163,6 +171,8 @@ func TestCreateEndpoint(t *testing.T) {
 		require.Equal(t, endpoint.Url, fetched.Url)
 		require.Equal(t, endpoint.Status, fetched.Status)
 		require.Equal(t, endpoint.Description, fetched.Description)
+		require.Equal(t, endpoint.SlackWebhookURL, fetched.SlackWebhookURL)
+		require.Equal(t, endpoint.TeamsWebhookURL, fetched.TeamsWebhookURL)
 	})
 
 	t.Run("duplicate_uid_error", func(t *testing.T) {
@@ -536,6 +546,43 @@ func TestFindEndpointByTargetURL(t *testing.T) {
 	})
 }
 
+// TestFindEndpointsWithURLTemplates covers the one endpoint reader whose column
+// list and Scan targets are hand-written rather than generated, so a positional
+// mismatch there would only surface at runtime.
+func TestFindEndpointsWithURLTemplates(t *testing.T) {
+	svc, db := setupTestDB(t)
+	project := seedTestProject(t, db)
+
+	templated := &datastore.Endpoint{
+		UID:    ulid.Make().String(),
+		Name:   fmt.Sprintf("templated-endpoint-%s", ulid.Make().String()[:8]),
+		Url:    "https://example.com/webhook/{tenant_id}",
+		Status: datastore.ActiveEndpointStatus,
+		Secrets: datastore.Secrets{
+			{UID: ulid.Make().String(), Value: "secret", CreatedAt: time.Now(), UpdatedAt: time.Now()},
+		},
+		SlackWebhookURL: "https://hooks.example.com/services/T/B/X",
+		TeamsWebhookURL: teamsWebhookURL,
+		ContentType:     "application/json",
+	}
+	require.NoError(t, svc.CreateEndpoint(context.Background(), templated, project.UID))
+
+	// A plain URL must not match, so the assertions below cannot pass by
+	// accidentally reading the wrong row.
+	seedEndpoint(t, svc, project.UID)
+
+	found, err := svc.FindEndpointsWithURLTemplates(context.Background(), project.UID)
+	require.NoError(t, err)
+	require.Len(t, found, 1)
+
+	require.Equal(t, templated.UID, found[0].UID)
+	require.Equal(t, templated.Url, found[0].Url)
+	require.Equal(t, templated.Name, found[0].Name)
+	require.Equal(t, templated.ContentType, found[0].ContentType)
+	require.Equal(t, templated.SlackWebhookURL, found[0].SlackWebhookURL)
+	require.Equal(t, templated.TeamsWebhookURL, found[0].TeamsWebhookURL)
+}
+
 func TestUpdateEndpoint(t *testing.T) {
 	svc, db := setupTestDB(t)
 	project := seedTestProject(t, db)
@@ -546,6 +593,7 @@ func TestUpdateEndpoint(t *testing.T) {
 	endpoint.Name = fmt.Sprintf("updated-endpoint-%s", ulid.Make().String()[:8])
 	endpoint.Url = "https://updated.example.com/webhook"
 	endpoint.Description = "Updated description"
+	endpoint.TeamsWebhookURL = "https://example.logic.azure.com:443/workflows/xyz/triggers/manual/paths/invoke?sig=rotated"
 	endpoint.Authentication = &datastore.EndpointAuthentication{
 		Type: datastore.APIKeyAuthentication,
 		ApiKey: &datastore.ApiKey{
@@ -562,6 +610,7 @@ func TestUpdateEndpoint(t *testing.T) {
 	require.Equal(t, endpoint.Name, fetched.Name)
 	require.Equal(t, endpoint.Url, fetched.Url)
 	require.Equal(t, "Updated description", fetched.Description)
+	require.Equal(t, endpoint.TeamsWebhookURL, fetched.TeamsWebhookURL)
 	require.NotNil(t, fetched.Authentication)
 	require.Equal(t, datastore.APIKeyAuthentication, fetched.Authentication.Type)
 	require.Equal(t, "Authorization", fetched.Authentication.ApiKey.HeaderName)
@@ -574,12 +623,89 @@ func TestUpdateEndpointStatus(t *testing.T) {
 	endpoint := seedEndpoint(t, svc, project.UID)
 	require.Equal(t, datastore.ActiveEndpointStatus, endpoint.Status)
 
-	err := svc.UpdateEndpointStatus(context.Background(), project.UID, endpoint.UID, datastore.PausedEndpointStatus)
-	require.NoError(t, err)
+	ctx := context.Background()
 
-	fetched, err := svc.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	changed, err := svc.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.PausedEndpointStatus)
+	require.NoError(t, err)
+	require.True(t, changed)
+
+	fetched, err := svc.FindEndpointByID(ctx, endpoint.UID, project.UID)
 	require.NoError(t, err)
 	require.Equal(t, datastore.PausedEndpointStatus, fetched.Status)
+
+	// The breaker re-applies the same status on every tick. That is a success, but
+	// not a transition, and the caller alerts on the transition.
+	changed, err = svc.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.PausedEndpointStatus)
+	require.NoError(t, err)
+	require.False(t, changed)
+
+	fetched, err = svc.FindEndpointByID(ctx, endpoint.UID, project.UID)
+	require.NoError(t, err)
+	require.Equal(t, datastore.PausedEndpointStatus, fetched.Status, "the no-op must not disturb the row")
+
+	// A vanished endpoint reports no change rather than erroring, so a breaker tick
+	// racing a delete does not fail the handler.
+	changed, err = svc.UpdateEndpointStatus(ctx, project.UID, "does-not-exist", datastore.InactiveEndpointStatus)
+	require.NoError(t, err)
+	require.False(t, changed)
+}
+
+// Two paths disable an endpoint: the sampler and the retry handler. Whichever
+// writes first owns the transition, and the loser must be told the status did not
+// change so one outage produces one alert.
+func TestUpdateEndpointStatusReportsOneTransition(t *testing.T) {
+	svc, db := setupTestDB(t)
+	project := seedTestProject(t, db)
+	ctx := context.Background()
+
+	endpoint := seedEndpoint(t, svc, project.UID)
+
+	changed, err := svc.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
+	require.NoError(t, err)
+	require.True(t, changed)
+
+	changed, err = svc.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
+	require.NoError(t, err)
+	require.False(t, changed, "the second writer must not report the transition again")
+}
+
+// The sampler holds a mutex whose TTL equals the sample rate, so a tick that
+// outruns its lease lets a second worker sample the same endpoint. Exactly one of
+// them may see the transition.
+func TestUpdateEndpointStatusTransitionIsExactlyOnceUnderConcurrency(t *testing.T) {
+	svc, db := setupTestDB(t)
+	project := seedTestProject(t, db)
+	ctx := context.Background()
+
+	endpoint := seedEndpoint(t, svc, project.UID)
+
+	const workers = 8
+
+	var (
+		wg     sync.WaitGroup
+		mu     sync.Mutex
+		won    int
+		outErr error
+	)
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			changed, err := svc.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				outErr = err
+				return
+			}
+			if changed {
+				won++
+			}
+		}()
+	}
+	wg.Wait()
+	require.NoError(t, outErr)
+	require.Equal(t, 1, won, "concurrent samplers must announce one outage, not one each")
 }
 
 func TestDeleteEndpoint(t *testing.T) {

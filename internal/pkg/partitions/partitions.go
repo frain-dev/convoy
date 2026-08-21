@@ -293,6 +293,39 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 	return s.rebuild(ctx, run, d)
 }
 
+const bootTriggeredBy = "boot"
+
+// StartQueuedPayloadGIN starts the concurrent rebuild of indexes.PayloadGIN if
+// migrate queued it. Failure policy: fail open. Search seq-scans until the
+// index is valid; ingest and HTTP must not wait on the build. A replica that
+// finds the slot taken, or a name that is already rebuilt, is success. Any
+// other error is logged and ignored so the process still listens.
+func (s *Service) StartQueuedPayloadGIN(ctx context.Context) {
+	s.startQueuedBootIndex(ctx, indexes.PayloadGIN, bootIndexLogName(indexes.PayloadGIN))
+}
+
+// StartQueuedEventDeliveriesProjectCreated starts the concurrent rebuild of
+// indexes.EventDeliveriesProjectCreated if migrate queued it. Failure policy:
+// fail open. The 30-day Event Deliveries list times out until the index is
+// valid; ingest and HTTP must not wait on the build. Call this before
+// StartQueuedPayloadGIN at boot so the dashboard index takes the single-active
+// slot ahead of the hours-long payload GIN.
+func (s *Service) StartQueuedEventDeliveriesProjectCreated(ctx context.Context) {
+	s.startQueuedBootIndex(ctx, indexes.EventDeliveriesProjectCreated, bootIndexLogName(indexes.EventDeliveriesProjectCreated))
+}
+
+func (s *Service) startQueuedBootIndex(ctx context.Context, name, logName string) {
+	_, err := s.StartIndexRebuild(ctx, name, bootTriggeredBy)
+	if err == nil {
+		s.logger.Info("started "+logName, "index", name)
+		return
+	}
+	if errors.Is(err, indexes.ErrNotDropped) || errors.Is(err, ErrRunInProgress) {
+		return
+	}
+	s.logger.Error(logName+" did not start", "index", name, "error", err.Error())
+}
+
 // checkGuard refuses a start when the index that enforces one run at a time is
 // not valid.
 //
@@ -591,9 +624,36 @@ func (s *Service) convert(ctx context.Context, run *Run) error {
 // clearing a leftover from an earlier attempt, so the phase stream is as useful
 // here as it is for a conversion.
 func (s *Service) rebuild(ctx context.Context, run *Run, d indexes.Dropped) error {
-	return s.execute(ctx, run, func(ctx context.Context) error {
+	err := s.execute(ctx, run, func(ctx context.Context) error {
 		return s.rebuilder.rebuild(ctx, d)
 	})
+	// The slot is free again. A sibling BootQueued name that lost the race at
+	// process start (ErrRunInProgress) would otherwise stay unbuilt until the
+	// next boot. Failure policy: fail open; startQueuedBootIndex already logs.
+	if run.TriggeredBy == bootTriggeredBy {
+		s.startNextQueuedBootIndex(ctx, d.Name)
+	}
+	return err
+}
+
+func (s *Service) startNextQueuedBootIndex(ctx context.Context, justFinished string) {
+	for _, name := range indexes.BootQueuedNames {
+		if name == justFinished {
+			continue
+		}
+		s.startQueuedBootIndex(ctx, name, bootIndexLogName(name))
+	}
+}
+
+func bootIndexLogName(name string) string {
+	switch name {
+	case indexes.PayloadGIN:
+		return "payload search index rebuild"
+	case indexes.EventDeliveriesProjectCreated:
+		return "event deliveries list index rebuild"
+	default:
+		return "index rebuild"
+	}
 }
 
 // execute runs the work with this run observing notices, and closes the row out

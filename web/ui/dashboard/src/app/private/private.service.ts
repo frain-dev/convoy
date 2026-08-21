@@ -163,7 +163,9 @@ export class PrivateService {
 
 	getProject(requestDetails?: { refresh?: boolean; projectId?: string, hideNotification?: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
-			if (this.projectDetails && !requestDetails?.refresh) return resolve(this.projectDetails);
+			const cached = this.projectDetails?.data;
+			const sameProject = !requestDetails?.projectId || cached?.uid === requestDetails.projectId;
+			if (this.projectDetails && !requestDetails?.refresh && sameProject) return resolve(this.projectDetails);
 
 			try {
 				const projectResponse = await this.http.request({

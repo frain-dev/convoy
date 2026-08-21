@@ -2,25 +2,31 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/events/repo"
 )
 
 type existsPagingRecorder struct {
-	last string
+	last     string
+	lastBody []byte
 }
 
-func (r *existsPagingRecorder) LoadEventsPagedExistsInnerDesc(ctx context.Context, arg repo.LoadEventsPagedExistsParams) ([]repo.LoadEventsPagedExistsRow, error) {
+func (r *existsPagingRecorder) LoadEventsPagedExistsInnerDesc(ctx context.Context, arg repo.LoadEventsPagedExistsInnerDescParams) ([]repo.LoadEventsPagedExistsInnerDescRow, error) {
 	r.last = "desc"
+	r.lastBody = append([]byte(nil), arg.Body...)
 	return nil, nil
 }
 
-func (r *existsPagingRecorder) LoadEventsPagedExistsInnerAsc(ctx context.Context, arg repo.LoadEventsPagedExistsParams) ([]repo.LoadEventsPagedExistsRow, error) {
+func (r *existsPagingRecorder) LoadEventsPagedExistsInnerAsc(ctx context.Context, arg repo.LoadEventsPagedExistsInnerAscParams) ([]repo.LoadEventsPagedExistsInnerAscRow, error) {
 	r.last = "asc"
+	r.lastBody = append([]byte(nil), arg.Body...)
 	return nil, nil
 }
 
@@ -108,7 +114,7 @@ func TestLoadEventsPagedExistsRowsRouting(t *testing.T) {
 		t.Run(tc.sort+"_"+tc.direction, func(t *testing.T) {
 			rec := &existsPagingRecorder{}
 			svc := &Service{repo: rec}
-			params := repo.LoadEventsPagedExistsParams{
+			params := existsPagedQueryBase{
 				SortOrder: pgtype.Text{String: tc.sort, Valid: true},
 				Direction: pgtype.Text{String: tc.direction, Valid: true},
 			}
@@ -118,4 +124,30 @@ func TestLoadEventsPagedExistsRowsRouting(t *testing.T) {
 			require.Equal(t, tc.want, rec.last)
 		})
 	}
+}
+
+func TestLoadEventsPagedPreservesBodyFilterOnPagination(t *testing.T) {
+	rec := &existsPagingRecorder{}
+	svc := &Service{repo: rec}
+	body := json.RawMessage(`{"status":"paid"}`)
+	filter := &datastore.Filter{
+		Body:                body,
+		EventSearchLicensed: true,
+		Project:             &datastore.Project{UID: "proj"},
+		Pageable: datastore.Pageable{
+			PerPage:    10,
+			NextCursor: "cursor-1",
+			Direction:  datastore.Next,
+			Sort:       "DESC",
+		},
+		SearchParams: datastore.SearchParams{
+			CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
+			CreatedAtEnd:   time.Now().Unix(),
+		},
+	}
+
+	_, _, err := svc.LoadEventsPaged(context.Background(), "proj", filter)
+	require.NoError(t, err)
+	require.Equal(t, "desc", rec.last)
+	require.JSONEq(t, string(body), string(rec.lastBody))
 }

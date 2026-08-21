@@ -2959,6 +2959,29 @@
                 }
               ]
             }
+          },
+          "504": {
+            "description": "Gateway Timeout",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
           }
         }
       }
@@ -3861,6 +3884,12 @@
             "required": true
           },
           {
+            "type": "string",
+            "description": "URL-encoded JSON object matched against the event payload.\nCombined with query as AND when both are set.",
+            "name": "body",
+            "in": "query"
+          },
+          {
             "enum": [
               "next",
               "prev"
@@ -3919,7 +3948,7 @@
           },
           {
             "type": "string",
-            "description": "Any arbitrary value to filter the events payload",
+            "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
             "in": "query"
           },
@@ -4028,8 +4057,54 @@
               ]
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
           "404": {
             "description": "Not Found",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "504": {
+            "description": "Gateway Timeout",
             "schema": {
               "allOf": [
                 {
@@ -4213,6 +4288,12 @@
             "required": true
           },
           {
+            "type": "string",
+            "description": "URL-encoded JSON object matched against the event payload.\nCombined with query as AND when both are set.",
+            "name": "body",
+            "in": "query"
+          },
+          {
             "enum": [
               "next",
               "prev"
@@ -4271,7 +4352,7 @@
           },
           {
             "type": "string",
-            "description": "Any arbitrary value to filter the events payload",
+            "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
             "in": "query"
           },
@@ -4547,6 +4628,12 @@
             "required": true
           },
           {
+            "type": "string",
+            "description": "URL-encoded JSON object matched against the event payload.\nCombined with query as AND when both are set.",
+            "name": "body",
+            "in": "query"
+          },
+          {
             "enum": [
               "next",
               "prev"
@@ -4605,7 +4692,7 @@
           },
           {
             "type": "string",
-            "description": "Any arbitrary value to filter the events payload",
+            "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
             "in": "query"
           },
@@ -10164,6 +10251,9 @@
         "support_email": {
           "type": "string"
         },
+        "teams_webhook_url": {
+          "type": "string"
+        },
         "uid": {
           "type": "string"
         },
@@ -10909,6 +10999,7 @@
           "$ref": "#/definitions/config.RequestIDHeaderProvider"
         },
         "search_policy": {
+          "description": "SearchPolicy is an optional Go duration (e.g. \"24h\") shown in project settings.\nWhen set, the dashboard explains that payload/JSON search is additionally clamped\nto this lookback intersected with the Events log date picker. Empty means opt-out.",
           "type": "string"
         },
         "signature": {
@@ -11704,6 +11795,10 @@
           "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
           "type": "string"
         },
+        "teams_webhook_url": {
+          "description": "Microsoft Teams webhook URL is an alternative method to support email where endpoint\ndevelopers can receive failure notifications in a Teams channel. Use a Workflows\n(Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.",
+          "type": "string"
+        },
         "url": {
           "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
           "type": "string"
@@ -12177,6 +12272,9 @@
           "x-nullable": true
         },
         "support_email": {
+          "type": "string"
+        },
+        "teams_webhook_url": {
           "type": "string"
         },
         "uid": {
@@ -13567,6 +13665,10 @@
         },
         "support_email": {
           "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
+          "type": "string"
+        },
+        "teams_webhook_url": {
+          "description": "Microsoft Teams webhook URL is an alternative method to support email where endpoint\ndevelopers can receive failure notifications in a Teams channel. Use a Workflows\n(Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.",
           "type": "string"
         },
         "url": {

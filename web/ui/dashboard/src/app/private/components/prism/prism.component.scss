@@ -1,0 +1,10 @@
+:host ::ng-deep mark.search-hit {
+	background-color: #fde047 !important;
+	color: #111827 !important;
+	border-radius: 2px;
+	padding: 0 2px;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+	box-shadow: inset 0 -2px 0 #facc15;
+	font-weight: 600;
+}
