@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS convoy.event_delivery_daily_counts (
 CREATE TABLE IF NOT EXISTS convoy.event_delivery_daily_counts_meta (
     name TEXT PRIMARY KEY,
     next_day DATE,
-    completed_at TIMESTAMPTZ
+    completed_at TIMESTAMPTZ,
+    last_pruned_at TIMESTAMPTZ
 );
 
 INSERT INTO convoy.event_delivery_daily_counts_meta (name, next_day, completed_at)

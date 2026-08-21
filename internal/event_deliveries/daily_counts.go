@@ -51,10 +51,23 @@ func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) 
 	return nil
 }
 
-// RefreshRecentDailyCounts rewrites yesterday and today in UTC.
+// RefreshRecentDailyCounts rewrites yesterday and today in UTC. After
+// backfill completes it may prune stale rollup days, but at most once per
+// day and only when the rollup still holds history older than the recent
+// refresh window.
 func (s *Service) RefreshRecentDailyCounts(ctx context.Context) error {
 	today := utcDate(time.Now())
-	return s.RefreshDailyCounts(ctx, today.AddDate(0, 0, -1), today.AddDate(0, 0, 1))
+	if err := s.RefreshDailyCounts(ctx, today.AddDate(0, 0, -1), today.AddDate(0, 0, 1)); err != nil {
+		return err
+	}
+	completed, err := s.dailyCountsBackfillCompleted(ctx)
+	if err != nil {
+		return err
+	}
+	if completed {
+		return s.maybePruneDailyCountsBeforeLiveHistory(ctx)
+	}
+	return nil
 }
 
 // PruneDailyCountsBeforeLiveHistory drops rollup days older than the
@@ -62,6 +75,7 @@ func (s *Service) RefreshRecentDailyCounts(ctx context.Context) error {
 // those deliveries; the recent rewrite does not, so the dashboard would
 // keep counting purged history without this delete.
 func (s *Service) PruneDailyCountsBeforeLiveHistory(ctx context.Context) error {
+	// Parent-table scan: valid on heap and partitioned event_deliveries.
 	_, err := s.db.Exec(ctx, `
 		DELETE FROM convoy.event_delivery_daily_counts
 		WHERE day < COALESCE(
@@ -71,6 +85,50 @@ func (s *Service) PruneDailyCountsBeforeLiveHistory(ctx context.Context) error {
 			'infinity'::date)`)
 	if err != nil {
 		return fmt.Errorf("prune event delivery daily counts: %w", err)
+	}
+	return nil
+}
+
+func (s *Service) maybePruneDailyCountsBeforeLiveHistory(ctx context.Context) error {
+	var lastPruned pgtype.Timestamptz
+	err := s.db.QueryRow(ctx, `
+		SELECT last_pruned_at
+		FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = $1`, dailyCountsBackfillName).Scan(&lastPruned)
+	if err != nil {
+		return fmt.Errorf("load daily counts prune meta: %w", err)
+	}
+	if lastPruned.Valid && time.Since(lastPruned.Time) < 24*time.Hour {
+		return nil
+	}
+
+	var rollupMin pgtype.Date
+	err = s.db.QueryRow(ctx, `
+		SELECT MIN(day) FROM convoy.event_delivery_daily_counts`).Scan(&rollupMin)
+	if err != nil {
+		return fmt.Errorf("rollup min day: %w", err)
+	}
+	if !rollupMin.Valid {
+		return nil
+	}
+	recentCutoff := utcDate(time.Now()).AddDate(0, 0, -2)
+	if !rollupMin.Time.Before(recentCutoff) {
+		return nil
+	}
+
+	if err := s.PruneDailyCountsBeforeLiveHistory(ctx); err != nil {
+		return err
+	}
+	return s.stampDailyCountsPruned(ctx)
+}
+
+func (s *Service) stampDailyCountsPruned(ctx context.Context) error {
+	_, err := s.db.Exec(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET last_pruned_at = NOW()
+		WHERE name = $1`, dailyCountsBackfillName)
+	if err != nil {
+		return fmt.Errorf("stamp daily counts prune time: %w", err)
 	}
 	return nil
 }
@@ -153,7 +211,10 @@ func (s *Service) markDailyCountsBackfillCompleted(ctx context.Context) error {
 		return fmt.Errorf("mark daily counts backfill completed: %w", err)
 	}
 	s.logger.Info("event delivery daily counts backfill complete")
-	return nil
+	if err := s.PruneDailyCountsBeforeLiveHistory(ctx); err != nil {
+		return err
+	}
+	return s.stampDailyCountsPruned(ctx)
 }
 
 func (s *Service) loadEventDeliveriesIntervalsFromRollup(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, endpointIDs []string) ([]intervalRow, error) {

@@ -1386,8 +1386,33 @@ func TestPruneDailyCountsBeforeLiveHistoryDropsRetainedDays(t *testing.T) {
 	require.Equal(t, 1, kept)
 }
 
-func TestLoadEventDeliveriesIntervalsFromRollupWeeklyIgnoresSessionTimeZone(t *testing.T) {
+func TestMaybePruneDailyCountsSkipsWithin24Hours(t *testing.T) {
 	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	_, err := db.GetDB().ExecContext(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET completed_at = NOW(), next_day = NULL, last_pruned_at = NOW()
+		WHERE name = 'backfill'`)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx, `
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
+		VALUES ($1, $2, '2020-01-01', 99)`, project.UID, endpoint.UID)
+	require.NoError(t, err)
+
+	require.NoError(t, service.maybePruneDailyCountsBeforeLiveHistory(ctx))
+
+	var stale int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM convoy.event_delivery_daily_counts
+		WHERE project_id = $1 AND day = '2020-01-01'`, project.UID).Scan(&stale))
+	require.Equal(t, 1, stale)
+}
+
+func TestLoadEventDeliveriesIntervalsFromRollupWeeklyIgnoresSessionTimeZone(t *testing.T) {
+	_, db := setupTestDB(t)
 	ctx := context.Background()
 
 	project := seedTestProject(t, db)
@@ -1396,7 +1421,11 @@ func TestLoadEventDeliveriesIntervalsFromRollupWeeklyIgnoresSessionTimeZone(t *t
 		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
 		VALUES ($1, 'ep', $2, 4)`, project.UID, monday)
 	require.NoError(t, err)
-	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+	_, err = db.GetDB().ExecContext(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET completed_at = NOW(), next_day = NULL
+		WHERE name = 'backfill'`)
+	require.NoError(t, err)
 
 	query, err := rollupIntervalQuery(datastore.Weekly)
 	require.NoError(t, err)

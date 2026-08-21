@@ -19,14 +19,8 @@ func RefreshEventDeliveryDailyCounts(lo log.Logger, db database.Database, locker
 			if err := svc.RefreshRecentDailyCounts(ctx); err != nil {
 				return err
 			}
-			done, err := svc.AdvanceDailyCountsBackfill(ctx)
-			if err != nil {
-				return err
-			}
-			if done {
-				return svc.PruneDailyCountsBeforeLiveHistory(ctx)
-			}
-			return nil
+			_, err := svc.AdvanceDailyCountsBackfill(ctx)
+			return err
 		}))
 	}
 }
