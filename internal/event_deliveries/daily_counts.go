@@ -39,18 +39,19 @@ func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) 
 	}
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
 		SELECT
 			ed.project_id,
 			COALESCE(ed.endpoint_id, ''),
 			(ed.created_at AT TIME ZONE 'UTC')::date,
+			ed.status,
 			COUNT(*)::bigint
 		FROM convoy.event_deliveries ed
 		WHERE ed.deleted_at IS NULL
 		  AND ed.created_at >= ($1::timestamp AT TIME ZONE 'UTC')
 		  AND ed.created_at < ($2::timestamp AT TIME ZONE 'UTC')
-		GROUP BY ed.project_id, COALESCE(ed.endpoint_id, ''), (ed.created_at AT TIME ZONE 'UTC')::date
-		ON CONFLICT (project_id, day, endpoint_id)
+		GROUP BY ed.project_id, COALESCE(ed.endpoint_id, ''), (ed.created_at AT TIME ZONE 'UTC')::date, ed.status
+		ON CONFLICT (project_id, day, endpoint_id, status)
 		DO UPDATE SET count = EXCLUDED.count`, startDay, endDay)
 	if err != nil {
 		return fmt.Errorf("refresh event delivery daily counts: %w", err)
@@ -226,6 +227,82 @@ func (s *Service) markDailyCountsBackfillCompleted(ctx context.Context) error {
 		return err
 	}
 	return s.stampDailyCountsPruned(ctx)
+}
+
+// StatusTotalsSource names the table a StatusTotals answer came from, so a
+// caller (or a curl) can tell a rollup read from a live scan.
+type StatusTotalsSource string
+
+const (
+	StatusTotalsFromRollup StatusTotalsSource = "rollup"
+	StatusTotalsFromLive   StatusTotalsSource = "live"
+)
+
+// Day grain, so the rollup and the chart describe the same window. End is
+// timestamp-exclusive at day grain for the same reason as rollupIntervalQuery.
+const statusTotalsRollupQuery = `
+SELECT status, SUM(count)::bigint
+FROM convoy.event_delivery_daily_counts
+WHERE project_id = $1
+  AND day >= ($2 AT TIME ZONE 'UTC')::date
+  AND (day::timestamp AT TIME ZONE 'UTC') < $3
+  AND (CASE WHEN $4::BOOLEAN THEN endpoint_id = ANY($5::TEXT[]) ELSE true END)
+GROUP BY status`
+
+// One grouped scan, where the dashboard previously issued one COUNT(*) per
+// status and rendered a zero when either timed out.
+const statusTotalsLiveQuery = `
+SELECT status, COUNT(*)::bigint
+FROM convoy.event_deliveries
+WHERE project_id = $1
+  AND deleted_at IS NULL
+  AND created_at >= $2
+  AND created_at <= $3
+  AND (CASE WHEN $4::BOOLEAN THEN endpoint_id = ANY($5::TEXT[]) ELSE true END)
+GROUP BY status`
+
+// StatusTotals returns per-status delivery totals for the window, keyed by
+// status, plus the table it read.
+//
+// It uses the rollup only once the backfill has completed, the same gate
+// LoadEventDeliveriesIntervals applies, so the summary cards and the chart above
+// them can never describe different sources. Statuses with no deliveries are
+// absent from the map rather than present as zero: the caller distinguishes "no
+// deliveries" from "we could not find out", which is the whole point of serving
+// this instead of a swallowed error.
+func (s *Service) StatusTotals(ctx context.Context, projectID string, params datastore.SearchParams,
+	endpointIDs []string) (map[datastore.EventDeliveryStatus]int64, StatusTotalsSource, error) {
+	start, end := getCreatedDateFilter(params.CreatedAtStart, params.CreatedAtEnd)
+
+	completed, err := s.dailyCountsBackfillCompleted(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+
+	query, source := statusTotalsLiveQuery, StatusTotalsFromLive
+	if completed {
+		query, source = statusTotalsRollupQuery, StatusTotalsFromRollup
+	}
+
+	rows, err := s.db.Query(ctx, query, projectID, start, end, len(endpointIDs) > 0, endpointIDs)
+	if err != nil {
+		return nil, "", err
+	}
+	defer rows.Close()
+
+	totals := make(map[datastore.EventDeliveryStatus]int64)
+	for rows.Next() {
+		var status string
+		var count int64
+		if scanErr := rows.Scan(&status, &count); scanErr != nil {
+			return nil, "", scanErr
+		}
+		totals[datastore.EventDeliveryStatus(status)] = count
+	}
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return nil, "", rowsErr
+	}
+	return totals, source, nil
 }
 
 func (s *Service) loadEventDeliveriesIntervalsFromRollup(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, endpointIDs []string) ([]intervalRow, error) {

@@ -1432,8 +1432,8 @@ func TestPruneDailyCountsBeforeLiveHistoryDropsRetainedDays(t *testing.T) {
 	today := utcDate(time.Now())
 	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
 	_, err := db.GetDB().ExecContext(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		VALUES ($1, $2, '2020-01-01', 99)`, project.UID, endpoint.UID)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, $2, '2020-01-01', 'Success', 99)`, project.UID, endpoint.UID)
 	require.NoError(t, err)
 
 	require.NoError(t, service.PruneDailyCountsBeforeLiveHistory(ctx))
@@ -1463,8 +1463,8 @@ func TestMaybePruneDailyCountsSkipsWithin24Hours(t *testing.T) {
 		WHERE name = 'backfill'`)
 	require.NoError(t, err)
 	_, err = db.GetDB().ExecContext(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		VALUES ($1, $2, '2020-01-01', 99)`, project.UID, endpoint.UID)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, $2, '2020-01-01', 'Success', 99)`, project.UID, endpoint.UID)
 	require.NoError(t, err)
 
 	require.NoError(t, service.maybePruneDailyCountsBeforeLiveHistory(ctx))
@@ -1483,8 +1483,8 @@ func TestLoadEventDeliveriesIntervalsFromRollupWeeklyIgnoresSessionTimeZone(t *t
 	project := seedTestProject(t, db)
 	monday := time.Date(2026, time.August, 17, 0, 0, 0, 0, time.UTC)
 	_, err := db.GetDB().ExecContext(ctx, `
-		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
-		VALUES ($1, 'ep', $2, 4)`, project.UID, monday)
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, 'ep', $2, 'Success', 4)`, project.UID, monday)
 	require.NoError(t, err)
 	_, err = db.GetDB().ExecContext(ctx, `
 		UPDATE convoy.event_delivery_daily_counts_meta
@@ -1589,6 +1589,101 @@ func TestAdvanceDailyCountsBackfillWalksHistoryToCompletion(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	require.Equal(t, 3, rollupRowCount(t, db, project.UID))
+}
+
+// The dashboard's Successful/Failed cards read these totals. They used to come
+// from one live COUNT(*) per status, and a timeout on either rendered as a
+// confident zero, so the rollup has to reproduce the live numbers per status.
+func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, src.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, src.UID)
+
+	seed := func(status datastore.EventDeliveryStatus, n int) {
+		for i := 0; i < n; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+			d.Status = status
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+		}
+	}
+	seed(datastore.SuccessEventStatus, 3)
+	seed(datastore.FailureEventStatus, 2)
+
+	// Until the backfill completes the totals come off a live scan, which is the
+	// number the rollup then has to match.
+	live, liveSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromLive, liveSource)
+	require.Equal(t, int64(3), live[datastore.SuccessEventStatus])
+	require.Equal(t, int64(2), live[datastore.FailureEventStatus])
+
+	// A status with no deliveries is absent rather than zero, so the caller can
+	// tell an empty window from a failed request.
+	_, present := live[datastore.DiscardedEventStatus]
+	require.False(t, present, "a status with no deliveries must not be reported as 0")
+
+	// Twice, because the worker rewrites the same days every minute and the
+	// second pass is the one carrying keys the first pass already wrote.
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+	}
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	fromRollup, rollupSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromRollup, rollupSource)
+	require.Equal(t, live, fromRollup, "rollup disagrees with the live scan")
+
+	// A delivery landing after the rollup was first written must show up on the
+	// next refresh, which only holds if a populated day can be rewritten.
+	seed(datastore.SuccessEventStatus, 1)
+	require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+
+	updated, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, int64(4), updated[datastore.SuccessEventStatus])
+	require.Equal(t, int64(2), updated[datastore.FailureEventStatus])
+}
+
+func TestStatusTotalsScopeToEndpoint(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	scoped := seedTestEndpoint(t, db, project.UID)
+	other := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	event := seedEvent(t, db, project.UID, scoped.UID, src.UID)
+
+	seed := func(endpointID string, n int) {
+		sub := seedSubscription(t, db, project.UID, endpointID, src.UID)
+		for i := 0; i < n; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpointID, sub.UID)
+			d.Status = datastore.SuccessEventStatus
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+		}
+	}
+	seed(scoped.UID, 2)
+	seed(other.UID, 5)
+
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+	}
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	totals, source, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), []string{scoped.UID})
+	require.NoError(t, err)
+	require.Equal(t, StatusTotalsFromRollup, source)
+	require.Equal(t, int64(2), totals[datastore.SuccessEventStatus])
+
+	all, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, int64(7), all[datastore.SuccessEventStatus])
 }
 
 func TestExportRecords(t *testing.T) {

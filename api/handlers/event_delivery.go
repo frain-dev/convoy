@@ -404,6 +404,75 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	_ = render.Render(w, r, util.NewServerResponse("event deliveries count successful", map[string]interface{}{"num": count}, http.StatusOK))
 }
 
+// EventDeliveryStatusTotals serves the dashboard's per-status delivery totals
+// from the daily rollup, falling back to one grouped live scan until the
+// backfill completes.
+//
+// This is deliberately not CountAffectedEventDeliveries: that endpoint answers
+// "how many deliveries would this batch retry touch", which must stay an exact
+// live count, while these totals are display figures at UTC day grain.
+func (h *Handler) EventDeliveryStatusTotals(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryListEventDelivery
+
+	data, err := q.Transform(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointIDs := data.Filter.EndpointIDs
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, innerErr := h.retrievePortalLinkFromToken(r)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		endpointIDs, innerErr = h.portalScopedEndpointIDs(r, portalLink, endpointIDs)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		// A portal link that resolves to no endpoint has an empty scope, which
+		// is not the same as "every endpoint in the project".
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("event delivery status totals fetched successfully",
+				models.DeliveryStatusTotalsResponse{Totals: map[string]int64{}, Source: string(event_deliveries.StatusTotalsFromLive)}, http.StatusOK))
+			return
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
+	defer cancel()
+
+	totals, source, err := event_deliveries.New(h.A.Logger, h.A.DB).
+		StatusTotals(ctx, project.UID, data.Filter.SearchParams, endpointIDs)
+	if err != nil {
+		if renderEventDeliveriesTimeout(w, r, err) {
+			return
+		}
+		h.A.Logger.ErrorContext(r.Context(), "an error occurred while fetching event delivery status totals", "error", err)
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	out := make(map[string]int64, len(totals))
+	for status, count := range totals {
+		out[string(status)] = count
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("event delivery status totals fetched successfully",
+		models.DeliveryStatusTotalsResponse{Totals: out, Source: string(source)}, http.StatusOK))
+}
+
 const eventDeliveriesTimeoutMsg = "Event deliveries took too long. Narrow the date range."
 
 // renderEventDeliveriesTimeout maps a query deadline to 504.

@@ -230,6 +230,15 @@ type CountResponse struct {
 	Num int64 `json:"num"`
 }
 
+// DeliveryStatusTotalsResponse carries per-status delivery totals for a window.
+// A status with no deliveries is absent from Totals rather than present as zero,
+// so a client can tell an empty window from a failed request. Source names the
+// table that answered, either the daily rollup or a live scan.
+type DeliveryStatusTotalsResponse struct {
+	Totals map[string]int64 `json:"totals"`
+	Source string           `json:"source"`
+}
+
 func (qc *QueryCountAffectedEvents) Transform(r *http.Request) (*QueryCountAffectedEventsResponse, error) {
 	searchParams, err := getSearchParams(r)
 	if err != nil {
