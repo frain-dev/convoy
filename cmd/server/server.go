@@ -205,12 +205,10 @@ func StartConvoyServer(a *cli.App) error {
 
 	a.Logger.Infof("Started convoy server in %s", time.Since(start))
 
-	// Fail open: dashboard list and JSON search seq-scan until those indexes
-	// are valid. Do not block listen. Start the deliveries index first so it
-	// takes the single-active slot ahead of the hours-long payload GIN.
+	// Fail open: queries seq-scan until owed indexes are valid. Do not block
+	// listen. Unique indexes take the single-active slot first.
 	p := partitions.New(a.DB, a.Logger)
-	p.StartQueuedEventDeliveriesProjectCreated(context.Background())
-	p.StartQueuedPayloadGIN(context.Background())
+	p.StartQueuedDroppedIndexes(context.Background())
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {

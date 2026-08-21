@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -107,6 +108,13 @@ var (
 	ErrAlreadyPartitioned = errors.New("table is already partitioned")
 	ErrNotPartitioned     = errors.New("table is not partitioned")
 )
+
+// failedIndexRebuilds are names whose rebuild already failed in this process.
+// Handlers call New() per request, so this cannot live on Service or a
+// conversion finishing on a fresh runner would retry a boot failure.
+// StartIndexRebuild still tries a caller-supplied name (dashboard retry) and
+// deletes the skip when that rebuild succeeds.
+var failedIndexRebuilds sync.Map
 
 // Tables lists what can be converted, in the order the CLI converts them when
 // given no argument.
@@ -212,6 +220,9 @@ type rebuilder interface {
 	// dropped resolves the name to the index awaiting a rebuild, and reports
 	// which table it is on so the run row names that table.
 	dropped(ctx context.Context, name string) (indexes.Dropped, error)
+	// listDropped is the owed rebuilds in ListDropped order: guard, unique,
+	// deliveries list index, then the rest by when they were dropped.
+	listDropped(ctx context.Context) ([]indexes.Dropped, error)
 	rebuild(ctx context.Context, d indexes.Dropped) error
 }
 
@@ -246,8 +257,13 @@ func (s *Service) Start(ctx context.Context, table Table, op Operation, triggere
 
 	// The conversion is detached from the request that started it, so it keeps
 	// running after the response is written. Cancelling it midway would leave a
-	// half-converted table, which is worse than letting it finish.
-	go s.convert(context.WithoutCancel(ctx), run)
+	// half-converted table, which is worse than letting it finish. When it
+	// frees the slot, start any owed index rebuilds that lost the race at boot.
+	go func() {
+		detached := context.WithoutCancel(ctx)
+		_ = s.convert(detached, run)
+		s.StartQueuedDroppedIndexes(detached)
+	}()
 
 	return run, nil
 }
@@ -275,7 +291,15 @@ func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy 
 		return nil, err
 	}
 
-	go s.rebuild(context.WithoutCancel(ctx), run, d)
+	go func() {
+		detached := context.WithoutCancel(ctx)
+		if err := s.rebuild(detached, run, d); err != nil {
+			failedIndexRebuilds.Store(d.Name, struct{}{})
+		} else {
+			failedIndexRebuilds.Delete(d.Name)
+		}
+		s.startQueuedDroppedIndexes(detached, d.Name)
+	}()
 
 	return run, nil
 }
@@ -295,23 +319,34 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 
 const bootTriggeredBy = "boot"
 
-// StartQueuedPayloadGIN starts the concurrent rebuild of indexes.PayloadGIN if
-// migrate queued it. Failure policy: fail open. Search seq-scans until the
-// index is valid; ingest and HTTP must not wait on the build. A replica that
-// finds the slot taken, or a name that is already rebuilt, is success. Any
-// other error is logged and ignored so the process still listens.
-func (s *Service) StartQueuedPayloadGIN(ctx context.Context) {
-	s.startQueuedBootIndex(ctx, indexes.PayloadGIN, bootIndexLogName(indexes.PayloadGIN))
+// StartQueuedDroppedIndexes starts the concurrent rebuild of every index still
+// owed, in ListDropped order (guard, unique, deliveries list, then the rest).
+// Failure policy: fail open. Queries seq-scan until an index is valid; ingest
+// and HTTP must not wait on the build. A replica that finds the slot taken, or
+// a name that is already rebuilt, is success. Any other error is logged and
+// ignored so the process still listens.
+func (s *Service) StartQueuedDroppedIndexes(ctx context.Context) {
+	s.startQueuedDroppedIndexes(ctx, "")
 }
 
-// StartQueuedEventDeliveriesProjectCreated starts the concurrent rebuild of
-// indexes.EventDeliveriesProjectCreated if migrate queued it. Failure policy:
-// fail open. The 30-day Event Deliveries list times out until the index is
-// valid; ingest and HTTP must not wait on the build. Call this before
-// StartQueuedPayloadGIN at boot so the dashboard index takes the single-active
-// slot ahead of the hours-long payload GIN.
-func (s *Service) StartQueuedEventDeliveriesProjectCreated(ctx context.Context) {
-	s.startQueuedBootIndex(ctx, indexes.EventDeliveriesProjectCreated, bootIndexLogName(indexes.EventDeliveriesProjectCreated))
+func (s *Service) startQueuedDroppedIndexes(ctx context.Context, skip string) {
+	if s.rebuilder == nil {
+		return
+	}
+	owed, err := s.rebuilder.listDropped(ctx)
+	if err != nil {
+		s.logger.Error("dropped index list did not load", "error", err.Error())
+		return
+	}
+	for _, d := range owed {
+		if d.Name == skip {
+			continue
+		}
+		if _, failed := failedIndexRebuilds.Load(d.Name); failed {
+			continue
+		}
+		s.startQueuedBootIndex(ctx, d.Name, bootIndexLogName(d.Name))
+	}
 }
 
 func (s *Service) startQueuedBootIndex(ctx context.Context, name, logName string) {
@@ -624,25 +659,9 @@ func (s *Service) convert(ctx context.Context, run *Run) error {
 // clearing a leftover from an earlier attempt, so the phase stream is as useful
 // here as it is for a conversion.
 func (s *Service) rebuild(ctx context.Context, run *Run, d indexes.Dropped) error {
-	err := s.execute(ctx, run, func(ctx context.Context) error {
+	return s.execute(ctx, run, func(ctx context.Context) error {
 		return s.rebuilder.rebuild(ctx, d)
 	})
-	// The slot is free again. A sibling BootQueued name that lost the race at
-	// process start (ErrRunInProgress) would otherwise stay unbuilt until the
-	// next boot. Failure policy: fail open; startQueuedBootIndex already logs.
-	if run.TriggeredBy == bootTriggeredBy {
-		s.startNextQueuedBootIndex(ctx, d.Name)
-	}
-	return err
-}
-
-func (s *Service) startNextQueuedBootIndex(ctx context.Context, justFinished string) {
-	for _, name := range indexes.BootQueuedNames {
-		if name == justFinished {
-			continue
-		}
-		s.startQueuedBootIndex(ctx, name, bootIndexLogName(name))
-	}
 }
 
 func bootIndexLogName(name string) string {
@@ -791,6 +810,10 @@ type indexRebuilder struct {
 
 func (r *indexRebuilder) dropped(ctx context.Context, name string) (indexes.Dropped, error) {
 	return indexes.GetDropped(ctx, r.db.GetConn(), name)
+}
+
+func (r *indexRebuilder) listDropped(ctx context.Context) ([]indexes.Dropped, error) {
+	return indexes.ListDropped(ctx, r.db.GetConn())
 }
 
 func (r *indexRebuilder) rebuild(ctx context.Context, d indexes.Dropped) error {
