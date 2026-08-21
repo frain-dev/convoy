@@ -424,6 +424,8 @@ func TestDashboardRebuildRetriesANameThatFailedOnAnotherRunner(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, runs, 1)
 	waitForStatus(t, boot, ctx, runs[0].UID, StatusFailed)
+	_, skipped := failedIndexRebuilds.Load("idx_event_deliveries_usage")
+	require.True(t, skipped)
 
 	retry := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
 	close(retry.release)
@@ -432,6 +434,8 @@ func TestDashboardRebuildRetriesANameThatFailedOnAnotherRunner(t *testing.T) {
 	require.NoError(t, err)
 	<-retry.started
 	waitForStatus(t, dashboard, ctx, run.UID, StatusCompleted)
+	_, skipped = failedIndexRebuilds.Load("idx_event_deliveries_usage")
+	require.False(t, skipped, "a successful retry must not keep skipping the name")
 }
 
 func TestConversionFinishStartsOwedIndexRebuilds(t *testing.T) {

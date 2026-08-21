@@ -112,7 +112,8 @@ var (
 // failedIndexRebuilds are names whose rebuild already failed in this process.
 // Handlers call New() per request, so this cannot live on Service or a
 // conversion finishing on a fresh runner would retry a boot failure.
-// StartIndexRebuild still tries a caller-supplied name (dashboard retry).
+// StartIndexRebuild still tries a caller-supplied name (dashboard retry) and
+// deletes the skip when that rebuild succeeds.
 var failedIndexRebuilds sync.Map
 
 // Tables lists what can be converted, in the order the CLI converts them when
@@ -294,6 +295,8 @@ func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy 
 		detached := context.WithoutCancel(ctx)
 		if err := s.rebuild(detached, run, d); err != nil {
 			failedIndexRebuilds.Store(d.Name, struct{}{})
+		} else {
+			failedIndexRebuilds.Delete(d.Name)
 		}
 		s.startQueuedDroppedIndexes(detached, d.Name)
 	}()
@@ -317,10 +320,11 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 const bootTriggeredBy = "boot"
 
 // StartQueuedDroppedIndexes starts the concurrent rebuild of every index still
-// owed, in ListDropped order (guard, unique, deliveries list, then the rest). Failure policy: fail open. Queries seq-scan until
-// an index is valid; ingest and HTTP must not wait on the build. A replica that
-// finds the slot taken, or a name that is already rebuilt, is success. Any
-// other error is logged and ignored so the process still listens.
+// owed, in ListDropped order (guard, unique, deliveries list, then the rest).
+// Failure policy: fail open. Queries seq-scan until an index is valid; ingest
+// and HTTP must not wait on the build. A replica that finds the slot taken, or
+// a name that is already rebuilt, is success. Any other error is logged and
+// ignored so the process still listens.
 func (s *Service) StartQueuedDroppedIndexes(ctx context.Context) {
 	s.startQueuedDroppedIndexes(ctx, "")
 }
