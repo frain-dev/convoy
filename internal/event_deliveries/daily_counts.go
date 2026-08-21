@@ -152,6 +152,7 @@ func (s *Service) markDailyCountsBackfillCompleted(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("mark daily counts backfill completed: %w", err)
 	}
+	s.logger.Info("event delivery daily counts backfill complete")
 	return nil
 }
 
