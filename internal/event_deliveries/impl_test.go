@@ -34,6 +34,9 @@ import (
 var testEnv *testenv.Environment
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv("CONVOY_JWT_SECRET", "test-access-secret")
+	_ = os.Setenv("CONVOY_JWT_REFRESH_SECRET", "test-refresh-secret")
+
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
 		fmt.Printf("Failed to launch test environment: %v\n", err)
@@ -1188,6 +1191,179 @@ func TestLoadEventDeliveriesIntervals(t *testing.T) {
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, len(intervals), minLen)
 	})
+}
+
+func TestLoadEventDeliveriesIntervalsFromRollup(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	for i := 0; i < 3; i++ {
+		d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		require.NoError(t, service.CreateEventDelivery(ctx, d))
+	}
+
+	today := utcDate(time.Now())
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), sumIntervalCounts(intervals))
+}
+
+func TestLoadEventDeliveriesIntervalsFromRollupExcludesEndMidnight(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	day := time.Date(2022, time.March, 20, 0, 0, 0, 0, time.UTC)
+	noon := day.Add(12 * time.Hour)
+	d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+	_, err := db.GetDB().ExecContext(ctx,
+		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
+		noon, d.UID)
+	require.NoError(t, err)
+
+	midnight := datastore.SearchParams{CreatedAtStart: day.Unix(), CreatedAtEnd: day.Unix()}
+	live, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, midnight, datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), sumIntervalCounts(live))
+
+	require.NoError(t, service.RefreshDailyCounts(ctx, day, day.AddDate(0, 0, 1)))
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	rollup, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, midnight, datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), sumIntervalCounts(rollup))
+
+	throughNoon := datastore.SearchParams{CreatedAtStart: day.Unix(), CreatedAtEnd: noon.Unix()}
+	included, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, throughNoon, datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), sumIntervalCounts(included))
+}
+
+func TestLoadEventDeliveriesIntervalsFromRollupEndpointFilter(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpointA := seedTestEndpoint(t, db, project.UID)
+	endpointB := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	subA := seedSubscription(t, db, project.UID, endpointA.UID, source.UID)
+	subB := seedSubscription(t, db, project.UID, endpointB.UID, source.UID)
+	eventA := seedEvent(t, db, project.UID, endpointA.UID, source.UID)
+	eventB := seedEvent(t, db, project.UID, endpointB.UID, source.UID)
+
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, eventA.UID, endpointA.UID, subA.UID)))
+	}
+	require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, eventB.UID, endpointB.UID, subB.UID)))
+
+	today := utcDate(time.Now())
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	all, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), sumIntervalCounts(all))
+
+	filtered, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, []string{endpointA.UID})
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), sumIntervalCounts(filtered))
+}
+
+func TestLoadEventDeliveriesIntervalsFromRollupWeekly(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	for i := 0; i < 3; i++ {
+		require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)))
+	}
+
+	today := utcDate(time.Now())
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Weekly, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), sumIntervalCounts(intervals))
+}
+
+func TestWriteQueueMetricsSnapshotRoundTrip(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+	d.Status = datastore.SuccessEventStatus
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	pg, ok := db.(*postgres.Postgres)
+	require.True(t, ok)
+	require.NoError(t, pg.WriteQueueMetricsSnapshot(ctx))
+
+	var gen int64
+	var total int64
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT m.generation, COALESCE(SUM(q.total), 0)
+		FROM convoy.metrics_snapshot_meta m
+		LEFT JOIN convoy.metrics_event_delivery_queue q
+		  ON q.generation = m.generation
+		WHERE m.name = 'event_delivery_queue'
+		GROUP BY m.generation`).Scan(&gen, &total))
+	require.Equal(t, int64(1), gen)
+	require.GreaterOrEqual(t, total, int64(1))
+
+	require.NoError(t, pg.WriteQueueMetricsSnapshot(ctx))
+	var leftover int64
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM convoy.metrics_event_delivery_queue WHERE generation <> 2`).Scan(&leftover))
+	require.Zero(t, leftover)
+}
+
+func sumIntervalCounts(intervals []datastore.EventInterval) uint64 {
+	var total uint64
+	for _, in := range intervals {
+		total += in.Count
+	}
+	return total
+}
+
+func TestAdvanceDailyCountsBackfillCompletesWhenEmpty(t *testing.T) {
+	service, _ := setupTestDB(t)
+	ctx := context.Background()
+
+	done, err := service.AdvanceDailyCountsBackfill(ctx)
+	require.NoError(t, err)
+	require.True(t, done)
+
+	completed, err := service.dailyCountsBackfillCompleted(ctx)
+	require.NoError(t, err)
+	require.True(t, completed)
 }
 
 func TestExportRecords(t *testing.T) {

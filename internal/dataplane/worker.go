@@ -425,6 +425,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, locker), nil)
 	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker), nil)
+	consumer.RegisterHandlers(convoy.RefreshEventDeliveryDailyCounts, task.RefreshEventDeliveryDailyCounts(lo, opts.DB, locker), nil)
+	consumer.RegisterHandlers(convoy.RefreshQueueMetricsSnapshot, task.RefreshQueueMetricsSnapshot(lo, opts.DB, locker), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	// events_search tokenization is legacy FTS copy; unified list search (PDE-1009) reads

@@ -105,6 +105,8 @@ const (
 	TokenizeSearchForProject         TaskName = "TokenizeProjectSearch"
 	DailyAnalytics                   TaskName = "DailyAnalytics"
 	SnapshotUsage                    TaskName = "SnapshotUsage"
+	RefreshEventDeliveryDailyCounts  TaskName = "RefreshEventDeliveryDailyCounts"
+	RefreshQueueMetricsSnapshot      TaskName = "RefreshQueueMetricsSnapshot"
 	StreamCliEventsProcessor         TaskName = "StreamCliEventsProcessor"
 	MonitorTwitterSources            TaskName = "MonitorTwitterSources"
 	RetentionPolicies                TaskName = "RetentionPolicies"
