@@ -13,6 +13,8 @@ interface DroppedIndex {
 	table: string;
 	name: string;
 	dropped_at: string;
+	blocked_at?: string;
+	blocked_reason?: string;
 	unique: boolean;
 }
 
@@ -177,6 +179,13 @@ export class TableIndexesComponent implements OnInit, OnDestroy {
 	// A missing index costs speed. A missing unique index also costs the
 	// uniqueness it enforced, which is the part worth saying out loud.
 	costs(index: DroppedIndex): string {
+		if (index.blocked_reason) {
+			return index.blocked_reason;
+		}
 		return index.unique ? 'Slower queries, and its key is no longer unique' : 'Slower queries';
+	}
+
+	isBlocked(index: DroppedIndex): boolean {
+		return !!index.blocked_at;
 	}
 }
