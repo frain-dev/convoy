@@ -1,5 +1,45 @@
 # Convoy Changes
 
+## 26.7.3
+
+### Breaking Changes
+
+- Boot now drops any index Postgres left invalid and rebuilds it in the background, rather than leaving it until the next `migrate`. An invalid unique index still enforces its key, so dropping one gives up that constraint until the rebuild finishes: plan the upgrade for a window where that is acceptable, and watch `convoy utils indexes` or the admin dashboard until every owed index is valid again. A rebuild that meets duplicate rows is recorded as blocked, with the offending key, and skipped from then on, so it needs the duplicates resolved by hand before a retry can succeed (#2797, #2809, #2812)
+
+### Features
+
+- feat(dataplane): add postgres as a first-class queue provider (#2795)
+- feat(controlplane): rebuild invalid indexes from the admin dashboard (#2799)
+- feat(controlplane): endpoint Teams notifications and transition-gated alerts (#2802)
+- feat(controlplane): add licensed event list search with exact JSON filters (#2803)
+- feat(dataplane): daily delivery counts and queue metrics snapshots (#2808)
+- feat(controlplane): adopt orphan invalid indexes and block duplicate-key rebuilds (#2812)
+
+### Bug Fixes
+
+- fix(dataplane): reject empty endpoint_id on event match (#2788)
+- fix(dashboard): Improve verify-email UX: auth shell layout and clearer modal (#2789)
+- fix(api): invalidate subscription and filter caches on api writes (#2790)
+- fix(controlplane): invalidate endpoint caches on api writes (#2792)
+- fix(dashboard): show delivered URL from attempts on delivery details (#2793)
+- fix(events): use plain inner order by for paged exists scans (#2794)
+- fix(dashboard): show the partition operation the button will run (#2796)
+- fix(controlplane): repair indexes postgres left invalid, rebuild them on demand (#2797)
+- fix(infra): run local installer from published image (#2798)
+- fix(dataplane): sweep orphaned events_endpoints after partition retention (#2800)
+- fix(migrations): reconcile endpoints NOT NULL schema drift (#2801)
+- fix(controlplane): mark event payload jsonb function parallel unsafe (#2804)
+- fix(controlplane): range-scan event deliveries by project and created_at (#2805)
+- fix(dashboard): show event log search progress and load sidebar deliveries (#2806)
+- fix(dataplane): stop prometheus register from scanning event_deliveries (#2807)
+- fix(dataplane): rebuild every owed index at boot (#2809)
+- fix(dataplane): rewrite rollup days that already hold rows (#2810)
+- fix(controlplane): serve delivery status totals from a status-aware rollup (#2811)
+
+### Improvements
+
+- perf(dataplane): cache subscriptions by source id (#2791)
+
 ## 26.7.2
 
 ### Breaking Changes
