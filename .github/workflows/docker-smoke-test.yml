@@ -39,10 +39,14 @@ jobs:
               - '!docs/**'
 
   smoke-test:
-    name: Docker compose smoke test
+    name: Docker compose & installer smoke test
     needs: changes
     if: ${{ needs.changes.outputs.has_backend != 'false' }}
     runs-on: ubuntu-latest
+    env:
+      CONVOY_IMAGE: convoy:smoke-test
+      CONVOY_SKIP_PULL: '1'
+      CONVOY_HTTP_PORT: '8899'
     steps:
       - name: Check out code
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
@@ -54,3 +58,35 @@ jobs:
         run: ./configs/local/smoke-test.sh
         env:
           CONVOY_IMAGE: convoy:smoke-test
+
+
+      - name: Installer smoke test (fresh install)
+        run: |
+          set -euo pipefail
+          export CONVOY_INSTALL_DIR="$(mktemp -d)/convoy"
+          bash ./install-local.sh
+          curl -fsS "http://localhost:${CONVOY_HTTP_PORT}/healthz"
+          docker compose -f "$CONVOY_INSTALL_DIR/configs/local/docker-compose.install.generated.yml" down -v
+
+      - name: Installer smoke test (reinstall over stale TLS convoy.json)
+        run: |
+          set -euo pipefail
+          export CONVOY_INSTALL_DIR="$(mktemp -d)/convoy"
+          mkdir -p "$CONVOY_INSTALL_DIR/configs/local"
+          # The repo's configs/local/convoy.json is the old cloned-stack config
+          # (rediss + tls_ca_cert_file); use it to simulate an existing install.
+          cp configs/local/convoy.json "$CONVOY_INSTALL_DIR/configs/local/convoy.json"
+          bash ./install-local.sh
+          curl -fsS "http://localhost:${CONVOY_HTTP_PORT}/healthz"
+          if grep -Eq '"scheme"[[:space:]]*:[[:space:]]*"rediss"|tls_ca_cert_file' \
+            "$CONVOY_INSTALL_DIR/configs/local/convoy.json"; then
+            echo "FAIL: stale Redis TLS settings were not normalized on reinstall"
+            cat "$CONVOY_INSTALL_DIR/configs/local/convoy.json"
+            exit 1
+          fi
+          echo "PASS: Redis transport normalized on reinstall"
+          docker compose -f "$CONVOY_INSTALL_DIR/configs/local/docker-compose.install.generated.yml" down -v
+
+      - name: Teardown any leftover containers
+        if: always()
+        run: docker ps -aq | xargs -r docker rm -f || true
