@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -536,6 +537,100 @@ func TestRebuildLeavesNoLockTimeoutOnThePool(t *testing.T) {
 		require.NoError(t, conn.QueryRow(ctx, `SHOW lock_timeout`).Scan(&timeout))
 		require.Equal(t, "0", timeout, "a pooled connection is still carrying the rebuild's lock_timeout")
 	}
+}
+
+// Boot calls Adopt before the listener starts, so the ACCESS EXCLUSIVE the drop
+// needs must not wait forever behind a lock someone else holds. The rest of the
+// list still has to be adopted: a busy table is a reason to skip one index, not
+// to abandon the pass.
+func TestAdoptSkipsAnIndexWhoseTableIsLockedAndKeepsGoing(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	for _, name := range []string{"locked", "free"} {
+		_, err := db.Exec(ctx, fmt.Sprintf(
+			`CREATE TABLE convoy.idx_test_%s (project_id TEXT NOT NULL)`, name))
+		require.NoError(t, err)
+		_, err = db.Exec(ctx, fmt.Sprintf(
+			`INSERT INTO convoy.idx_test_%s (project_id) VALUES ('dup'), ('dup')`, name))
+		require.NoError(t, err)
+		_, err = db.Exec(ctx, fmt.Sprintf(
+			`CREATE UNIQUE INDEX CONCURRENTLY idx_test_%s_project ON convoy.idx_test_%s (project_id)`, name, name))
+		require.Error(t, err, "the duplicate rows must leave the index invalid")
+	}
+
+	// Hold a conflicting lock for longer than adoptLockTimeout so the wait has to
+	// expire rather than win a race.
+	blocker, err := db.Begin(ctx)
+	require.NoError(t, err)
+	_, err = blocker.Exec(ctx, `LOCK TABLE convoy.idx_test_locked IN ACCESS EXCLUSIVE MODE`)
+	require.NoError(t, err)
+
+	start := time.Now()
+	adopted, err := Adopt(ctx, db)
+	elapsed := time.Since(start)
+	require.NoError(t, err, "a lock we could not take is not a failed adoption")
+	require.NoError(t, blocker.Rollback(ctx))
+
+	require.Equal(t, 1, adopted, "the unlocked index is still adopted")
+	require.Less(t, elapsed, 20*time.Second, "the drop waited past its lock_timeout")
+
+	invalid, err := ListInvalid(ctx, db)
+	require.NoError(t, err)
+	require.Contains(t, names(invalid), "idx_test_locked_project",
+		"the locked index is left for the next boot")
+	require.NotContains(t, names(invalid), "idx_test_free_project")
+
+	owed, err := ListDropped(ctx, db)
+	require.NoError(t, err)
+	require.NotContains(t, droppedNames(owed), "idx_test_locked_project",
+		"an index that was never dropped must not be recorded as debt")
+	require.Contains(t, droppedNames(owed), "idx_test_free_project")
+}
+
+// The drop runs in a transaction, so SET LOCAL must keep its lock_timeout off the
+// pooled connection that ordinary traffic gets next.
+func TestAdoptLeavesNoLockTimeoutOnThePool(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `CREATE TABLE convoy.idx_test_adopt_reset (project_id TEXT NOT NULL)`)
+	require.NoError(t, err)
+	_, err = db.Exec(ctx, `INSERT INTO convoy.idx_test_adopt_reset (project_id) VALUES ('dup'), ('dup')`)
+	require.NoError(t, err)
+	_, err = db.Exec(ctx, `CREATE UNIQUE INDEX CONCURRENTLY idx_test_adopt_reset_project ON convoy.idx_test_adopt_reset (project_id)`)
+	require.Error(t, err)
+
+	adopted, err := Adopt(ctx, db)
+	require.NoError(t, err)
+	require.Equal(t, 1, adopted)
+
+	idle := int(db.Stat().IdleConns())
+	require.Positive(t, idle)
+
+	held := make([]*pgxpool.Conn, 0, idle)
+	defer func() {
+		for _, c := range held {
+			c.Release()
+		}
+	}()
+	for i := 0; i < idle; i++ {
+		conn, err := db.Acquire(ctx)
+		require.NoError(t, err)
+		held = append(held, conn)
+
+		var timeout string
+		require.NoError(t, conn.QueryRow(ctx, `SHOW lock_timeout`).Scan(&timeout))
+		require.Equal(t, "0", timeout, "a pooled connection is carrying adopt's lock_timeout")
+	}
+}
+
+func droppedNames(owed []Dropped) []string {
+	out := make([]string, 0, len(owed))
+	for _, d := range owed {
+		out = append(out, d.Name)
+	}
+	return out
 }
 
 func TestRebuildRejectsAMissingTable(t *testing.T) {
