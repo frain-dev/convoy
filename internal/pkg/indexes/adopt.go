@@ -2,10 +2,8 @@ package indexes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -66,8 +64,7 @@ func adoptOne(ctx context.Context, db *pgxpool.Pool, name string) (bool, error) 
 		// A lock we could not take says the table is busy, which is the same
 		// answer as Busy above: leave the index for the next boot rather than
 		// abandoning the indexes after it in the list.
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "55P03" {
+		if isLockTimeout(err) {
 			return false, nil
 		}
 		return false, err

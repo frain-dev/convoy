@@ -539,6 +539,136 @@ func TestRebuildLeavesNoLockTimeoutOnThePool(t *testing.T) {
 	}
 }
 
+// A concurrent build waits for transactions that were already open before it can
+// finish, and it takes that wait as a lock, so one budget covering both the table
+// lock and this wait let an ordinary transaction cancel the build. In production
+// the transaction was Convoy's own daily counts rollup, which runs every minute
+// for tens of seconds, and it cancelled the same rebuild on every attempt.
+//
+// The blocker here writes to the table being indexed, which every supported
+// Postgres waits for. The production case was a transaction elsewhere in the
+// database, and that one reproduces on the 15 that instance runs but not on the
+// 17 this test uses, because 17 prunes transactions that cannot see the table.
+// Same wait, same cancellation, narrower trigger.
+func TestRebuildWaitsForAnOpenTransactionInsteadOfBeingCancelled(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `CREATE TABLE convoy.idx_test_drain (k TEXT)`)
+	require.NoError(t, err)
+
+	owed := Dropped{
+		Table:      "idx_test_drain",
+		Name:       "idx_test_drain_k",
+		Definition: `CREATE INDEX idx_test_drain_k ON convoy.idx_test_drain USING btree (k)`,
+	}
+	_, err = db.Exec(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition)
+        VALUES ($1, $2, $3)`, owed.Name, owed.Table, owed.Definition)
+	require.NoError(t, err)
+
+	// A writer's ROW EXCLUSIVE does not conflict with the SHARE UPDATE EXCLUSIVE
+	// a build takes, so this is a transaction to wait for and not a table that
+	// cannot be locked. The two have to stay distinguishable: the first is worth
+	// waiting out, the second is worth giving the rebuild slot back for.
+	blocker, err := db.Begin(ctx)
+	require.NoError(t, err)
+	_, err = blocker.Exec(ctx, `INSERT INTO convoy.idx_test_drain (k) VALUES ('held')`)
+	require.NoError(t, err)
+
+	const held = 5 * time.Second
+	released := make(chan error, 1)
+	go func() {
+		time.Sleep(held)
+		released <- blocker.Rollback(context.Background())
+	}()
+
+	start := time.Now()
+	err = Rebuild(ctx, db, owed)
+	elapsed := time.Since(start)
+	require.NoError(t, <-released)
+	require.NoError(t, err, "an unrelated transaction is something to wait for, not a failed rebuild")
+
+	require.Greater(t, elapsed, 3*time.Second,
+		"the build returned before the blocking transaction ended, so it cannot have waited for it")
+
+	var valid bool
+	require.NoError(t, db.QueryRow(ctx, `
+        SELECT i.indisvalid FROM pg_index i
+          JOIN pg_class c ON c.oid = i.indexrelid
+         WHERE c.relname = $1`, owed.Name).Scan(&valid))
+	require.True(t, valid)
+
+	var rebuiltAt pgtype.Timestamptz
+	require.NoError(t, db.QueryRow(ctx, `
+        SELECT rebuilt_at FROM convoy.dropped_indexes WHERE index_name = $1`, owed.Name).Scan(&rebuiltAt))
+	require.True(t, rebuiltAt.Valid, "a finished build has to leave the debt paid")
+}
+
+// The longer budget is only for waiting on transactions. A table someone holds a
+// conflicting lock on must still be given up quickly, because there is one
+// rebuild slot for the whole instance and the indexes behind this one are
+// waiting for it.
+func TestRebuildGivesUpQuicklyOnALockedTable(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `CREATE TABLE convoy.idx_test_locked_build (k TEXT)`)
+	require.NoError(t, err)
+
+	owed := Dropped{
+		Table:      "idx_test_locked_build",
+		Name:       "idx_test_locked_build_k",
+		Definition: `CREATE INDEX idx_test_locked_build_k ON convoy.idx_test_locked_build USING btree (k)`,
+	}
+	_, err = db.Exec(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition)
+        VALUES ($1, $2, $3)`, owed.Name, owed.Table, owed.Definition)
+	require.NoError(t, err)
+
+	blocker, err := db.Begin(ctx)
+	require.NoError(t, err)
+	_, err = blocker.Exec(ctx, `LOCK TABLE convoy.idx_test_locked_build IN ACCESS EXCLUSIVE MODE`)
+	require.NoError(t, err)
+
+	start := time.Now()
+	err = Rebuild(ctx, db, owed)
+	elapsed := time.Since(start)
+	require.NoError(t, blocker.Rollback(ctx))
+
+	require.Error(t, err, "a table that cannot be locked is not a rebuild that happened")
+	require.Less(t, elapsed, 30*time.Second, "the rebuild waited past the table lock budget")
+	require.Contains(t, err.Error(), "could not be locked within "+tableLockTimeout)
+	require.Contains(t, err.Error(), "Held by pid",
+		"the message has to name the holder, or the operator learns only that a lock timed out")
+
+	var rebuiltAt pgtype.Timestamptz
+	require.NoError(t, db.QueryRow(ctx, `
+        SELECT rebuilt_at FROM convoy.dropped_indexes WHERE index_name = $1`, owed.Name).Scan(&rebuiltAt))
+	require.False(t, rebuiltAt.Valid, "a build that never ran must stay owed")
+
+	// The failure path hands the connection back too, and the build budget is
+	// session state the next caller must not inherit.
+	idle := int(db.Stat().IdleConns())
+	require.Positive(t, idle)
+
+	conns := make([]*pgxpool.Conn, 0, idle)
+	defer func() {
+		for _, c := range conns {
+			c.Release()
+		}
+	}()
+	for i := 0; i < idle; i++ {
+		conn, err := db.Acquire(ctx)
+		require.NoError(t, err)
+		conns = append(conns, conn)
+
+		var timeout string
+		require.NoError(t, conn.QueryRow(ctx, `SHOW lock_timeout`).Scan(&timeout))
+		require.Equal(t, "0", timeout, "a failed rebuild left its lock_timeout on a pooled connection")
+	}
+}
+
 // Boot calls Adopt before the listener starts, so the ACCESS EXCLUSIVE the drop
 // needs must not wait forever behind a lock someone else holds. The rest of the
 // list still has to be adopted: a busy table is a reason to skip one index, not

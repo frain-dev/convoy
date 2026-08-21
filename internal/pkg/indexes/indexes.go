@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -34,14 +35,38 @@ import (
 // truncated by the server, silently, which would make two derived names collide.
 const maxIdentifier = 63
 
-// lockTimeout bounds the statements that take a lock on the table: creating the
-// parent index and attaching to it. A rebuild is elective, so it gives way to
-// traffic rather than queueing ahead of it.
-const lockTimeout = "3s"
+// tableLockTimeout bounds the statements that take a lock on the table: creating
+// the parent index, attaching to it, and clearing an invalid leftover. A rebuild
+// is elective, so it gives way to traffic rather than queueing ahead of it.
+const tableLockTimeout = "3s"
 
-// resetTimeout bounds undoing lockTimeout when the connection goes back to the
-// pool. It is short because the alternative to waiting is closing the connection,
-// which is cheap next to leaving a session-wide timeout on a pooled connection.
+// buildLockTimeout bounds a concurrent build, which needs a budget of a
+// different order to the one above.
+//
+// CREATE INDEX CONCURRENTLY waits twice for every transaction that was already
+// open to finish, and it takes that wait as a lock on each transaction's virtual
+// id, so lock_timeout cancels it exactly as it cancels a wait for the table.
+// Those are not the same risk. Waiting for the table means queueing ahead of
+// traffic; waiting for transactions to drain costs nothing but time, since the
+// build holds ShareUpdateExclusive throughout, which blocks other DDL and
+// autovacuum on that table but not reads or writes.
+//
+// Sharing one budget made the drain wait fail against Convoy's own daily counts
+// rollup, whose transaction runs for tens of seconds every minute, so a build
+// only succeeded if it happened to start in a gap between rollup runs. Postgres
+// 17 prunes transactions that cannot see the table from that wait; 15, which is
+// what the observed instance runs, waits for all of them.
+//
+// Ten minutes, not longer: the wait is for transactions to end, and a
+// transaction still open after ten minutes is stuck rather than slow. There is
+// one rebuild slot for the instance, so waiting past that point costs every
+// index behind this one. The failure names what it waited for.
+const buildLockTimeout = "10min"
+
+// resetTimeout bounds undoing whichever of the budgets above is still set when
+// the connection goes back to the pool. It is short because the alternative to
+// waiting is closing the connection, which is cheap next to leaving a
+// session-wide timeout on a pooled connection.
 const resetTimeout = 5 * time.Second
 
 // PayloadGIN is the events payload search index. sql/1787200001.sql inserts this
@@ -261,7 +286,7 @@ func Rebuild(ctx context.Context, db *pgxpool.Pool, d Dropped) error {
 	// SET, not SET LOCAL: a concurrent index build cannot run in a transaction,
 	// so there is no transaction for the setting to be local to. That makes it
 	// session state on a pooled connection, which release has to undo.
-	if _, err = conn.Exec(ctx, `SET lock_timeout = '`+lockTimeout+`'`); err != nil {
+	if err := setLockTimeout(ctx, conn, tableLockTimeout); err != nil {
 		return err
 	}
 
@@ -290,8 +315,9 @@ func Rebuild(ctx context.Context, db *pgxpool.Pool, d Dropped) error {
 
 // release hands the connection back with the lock_timeout undone.
 //
-// The pool this came from serves ordinary traffic, where a 3s lock_timeout is
-// wrong: a row-lock wait that is supposed to queue would abort instead. The
+// The pool this came from serves ordinary traffic, where either of the rebuild's
+// budgets is wrong: a row-lock wait that is supposed to queue would abort after
+// three seconds, or hold a request open for ten minutes. The
 // reset gets a context of its own because it also has to run when the rebuild's
 // context is already cancelled, which is exactly when the setting would
 // otherwise be left behind. If the reset cannot be confirmed, the connection
@@ -320,8 +346,9 @@ func rebuildHeap(ctx context.Context, conn *pgxpool.Conn, d Dropped) error {
 	if err != nil {
 		return err
 	}
-	if _, err = conn.Exec(ctx, stmt); err != nil {
-		return fmt.Errorf("building %s on convoy.%s: %w", d.Name, d.Table, err)
+	if err := buildConcurrently(ctx, conn, d.Table, stmt,
+		fmt.Sprintf("building %s on convoy.%s", d.Name, d.Table)); err != nil {
+		return err
 	}
 
 	return assertValid(ctx, conn, d.Name,
@@ -361,8 +388,9 @@ func rebuildPartitioned(ctx context.Context, conn *pgxpool.Conn, d Dropped) erro
 			return err
 		}
 
-		if _, err = conn.Exec(ctx, create); err != nil {
-			return fmt.Errorf("building %s on partition convoy.%s: %w", child, partition, err)
+		if err := buildConcurrently(ctx, conn, partition, create,
+			fmt.Sprintf("building %s on partition convoy.%s", child, partition)); err != nil {
+			return err
 		}
 
 		if _, err = conn.Exec(ctx, attach); err != nil {
@@ -375,6 +403,159 @@ func rebuildPartitioned(ctx context.Context, conn *pgxpool.Conn, d Dropped) erro
 	// record a rebuild that did not finish.
 	return assertValid(ctx, conn, d.Name,
 		fmt.Sprintf("%d partitions were covered, run the rebuild again to pick up the rest", len(partitions)))
+}
+
+// buildConcurrently runs one concurrent build under the longer budget, and only
+// that statement, so the statements around it still give way to traffic.
+//
+// The table lock is probed first because the longer budget would otherwise hide
+// real contention: a table someone holds a conflicting lock on would occupy the
+// one rebuild slot for half an hour instead of being left for the next pass. The
+// probe also separates the two failures for the operator reading the message,
+// since lock_timeout alone cannot say which wait expired.
+//
+// A lock taken and released proves the table was free a moment ago, not that it
+// still is. That is enough to stop the common case from wasting the slot.
+func buildConcurrently(ctx context.Context, conn *pgxpool.Conn, relation, stmt, what string) error {
+	if err := probeTableLock(ctx, conn, relation); err != nil {
+		return fmt.Errorf("%s: %w", what, err)
+	}
+
+	if err := setLockTimeout(ctx, conn, buildLockTimeout); err != nil {
+		return err
+	}
+	_, err := conn.Exec(ctx, stmt)
+
+	// Restore the short budget whether or not the build worked: the attach that
+	// follows a partition build, and the row the rebuild records, both take
+	// ordinary locks and must not inherit half an hour of patience.
+	if resetErr := setLockTimeout(ctx, conn, tableLockTimeout); resetErr != nil && err == nil {
+		return resetErr
+	}
+
+	if err == nil {
+		return nil
+	}
+	if isLockTimeout(err) {
+		if waiting := openTransactions(ctx, conn); waiting != "" {
+			return fmt.Errorf("%s: %w, after waiting %s for transactions to finish. Still open: %s",
+				what, err, buildLockTimeout, waiting)
+		}
+	}
+	return fmt.Errorf("%s: %w", what, err)
+}
+
+// probeTableLock reports whether the relation can be locked the way a concurrent
+// build locks it, without waiting longer than an elective rebuild should.
+//
+// The lock is taken in its own transaction and rolled back, so it is held for
+// the round trip and nothing else.
+func probeTableLock(ctx context.Context, conn *pgxpool.Conn, relation string) error {
+	err := func() error {
+		tx, err := conn.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		// Rolled back before this returns, so the caller can query the
+		// connection: a statement that failed leaves the transaction aborted and
+		// refusing everything until it ends.
+		defer func() { _ = tx.Rollback(ctx) }()
+
+		if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout = '`+tableLockTimeout+`'`); err != nil {
+			return fmt.Errorf("bounding the table lock wait: %w", err)
+		}
+		_, err = tx.Exec(ctx, `LOCK TABLE convoy.`+pgx.Identifier{relation}.Sanitize()+
+			` IN SHARE UPDATE EXCLUSIVE MODE`)
+		return err
+	}()
+
+	if err != nil && isLockTimeout(err) {
+		return fmt.Errorf("convoy.%s could not be locked within %s%s", relation, tableLockTimeout,
+			held(ctx, conn, relation))
+	}
+	return err
+}
+
+// held names the sessions holding a lock on the relation, for a message that
+// would otherwise say only that a lock could not be taken.
+func held(ctx context.Context, conn *pgxpool.Conn, relation string) string {
+	rows, err := conn.Query(ctx, `
+        SELECT l.pid, l.mode, COALESCE(NULLIF(LEFT(REGEXP_REPLACE(a.query, '\s+', ' ', 'g'), 80), ''), '(not visible)')
+          FROM pg_locks l
+          LEFT JOIN pg_stat_activity a ON a.pid = l.pid
+         WHERE l.relation = ('convoy.' || QUOTE_IDENT($1))::regclass
+           AND l.granted
+           AND l.pid <> pg_backend_pid()
+           AND l.mode IN ('ShareUpdateExclusiveLock', 'ShareLock', 'ShareRowExclusiveLock',
+                          'ExclusiveLock', 'AccessExclusiveLock')
+         ORDER BY l.pid
+         LIMIT 3`, relation)
+	if err != nil {
+		return ""
+	}
+	defer rows.Close()
+
+	var holders []string
+	for rows.Next() {
+		var pid int
+		var mode, query string
+		if err = rows.Scan(&pid, &mode, &query); err != nil {
+			return ""
+		}
+		holders = append(holders, fmt.Sprintf("pid %d holds %s running %s", pid, mode, query))
+	}
+	if rows.Err() != nil || len(holders) == 0 {
+		return ""
+	}
+	return ". Held by " + strings.Join(holders, "; ")
+}
+
+// openTransactions names the transactions a concurrent build was still waiting
+// for. A build waits for transactions that were open before it started, whatever
+// they touch, so the one holding it up is usually nowhere near this table.
+func openTransactions(ctx context.Context, conn *pgxpool.Conn) string {
+	rows, err := conn.Query(ctx, `
+        SELECT pid,
+               DATE_TRUNC('second', CLOCK_TIMESTAMP() - xact_start)::TEXT,
+               COALESCE(NULLIF(LEFT(REGEXP_REPLACE(query, '\s+', ' ', 'g'), 80), ''), '(not visible)')
+          FROM pg_stat_activity
+         WHERE pid <> pg_backend_pid()
+           AND xact_start IS NOT NULL
+           AND CLOCK_TIMESTAMP() - xact_start > INTERVAL '3 seconds'
+         ORDER BY xact_start
+         LIMIT 3`)
+	if err != nil {
+		return ""
+	}
+	defer rows.Close()
+
+	var open []string
+	for rows.Next() {
+		var pid int
+		var age, query string
+		if err = rows.Scan(&pid, &age, &query); err != nil {
+			return ""
+		}
+		open = append(open, fmt.Sprintf("pid %d open %s running %s", pid, age, query))
+	}
+	if rows.Err() != nil || len(open) == 0 {
+		return ""
+	}
+	return strings.Join(open, "; ")
+}
+
+func setLockTimeout(ctx context.Context, conn *pgxpool.Conn, value string) error {
+	if _, err := conn.Exec(ctx, `SET lock_timeout = '`+value+`'`); err != nil {
+		return fmt.Errorf("setting the lock timeout to %s: %w", value, err)
+	}
+	return nil
+}
+
+// isLockTimeout reports a statement Postgres cancelled because a lock it wanted
+// was held by someone else. It says nothing about which lock.
+func isLockTimeout(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "55P03"
 }
 
 // assertValid is what stands between a build that did not happen and a
