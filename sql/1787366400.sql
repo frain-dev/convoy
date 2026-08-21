@@ -21,6 +21,14 @@ CREATE TABLE convoy.event_delivery_daily_counts (
     PRIMARY KEY (project_id, day, endpoint_id, status)
 );
 
+-- last_pruned_at joined the meta table after some instances had already created
+-- it, and that CREATE carries IF NOT EXISTS: it saw the name, skipped, and the
+-- column never arrived. gorp will not run that file again, so those instances
+-- are stuck on the three-column shape and every write to last_pruned_at there
+-- fails with 42703, including the reset below.
+ALTER TABLE convoy.event_delivery_daily_counts_meta
+    ADD COLUMN IF NOT EXISTS last_pruned_at TIMESTAMPTZ;
+
 UPDATE convoy.event_delivery_daily_counts_meta
 SET next_day = NULL, completed_at = NULL, last_pruned_at = NULL
 WHERE name = 'backfill';

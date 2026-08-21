@@ -1513,9 +1513,17 @@ func (q *Queries) LoadEventDeliveryIntervalsYearly(ctx context.Context, arg Load
 }
 
 const updateEventDeliveryMetadata = `-- name: UpdateEventDeliveryMetadata :exec
-UPDATE convoy.event_deliveries
-SET status = $1, metadata = $2, latency_seconds = $3, description = $4, updated_at = NOW()
-WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL
+WITH updated AS (
+    UPDATE convoy.event_deliveries
+    SET status = $1, metadata = $2, latency_seconds = $3, description = $4, updated_at = NOW()
+    WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL
+    RETURNING created_at
+)
+INSERT INTO convoy.event_delivery_daily_counts_stale (day)
+SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date
+FROM updated
+WHERE created_at < DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+ON CONFLICT (day) DO NOTHING
 `
 
 type UpdateEventDeliveryMetadataParams struct {
@@ -1527,6 +1535,15 @@ type UpdateEventDeliveryMetadataParams struct {
 	ProjectID      pgtype.Text
 }
 
+// Records the delivery's day as stale for the per-status rollup unless the row
+// was created today, which the refresh window covers no matter when the next
+// run lands. Yesterday does not qualify: a run a second after midnight covers
+// today and yesterday as they are then, which no longer includes the day this
+// update touched. Those markers cost an idempotent insert and are cleared by
+// the window refresh itself, so they never reach the drain.
+//
+// Same statement as the status write, so a status change cannot land without
+// the rollup learning that the day moved.
 func (q *Queries) UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEventDeliveryMetadataParams) error {
 	_, err := q.db.Exec(ctx, updateEventDeliveryMetadata,
 		arg.Status,
@@ -1540,11 +1557,19 @@ func (q *Queries) UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEve
 }
 
 const updateStatusOfEventDeliveries = `-- name: UpdateStatusOfEventDeliveries :exec
-UPDATE convoy.event_deliveries
-SET status = $1, description = $2, updated_at = NOW()
-WHERE (project_id = $3 OR $3 = '')
-  AND id = ANY($4::TEXT[])
-  AND deleted_at IS NULL
+WITH updated AS (
+    UPDATE convoy.event_deliveries
+    SET status = $1, description = $2, updated_at = NOW()
+    WHERE (project_id = $3 OR $3 = '')
+      AND id = ANY($4::TEXT[])
+      AND deleted_at IS NULL
+    RETURNING created_at
+)
+INSERT INTO convoy.event_delivery_daily_counts_stale (day)
+SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date
+FROM updated
+WHERE created_at < DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+ON CONFLICT (day) DO NOTHING
 `
 
 type UpdateStatusOfEventDeliveriesParams struct {
@@ -1554,6 +1579,9 @@ type UpdateStatusOfEventDeliveriesParams struct {
 	Ids         []string
 }
 
+// Marks stale days the same way as UpdateEventDeliveryMetadata. This is the
+// path force resend and batch retry take, which is how a day long past the
+// refresh window gets its statuses rewritten in bulk.
 func (q *Queries) UpdateStatusOfEventDeliveries(ctx context.Context, arg UpdateStatusOfEventDeliveriesParams) error {
 	_, err := q.db.Exec(ctx, updateStatusOfEventDeliveries,
 		arg.Status,

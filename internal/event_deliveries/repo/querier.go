@@ -70,7 +70,19 @@ type Querier interface {
 	LoadEventDeliveryIntervalsMonthly(ctx context.Context, arg LoadEventDeliveryIntervalsMonthlyParams) ([]LoadEventDeliveryIntervalsMonthlyRow, error)
 	LoadEventDeliveryIntervalsWeekly(ctx context.Context, arg LoadEventDeliveryIntervalsWeeklyParams) ([]LoadEventDeliveryIntervalsWeeklyRow, error)
 	LoadEventDeliveryIntervalsYearly(ctx context.Context, arg LoadEventDeliveryIntervalsYearlyParams) ([]LoadEventDeliveryIntervalsYearlyRow, error)
+	// Records the delivery's day as stale for the per-status rollup unless the row
+	// was created today, which the refresh window covers no matter when the next
+	// run lands. Yesterday does not qualify: a run a second after midnight covers
+	// today and yesterday as they are then, which no longer includes the day this
+	// update touched. Those markers cost an idempotent insert and are cleared by
+	// the window refresh itself, so they never reach the drain.
+	//
+	// Same statement as the status write, so a status change cannot land without
+	// the rollup learning that the day moved.
 	UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEventDeliveryMetadataParams) error
+	// Marks stale days the same way as UpdateEventDeliveryMetadata. This is the
+	// path force resend and batch retry take, which is how a day long past the
+	// refresh window gets its statuses rewritten in bulk.
 	UpdateStatusOfEventDeliveries(ctx context.Context, arg UpdateStatusOfEventDeliveriesParams) error
 }
 

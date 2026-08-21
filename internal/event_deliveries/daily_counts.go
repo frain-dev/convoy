@@ -29,6 +29,21 @@ func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) 
 	}
 	defer tx.Rollback(ctx)
 
+	// Markers are cleared before anything reads the deliveries, because each
+	// statement in this transaction takes its own snapshot. Clearing them after
+	// the aggregation would drop a marker whose status change committed between
+	// the two statements: the rewrite never saw that change, and for a day the
+	// recent window does not cover, nothing would revisit it. Clearing first
+	// means every marker removed here belongs to a change the aggregation's later
+	// snapshot includes, and a change committing after this point inserts its
+	// marker again for the next run. A rollback keeps the markers.
+	_, err = tx.Exec(ctx, `
+		DELETE FROM convoy.event_delivery_daily_counts_stale
+		WHERE day >= $1 AND day < $2`, startDay, endDay)
+	if err != nil {
+		return fmt.Errorf("refresh event delivery daily counts: %w", err)
+	}
+
 	// Reaps keys that no longer aggregate to anything, which the upsert below
 	// would otherwise leave at their stale count.
 	_, err = tx.Exec(ctx, `
@@ -63,13 +78,115 @@ func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) 
 	return nil
 }
 
-// RefreshRecentDailyCounts rewrites yesterday and today in UTC. After
-// backfill completes it may prune stale rollup days, but at most once per
-// day and only when the rollup still holds history older than the recent
-// refresh window.
+// queueDaysTheWindowSkipped records the days between the last successful run and
+// today, so a worker that was down (or a job that kept losing its lock) for
+// longer than the two-day window does not leave those days without rollup rows
+// forever.
+//
+// The queued range starts at the last refreshed day itself, not the day after:
+// that run happened part way through its own day, so deliveries kept arriving
+// after it and the day it recorded is short.
+//
+// The watermark moves only after the window refresh and stale drain succeed.
+// Stamping it here would claim days as covered before they were rewritten, and
+// a run whose refresh keeps failing across midnight would skip the day that was
+// yesterday in that window with no gap left to requeue.
+func (s *Service) queueDaysTheWindowSkipped(ctx context.Context, today time.Time) error {
+	var lastRefreshed pgtype.Date
+	err := s.db.QueryRow(ctx, `
+		SELECT last_refreshed_day
+		FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = $1`, dailyCountsBackfillName).Scan(&lastRefreshed)
+	if err != nil {
+		return fmt.Errorf("load daily counts refresh watermark: %w", err)
+	}
+
+	// The window covers yesterday and today, so only days before yesterday can
+	// be owed. An unset watermark is a first run on this version: there is no
+	// last run to measure a gap against.
+	lastCovered := today.AddDate(0, 0, -2)
+	if lastRefreshed.Valid && !utcDate(lastRefreshed.Time).After(lastCovered) {
+		from := pgtype.Date{Time: utcDate(lastRefreshed.Time), Valid: true}
+		to := pgtype.Date{Time: lastCovered, Valid: true}
+		_, err = s.db.Exec(ctx, `
+			INSERT INTO convoy.event_delivery_daily_counts_stale (day)
+			SELECT d::date FROM generate_series($1::date, $2::date, INTERVAL '1 day') d
+			ON CONFLICT (day) DO NOTHING`, from, to)
+		if err != nil {
+			return fmt.Errorf("queue skipped daily counts days: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) stampDailyCountsRefreshWatermark(ctx context.Context, today time.Time) error {
+	_, err := s.db.Exec(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET last_refreshed_day = $1
+		WHERE name = $2`, pgtype.Date{Time: today, Valid: true}, dailyCountsBackfillName)
+	if err != nil {
+		return fmt.Errorf("stamp daily counts refresh watermark: %w", err)
+	}
+	return nil
+}
+
+// staleDailyCountsDrainLimit bounds how many past days one refresh rewrites.
+// A force resend spanning months marks every day it touches, as does a worker
+// coming back after a long outage, and rewriting all of them in one run would
+// hold the job's lock for as long as that takes. Whatever is left stays marked
+// and the next minute continues.
+const staleDailyCountsDrainLimit = 5
+
+// drainStaleDailyCounts rewrites days a status change moved after they left the
+// recent window, oldest first.
+func (s *Service) drainStaleDailyCounts(ctx context.Context) error {
+	rows, err := s.db.Query(ctx, `
+		SELECT day FROM convoy.event_delivery_daily_counts_stale
+		ORDER BY day LIMIT $1`, staleDailyCountsDrainLimit)
+	if err != nil {
+		return fmt.Errorf("load stale daily counts days: %w", err)
+	}
+
+	var days []time.Time
+	for rows.Next() {
+		var day pgtype.Date
+		if scanErr := rows.Scan(&day); scanErr != nil {
+			rows.Close()
+			return fmt.Errorf("load stale daily counts days: %w", scanErr)
+		}
+		days = append(days, day.Time)
+	}
+	rows.Close()
+	if rowsErr := rows.Err(); rowsErr != nil {
+		return fmt.Errorf("load stale daily counts days: %w", rowsErr)
+	}
+
+	for _, day := range days {
+		if err := s.RefreshDailyCounts(ctx, day, day.AddDate(0, 0, 1)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RefreshRecentDailyCounts rewrites yesterday and today in UTC, plus any day the
+// window skipped while this job was not running, plus the older days a status
+// change has moved since they left that window. After backfill completes it may
+// prune stale rollup days, but at most once per day and only when the rollup
+// still holds history older than the recent refresh window.
 func (s *Service) RefreshRecentDailyCounts(ctx context.Context) error {
 	today := utcDate(time.Now())
+	if err := s.queueDaysTheWindowSkipped(ctx, today); err != nil {
+		return err
+	}
 	if err := s.RefreshDailyCounts(ctx, today.AddDate(0, 0, -1), today.AddDate(0, 0, 1)); err != nil {
+		return err
+	}
+	if err := s.drainStaleDailyCounts(ctx); err != nil {
+		return err
+	}
+	if err := s.stampDailyCountsRefreshWatermark(ctx, today); err != nil {
 		return err
 	}
 	completed, err := s.dailyCountsBackfillCompleted(ctx)
