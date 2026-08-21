@@ -1217,6 +1217,71 @@ func TestLoadEventDeliveriesIntervalsFromRollup(t *testing.T) {
 	require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 }
 
+func TestRefreshDailyCountsRewritesADayThatAlreadyHasRows(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	for i := 0; i < 3; i++ {
+		require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)))
+	}
+
+	today := utcDate(time.Now())
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+
+	// The recent refresh runs every minute over the same two days, so the
+	// second pass carries the primary key the first one just wrote.
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+
+	require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)))
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(4), sumIntervalCounts(intervals))
+}
+
+func TestRefreshDailyCountsDropsKeysThatNoLongerAggregate(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	today := utcDate(time.Now())
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	require.Equal(t, 1, rollupRowCount(t, db, project.UID))
+
+	_, err := db.GetDB().ExecContext(ctx,
+		"UPDATE convoy.event_deliveries SET deleted_at=NOW() WHERE id=$1", d.UID)
+	require.NoError(t, err)
+
+	// An upsert alone would leave the row at its stale count.
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	require.Equal(t, 0, rollupRowCount(t, db, project.UID))
+}
+
+func rollupRowCount(t *testing.T, db database.Database, projectID string) int {
+	t.Helper()
+	var count int
+	require.NoError(t, db.GetDB().QueryRowxContext(context.Background(),
+		"SELECT COUNT(*) FROM convoy.event_delivery_daily_counts WHERE project_id=$1",
+		projectID).Scan(&count))
+	return count
+}
+
 func TestLoadEventDeliveriesIntervalsFromRollupExcludesEndMidnight(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
@@ -1456,6 +1521,74 @@ func TestAdvanceDailyCountsBackfillCompletesWhenEmpty(t *testing.T) {
 	completed, err := service.dailyCountsBackfillCompleted(ctx)
 	require.NoError(t, err)
 	require.True(t, completed)
+}
+
+// The worker calls this every minute over the same two days, so the second and
+// every later run operate on a rollup that already holds those days. Tests that
+// only ever refresh a pristine table never reach that state.
+func TestRefreshRecentDailyCountsRepeatsLikeTheWorker(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)))
+
+	for i := 0; i < 3; i++ {
+		require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+	}
+
+	require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)))
+	require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), sumIntervalCounts(intervals))
+}
+
+func TestAdvanceDailyCountsBackfillWalksHistoryToCompletion(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	today := utcDate(time.Now())
+	for i := 1; i <= 3; i++ {
+		d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		require.NoError(t, service.CreateEventDelivery(ctx, d))
+		at := today.AddDate(0, 0, -i).Add(12 * time.Hour)
+		_, err := db.GetDB().ExecContext(ctx,
+			"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2", at, d.UID)
+		require.NoError(t, err)
+	}
+
+	// Each step refreshes one day, and the recent window re-covers the last of
+	// them, so the walk crosses days that the rollup already holds.
+	done := false
+	for i := 0; i < 10 && !done; i++ {
+		require.NoError(t, service.RefreshRecentDailyCounts(ctx))
+		var err error
+		done, err = service.AdvanceDailyCountsBackfill(ctx)
+		require.NoError(t, err)
+	}
+	require.True(t, done, "backfill did not complete")
+
+	window := datastore.SearchParams{
+		CreatedAtStart: today.AddDate(0, 0, -4).Unix(),
+		CreatedAtEnd:   today.AddDate(0, 0, 1).Unix(),
+	}
+	intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, window, datastore.Daily, nil)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), sumIntervalCounts(intervals))
+	require.Equal(t, 3, rollupRowCount(t, db, project.UID))
 }
 
 func TestExportRecords(t *testing.T) {

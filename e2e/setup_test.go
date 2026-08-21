@@ -81,12 +81,23 @@ type E2ETestEnv struct {
 	cancelServer context.CancelFunc
 }
 
+// ConfigOption adjusts the configuration a test's server and worker boot with.
+// LoadConfig reads environment variables only when it is given options, so a
+// test that needs a non-default setting (metrics on, postgres queue) has to
+// hand it in here rather than exporting a variable.
+type ConfigOption func(*config.Configuration)
+
 // SetupE2E initializes the complete E2E test environment with server and worker
-func SetupE2E(t *testing.T) *E2ETestEnv {
+func SetupE2E(t *testing.T, opts ...ConfigOption) *E2ETestEnv {
 	t.Helper()
 
 	// Lock to ensure tests run sequentially (prevents resource conflicts)
 	testMutex.Lock()
+	// Registered before anything that can fail: every require below aborts the
+	// goroutine, and an unlock left to the end of setup would hold the lock for
+	// the rest of the package. Cleanups run LIFO, so this still releases after
+	// the teardown registered further down.
+	t.Cleanup(testMutex.Unlock)
 
 	ctx := context.Background()
 
@@ -99,6 +110,10 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 	cfg, err := config.Get()
 	require.NoError(t, err)
+
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 
 	// Clone database for this test
 	conn, err := infra.CloneTestDatabase(t, "convoy")
@@ -261,8 +276,6 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		memorystore.DefaultStore.Reset()
 		t.Logf("Memorystore reset complete")
 
-		// Unlock mutex to allow next test to run
-		testMutex.Unlock()
 		t.Logf("Cleanup complete for test: %s", t.Name())
 	})
 
@@ -284,11 +297,16 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 // SetupE2EWithoutWorker initializes E2E test environment with server but WITHOUT worker
 // This is useful for job ID tests where we use a custom test worker instead
-func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
+func SetupE2EWithoutWorker(t *testing.T, opts ...ConfigOption) *E2ETestEnv {
 	t.Helper()
 
 	// Lock to ensure tests run sequentially (prevents resource conflicts)
 	testMutex.Lock()
+	// Registered before anything that can fail: every require below aborts the
+	// goroutine, and an unlock left to the end of setup would hold the lock for
+	// the rest of the package. Cleanups run LIFO, so this still releases after
+	// the teardown registered further down.
+	t.Cleanup(testMutex.Unlock)
 
 	ctx := context.Background()
 
@@ -301,6 +319,10 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 
 	cfg, err := config.Get()
 	require.NoError(t, err)
+
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 
 	// Clone database for this test
 	conn, err := infra.CloneTestDatabase(t, "convoy")
@@ -426,8 +448,6 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 		// Reset memory store to prevent "table already registered" errors in next test
 		memorystore.DefaultStore.Reset()
 
-		// Unlock mutex to allow next test to run
-		testMutex.Unlock()
 		t.Logf("Cleanup complete for test: %s", t.Name())
 	})
 

@@ -654,10 +654,14 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollup() {
 	}
 
 	svc := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
-	require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
-		time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC),
-		time.Date(2022, time.March, 21, 0, 0, 0, 0, time.UTC),
-	))
+	// Twice, because the worker rewrites the same days every minute and the
+	// second pass is the one that carries keys the first pass already wrote.
+	for i := 0; i < 2; i++ {
+		require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
+			time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC),
+			time.Date(2022, time.March, 21, 0, 0, 0, 0, time.UTC),
+		))
+	}
 	s.markDailyCountsBackfillCompleted(ctx)
 
 	startT, err := time.Parse("2006-01-02T15:04:05", startDate)
@@ -709,10 +713,12 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollupPortalF
 	require.NoError(s.T(), err)
 
 	svc := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
-	require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
-		time.Date(2021, time.January, 5, 0, 0, 0, 0, time.UTC),
-		time.Date(2021, time.January, 6, 0, 0, 0, 0, time.UTC),
-	))
+	for i := 0; i < 2; i++ {
+		require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
+			time.Date(2021, time.January, 5, 0, 0, 0, 0, time.UTC),
+			time.Date(2021, time.January, 6, 0, 0, 0, 0, time.UTC),
+		))
+	}
 	s.markDailyCountsBackfillCompleted(ctx)
 
 	startDate := "2021-01-01T00:00:00"

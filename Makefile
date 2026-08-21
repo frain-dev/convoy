@@ -30,7 +30,11 @@ test:
 DOCKER_HOST_VAL := $(or $(DOCKER_HOST),$(shell docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || echo ""))
 DOCKER_CONTEXT := $(shell docker context show 2>/dev/null || echo "default")
 DOCKER_SOCKET_PATH := $(shell echo "$(DOCKER_HOST_VAL)" | sed 's|^unix://||')
-TEST_ENV := DOCKER_HOST="$(DOCKER_HOST_VAL)" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="$(DOCKER_SOCKET_PATH)"
+# The JWT secrets mirror the e2e workflows. Without them config.LoadConfig
+# fails inside setup and every test in the package reports a setup error.
+TEST_ENV := DOCKER_HOST="$(DOCKER_HOST_VAL)" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="$(DOCKER_SOCKET_PATH)" \
+	CONVOY_JWT_SECRET="$(or $(CONVOY_JWT_SECRET),test-access-secret)" \
+	CONVOY_JWT_REFRESH_SECRET="$(or $(CONVOY_JWT_REFRESH_SECRET),test-refresh-secret)"
 
 # Fast E2E tests - Run on PRs (10-15 minutes)
 .PHONY: test_e2e_fast
@@ -70,7 +74,32 @@ test_e2e_fast:
 	@$(TEST_ENV) go test -race -v ./e2e -run TestE2E_BulkOnboard_MultipleBatches
 	@echo "Running Backup tests..."
 	@$(TEST_ENV) go test -race -v ./e2e/backup -timeout 15m
+	@$(MAKE) test_e2e_admin
 	@echo "✅ Fast E2E tests passed!"
+
+# Admin-surface E2E tests: dashboard rollup reads, the Postgres queue provider,
+# licensed event search and the Prometheus scrape. Each drives a real server
+# (and worker where the path needs one) over HTTP.
+.PHONY: test_e2e_admin
+test_e2e_admin:
+	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
+	@echo "Running daily counts rollup tests..."
+	@$(TEST_ENV) go test -race -v ./e2e -run 'TestE2E_DailyCounts' -timeout 15m
+	@echo "Running Postgres queue provider tests..."
+	@$(TEST_ENV) go test -race -v ./e2e -run 'TestE2E_PostgresQueue' -timeout 15m
+	@echo "Running event search tests..."
+	@$(TEST_ENV) go test -race -v ./e2e -run 'TestE2E_EventSearch' -timeout 15m
+	@echo "Running Prometheus metrics tests..."
+	@$(TEST_ENV) go test -race -v ./e2e -run 'TestE2E_Metrics' -timeout 15m
+	@echo "✅ Admin E2E tests passed!"
+
+# Index rebuilds run real CONCURRENTLY builds behind an instance-wide slot, so
+# they are minutes each and belong on a schedule rather than every PR.
+.PHONY: test_e2e_admin_slow
+test_e2e_admin_slow:
+	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
+	@$(TEST_ENV) go test -race -v ./e2e -run 'TestE2E_IndexRebuild' -timeout 30m
+	@echo "✅ Slow admin E2E tests passed!"
 
 # Slow PubSub/Message Broker tests - Run daily (60+ minutes)
 .PHONY: test_e2e_pubsub
@@ -101,7 +130,7 @@ test_e2e_all:
 # Usage: make test_e2e_single TEST=TestE2E_DirectEvent_AllSubscriptions
 test_e2e_single:
 	@echo "Using docker context: $(DOCKER_CONTEXT) (DOCKER_HOST=$(DOCKER_HOST_VAL))"
-	@$(TEST_ENV) go test -race -v ./e2e/... -run $(TEST)
+	@$(TEST_ENV) go test -race -v ./e2e/... -run '$(TEST)'
 
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"
