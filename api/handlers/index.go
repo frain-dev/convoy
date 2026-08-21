@@ -26,9 +26,11 @@ type invalidIndex struct {
 }
 
 type droppedIndex struct {
-	Table     string `json:"table"`
-	Name      string `json:"name"`
-	DroppedAt string `json:"dropped_at"`
+	Table         string  `json:"table"`
+	Name          string  `json:"name"`
+	DroppedAt     string  `json:"dropped_at"`
+	BlockedAt     *string `json:"blocked_at,omitempty"`
+	BlockedReason string  `json:"blocked_reason,omitempty"`
 
 	// Unique is the one cost beyond speed, so the client does not have to parse
 	// the definition to know a rebuild is urgent. The definition itself is not
@@ -69,11 +71,18 @@ func (h *Handler) ListIndexes(w http.ResponseWriter, r *http.Request) {
 		report.Invalid = append(report.Invalid, invalidIndex{Table: i.Table, Name: i.Name, Busy: i.Busy})
 	}
 	for _, d := range dropped {
+		var blockedAt *string
+		if d.BlockedAt != nil {
+			formatted := d.BlockedAt.Format(indexTimeFormat)
+			blockedAt = &formatted
+		}
 		report.Dropped = append(report.Dropped, droppedIndex{
-			Table:     d.Table,
-			Name:      d.Name,
-			DroppedAt: d.DroppedAt.Format(indexTimeFormat),
-			Unique:    d.Unique(),
+			Table:         d.Table,
+			Name:          d.Name,
+			DroppedAt:     d.DroppedAt.Format(indexTimeFormat),
+			BlockedAt:     blockedAt,
+			BlockedReason: d.BlockedReason,
+			Unique:        d.Unique(),
 		})
 	}
 

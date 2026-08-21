@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -92,10 +93,16 @@ type Invalid struct {
 // Dropped is an index a migration removed because it was invalid, held with the
 // definition needed to build it again.
 type Dropped struct {
-	Table      string
-	Name       string
-	Definition string
-	DroppedAt  time.Time
+	Table         string
+	Name          string
+	Definition    string
+	DroppedAt     time.Time
+	BlockedAt     *time.Time
+	BlockedReason string
+}
+
+func (d Dropped) Blocked() bool {
+	return d.BlockedAt != nil
 }
 
 // Unique reports whether the index enforced uniqueness, which is the one thing a
@@ -171,7 +178,7 @@ func ListInvalid(ctx context.Context, db *pgxpool.Pool) ([]Invalid, error) {
 // the list --rebuild works through cannot disagree.
 func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
 	rows, err := db.Query(ctx, `
-        SELECT table_name, index_name, definition, dropped_at
+        SELECT table_name, index_name, definition, dropped_at, blocked_at, blocked_reason
           FROM convoy.dropped_indexes
          WHERE rebuilt_at IS NULL
          ORDER BY (index_name = 'idx_partition_runs_single_active') DESC,
@@ -186,8 +193,17 @@ func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
 	var dropped []Dropped
 	for rows.Next() {
 		var d Dropped
-		if err = rows.Scan(&d.Table, &d.Name, &d.Definition, &d.DroppedAt); err != nil {
+		var blockedAt pgtype.Timestamptz
+		var blockedReason pgtype.Text
+		if err = rows.Scan(&d.Table, &d.Name, &d.Definition, &d.DroppedAt, &blockedAt, &blockedReason); err != nil {
 			return nil, fmt.Errorf("reading dropped indexes: %w", err)
+		}
+		if blockedAt.Valid {
+			t := blockedAt.Time
+			d.BlockedAt = &t
+		}
+		if blockedReason.Valid {
+			d.BlockedReason = blockedReason.String
 		}
 		dropped = append(dropped, d)
 	}
@@ -204,16 +220,25 @@ func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
 // catalog capture, never from the caller.
 func GetDropped(ctx context.Context, db *pgxpool.Pool, name string) (Dropped, error) {
 	var d Dropped
+	var blockedAt pgtype.Timestamptz
+	var blockedReason pgtype.Text
 	err := db.QueryRow(ctx, `
-        SELECT table_name, index_name, definition, dropped_at
+        SELECT table_name, index_name, definition, dropped_at, blocked_at, blocked_reason
           FROM convoy.dropped_indexes
          WHERE index_name = $1 AND rebuilt_at IS NULL`, name).
-		Scan(&d.Table, &d.Name, &d.Definition, &d.DroppedAt)
+		Scan(&d.Table, &d.Name, &d.Definition, &d.DroppedAt, &blockedAt, &blockedReason)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Dropped{}, fmt.Errorf("%w: %s", ErrNotDropped, name)
 	}
 	if err != nil {
 		return Dropped{}, fmt.Errorf("reading dropped index %s: %w", name, err)
+	}
+	if blockedAt.Valid {
+		t := blockedAt.Time
+		d.BlockedAt = &t
+	}
+	if blockedReason.Valid {
+		d.BlockedReason = blockedReason.String
 	}
 	return d, nil
 }
@@ -255,7 +280,8 @@ func Rebuild(ctx context.Context, db *pgxpool.Pool, d Dropped) error {
 	}
 
 	if _, err = conn.Exec(ctx, `
-        UPDATE convoy.dropped_indexes SET rebuilt_at = NOW()
+        UPDATE convoy.dropped_indexes
+        SET rebuilt_at = NOW(), blocked_at = NULL, blocked_reason = NULL
          WHERE index_name = $1 AND rebuilt_at IS NULL`, d.Name); err != nil {
 		return fmt.Errorf("index %s was rebuilt but recording that failed, it will be offered again: %w", d.Name, err)
 	}

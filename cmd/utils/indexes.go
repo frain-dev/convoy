@@ -91,7 +91,7 @@ func reportIndexes(cmd *cobra.Command, a *cli.App) error {
 	if len(dropped) > 0 {
 		fmt.Fprintf(out, "%d index(es) dropped and not rebuilt. Rebuild them with --rebuild:\n\n", len(dropped))
 		w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-		fmt.Fprintln(w, "TABLE\tINDEX\tDROPPED\tCOSTS")
+		fmt.Fprintln(w, "TABLE\tINDEX\tDROPPED\tCOSTS\tBLOCKED")
 		unique := 0
 		for _, d := range dropped {
 			// A missing index costs speed. A missing unique index also costs the
@@ -101,7 +101,11 @@ func reportIndexes(cmd *cobra.Command, a *cli.App) error {
 				costs = "slower queries, and its key is no longer unique"
 				unique++
 			}
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", d.Table, d.Name, d.DroppedAt.Format("2006-01-02 15:04 MST"), costs)
+			blocked := ""
+			if d.Blocked() {
+				blocked = d.BlockedReason
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", d.Table, d.Name, d.DroppedAt.Format("2006-01-02 15:04 MST"), costs, blocked)
 		}
 		if err := w.Flush(); err != nil {
 			return err

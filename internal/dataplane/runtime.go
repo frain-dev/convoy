@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/indexes"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/partitions"
 )
@@ -55,7 +56,12 @@ func (r *Runtime) Run(ctx context.Context) error {
 	}
 
 	// Fail open: queries seq-scan until owed indexes are valid. Do not block
-	// ingest. Unique indexes take the single-active slot first.
+	// ingest. Orphan invalid indexes are adopted into dropped_indexes first.
+	if n, err := indexes.Adopt(ctx, r.opts.DB.GetConn()); err != nil {
+		r.opts.Logger.Error("invalid index adoption failed", "error", err.Error())
+	} else if n > 0 {
+		r.opts.Logger.Info("adopted invalid indexes for rebuild", "count", n)
+	}
 	p := partitions.New(r.opts.DB, r.opts.Logger)
 	p.StartQueuedDroppedIndexes(ctx)
 

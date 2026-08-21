@@ -21,6 +21,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/indexes"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/partitions"
@@ -206,9 +207,15 @@ func StartConvoyServer(a *cli.App) error {
 	a.Logger.Infof("Started convoy server in %s", time.Since(start))
 
 	// Fail open: queries seq-scan until owed indexes are valid. Do not block
-	// listen. Unique indexes take the single-active slot first.
+	// listen. Orphan invalid indexes are adopted into dropped_indexes first.
+	bootCtx := context.Background()
+	if n, err := indexes.Adopt(bootCtx, a.DB.GetConn()); err != nil {
+		a.Logger.Errorf("invalid index adoption failed: %v", err)
+	} else if n > 0 {
+		a.Logger.Infof("adopted %d invalid index(es) for rebuild", n)
+	}
 	p := partitions.New(a.DB, a.Logger)
-	p.StartQueuedDroppedIndexes(context.Background())
+	p.StartQueuedDroppedIndexes(bootCtx)
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {

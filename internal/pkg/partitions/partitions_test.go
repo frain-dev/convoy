@@ -2,6 +2,7 @@ package partitions
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
@@ -23,6 +24,9 @@ import (
 var testEnv *testenv.Environment
 
 func TestMain(m *testing.M) {
+	_ = os.Setenv("CONVOY_JWT_SECRET", "test-access-secret")
+	_ = os.Setenv("CONVOY_JWT_REFRESH_SECRET", "test-refresh-secret")
+
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to launch test infrastructure: %v\n", err)
@@ -203,6 +207,203 @@ func TestStartIndexRebuildRecordsTheIndexAndItsTable(t *testing.T) {
 	done := waitForStatus(t, s, ctx, run.UID, StatusCompleted)
 	require.NotNil(t, done.IndexName)
 	require.Equal(t, "idx_event_deliveries_usage", *done.IndexName)
+}
+
+func TestStartQueuedDroppedIndexesSkipsBlockedIndexes(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	now := time.Now()
+	r.index.BlockedAt = &now
+	r.index.BlockedReason = "could not create unique index, key is duplicated"
+	s := newRebuildService(t, db, r)
+
+	s.StartQueuedDroppedIndexes(ctx)
+	select {
+	case <-r.started:
+		t.Fatal("boot started a blocked index rebuild")
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestDuplicateKeyRebuildFailureIsPersistedAsBlocked(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition)
+        VALUES ('idx_events_source_id', 'events',
+                'CREATE INDEX idx_events_source_id ON convoy.events USING btree (id)')
+        ON CONFLICT (index_name) DO UPDATE
+            SET table_name = EXCLUDED.table_name,
+                definition = EXCLUDED.definition,
+                dropped_at = NOW(),
+                rebuilt_at = NULL,
+                blocked_at = NULL,
+                blocked_reason = NULL`)
+	require.NoError(t, err)
+
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	r.rebuildErr = errors.New("could not create unique index, key is duplicated")
+	close(r.release)
+	s := newRebuildService(t, db, r)
+
+	run, err := s.StartIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.NoError(t, err)
+	waitForStatus(t, s, ctx, run.UID, StatusFailed)
+
+	var blockedAt sql.NullTime
+	var reason sql.NullString
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT blocked_at, blocked_reason FROM convoy.dropped_indexes
+        WHERE index_name = 'idx_events_source_id' AND rebuilt_at IS NULL`).Scan(&blockedAt, &reason))
+	require.True(t, blockedAt.Valid)
+	require.True(t, reason.Valid)
+	require.Contains(t, reason.String, "duplicate")
+}
+
+func TestDuplicateKeyFailureFallsBackToProcessSkipWhenBlockedWriteFails(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	r.rebuildErr = errors.New("could not create unique index, key is duplicated")
+	close(r.release)
+	s := newRebuildService(t, db, r)
+
+	err := s.RunIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.Error(t, err)
+	<-r.started
+
+	_, skipped := failedIndexRebuilds.Load("idx_events_source_id")
+	require.True(t, skipped, "without a debt row MarkBlocked fails, so boot must fall back to the process skip")
+
+	s.StartQueuedDroppedIndexes(ctx)
+	select {
+	case <-r.started:
+		t.Fatal("boot retried an index whose blocked marker could not be persisted")
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestExplicitRetryClearsBlockedBeforeRebuild(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition, blocked_at, blocked_reason)
+        VALUES ('idx_events_source_id', 'events',
+                'CREATE INDEX idx_events_source_id ON convoy.events USING btree (id)',
+                NOW(), 'could not create unique index, key is duplicated')
+        ON CONFLICT (index_name) DO UPDATE
+            SET blocked_at = EXCLUDED.blocked_at,
+                blocked_reason = EXCLUDED.blocked_reason,
+                rebuilt_at = NULL`)
+	require.NoError(t, err)
+
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	s := newRebuildService(t, db, r)
+
+	run, err := s.StartIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.NoError(t, err)
+	<-r.started
+
+	var blockedAt sql.NullTime
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT blocked_at FROM convoy.dropped_indexes
+        WHERE index_name = 'idx_events_source_id' AND rebuilt_at IS NULL`).Scan(&blockedAt))
+	require.False(t, blockedAt.Valid, "explicit retry must clear blocked before the rebuild runs")
+
+	close(r.release)
+	waitForStatus(t, s, ctx, run.UID, StatusCompleted)
+}
+
+func TestExplicitRetryPreservesBlockedWhenSlotNotTaken(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition, blocked_at, blocked_reason)
+        VALUES ('idx_events_source_id', 'events',
+                'CREATE INDEX idx_events_source_id ON convoy.events USING btree (id)',
+                NOW(), 'could not create unique index, key is duplicated')
+        ON CONFLICT (index_name) DO UPDATE
+            SET blocked_at = EXCLUDED.blocked_at,
+                blocked_reason = EXCLUDED.blocked_reason,
+                rebuilt_at = NULL`)
+	require.NoError(t, err)
+
+	holding := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	holder := newRebuildService(t, db, holding)
+	run, err := holder.StartIndexRebuild(ctx, "idx_event_deliveries_usage", "user-1")
+	require.NoError(t, err)
+	<-holding.started
+
+	_, err = newRebuildService(t, db, newBlockingRebuilder("events", "idx_events_source_id")).
+		StartIndexRebuild(ctx, "idx_events_source_id", "user-2")
+	require.ErrorIs(t, err, ErrRunInProgress)
+
+	var blockedAt sql.NullTime
+	var reason sql.NullString
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT blocked_at, blocked_reason FROM convoy.dropped_indexes
+        WHERE index_name = 'idx_events_source_id' AND rebuilt_at IS NULL`).Scan(&blockedAt, &reason))
+	require.True(t, blockedAt.Valid, "blocked marker must survive a retry that never took the slot")
+	require.True(t, reason.Valid)
+
+	close(holding.release)
+	waitForStatus(t, holder, ctx, run.UID, StatusCompleted)
+}
+
+func TestExplicitRetryKeepsProcessSkipWhenClearBlockedFails(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.dropped_indexes (index_name, table_name, definition, blocked_at, blocked_reason)
+        VALUES ('idx_events_source_id', 'events',
+                'CREATE INDEX idx_events_source_id ON convoy.events USING btree (id)',
+                NOW(), 'could not create unique index, key is duplicated')
+        ON CONFLICT (index_name) DO UPDATE
+            SET blocked_at = EXCLUDED.blocked_at,
+                blocked_reason = EXCLUDED.blocked_reason,
+                rebuilt_at = NULL`)
+	require.NoError(t, err)
+
+	failedIndexRebuilds.Store("idx_events_source_id", struct{}{})
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        CREATE OR REPLACE FUNCTION convoy.test_block_clear_blocked()
+        RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF OLD.blocked_at IS NOT NULL AND NEW.blocked_at IS NULL THEN
+                RAISE EXCEPTION 'test: clear blocked blocked';
+            END IF;
+            RETURN NEW;
+        END $$;
+        CREATE TRIGGER test_block_clear_blocked
+        BEFORE UPDATE ON convoy.dropped_indexes
+        FOR EACH ROW EXECUTE FUNCTION convoy.test_block_clear_blocked()`)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = db.GetDB().ExecContext(context.Background(), `
+            DROP TRIGGER IF EXISTS test_block_clear_blocked ON convoy.dropped_indexes;
+            DROP FUNCTION IF EXISTS convoy.test_block_clear_blocked()`)
+	})
+
+	r := newBlockingRebuilder("events", "idx_events_source_id")
+	s := newRebuildService(t, db, r)
+
+	_, err = s.StartIndexRebuild(ctx, "idx_events_source_id", "user-1")
+	require.Error(t, err)
+
+	_, skipped := failedIndexRebuilds.Load("idx_events_source_id")
+	require.True(t, skipped, "process skip must survive a failed ClearBlocked after the slot was taken")
+
+	var blockedAt sql.NullTime
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT blocked_at FROM convoy.dropped_indexes
+        WHERE index_name = 'idx_events_source_id' AND rebuilt_at IS NULL`).Scan(&blockedAt))
+	require.True(t, blockedAt.Valid)
+
+	s.StartQueuedDroppedIndexes(ctx)
+	select {
+	case <-r.started:
+		t.Fatal("boot retried after explicit retry dropped the process skip")
+	case <-time.After(100 * time.Millisecond):
+	}
 }
 
 func TestStartQueuedDroppedIndexesStartsTheFirstOwed(t *testing.T) {

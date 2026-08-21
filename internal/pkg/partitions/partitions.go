@@ -293,11 +293,8 @@ func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy 
 
 	go func() {
 		detached := context.WithoutCancel(ctx)
-		if err := s.rebuild(detached, run, d); err != nil {
-			failedIndexRebuilds.Store(d.Name, struct{}{})
-		} else {
-			failedIndexRebuilds.Delete(d.Name)
-		}
+		err := s.rebuild(detached, run, d)
+		s.noteRebuildOutcome(detached, d.Name, err)
 		s.startQueuedDroppedIndexes(detached, d.Name)
 	}()
 
@@ -314,7 +311,9 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 	if err != nil {
 		return err
 	}
-	return s.rebuild(ctx, run, d)
+	err = s.rebuild(ctx, run, d)
+	s.noteRebuildOutcome(ctx, indexName, err)
+	return err
 }
 
 const bootTriggeredBy = "boot"
@@ -340,6 +339,9 @@ func (s *Service) startQueuedDroppedIndexes(ctx context.Context, skip string) {
 	}
 	for _, d := range owed {
 		if d.Name == skip {
+			continue
+		}
+		if d.Blocked() {
 			continue
 		}
 		if _, failed := failedIndexRebuilds.Load(d.Name); failed {
@@ -506,6 +508,18 @@ func (s *Service) recordRebuild(ctx context.Context, indexName, triggeredBy stri
 	if err != nil {
 		return nil, indexes.Dropped{}, err
 	}
+
+	// Explicit retries clear blocked only after the slot is held. Clearing before
+	// dropped lookup, guard checks, or insert would lose the marker when the start
+	// aborts and boot would replay duplicate-key failures every chain.
+	if triggeredBy != bootTriggeredBy {
+		if err := indexes.ClearBlocked(ctx, s.db.GetConn(), indexName); err != nil {
+			s.finish(ctx, run.UID, fmt.Errorf("clearing blocked marker: %w", err))
+			return nil, indexes.Dropped{}, err
+		}
+		failedIndexRebuilds.Delete(indexName)
+	}
+
 	return run, d, nil
 }
 
@@ -662,6 +676,21 @@ func (s *Service) rebuild(ctx context.Context, run *Run, d indexes.Dropped) erro
 	return s.execute(ctx, run, func(ctx context.Context) error {
 		return s.rebuilder.rebuild(ctx, d)
 	})
+}
+
+func (s *Service) noteRebuildOutcome(ctx context.Context, name string, err error) {
+	if err == nil {
+		failedIndexRebuilds.Delete(name)
+		return
+	}
+	if indexes.IsBlockedByData(err) {
+		if markErr := indexes.MarkBlocked(ctx, s.db.GetConn(), name, err.Error()); markErr != nil {
+			s.logger.Error("failed to record blocked index rebuild", "index", name, "error", markErr.Error())
+			failedIndexRebuilds.Store(name, struct{}{})
+		}
+		return
+	}
+	failedIndexRebuilds.Store(name, struct{}{})
 }
 
 func bootIndexLogName(name string) string {

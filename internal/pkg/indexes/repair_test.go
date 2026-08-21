@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 
@@ -112,6 +113,86 @@ func TestInvalidIndexIsReportedDroppedAndRebuilt(t *testing.T) {
 	owed, err = ListDropped(ctx, db)
 	require.NoError(t, err)
 	require.Empty(t, exceptPayloadGIN(owed), "a rebuilt index must not be offered again")
+}
+
+func TestAdoptRecordsOrphanInvalidIndexes(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `
+        CREATE TABLE convoy.idx_test_adopt (project_id TEXT NOT NULL)`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(ctx, `INSERT INTO convoy.idx_test_adopt (project_id) VALUES ('dup'), ('dup')`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(ctx, `CREATE UNIQUE INDEX CONCURRENTLY idx_test_adopt_project ON convoy.idx_test_adopt (project_id)`)
+	require.Error(t, err)
+
+	invalid, err := ListInvalid(ctx, db)
+	require.NoError(t, err)
+	require.Contains(t, names(invalid), "idx_test_adopt_project")
+
+	adopted, err := Adopt(ctx, db)
+	require.NoError(t, err)
+	require.Equal(t, 1, adopted)
+
+	invalid, err = ListInvalid(ctx, db)
+	require.NoError(t, err)
+	require.NotContains(t, names(invalid), "idx_test_adopt_project")
+
+	owed, err := ListDropped(ctx, db)
+	require.NoError(t, err)
+	var found bool
+	for _, d := range exceptPayloadGIN(owed) {
+		if d.Name == "idx_test_adopt_project" {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "adopted index should be queued for rebuild")
+}
+
+func TestDuplicateKeyFailureMarksBlocked(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	_, err := db.Exec(ctx, `
+        CREATE TABLE convoy.idx_test_blocked (project_id TEXT NOT NULL)`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(ctx, `INSERT INTO convoy.idx_test_blocked (project_id) VALUES ('dup'), ('dup')`)
+	require.NoError(t, err)
+
+	_, err = db.Exec(ctx, `CREATE UNIQUE INDEX CONCURRENTLY idx_test_blocked_project ON convoy.idx_test_blocked (project_id)`)
+	require.Error(t, err)
+
+	var dropped bool
+	require.NoError(t, db.QueryRow(ctx,
+		`SELECT convoy.drop_invalid_index('idx_test_blocked_project')`).Scan(&dropped))
+	require.True(t, dropped)
+
+	owed, err := ListDropped(ctx, db)
+	require.NoError(t, err)
+	var row Dropped
+	for _, d := range exceptPayloadGIN(owed) {
+		if d.Name == "idx_test_blocked_project" {
+			row = d
+			break
+		}
+	}
+	require.Equal(t, "idx_test_blocked_project", row.Name)
+
+	require.Error(t, Rebuild(ctx, db, row))
+	require.NoError(t, MarkBlocked(ctx, db, row.Name, "could not create unique index, key is duplicated"))
+
+	var blockedAt pgtype.Timestamptz
+	var reason string
+	require.NoError(t, db.QueryRow(ctx, `
+        SELECT blocked_at, blocked_reason FROM convoy.dropped_indexes
+        WHERE index_name = $1`, row.Name).Scan(&blockedAt, &reason))
+	require.True(t, blockedAt.Valid)
+	require.Contains(t, reason, "duplicate")
 }
 
 // GetDropped is what a caller-supplied index name has to pass before a rebuild is
