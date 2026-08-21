@@ -389,6 +389,30 @@ func TestTheRunGuardIsOfferedAheadOfOtherUniqueIndexes(t *testing.T) {
 		"the guard blocks every other rebuild, so it cannot be second")
 }
 
+// The Event Deliveries list times out until this index is valid. Migrate queued
+// the payload GIN first, so dropped_at alone would spend those hours on search
+// while the dashboard list is still sequential.
+func TestDroppedIndexesOfferTheDeliveriesListIndexAheadOfOlderNonUniqueIndexes(t *testing.T) {
+	db := setupDB(t)
+	ctx := context.Background()
+
+	owed, err := ListDropped(ctx, db)
+	require.NoError(t, err)
+
+	listPos, ginPos := -1, -1
+	for i, d := range owed {
+		switch d.Name {
+		case EventDeliveriesProjectCreated:
+			listPos = i
+		case PayloadGIN:
+			ginPos = i
+		}
+	}
+	require.GreaterOrEqual(t, listPos, 0, "migrate queues the deliveries list index")
+	require.GreaterOrEqual(t, ginPos, 0, "migrate queues the payload GIN")
+	require.Less(t, listPos, ginPos)
+}
+
 // A concurrent build cannot run in a transaction, so the rebuild's lock_timeout
 // is session state on a pooled connection. Left behind, it would abort row-lock
 // waits in ordinary traffic that are supposed to queue.
@@ -452,8 +476,8 @@ func names(invalid []Invalid) []string {
 	return out
 }
 
-// sql/1787200001.sql and sql/1787251200.sql queue boot-rebuild indexes on
-// every migrated test DB. Repair assertions that count operator-dropped
+// sql/1787200001.sql and sql/1787251200.sql always queue these names on
+// every migrated test DB. Repair assertions that count other dropped
 // indexes have to look past those rows.
 func exceptPayloadGIN(owed []Dropped) []Dropped {
 	out := make([]Dropped, 0, len(owed))

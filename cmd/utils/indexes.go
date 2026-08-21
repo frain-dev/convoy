@@ -25,12 +25,13 @@ An index build that is interrupted, by a pod restart during an upgrade for
 example, leaves the index behind marked invalid. The planner ignores it from
 then on, so the table performs as if the index had never been created, and no
 query fails to say so. Migrations drop what they find, which is instant, and
-record the definition so the build can happen here instead of stalling a boot.
+record the definition. Server and agent rebuild those in the background after
+boot, unique indexes first, one at a time.
 
---rebuild builds those indexes again, concurrently, one at a time. On a large
-table this takes hours per index and can be interrupted and run again: it
-resumes rather than starting over. It is cheapest after retention has dropped
-the largest partition of a converted table.`,
+--rebuild does the same work from a shell. On a large table this takes hours
+per index and can be interrupted and run again: it resumes rather than
+starting over. It is cheapest after retention has dropped the largest
+partition of a converted table.`,
 		Annotations: map[string]string{
 			"CheckMigration":  "true",
 			"ShouldBootstrap": "false",

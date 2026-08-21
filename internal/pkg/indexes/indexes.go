@@ -10,11 +10,10 @@
 // applied.
 //
 // Migrations drop what they find instead, which is instant, and record the
-// definition in convoy.dropped_indexes so the build can happen here, when an
-// operator chooses. Rebuilding is the expensive half: hours on a large table, and
-// it must not run at boot — except the names migrate queues on purpose
-// (PayloadGIN, EventDeliveriesProjectCreated) so server and agent can start
-// those rebuilds in the background.
+// definition in convoy.dropped_indexes. Rebuilding is the expensive half: hours
+// on a large table. Server and agent start every owed rebuild in the background
+// after boot, unique indexes first, one at a time. The dashboard and CLI are
+// progress and retry, not the only way a rebuild starts.
 package indexes
 
 import (
@@ -60,14 +59,12 @@ const EventDeliveriesProjectCreated = "idx_event_deliveries_project_created_id_d
 // It has to match the row sql/1787251200.sql inserts.
 const EventDeliveriesProjectCreatedDefinition = `CREATE INDEX idx_event_deliveries_project_created_id_deleted ON convoy.event_deliveries USING btree (project_id, created_at DESC, id DESC) WHERE (deleted_at IS NULL)`
 
-// BootQueuedNames is the boot rebuild order: dashboard list first, then the
-// hours-long payload GIN. StartQueued* walks this at process start; a finished
-// boot rebuild walks it again so a name that hit the single-active slot still
-// starts when the slot frees, without waiting for the next process start.
+// BootQueuedNames are the indexes migrate always inserts into dropped_indexes
+// instead of CREATE INDEX, so every upgraded instance owes them a rebuild.
 var BootQueuedNames = []string{EventDeliveriesProjectCreated, PayloadGIN}
 
-// BootQueued reports whether migrate queued this name for a boot rebuild rather
-// than leaving it for the operator --rebuild path.
+// BootQueued reports whether migrate always queues this name. Repair tests use
+// it to look past those rows when counting operator-dropped indexes.
 func BootQueued(name string) bool {
 	for _, n := range BootQueuedNames {
 		if n == name {
@@ -165,7 +162,10 @@ func ListInvalid(ctx context.Context, db *pgxpool.Pool) ([]Invalid, error) {
 // to start anything else until it is back, so a rebuild that took another index
 // first would fail on every one of them. Unique indexes follow, because a missing
 // unique index is not just slower, it is not enforcing its key, and hours spent
-// on a large non-unique index first leaves that gap open for those hours.
+// on a large non-unique index first leaves that gap open for those hours. Among
+// non-unique indexes the Event Deliveries list index is next: that query times
+// out until it is valid, and dropped_at alone would put the hours-long payload
+// GIN first because migrate queued GIN earlier.
 //
 // This is the only place the order is decided, so the list an operator reads and
 // the list --rebuild works through cannot disagree.
@@ -176,6 +176,7 @@ func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
          WHERE rebuilt_at IS NULL
          ORDER BY (index_name = 'idx_partition_runs_single_active') DESC,
                   (definition LIKE 'CREATE UNIQUE %') DESC,
+                  (index_name = '`+EventDeliveriesProjectCreated+`') DESC,
                   dropped_at`)
 	if err != nil {
 		return nil, fmt.Errorf("reading dropped indexes: %w", err)

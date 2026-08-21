@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-4px mb-16px">
   <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Table indexes</h3>
-  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">An index build that is interrupted leaves the index behind marked invalid, and the planner ignores it from then on, so the table performs as if the index had never been created without any query failing to say so. Upgrades drop what they find, which is instant, and record the definition so the rebuild can happen here on your schedule.</p>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">An index build that is interrupted leaves the index behind marked invalid, and the planner ignores it from then on, so the table performs as if the index had never been created without any query failing to say so. Upgrades drop what they find, which is instant, and record the definition. Server and agent rebuild those in the background after boot, unique indexes first. Use Rebuild to retry one that failed.</p>
 </div>
 
 <div class="h-[1px] w-full bg-new.border mb-20px"></div>
@@ -36,7 +36,7 @@
     <div class="bg-warning-500/5 border border-warning-500/20 rounded-12px p-16px mb-16px">
       <p class="font-body font-semibold text-[14px] leading-normal text-new.text-primary mb-4px">A unique index is missing</p>
       <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary">
-        Nothing stops a duplicate row on {{ uniqueDroppedCount === 1 ? 'one of these' : uniqueDroppedCount + ' of these' }} until it is rebuilt. Rebuild those first.
+        Nothing stops a duplicate row on {{ uniqueDroppedCount === 1 ? 'one of these' : uniqueDroppedCount + ' of these' }} until it is rebuilt. Unique indexes are rebuilt first.
       </p>
     </div>
   }
