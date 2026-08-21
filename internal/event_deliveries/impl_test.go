@@ -1353,6 +1353,69 @@ func sumIntervalCounts(intervals []datastore.EventInterval) uint64 {
 	return total
 }
 
+func TestPruneDailyCountsBeforeLiveHistoryDropsRetainedDays(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)))
+
+	today := utcDate(time.Now())
+	require.NoError(t, service.RefreshDailyCounts(ctx, today, today.AddDate(0, 0, 1)))
+	_, err := db.GetDB().ExecContext(ctx, `
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
+		VALUES ($1, $2, '2020-01-01', 99)`, project.UID, endpoint.UID)
+	require.NoError(t, err)
+
+	require.NoError(t, service.PruneDailyCountsBeforeLiveHistory(ctx))
+
+	var stale int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM convoy.event_delivery_daily_counts
+		WHERE project_id = $1 AND day = '2020-01-01'`, project.UID).Scan(&stale))
+	require.Zero(t, stale)
+
+	var kept int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM convoy.event_delivery_daily_counts
+		WHERE project_id = $1 AND day = $2`, project.UID, today).Scan(&kept))
+	require.Equal(t, 1, kept)
+}
+
+func TestLoadEventDeliveriesIntervalsFromRollupWeeklyIgnoresSessionTimeZone(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	monday := time.Date(2026, time.August, 17, 0, 0, 0, 0, time.UTC)
+	_, err := db.GetDB().ExecContext(ctx, `
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, count)
+		VALUES ($1, 'ep', $2, 4)`, project.UID, monday)
+	require.NoError(t, err)
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+
+	query, err := rollupIntervalQuery(datastore.Weekly)
+	require.NoError(t, err)
+
+	tx, err := db.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = tx.ExecContext(ctx, "SET LOCAL TIME ZONE 'America/Los_Angeles'")
+	require.NoError(t, err)
+
+	start := time.Date(2026, time.August, 10, 0, 0, 0, 0, time.UTC)
+	end := time.Date(2026, time.August, 24, 0, 0, 0, 0, time.UTC)
+	var r intervalRow
+	require.NoError(t, tx.QueryRowContext(ctx, query, project.UID, start, end, false, []string{}).Scan(&r.DataIndex, &r.DataTotalTime, &r.Count))
+	require.Equal(t, "2026-08-17", r.DataTotalTime.String)
+	require.Equal(t, int64(4), r.Count.Int64)
+}
+
 func TestAdvanceDailyCountsBackfillCompletesWhenEmpty(t *testing.T) {
 	service, _ := setupTestDB(t)
 	ctx := context.Background()

@@ -57,6 +57,24 @@ func (s *Service) RefreshRecentDailyCounts(ctx context.Context) error {
 	return s.RefreshDailyCounts(ctx, today.AddDate(0, 0, -1), today.AddDate(0, 0, 1))
 }
 
+// PruneDailyCountsBeforeLiveHistory drops rollup days older than the
+// oldest remaining live event delivery. Partition retention removes
+// those deliveries; the recent rewrite does not, so the dashboard would
+// keep counting purged history without this delete.
+func (s *Service) PruneDailyCountsBeforeLiveHistory(ctx context.Context) error {
+	_, err := s.db.Exec(ctx, `
+		DELETE FROM convoy.event_delivery_daily_counts
+		WHERE day < COALESCE(
+			(SELECT MIN((created_at AT TIME ZONE 'UTC')::date)
+			 FROM convoy.event_deliveries
+			 WHERE deleted_at IS NULL),
+			'infinity'::date)`)
+	if err != nil {
+		return fmt.Errorf("prune event delivery daily counts: %w", err)
+	}
+	return nil
+}
+
 // AdvanceDailyCountsBackfill refreshes one UTC day of history. Returns
 // whether the backfill is complete after this step.
 func (s *Service) AdvanceDailyCountsBackfill(ctx context.Context) (bool, error) {
@@ -185,30 +203,30 @@ ORDER BY day ASC`, nil
 	case datastore.Weekly:
 		return `
 SELECT
-    EXTRACT('week' FROM DATE_TRUNC('week', day::timestamp AT TIME ZONE 'UTC')) AS "data.index",
-    TO_CHAR(DATE_TRUNC('week', day::timestamp AT TIME ZONE 'UTC'), 'yyyy-mm-dd') AS "data.total_time",
+    EXTRACT('week' FROM DATE_TRUNC('week', day::timestamp)) AS "data.index",
+    TO_CHAR(DATE_TRUNC('week', day::timestamp), 'yyyy-mm-dd') AS "data.total_time",
     SUM(count)::bigint AS count
 ` + filter + `
-GROUP BY DATE_TRUNC('week', day::timestamp AT TIME ZONE 'UTC')
-ORDER BY DATE_TRUNC('week', day::timestamp AT TIME ZONE 'UTC') ASC`, nil
+GROUP BY DATE_TRUNC('week', day::timestamp)
+ORDER BY DATE_TRUNC('week', day::timestamp) ASC`, nil
 	case datastore.Monthly:
 		return `
 SELECT
-    EXTRACT('month' FROM DATE_TRUNC('month', day::timestamp AT TIME ZONE 'UTC')) AS "data.index",
-    TO_CHAR(DATE_TRUNC('month', day::timestamp AT TIME ZONE 'UTC'), 'yyyy-mm') AS "data.total_time",
+    EXTRACT('month' FROM DATE_TRUNC('month', day::timestamp)) AS "data.index",
+    TO_CHAR(DATE_TRUNC('month', day::timestamp), 'yyyy-mm') AS "data.total_time",
     SUM(count)::bigint AS count
 ` + filter + `
-GROUP BY DATE_TRUNC('month', day::timestamp AT TIME ZONE 'UTC')
-ORDER BY DATE_TRUNC('month', day::timestamp AT TIME ZONE 'UTC') ASC`, nil
+GROUP BY DATE_TRUNC('month', day::timestamp)
+ORDER BY DATE_TRUNC('month', day::timestamp) ASC`, nil
 	case datastore.Yearly:
 		return `
 SELECT
-    EXTRACT('year' FROM DATE_TRUNC('year', day::timestamp AT TIME ZONE 'UTC')) AS "data.index",
-    TO_CHAR(DATE_TRUNC('year', day::timestamp AT TIME ZONE 'UTC'), 'yyyy') AS "data.total_time",
+    EXTRACT('year' FROM DATE_TRUNC('year', day::timestamp)) AS "data.index",
+    TO_CHAR(DATE_TRUNC('year', day::timestamp), 'yyyy') AS "data.total_time",
     SUM(count)::bigint AS count
 ` + filter + `
-GROUP BY DATE_TRUNC('year', day::timestamp AT TIME ZONE 'UTC')
-ORDER BY DATE_TRUNC('year', day::timestamp AT TIME ZONE 'UTC') ASC`, nil
+GROUP BY DATE_TRUNC('year', day::timestamp)
+ORDER BY DATE_TRUNC('year', day::timestamp) ASC`, nil
 	default:
 		return "", fmt.Errorf("specified data cannot be generated for period")
 	}

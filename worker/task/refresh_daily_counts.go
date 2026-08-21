@@ -24,6 +24,9 @@ func RefreshEventDeliveryDailyCounts(lo log.Logger, db database.Database, locker
 				return err
 			}
 			if done {
+				if err := svc.PruneDailyCountsBeforeLiveHistory(ctx); err != nil {
+					return err
+				}
 				lo.Info("event delivery daily counts backfill complete")
 			}
 			return nil

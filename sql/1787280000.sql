@@ -11,11 +11,8 @@ CREATE TABLE IF NOT EXISTS convoy.event_delivery_daily_counts (
     endpoint_id TEXT NOT NULL,
     day DATE NOT NULL,
     count BIGINT NOT NULL,
-    PRIMARY KEY (project_id, endpoint_id, day)
+    PRIMARY KEY (project_id, day, endpoint_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_event_delivery_daily_counts_project_day
-    ON convoy.event_delivery_daily_counts (project_id, day);
 
 CREATE TABLE IF NOT EXISTS convoy.event_delivery_daily_counts_meta (
     name TEXT PRIMARY KEY,
