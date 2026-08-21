@@ -50,6 +50,11 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 	require.NoError(t, config.LoadConfig(""))
 
+	failedIndexRebuilds.Range(func(k, _ any) bool {
+		failedIndexRebuilds.Delete(k)
+		return true
+	})
+
 	conn, err := testEnv.CloneTestDatabase(t, "convoy")
 	require.NoError(t, err)
 
@@ -303,6 +308,130 @@ func TestUserRebuildStartsTheNextOwedIndexWhenTheSlotFrees(t *testing.T) {
 		require.NotNil(t, listed.IndexName)
 		waitForStatus(t, s, ctx, listed.UID, StatusCompleted)
 	}
+}
+
+func TestFailedRebuildStartsTheNextOwedIndexOnce(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	usage := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	usage.rebuildErr = errors.New("lock_timeout")
+	gin := newBlockingRebuilder("events", indexes.PayloadGIN)
+	s := newRebuildService(t, db, &multiRebuilder{
+		order: []string{"idx_event_deliveries_usage", indexes.PayloadGIN},
+		byName: map[string]*blockingRebuilder{
+			"idx_event_deliveries_usage": usage,
+			indexes.PayloadGIN:           gin,
+		},
+	})
+
+	s.StartQueuedDroppedIndexes(ctx)
+	<-usage.started
+	close(usage.release)
+	<-gin.started
+	close(gin.release)
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, runs, 2)
+	for _, listed := range runs {
+		require.NotNil(t, listed.IndexName)
+		if *listed.IndexName == "idx_event_deliveries_usage" {
+			waitForStatus(t, s, ctx, listed.UID, StatusFailed)
+			continue
+		}
+		waitForStatus(t, s, ctx, listed.UID, StatusCompleted)
+	}
+
+	select {
+	case <-usage.started:
+		t.Fatal("failed usage rebuild started again after the next index finished")
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestTwoFailedRebuildsDoNotAlternate(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	usage := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	usage.rebuildErr = errors.New("lock_timeout")
+	gin := newBlockingRebuilder("events", indexes.PayloadGIN)
+	gin.rebuildErr = errors.New("lock_timeout")
+	s := newRebuildService(t, db, &multiRebuilder{
+		order: []string{"idx_event_deliveries_usage", indexes.PayloadGIN},
+		byName: map[string]*blockingRebuilder{
+			"idx_event_deliveries_usage": usage,
+			indexes.PayloadGIN:           gin,
+		},
+	})
+
+	s.StartQueuedDroppedIndexes(ctx)
+	<-usage.started
+	close(usage.release)
+	<-gin.started
+	close(gin.release)
+
+	runs, err := s.List(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, runs, 2)
+	for _, listed := range runs {
+		waitForStatus(t, s, ctx, listed.UID, StatusFailed)
+	}
+
+	select {
+	case <-usage.started:
+		t.Fatal("failed usage rebuild started again after the other failed rebuild finished")
+	case <-gin.started:
+		t.Fatal("failed payload GIN started again after the other failed rebuild finished")
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestConversionOnANewRunnerDoesNotRetryAFailedIndex(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	usage := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	usage.rebuildErr = errors.New("lock_timeout")
+	boot := newRebuildService(t, db, usage)
+
+	boot.StartQueuedDroppedIndexes(ctx)
+	<-usage.started
+	close(usage.release)
+	runs, err := boot.List(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, runs, 1)
+	waitForStatus(t, boot, ctx, runs[0].UID, StatusFailed)
+
+	c := newBlockingConverter()
+	s := &Service{db: db, logger: log.New("partitions-test", log.LevelError), converter: c, rebuilder: usage}
+	run, err := s.Start(ctx, TableEvents, OperationPartition, "user-1")
+	require.NoError(t, err)
+	<-c.started
+	close(c.release)
+	waitForStatus(t, s, ctx, run.UID, StatusCompleted)
+
+	select {
+	case <-usage.started:
+		t.Fatal("conversion on a new runner retried an index that already failed this process")
+	case <-time.After(100 * time.Millisecond):
+	}
+}
+
+func TestDashboardRebuildRetriesANameThatFailedOnAnotherRunner(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	first := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	first.rebuildErr = errors.New("lock_timeout")
+	close(first.release)
+	boot := newRebuildService(t, db, first)
+	boot.StartQueuedDroppedIndexes(ctx)
+	runs, err := boot.List(ctx, 10)
+	require.NoError(t, err)
+	require.Len(t, runs, 1)
+	waitForStatus(t, boot, ctx, runs[0].UID, StatusFailed)
+
+	retry := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
+	close(retry.release)
+	dashboard := newRebuildService(t, db, retry)
+	run, err := dashboard.StartIndexRebuild(ctx, "idx_event_deliveries_usage", "user-1")
+	require.NoError(t, err)
+	<-retry.started
+	waitForStatus(t, dashboard, ctx, run.UID, StatusCompleted)
 }
 
 func TestConversionFinishStartsOwedIndexRebuilds(t *testing.T) {

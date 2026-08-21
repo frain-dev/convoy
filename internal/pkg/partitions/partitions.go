@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -107,6 +108,12 @@ var (
 	ErrAlreadyPartitioned = errors.New("table is already partitioned")
 	ErrNotPartitioned     = errors.New("table is not partitioned")
 )
+
+// failedIndexRebuilds are names whose rebuild already failed in this process.
+// Handlers call New() per request, so this cannot live on Service or a
+// conversion finishing on a fresh runner would retry a boot failure.
+// StartIndexRebuild still tries a caller-supplied name (dashboard retry).
+var failedIndexRebuilds sync.Map
 
 // Tables lists what can be converted, in the order the CLI converts them when
 // given no argument.
@@ -285,7 +292,9 @@ func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy 
 
 	go func() {
 		detached := context.WithoutCancel(ctx)
-		_ = s.rebuild(detached, run, d)
+		if err := s.rebuild(detached, run, d); err != nil {
+			failedIndexRebuilds.Store(d.Name, struct{}{})
+		}
 		s.startQueuedDroppedIndexes(detached, d.Name)
 	}()
 
@@ -327,6 +336,9 @@ func (s *Service) startQueuedDroppedIndexes(ctx context.Context, skip string) {
 	}
 	for _, d := range owed {
 		if d.Name == skip {
+			continue
+		}
+		if _, failed := failedIndexRebuilds.Load(d.Name); failed {
 			continue
 		}
 		s.startQueuedBootIndex(ctx, d.Name, bootIndexLogName(d.Name))
