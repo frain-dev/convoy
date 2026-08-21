@@ -192,6 +192,8 @@ func StartConvoyServer(a *cli.App) error {
 
 	// Nightly anonymized usage snapshot for license-validate pings (licensed only).
 	s.RegisterTask("15 2 * * *", convoy.ScheduleQueue, convoy.SnapshotUsage)
+	s.RegisterTask("* * * * *", convoy.ScheduleQueue, convoy.RefreshEventDeliveryDailyCounts)
+	s.RegisterTask("* * * * *", convoy.ScheduleQueue, convoy.RefreshQueueMetricsSnapshot)
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 	if err != nil {

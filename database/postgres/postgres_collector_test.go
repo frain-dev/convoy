@@ -130,6 +130,33 @@ func TestCollectRespectsSampleWindowAfterFailedRefresh(t *testing.T) {
 	require.Less(t, time.Since(start), 200*time.Millisecond)
 }
 
+func TestCollectMetricsReadsSnapshot(t *testing.T) {
+	resetPostgresCollectorState()
+	enableMetrics(t)
+
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	empty := func(columns ...string) *sqlmock.Rows {
+		return sqlmock.NewRows(columns)
+	}
+	mock.ExpectQuery(`metrics_event_queue q`).WillReturnRows(empty("project_id", "source_id", "total"))
+	mock.ExpectQuery(`metrics_event_queue_backlog`).WillReturnRows(empty("project_id", "source_id", "age_seconds"))
+	mock.ExpectQuery(`metrics_event_delivery_queue`).WillReturnRows(empty("project_id", "project_name", "endpoint_id", "status", "event_type", "source_id", "organisation_id", "organisation_name", "total"))
+	mock.ExpectQuery(`metrics_event_endpoint_backlog`).WillReturnRows(empty("project_id", "source_id", "endpoint_id", "age_seconds"))
+
+	p := &Postgres{
+		dbx:    sqlx.NewDb(db, "sqlmock"),
+		logger: log.New("postgres-collector-test", log.LevelError),
+	}
+	metrics, err := p.collectMetrics()
+	require.NoError(t, err)
+	require.Empty(t, metrics.EventQueueMetrics)
+	require.Empty(t, metrics.EventDeliveryQueueMetrics)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestCollectIsNoopWhenMetricsDisabled(t *testing.T) {
 	resetPostgresCollectorState()
 	t.Setenv("CONVOY_JWT_SECRET", "postgres-collector-test-secret")

@@ -52,6 +52,8 @@ const (
 	SpanWorkerTaskManualBackupJob               = "worker.task.manual_backup_job"
 	SpanWorkerTaskDailyAnalytics                = "worker.task.daily_analytics"
 	SpanWorkerTaskSnapshotUsage                 = "worker.task.snapshot_usage"
+	SpanWorkerTaskRefreshDailyCounts            = "worker.task.refresh_event_delivery_daily_counts"
+	SpanWorkerTaskRefreshQueueMetrics           = "worker.task.refresh_queue_metrics_snapshot"
 	SpanWorkerTaskStreamCliEvents               = "worker.task.stream_cli_events"
 	SpanWorkerTaskDeleteArchivedTasks           = "worker.task.delete_archived_tasks"
 	SpanWorkerTaskBatchRetry                    = "worker.task.batch_retry"
@@ -83,6 +85,8 @@ var taskNameSpans = map[convoy.TaskName]string{
 	convoy.ManualBackupJob:                  SpanWorkerTaskManualBackupJob,
 	convoy.DailyAnalytics:                   SpanWorkerTaskDailyAnalytics,
 	convoy.SnapshotUsage:                    SpanWorkerTaskSnapshotUsage,
+	convoy.RefreshEventDeliveryDailyCounts:  SpanWorkerTaskRefreshDailyCounts,
+	convoy.RefreshQueueMetricsSnapshot:      SpanWorkerTaskRefreshQueueMetrics,
 	convoy.StreamCliEventsProcessor:         SpanWorkerTaskStreamCliEvents,
 	convoy.DeleteArchivedTasksProcessor:     SpanWorkerTaskDeleteArchivedTasks,
 	convoy.BatchRetryProcessor:              SpanWorkerTaskBatchRetry,

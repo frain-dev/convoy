@@ -499,62 +499,22 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 
 	hasEndpoints := common.BoolToPgBool(len(endpointIds) > 0)
 
-	intervalParams := repo.LoadEventDeliveryIntervalsDailyParams{
-		ProjectID:      common.StringToPgTextNullable(projectID),
-		StartDate:      common.TimeToPgTimestamptz(start),
-		EndDate:        common.TimeToPgTimestamptz(end),
-		HasEndpointIds: hasEndpoints,
-		EndpointIds:    endpointIds,
-	}
-
-	// intervalRow is a common shape for all interval query results.
-	type intervalRow struct {
-		DataIndex     pgtype.Numeric
-		DataTotalTime pgtype.Text
-		Count         pgtype.Int8
+	completed, err := s.dailyCountsBackfillCompleted(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var rawRows []intervalRow
-
-	switch period {
-	case datastore.Daily:
-		rows, err := s.repo.LoadEventDeliveryIntervalsDaily(ctx, intervalParams)
+	if completed {
+		rawRows, err = s.loadEventDeliveriesIntervalsFromRollup(ctx, projectID, start, end, period, endpointIds)
 		if err != nil {
 			return nil, err
 		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	case datastore.Weekly:
-		rows, err := s.repo.LoadEventDeliveryIntervalsWeekly(ctx, repo.LoadEventDeliveryIntervalsWeeklyParams(intervalParams))
+	} else {
+		rawRows, err = s.loadEventDeliveriesIntervalsLive(ctx, projectID, start, end, period, hasEndpoints, endpointIds)
 		if err != nil {
 			return nil, err
 		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	case datastore.Monthly:
-		rows, err := s.repo.LoadEventDeliveryIntervalsMonthly(ctx, repo.LoadEventDeliveryIntervalsMonthlyParams(intervalParams))
-		if err != nil {
-			return nil, err
-		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	case datastore.Yearly:
-		rows, err := s.repo.LoadEventDeliveryIntervalsYearly(ctx, repo.LoadEventDeliveryIntervalsYearlyParams(intervalParams))
-		if err != nil {
-			return nil, err
-		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	default:
-		return nil, errors.New("specified data cannot be generated for period")
 	}
 
 	intervals := make([]datastore.EventInterval, 0, len(rawRows))
@@ -588,6 +548,61 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 	}
 
 	return intervals, nil
+}
+
+func (s *Service) loadEventDeliveriesIntervalsLive(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, hasEndpoints pgtype.Bool, endpointIds []string) ([]intervalRow, error) {
+	intervalParams := repo.LoadEventDeliveryIntervalsDailyParams{
+		ProjectID:      common.StringToPgTextNullable(projectID),
+		StartDate:      common.TimeToPgTimestamptz(start),
+		EndDate:        common.TimeToPgTimestamptz(end),
+		HasEndpointIds: hasEndpoints,
+		EndpointIds:    endpointIds,
+	}
+
+	switch period {
+	case datastore.Daily:
+		rows, err := s.repo.LoadEventDeliveryIntervalsDaily(ctx, intervalParams)
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	case datastore.Weekly:
+		rows, err := s.repo.LoadEventDeliveryIntervalsWeekly(ctx, repo.LoadEventDeliveryIntervalsWeeklyParams(intervalParams))
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	case datastore.Monthly:
+		rows, err := s.repo.LoadEventDeliveryIntervalsMonthly(ctx, repo.LoadEventDeliveryIntervalsMonthlyParams(intervalParams))
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	case datastore.Yearly:
+		rows, err := s.repo.LoadEventDeliveryIntervalsYearly(ctx, repo.LoadEventDeliveryIntervalsYearlyParams(intervalParams))
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	default:
+		return nil, errors.New("specified data cannot be generated for period")
+	}
 }
 
 // ExportRecords exports event deliveries to a writer as JSONL (one JSON object per line).

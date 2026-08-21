@@ -639,6 +639,189 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	}
 }
 
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollup() {
+	ctx := context.Background()
+	s.seedDashboardSummaryDeliveries(ctx)
+
+	startDate := "2021-01-01T00:00:00"
+	endDate := "2022-12-27T00:00:00"
+	periods := []string{"daily", "weekly", "monthly", "yearly"}
+
+	live := make(map[string]models.DashboardSummary, len(periods))
+	for _, period := range periods {
+		live[period] = s.fetchDashboardSummary(s.T(), period, startDate, endDate)
+		require.Equal(s.T(), uint64(6), live[period].EventsSent, period)
+	}
+
+	svc := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
+		time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2022, time.March, 21, 0, 0, 0, 0, time.UTC),
+	))
+	s.markDailyCountsBackfillCompleted(ctx)
+
+	startT, err := time.Parse("2006-01-02T15:04:05", startDate)
+	require.NoError(s.T(), err)
+	endT, err := time.Parse("2006-01-02T15:04:05", endDate)
+	require.NoError(s.T(), err)
+	for _, period := range periods {
+		qs := fmt.Sprintf("%v:%v:%v:%v", s.DefaultProject.UID, startT.Unix(), endT.Unix(), period)
+		require.NoError(s.T(), s.ConvoyApp.A.Cache.Delete(ctx, qs))
+	}
+
+	for _, period := range periods {
+		got := s.fetchDashboardSummary(s.T(), period, startDate, endDate)
+		require.Equal(s.T(), live[period].EventsSent, got.EventsSent, period)
+		require.Equal(s.T(), nonZeroDashboardBuckets(live[period]), nonZeroDashboardBuckets(got), period)
+	}
+}
+
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollupPortalFilter() {
+	ctx := context.Background()
+	ownerA := "owner-a-" + ulid.Make().String()
+	ownerB := "owner-b-" + ulid.Make().String()
+
+	epA, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "portal-a", ownerA, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+	epB, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "portal-b", ownerB, false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	eventA, err := testdb.SeedEvent(s.ConvoyApp.A.DB, epA, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	eventB, err := testdb.SeedEvent(s.ConvoyApp.A.DB, epB, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	subA, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, epA, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+	subB, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, epB, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
+	created := time.Date(2021, time.January, 5, 12, 0, 0, 0, time.UTC)
+	for i := 0; i < 2; i++ {
+		d, seedErr := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, eventA, epA, s.DefaultProject.UID, "", datastore.SuccessEventStatus, subA)
+		require.NoError(s.T(), seedErr)
+		s.stampDeliveryCreatedAt(d.UID, created)
+	}
+	dB, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, eventB, epB, s.DefaultProject.UID, "", datastore.SuccessEventStatus, subB)
+	require.NoError(s.T(), err)
+	s.stampDeliveryCreatedAt(dB.UID, created)
+
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerA)
+	require.NoError(s.T(), err)
+
+	svc := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
+		time.Date(2021, time.January, 5, 0, 0, 0, 0, time.UTC),
+		time.Date(2021, time.January, 6, 0, 0, 0, 0, time.UTC),
+	))
+	s.markDailyCountsBackfillCompleted(ctx)
+
+	startDate := "2021-01-01T00:00:00"
+	endDate := "2021-01-31T00:00:00"
+	jwt := s.fetchDashboardSummary(s.T(), "daily", startDate, endDate)
+	require.Equal(s.T(), uint64(3), jwt.EventsSent)
+
+	portalURL := fmt.Sprintf("/portal-api/dashboard/summary?startDate=%s&endDate=%s&type=daily", startDate, endDate)
+	req := createRequest(http.MethodGet, portalURL, portalLink.Token, nil)
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+
+	var portal models.DashboardSummary
+	parseResponse(s.T(), w.Result(), &portal)
+	require.Equal(s.T(), uint64(2), portal.EventsSent)
+	require.Equal(s.T(), 1, portal.Applications)
+}
+
+func (s *DashboardIntegrationTestSuite) seedDashboardSummaryDeliveries(ctx context.Context) {
+	s.T().Helper()
+
+	endpoint := &datastore.Endpoint{
+		UID:          ulid.Make().String(),
+		ProjectID:    s.DefaultProject.UID,
+		Name:         "test-app",
+		Url:          "http://localhost:8889",
+		Status:       datastore.ActiveEndpointStatus,
+		Secrets:      datastore.Secrets{{UID: ulid.Make().String(), Value: "1234"}},
+		SupportEmail: "test@suport.com",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+	require.NoError(s.T(), endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(ctx, endpoint, endpoint.ProjectID))
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
+	dates := []time.Time{
+		time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
+		time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+	}
+	ed := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	for _, created := range dates {
+		delivery := datastore.EventDelivery{
+			UID:            ulid.Make().String(),
+			ProjectID:      s.DefaultProject.UID,
+			EndpointID:     endpoint.UID,
+			EventID:        event.UID,
+			SubscriptionID: sub.UID,
+			Metadata:       &datastore.Metadata{},
+			CreatedAt:      created,
+			UpdatedAt:      created,
+		}
+		require.NoError(s.T(), ed.CreateEventDelivery(ctx, &delivery))
+		s.stampDeliveryCreatedAt(delivery.UID, created)
+	}
+}
+
+func (s *DashboardIntegrationTestSuite) stampDeliveryCreatedAt(id string, created time.Time) {
+	s.T().Helper()
+	_, err := s.ConvoyApp.A.DB.GetDB().ExecContext(context.Background(),
+		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$2 WHERE id=$3",
+		created, created, id)
+	require.NoError(s.T(), err)
+}
+
+func (s *DashboardIntegrationTestSuite) markDailyCountsBackfillCompleted(ctx context.Context) {
+	s.T().Helper()
+	_, err := s.ConvoyApp.A.DB.GetDB().ExecContext(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET completed_at = NOW(), next_day = NULL
+		WHERE name = 'backfill'`)
+	require.NoError(s.T(), err)
+}
+
+func (s *DashboardIntegrationTestSuite) fetchDashboardSummary(t *testing.T, period, startDate, endDate string) models.DashboardSummary {
+	t.Helper()
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s",
+		s.DefaultOrg.UID, s.DefaultProject.UID, startDate, endDate, period)
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	require.NoError(t, s.AuthenticatorFn(req, s.Router))
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	var summary models.DashboardSummary
+	parseResponse(t, w.Result(), &summary)
+	return summary
+}
+
+func nonZeroDashboardBuckets(summary models.DashboardSummary) []datastore.EventInterval {
+	if summary.PeriodData == nil {
+		return nil
+	}
+	out := make([]datastore.EventInterval, 0)
+	for _, in := range *summary.PeriodData {
+		if in.Count > 0 {
+			out = append(out, in)
+		}
+	}
+	return out
+}
+
 // TestCrossOrgReads_NonMember_Unauthorized asserts that a user who is not a
 // member of an organisation cannot read its members, invites, or projects via
 // the dashboard org-scoped routes (cross-org disclosure protection).
