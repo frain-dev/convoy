@@ -246,49 +246,13 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 			wantErrMsg: "failed to fetch event deliveries",
 		},
 		{
-			name: "should_not_enqueue_current_page_when_next_page_fetch_fails",
+			name: "should_replay_held_page_when_next_page_fetch_fails",
 			dbFn: func(br *BatchReplayEventService) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)
 				gomock.InOrder(
 					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
 						[]datastore.Event{{UID: "event1", ProjectID: "proj0"}},
 						datastore.PaginationData{HasNextPage: true, NextPageCursor: "cursor-2"},
-						nil,
-					),
-					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
-						[]datastore.Event{},
-						datastore.PaginationData{},
-						errors.New("failed"),
-					),
-				)
-
-				ml, _ := br.Logger.(*mocks.MockLogger)
-				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch events", "error", gomock.Any(), "successes", 0, "failures", 0).Times(1)
-			},
-			args: args{
-				ctx: ctx,
-				f: &datastore.Filter{
-					Project: &datastore.Project{UID: "1234"},
-				},
-			},
-			wantSuccesses: 0,
-			wantFailures:  0,
-			wantErr:       true,
-			wantErrMsg:    "failed to fetch event deliveries",
-		},
-		{
-			name: "should_keep_already_enqueued_pages_when_a_later_fetch_fails",
-			dbFn: func(br *BatchReplayEventService) {
-				e, _ := br.EventRepo.(*mocks.MockEventRepository)
-				gomock.InOrder(
-					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
-						[]datastore.Event{{UID: "event1", ProjectID: "proj0"}},
-						datastore.PaginationData{HasNextPage: true, NextPageCursor: "cursor-2"},
-						nil,
-					),
-					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
-						[]datastore.Event{{UID: "event2", ProjectID: "proj0"}},
-						datastore.PaginationData{HasNextPage: true, NextPageCursor: "cursor-3"},
 						nil,
 					),
 					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
@@ -314,6 +278,45 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 			wantFailures:  0,
 			wantErr:       true,
 			wantErrMsg:    "batch replay incomplete after 1 successful and 0 failed replays",
+		},
+		{
+			name: "should_replay_held_page_when_a_later_fetch_fails",
+			dbFn: func(br *BatchReplayEventService) {
+				e, _ := br.EventRepo.(*mocks.MockEventRepository)
+				gomock.InOrder(
+					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+						[]datastore.Event{{UID: "event1", ProjectID: "proj0"}},
+						datastore.PaginationData{HasNextPage: true, NextPageCursor: "cursor-2"},
+						nil,
+					),
+					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+						[]datastore.Event{{UID: "event2", ProjectID: "proj0"}},
+						datastore.PaginationData{HasNextPage: true, NextPageCursor: "cursor-3"},
+						nil,
+					),
+					e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+						[]datastore.Event{},
+						datastore.PaginationData{},
+						errors.New("failed"),
+					),
+				)
+
+				q, _ := br.Queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
+
+				ml, _ := br.Logger.(*mocks.MockLogger)
+				ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch events", "error", gomock.Any(), "successes", 2, "failures", 0).Times(1)
+			},
+			args: args{
+				ctx: ctx,
+				f: &datastore.Filter{
+					Project: &datastore.Project{UID: "1234"},
+				},
+			},
+			wantSuccesses: 2,
+			wantFailures:  0,
+			wantErr:       true,
+			wantErrMsg:    "batch replay incomplete after 2 successful and 0 failed replays",
 		},
 	}
 	for _, tt := range tests {
@@ -435,12 +438,13 @@ func TestBatchReplayEventService_OwnedEndpointIDs(t *testing.T) {
 
 		ml, _ := br.Logger.(*mocks.MockLogger)
 		ml.EXPECT().WarnContext(gomock.Any(), "batch replay skipped event not fully owned by caller", "event_id", "event1").Times(1)
-		ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch events", "error", gomock.Any(), "successes", 0, "failures", 1).Times(1)
+		ml.EXPECT().WarnContext(gomock.Any(), "batch replay skipped event not fully owned by caller", "event_id", "event2").Times(1)
+		ml.EXPECT().ErrorContext(gomock.Any(), "failed to fetch events", "error", gomock.Any(), "successes", 0, "failures", 2).Times(1)
 
 		successes, failures, err := br.Run(ctx)
 		require.Error(t, err)
-		require.Equal(t, "batch replay incomplete after 0 successful and 1 failed replays", err.(*ServiceError).Error())
+		require.Equal(t, "batch replay incomplete after 0 successful and 2 failed replays", err.(*ServiceError).Error())
 		require.Equal(t, 0, successes)
-		require.Equal(t, 1, failures)
+		require.Equal(t, 2, failures)
 	})
 }

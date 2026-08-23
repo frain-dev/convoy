@@ -54,14 +54,18 @@ func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
 	successes, failures := 0, 0
 
 	for len(events) > 0 {
-		// Load the next page before enqueueing this one. A later fetch failure
-		// must not leave this page already queued: Redis Write deletes+requeues
-		// the deterministic replay task ID, so an HTTP retry would fan out again.
+		// Prefetch the next page before enqueueing this one so a fetch error
+		// cannot leave this page queued while the handler still returns a
+		// retryable status. If the prefetch fails, replay the page already in
+		// hand, then return incomplete (409 once any job landed).
 		if pagination.HasNextPage {
 			filter.Pageable.NextCursor = pagination.NextPageCursor
 			filter.Pageable.PrevCursor = pagination.PrevPageCursor
 			nextEvents, nextPagination, nextErr := e.EventRepo.LoadEventsPaged(ctx, e.Filter.Project.UID, &filter)
 			if nextErr != nil {
+				s, f := e.replayPage(ctx, &rs, events)
+				successes += s
+				failures += f
 				return e.fetchError(ctx, nextErr, successes, failures)
 			}
 
