@@ -30,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -196,12 +197,14 @@ func newBroker(t *testing.T, cfg config.Configuration, db database.Database, log
 // wiring so a partial build cannot run green without touching broker paths.
 func newAPIOptions(tl *testInstance, deps *broker.Dependencies, licenser license.Licenser) *types.APIOptions {
 	db := tl.Database
+	ffSvc := feature_flags.New(tl.Logger, db)
 	o := &types.APIOptions{
 		DB:                         db,
 		Logger:                     tl.Logger,
 		FFlag:                      fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(db),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(db),
+		FeatureFlagFetcher:         ffSvc,
+		EarlyAdopterFeatureFetcher: ffSvc,
+		FeatureFlagService:         ffSvc,
 		ConfigRepo:                 configuration.New(tl.Logger, db),
 		Licenser:                   licenser,
 		Cfg:                        tl.Config,
