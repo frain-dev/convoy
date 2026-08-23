@@ -85,11 +85,15 @@ func FromFilterStruct(data Filter) RetryFilter {
 	}
 
 	// Only add SearchParams if it has valid values
-	if data.SearchParams.CreatedAtStart != 0 || data.SearchParams.CreatedAtEnd != 0 {
-		filter["SearchParams"] = map[string]any{
+	if data.SearchParams.CreatedAtStart != 0 || data.SearchParams.CreatedAtEnd != 0 || data.SearchParams.Query != "" {
+		searchParams := map[string]any{
 			"created_at_start": data.SearchParams.CreatedAtStart,
 			"created_at_end":   data.SearchParams.CreatedAtEnd,
 		}
+		if data.SearchParams.Query != "" {
+			searchParams["query"] = data.SearchParams.Query
+		}
+		filter["SearchParams"] = searchParams
 	}
 
 	return filter

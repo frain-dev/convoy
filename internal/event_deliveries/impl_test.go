@@ -1139,6 +1139,91 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 		}
 	})
 
+	t.Run("StatusNextPage", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+		var successIDs []string
+		for i := 0; i < 3; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+			d.Status = datastore.SuccessEventStatus
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+			successIDs = append(successIDs, d.UID)
+			time.Sleep(2 * time.Millisecond)
+		}
+
+		pageable := datastore.Pageable{PerPage: 1, Direction: datastore.Next, Sort: "DESC"}
+		page1, pagination1, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page1, 1)
+		require.Equal(t, successIDs[2], page1[0].UID)
+		require.True(t, pagination1.HasNextPage)
+
+		pageable.NextCursor = pagination1.NextPageCursor
+		page2, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page2, 1)
+		require.Equal(t, successIDs[1], page2[0].UID)
+		require.Equal(t, datastore.SuccessEventStatus, page2[0].Status)
+	})
+
+	t.Run("SearchByIDEventTypeAndEndpointName", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+		named := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		named.EventType = datastore.EventType("invoice.paid")
+		require.NoError(t, service.CreateEventDelivery(ctx, named))
+
+		other := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		other.EventType = datastore.EventType("charge.failed")
+		require.NoError(t, service.CreateEventDelivery(ctx, other))
+
+		pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+
+		byID, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, datastore.SearchParams{
+				CreatedAtStart: defaultSearchParams().CreatedAtStart,
+				CreatedAtEnd:   defaultSearchParams().CreatedAtEnd,
+				Query:          named.UID,
+			}, pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, byID, 1)
+		require.Equal(t, named.UID, byID[0].UID)
+
+		byType, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, datastore.SearchParams{
+				CreatedAtStart: defaultSearchParams().CreatedAtStart,
+				CreatedAtEnd:   defaultSearchParams().CreatedAtEnd,
+				Query:          "invoice",
+			}, pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, byType, 1)
+		require.Equal(t, named.UID, byType[0].UID)
+
+		byEndpoint, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, datastore.SearchParams{
+				CreatedAtStart: defaultSearchParams().CreatedAtStart,
+				CreatedAtEnd:   defaultSearchParams().CreatedAtEnd,
+				Query:          endpoint.Name,
+			}, pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, byEndpoint, 2)
+	})
+
 	t.Run("EmptyResult", func(t *testing.T) {
 		project := seedTestProject(t, db)
 

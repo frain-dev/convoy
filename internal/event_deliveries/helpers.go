@@ -184,28 +184,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 			ProjectID: r.ProjectID,
 		}, nil
 
-	case repo.LoadEventDeliveriesPagedInnerDescRow:
-		d := buildEventDelivery(eventDeliveryFields{
-			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
-			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
-			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
-			DeliveryMode: r.DeliveryMode, LatencySeconds: r.LatencySeconds,
-			CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
-		})
-		applyJoinedMetadata(d, joinedMetadata{
-			EndpointID: r.EndpointMetadataID, EndpointName: r.EndpointMetadataName,
-			EndpointProjectID: r.EndpointMetadataProjectID, EndpointSupportEmail: r.EndpointMetadataSupportEmail,
-			EndpointUrl: r.EndpointMetadataUrl, EndpointOwnerID: r.EndpointMetadataOwnerID,
-			EndpointStatus: r.EndpointMetadataStatus, EndpointDeletedAt: r.EndpointMetadataDeletedAt,
-			EventID: r.EventMetadataID, EventType: r.EventMetadataEventType, EventCreatedAt: r.EventMetadataCreatedAt,
-			DeviceID: r.DeviceMetadataID, DeviceStatus: r.DeviceMetadataStatus, DeviceHostName: r.DeviceMetadataHostName,
-			SourceID: r.SourceMetadataID, SourceName: r.SourceMetadataName,
-			SourceIdempotencyKeys: r.SourceMetadataIdempotencyKeys,
-		})
-		return d, nil
-
-	case repo.LoadEventDeliveriesPagedInnerAscRow:
+	case repo.HydrateEventDeliveriesPageRow:
 		d := buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,

@@ -149,6 +149,8 @@ func IsValidPeriod(period string) bool {
 type SearchParams struct {
 	CreatedAtStart int64 `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`
+	// Query is the event-deliveries table search (id, event type prefix, endpoint name).
+	Query string `json:"query,omitempty"`
 }
 
 type (

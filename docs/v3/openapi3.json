@@ -3145,6 +3145,14 @@
             }
           },
           {
+            "description": "Matches delivery id, event id, event type prefix, and endpoint name.",
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
             "example": "ASC | DESC",
             "in": "query",
@@ -3438,6 +3446,14 @@
             "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
             "in": "query",
             "name": "prev_page_cursor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Matches delivery id, event id, event type prefix, and endpoint name.",
+            "in": "query",
+            "name": "query",
             "schema": {
               "type": "string"
             }

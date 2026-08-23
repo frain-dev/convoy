@@ -245,6 +245,8 @@
           </button>
         </div>
         <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
+          <div class="overflow-x-auto">
+          <div class="min-w-[640px]">
           <div class="grid w-full grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)_minmax(0,1fr)_minmax(0,1fr)] bg-new.surface-subtle border-b border-new.border">
             @for (head of signatureTableHead; track $index; let i = $index) {
               <div class="flex items-center h-36px" [class]="i === 0 ? 'px-20px' : 'px-12px'">
@@ -273,6 +275,8 @@
               </div>
             }
           }
+          </div>
+          </div>
         </div>
       }
 
@@ -450,6 +454,8 @@
             </div>
           }
           @if (validEventTypes().length > 0) {
+            <div class="overflow-x-auto">
+            <div class="min-w-[760px]">
             <div class="grid w-full grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,1.2fr)] bg-new.surface-subtle border-b border-new.border">
               @for (head of eventTypeTableHead; track $index; let i = $index) {
                 <div class="flex items-center h-36px" [class]="i === 0 ? 'px-20px' : 'px-12px'">
@@ -495,6 +501,8 @@
                 </div>
               </div>
             }
+            </div>
+            </div>
           }
         </div>
       }

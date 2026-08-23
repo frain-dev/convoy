@@ -22,7 +22,6 @@ type Querier interface {
 	CountDeliveriesByStatus(ctx context.Context, arg CountDeliveriesByStatusParams) (pgtype.Int8, error)
 	CountEventDeliveries(ctx context.Context, arg CountEventDeliveriesParams) (pgtype.Int8, error)
 	CountExportedEventDeliveries(ctx context.Context, arg CountExportedEventDeliveriesParams) (pgtype.Int8, error)
-	CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (pgtype.Int8, error)
 	// Event Deliveries Repository SQL Queries
 	// Migrated from database/postgres/event_delivery.go to sqlc
 	// ============================================================================
@@ -49,20 +48,15 @@ type Querier interface {
 	// faithful and does not clobber a stored description with an empty value.
 	FindEventDeliveryByIDSlim(ctx context.Context, arg FindEventDeliveryByIDSlimParams) (FindEventDeliveryByIDSlimRow, error)
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status pgtype.Text) ([]FindStuckEventDeliveriesByStatusRow, error)
-	// Same as LoadEventDeliveriesPagedInnerDesc but inner scan uses ORDER BY created_at ASC, id ASC.
-	LoadEventDeliveriesPagedInnerAsc(ctx context.Context, arg LoadEventDeliveriesPagedInnerAscParams) ([]LoadEventDeliveriesPagedInnerAscRow, error)
 	// ============================================================================
 	// Group 4: Pagination
 	// ============================================================================
-	// Page ids first (no JSONB, no joins), then hydrate. Inner ORDER BY is plain
-	// created_at/id so generic plans can range-scan
-	// idx_event_deliveries_project_created_id_deleted and stop at LIMIT. ORDER BY
-	// CASE or ORDER BY id on the PK walks the whole table when the date window is
-	// empty. Split Desc/Asc for the same reason as LoadEventsPagedExistsInner*.
-	// Cursor is the delivery id; keyset uses that row's (created_at, id). An
-	// empty cursor, or one that does not resolve (SetCursors' first-page
-	// sentinel), applies no keyset.
-	LoadEventDeliveriesPagedInnerDesc(ctx context.Context, arg LoadEventDeliveriesPagedInnerDescParams) ([]LoadEventDeliveriesPagedInnerDescRow, error)
+	// Hydrate a page of delivery ids. The id scan lives in Go (listFilter) so
+	// status, cursor, and other optional filters are real predicates, not CASE
+	// wrappers. Generic plans of the old InnerDesc/InnerAsc queries timed out on
+	// rare-status page 2 because those CASE clauses kept status and the keyset
+	// out of index cond. ORDER BY here is only the ~page of already-chosen ids.
+	HydrateEventDeliveriesPage(ctx context.Context, arg HydrateEventDeliveriesPageParams) ([]HydrateEventDeliveriesPageRow, error)
 	// ============================================================================
 	// Group 5: Intervals
 	// ============================================================================
