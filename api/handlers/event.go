@@ -493,20 +493,25 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 
 	successes, failures, err := bs.Run(r.Context())
 	if err != nil {
-		if successes > 0 || failures > 0 {
-			// NewServerResponse hardcodes JSON status true. A 500 here also
-			// invites HTTP retries that re-enqueue already-queued replay jobs.
-			_ = render.Render(w, r, util.NewErrorResponse(
-				fmt.Sprintf("%d successful, %d failed; batch replay incomplete: %s", successes, failures, err.Error()),
-				http.StatusConflict,
-			))
-			return
-		}
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		renderBatchReplayIncomplete(w, r, successes, failures, err)
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
+}
+
+// renderBatchReplayIncomplete returns 409 only when at least one replay job
+// was enqueued. Ownership skips and enqueue errors increment failures without
+// landing work; those stay on the service-error path so clients can retry.
+func renderBatchReplayIncomplete(w http.ResponseWriter, r *http.Request, successes, failures int, err error) {
+	if successes > 0 {
+		_ = render.Render(w, r, util.NewErrorResponse(
+			fmt.Sprintf("%d successful, %d failed; batch replay incomplete: %s", successes, failures, err.Error()),
+			http.StatusConflict,
+		))
+		return
+	}
+	_ = render.Render(w, r, util.NewServiceErrResponse(err))
 }
 
 // GetEndpointEvent
