@@ -62,7 +62,7 @@
       } @else {
         <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ dashboardData.events_sent | number }}</span>
       }
-      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Events sent</span>
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ dashboardData.events_sent | countLabel:'Event sent':'Events sent' }}</span>
     </div>
     <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
       @if (isLoadingDeliveryCounts) {
@@ -70,7 +70,7 @@
       } @else {
         <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.success === null ? '–' : (deliveryCounts.success | number) }}</span>
       }
-      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Successful deliveries</span>
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ deliveryCounts.success | countLabel:'Successful delivery':'Successful deliveries' }}</span>
     </div>
     <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
       @if (isLoadingDeliveryCounts) {
@@ -78,7 +78,7 @@
       } @else {
         <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ deliveryCounts.failure === null ? '–' : (deliveryCounts.failure | number) }}</span>
       }
-      <span class="font-body font-normal text-[14px] leading-normal" [class]="(deliveryCounts.failure ?? 0) > 0 ? 'text-[#df3520]' : 'text-new.text-secondary'">Failed deliveries</span>
+      <span class="font-body font-normal text-[14px] leading-normal" [class]="(deliveryCounts.failure ?? 0) > 0 ? 'text-[#df3520]' : 'text-new.text-secondary'">{{ deliveryCounts.failure | countLabel:'Failed delivery':'Failed deliveries' }}</span>
     </div>
     <div class="bg-white-100 border border-new.border rounded-8px p-12px flex flex-col gap-4px min-h-[84px]">
       @if (isLoadingSummaryEndpoints) {
@@ -86,7 +86,7 @@
       } @else {
         <span class="font-body font-medium text-[32px] leading-[40px] text-new.text-primary">{{ activeEndpointCount | number }}</span>
       }
-      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Active endpoints</span>
+      <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ activeEndpointCount | countLabel:'Active endpoint':'Active endpoints' }}</span>
     </div>
   </div>
 
