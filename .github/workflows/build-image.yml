@@ -199,9 +199,13 @@ jobs:
   # Scan the published Docker Hub image after the manifest exists, then upload
   # convoy.spdx.json as a workflow artifact. This does not attach the SBOM as an
   # OCI layer or attestation on the image.
+  # continue-on-error: the image is already live. A scan failure must not mark
+  # this workflow failed, or bump-convoy-cloud-staging and trivy-defectdojo skip
+  # because they require conclusion == success.
   sbom:
     name: SBOM Generation
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs: [build-and-push-default, set-image-tag]
     permissions:
       contents: read
