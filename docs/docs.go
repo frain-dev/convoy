@@ -3961,6 +3961,24 @@ const docTemplate = `{
                                 }
                             ]
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
                     }
                 }
             }

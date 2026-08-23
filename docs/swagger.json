@@ -4468,6 +4468,29 @@
                 }
               ]
             }
+          },
+          "409": {
+            "description": "Conflict",
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/util.ServerResponse"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/definitions/handlers.Stub"
+                        }
+                      ],
+                      "x-nullable": true
+                    }
+                  }
+                }
+              ]
+            }
           }
         }
       }

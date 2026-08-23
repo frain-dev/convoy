@@ -426,10 +426,10 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			request		query		models.QueryListEvent	false	"Query Params"
-//	@Success		200			{object}	util.ServerResponse{data=string}
-//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID		path		string					true	"Project ID"
+//	@Param			request			query		models.QueryListEvent	false	"Query Params"
+//	@Success		200				{object}	util.ServerResponse{data=string}
+//	@Failure		400,401,404,409	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/batchreplay [post]
 func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
@@ -480,10 +480,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ep := datastore.Pageable{}
-	if data.Filter.Pageable == ep {
-		data.Filter.Pageable.PerPage = 2000000000
-	}
+	data.Filter.Pageable = services.NormalizeBatchReplayPageable(data.Filter.Pageable)
 
 	bs := services.BatchReplayEventService{
 		EndpointRepo:     endpoints.New(h.A.Logger, h.A.DB),
@@ -496,6 +493,15 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 
 	successes, failures, err := bs.Run(r.Context())
 	if err != nil {
+		if successes > 0 || failures > 0 {
+			// NewServerResponse hardcodes JSON status true. A 500 here also
+			// invites HTTP retries that re-enqueue already-queued replay jobs.
+			_ = render.Render(w, r, util.NewErrorResponse(
+				fmt.Sprintf("%d successful, %d failed; batch replay incomplete: %s", successes, failures, err.Error()),
+				http.StatusConflict,
+			))
+			return
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
