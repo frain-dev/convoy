@@ -196,6 +196,9 @@ jobs:
             ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-amd64 \
             ${{ env.IMAGE_NAME }}:main-${{ needs.set-image-tag.outputs.image_tag }}-arm64
 
+  # Scan the published Docker Hub image after the manifest exists, then upload
+  # convoy.spdx.json as a workflow artifact. This does not attach the SBOM as an
+  # OCI layer or attestation on the image.
   sbom:
     name: SBOM Generation
     runs-on: ubuntu-latest
