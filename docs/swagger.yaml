@@ -5440,6 +5440,17 @@ paths:
                       - $ref: '#/definitions/handlers.Stub'
                     x-nullable: true
                 type: object
+        "409":
+          description: Conflict
+          schema:
+            allOf:
+              - $ref: '#/definitions/util.ServerResponse'
+              - properties:
+                  data:
+                    allOf:
+                      - $ref: '#/definitions/handlers.Stub'
+                    x-nullable: true
+                type: object
       security:
         - ApiKeyAuth: []
       summary: Batch replay events

@@ -2698,6 +2698,19 @@ paths:
                         nullable: true
                     type: object
           description: Not Found
+        '409':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Conflict
       security:
         - ApiKeyAuth: []
       tags:
