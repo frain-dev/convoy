@@ -15,6 +15,7 @@ import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.co
 import {TagComponent} from 'src/app/components/tag/tag.component';
 import {StatusColorModule} from 'src/app/pipes/status-color/status-color.module';
 import {PermissionDirective} from "../../../components/permission/permission.directive";
+import {CountLabelPipe} from 'src/app/pipes/count-label/count-label.pipe';
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
@@ -36,7 +37,8 @@ const routes: Routes = [{ path: '', component: EventsComponent }];
         CopyButtonComponent,
         TagComponent,
         StatusColorModule,
-        PermissionDirective
+        PermissionDirective,
+        CountLabelPipe
     ],
 	providers: [DatePipe]
 })

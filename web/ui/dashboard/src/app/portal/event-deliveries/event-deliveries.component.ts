@@ -14,10 +14,11 @@ import {EventsService} from '../../private/pages/project/events/events.service';
 import {PrivateService} from '../../private/private.service';
 import {Router} from '@angular/router';
 import {LicensesService} from "../../services/licenses/licenses.service";
+import {CountLabelPipe} from 'src/app/pipes/count-label/count-label.pipe';
 
 @Component({
     selector: 'convoy-event-deliveries',
-    imports: [CommonModule, EventDeliveriesModule, DatePickerComponent, DropdownComponent, DropdownOptionDirective, SkeletonLoaderComponent],
+    imports: [CommonModule, EventDeliveriesModule, DatePickerComponent, DropdownComponent, DropdownOptionDirective, SkeletonLoaderComponent, CountLabelPipe],
     templateUrl: './event-deliveries.component.html',
     styleUrls: ['./event-deliveries.component.scss']
 })
