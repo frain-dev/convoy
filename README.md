@@ -2,10 +2,12 @@
 
 [![golangci-lint](https://github.com/frain-dev/convoy/actions/workflows/linter.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/linter.yml)
 [![Build and run all tests](https://github.com/frain-dev/convoy/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/integration-tests.yml)
+
 [![GitHub stars](https://img.shields.io/github/stars/frain-dev/convoy)](https://github.com/frain-dev/convoy/stargazers)
 [![License](https://img.shields.io/badge/License-Elastic%202.0-blue)](https://github.com/frain-dev/convoy/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/frain-dev/convoy)](https://github.com/frain-dev/convoy/releases/latest)
 [![Docker Pulls](https://img.shields.io/docker/pulls/getconvoy/convoy)](https://hub.docker.com/r/getconvoy/convoy)
+
 [![Slack](https://img.shields.io/badge/Slack-Join_Community-4A154B?logo=slack&logoColor=white)](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 [![X](https://img.shields.io/badge/X-@getconvoy-black?logo=x&logoColor=white)](https://x.com/getconvoy)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Convoy-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/company/convoy-webhooks/)
@@ -13,8 +15,7 @@
 - Website: https://getconvoy.io
 - Forum: [Convoy Community](https://community.getconvoy.io)
 - Documentation: [docs.getconvoy.io](https://docs.getconvoy.io)
-- Deploy:
-  [Install Convoy](https://docs.getconvoy.io/deployment/install-convoy/docker)
+- Deploy: [Install Convoy](https://docs.getconvoy.io/deployment/install-convoy/docker)
 
 [Convoy](https://getconvoy.io) is an open source high-performance webhooks
 gateway used to securely ingest, persist, debug, deliver and manage millions of
