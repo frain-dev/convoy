@@ -55,6 +55,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	// cursor-based so the absolute position is derived from prev/next navigation.
 	currentPage = 1;
 	totalCount?: number;
+	private totalCountFetchId = 0;
 	selectedDeliveries = new Set<string>();
 	batchRetryParams?: FILTER_QUERY_PARAM;
 	batchRetryDate = '';
@@ -286,13 +287,21 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	async refreshTotalCount() {
 		const countParams = this.queryParamsForCount(this.queryParams);
+		const fetchId = ++this.totalCountFetchId;
 
-		try {
-			const response = await this.eventsService.getRetryCount(countParams);
-			this.totalCount = response.data.num;
-		} catch (error) {
-			this.totalCount = undefined;
+		if (!rollupCanServeDisplayCount(countParams)) {
+			if (fetchId === this.totalCountFetchId) this.totalCount = undefined;
+			return;
 		}
+
+		const totals = await this.eventsService.getStatusTotals({
+			startDate: countParams.startDate,
+			endDate: countParams.endDate,
+			endpointId: countParams.endpointId
+		});
+
+		if (fetchId !== this.totalCountFetchId) return;
+		this.totalCount = totals ? sumRollupDisplayCount(totals, this.statusFilter) : undefined;
 	}
 
 	async getEventTypesForFilter() {
@@ -452,4 +461,16 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		const { next_page_cursor: _next, prev_page_cursor: _prev, direction: _direction, sort: _sort, showLoader: _showLoader, ...filters } = params || {};
 		return filters;
 	}
+}
+
+// Rollup is date + optional endpoint. Search, event id, and event type are
+// live-only filters, so the table omits N rather than showing a wrong total.
+export function rollupCanServeDisplayCount(params: { query?: string; eventId?: string; eventType?: string }): boolean {
+	const present = (value?: string) => typeof value === 'string' && value.trim().length > 0;
+	return !present(params.query) && !present(params.eventId) && !present(params.eventType);
+}
+
+export function sumRollupDisplayCount(totals: Record<string, number>, statuses: string[]): number {
+	const keys = statuses.length > 0 ? statuses : Object.keys(totals);
+	return keys.reduce((n, key) => n + (Number(totals[key]) || 0), 0);
 }
