@@ -67,9 +67,37 @@ func refreshEventDailyCounts(ctx context.Context, tx pgx.Tx, startDay, endDay pg
 	return nil
 }
 
+// RefreshEventDailyCounts replaces UTC event daily counts for [start, end).
+// It does not touch delivery rollup rows or shared stale markers. The
+// events_backfill walk uses this so a finished delivery backfill is not
+// rewritten one historical day at a time.
+func (s *Service) RefreshEventDailyCounts(ctx context.Context, start, end time.Time) error {
+	startDay := pgtype.Date{Time: utcDate(start), Valid: true}
+	endDay := pgtype.Date{Time: utcDate(end), Valid: true}
+	if !endDay.Time.After(startDay.Time) {
+		return nil
+	}
+
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("refresh event daily counts: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if err := refreshEventDailyCounts(ctx, tx, startDay, endDay); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("refresh event daily counts: %w", err)
+	}
+	return nil
+}
+
 // AdvanceEventDailyCountsBackfill walks one UTC day of event history.
 // It is independent of the delivery backfill so an instance that already
-// finished that walk still fills the events tables.
+// finished that walk still fills the events tables. It must not call
+// RefreshDailyCounts: that rewrite also deletes and re-aggregates
+// event_delivery_daily_counts.
 func (s *Service) AdvanceEventDailyCountsBackfill(ctx context.Context) (bool, error) {
 	var nextDay pgtype.Date
 	var completedAt pgtype.Timestamptz
@@ -106,7 +134,7 @@ func (s *Service) AdvanceEventDailyCountsBackfill(ctx context.Context) (bool, er
 		return true, s.markEventDailyCountsBackfillCompleted(ctx)
 	}
 
-	if err := s.RefreshDailyCounts(ctx, day, day.AddDate(0, 0, 1)); err != nil {
+	if err := s.RefreshEventDailyCounts(ctx, day, day.AddDate(0, 0, 1)); err != nil {
 		return false, err
 	}
 

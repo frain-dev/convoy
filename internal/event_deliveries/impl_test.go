@@ -1571,6 +1571,62 @@ func TestMaybePruneEventDailyCountsRunsWhenDeliveryPruneSkips(t *testing.T) {
 	require.Zero(t, stale)
 }
 
+func TestAdvanceEventDailyCountsBackfillDoesNotRewriteDeliveries(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	day := utcDate(time.Now()).AddDate(0, 0, -3)
+	dayKey := day.Format("2006-01-02")
+	noon := day.Add(12 * time.Hour)
+	_, err := db.GetDB().ExecContext(ctx,
+		"UPDATE convoy.events SET created_at=$1, updated_at=$1 WHERE id=$2",
+		noon, event.UID)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx,
+		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
+		noon, d.UID)
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET completed_at = NOW(), next_day = NULL
+		WHERE name = 'backfill'`)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx, `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET completed_at = NULL, next_day = $1
+		WHERE name = 'events_backfill'`, dayKey)
+	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx, `
+		INSERT INTO convoy.event_delivery_daily_counts (project_id, endpoint_id, day, status, count)
+		VALUES ($1, $2, $3, 'Success', 999)`, project.UID, endpoint.UID, dayKey)
+	require.NoError(t, err)
+
+	_, err = service.AdvanceEventDailyCountsBackfill(ctx)
+	require.NoError(t, err)
+
+	var deliveryCount int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT count FROM convoy.event_delivery_daily_counts
+		WHERE project_id = $1 AND endpoint_id = $2 AND day = $3 AND status = 'Success'`,
+		project.UID, endpoint.UID, dayKey).Scan(&deliveryCount))
+	require.Equal(t, 999, deliveryCount)
+
+	var eventCount int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT count FROM convoy.event_daily_counts
+		WHERE project_id = $1 AND day = $2`, project.UID, dayKey).Scan(&eventCount))
+	require.Equal(t, 1, eventCount)
+}
+
 func TestMaybePruneDailyCountsSkipsWithin24Hours(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
