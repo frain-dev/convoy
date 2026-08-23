@@ -53,11 +53,7 @@ func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
 
 	successes, failures := 0, 0
 
-	for {
-		if len(events) == 0 {
-			break
-		}
-
+	for len(events) > 0 {
 		// Load the next page before enqueueing this one. A later fetch failure
 		// must not leave this page already queued: Redis Write deletes+requeues
 		// the deterministic replay task ID, so an HTTP retry would fan out again.
