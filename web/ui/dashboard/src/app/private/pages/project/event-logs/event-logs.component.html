@@ -281,7 +281,7 @@
 
               <!-- Route -->
               <div class="flex items-center px-12px h-40px">
-                <span class="inline-flex items-center h-20px px-6px rounded-4px font-body font-medium text-[12px] leading-[14px]" [class]="hasMatchedSubscription(event) ? 'bg-[#C6F5CE] text-new.text-primary' : 'bg-new.surface-muted text-new.text-secondary'">{{ getRouteStatus(event) }}</span>
+                <span class="inline-flex items-center h-20px px-6px rounded-4px font-body font-medium text-[12px] leading-[14px]" [class]="routeChipClass(event)">{{ getRouteStatus(event) }}</span>
               </div>
 
               <!-- Time -->

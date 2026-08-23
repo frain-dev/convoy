@@ -361,7 +361,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	statusPillClass(status?: string): string {
 		if (status === 'Success') return 'bg-success-a3 text-success-11';
-		if (status === 'Failure' || status === 'Discarded') return 'bg-error-a3 text-error-11';
+		if (status === 'Failure') return 'bg-error-a3 text-error-11';
 		return 'bg-new.surface-muted text-new.text-secondary';
 	}
 

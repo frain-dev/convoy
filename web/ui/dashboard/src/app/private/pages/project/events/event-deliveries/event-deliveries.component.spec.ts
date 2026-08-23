@@ -1,26 +1,12 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { EventDeliveriesComponent } from './event-deliveries.component';
-import { RouterTestingModule } from '@angular/router/testing';
 
-describe('EventDeliveriesComponent', () => {
-  let component: EventDeliveriesComponent;
-  let fixture: ComponentFixture<EventDeliveriesComponent>;
+describe('EventDeliveriesComponent status pills', () => {
+	const pills = Object.create(EventDeliveriesComponent.prototype) as EventDeliveriesComponent;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [ RouterTestingModule, EventDeliveriesComponent ]
-    })
-    .compileComponents();
-  });
-
-  beforeEach(() => {
-    fixture = TestBed.createComponent(EventDeliveriesComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+	it('keeps Failure red and Discarded muted', () => {
+		expect(pills.statusPillClass('Success')).toBe('bg-success-a3 text-success-11');
+		expect(pills.statusPillClass('Failure')).toBe('bg-error-a3 text-error-11');
+		expect(pills.statusPillClass('Discarded')).toBe('bg-new.surface-muted text-new.text-secondary');
+		expect(pills.statusPillClass('Scheduled')).toBe('bg-new.surface-muted text-new.text-secondary');
+	});
 });
