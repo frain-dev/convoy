@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	partman "github.com/jirevwe/gopartman"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
@@ -250,6 +251,7 @@ func TestKeepsAdoptedHistoryPartitionWhileItHoldsLiveRows(t *testing.T) {
 	partitionDeliveries(t, ctx, db)
 
 	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
 
 	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
@@ -345,7 +347,9 @@ func TestKeepsAdoptedHistoryPartitionWhenOldestIsExpiredButNewestIsLive(t *testi
 	require.NoError(t, err)
 	partitionDeliveries(t, ctx, db)
 
-	dropped, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "event_deliveries")
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.False(t, dropped, "dropped a history partition because it also held expired rows")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
@@ -365,6 +369,7 @@ func TestDropAdoptedPartitionIsIdempotent(t *testing.T) {
 	seedExpiredRow(t, db, "event_deliveries", time.Now().AddDate(0, 0, -90))
 	partitionDeliveries(t, ctx, db)
 	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
 
 	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
@@ -386,7 +391,9 @@ func TestDropExpiredAdoptedPartitionsDoesNotDropALiveSiblingTable(t *testing.T) 
 	partitionTable(t, ctx, db, "events")
 	partitionDeliveries(t, ctx, db)
 
-	newDropPolicy(t, db, 24*time.Hour).dropExpiredAdoptedPartitions(ctx)
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+	policy.dropExpiredAdoptedPartitions(ctx)
 
 	require.False(t, relationExists(t, ctx, db, "events_default"), "expired events history was not dropped")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"), "live deliveries history was dropped because a sibling expired")
@@ -401,7 +408,9 @@ func TestDroppingAdoptedHistoryLeavesDailyPartitions(t *testing.T) {
 	daily := childPartitions(t, ctx, db, "event_deliveries")
 	require.Greater(t, len(daily), 1, "conversion created no daily partitions to leave behind")
 
-	dropped, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "event_deliveries")
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.True(t, dropped)
 
@@ -428,6 +437,52 @@ func TestLicensedRetentionPolicySkipsWhenTablesAreUnpartitioned(t *testing.T) {
 	require.ElementsMatch(t, RetentionTables, missing)
 }
 
+// RegisterParent is insert-if-absent. A later config change plus a full
+// restart used to leave partman.parent_tables.retention_period on the first
+// write, so Maintain kept dropping on the old window while dropAdoptedPartition
+// used the new one.
+func TestRegisterParentsReconcilesStoredRetentionPeriod(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	seedProjectWithEvent(t, db)
+	partitionAll(t, ctx, db)
+
+	first := newDropPolicy(t, db, 720*time.Hour)
+	first.registerParents(ctx)
+	require.Equal(t, 720*time.Hour, storedRetentionPeriod(t, ctx, first, "events"))
+
+	second := newDropPolicy(t, db, 360*time.Hour)
+	second.registerParents(ctx)
+	require.Equal(t, 360*time.Hour, storedRetentionPeriod(t, ctx, second, "events"),
+		"stored retention_period stayed on the first register, so daily drops keep the old window")
+
+	for _, table := range RetentionTables {
+		require.Equal(t, 360*time.Hour, storedRetentionPeriod(t, ctx, second, table), table)
+	}
+
+	second.registerParents(ctx)
+	require.Equal(t, 360*time.Hour, storedRetentionPeriod(t, ctx, second, "events"),
+		"second reconcile rewrote a period that already matched")
+}
+
+func TestRegisterParentsReconcilesStoredPremake(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	seedProjectWithEvent(t, db)
+	partitionAll(t, ctx, db)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	_, err := db.GetConn().Exec(ctx, `
+        UPDATE partman.parent_tables
+        SET premake = 1
+        WHERE schema_name = $1 AND table_name = $2`, retentionSchema, "events")
+	require.NoError(t, err)
+
+	policy.registerParents(ctx)
+	require.Equal(t, retentionPremake, storedPremake(t, ctx, policy, "events"),
+		"stored premake stayed on the first register")
+}
+
 func TestLicensedRetentionPolicyRefusesActivationBeforeStart(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	seedProjectWithEvent(t, db)
@@ -436,6 +491,49 @@ func TestLicensedRetentionPolicyRefusesActivationBeforeStart(t *testing.T) {
 	err := NewLicensedRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour).Perform(ctx)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "Start has not run")
+}
+
+func storedParent(t *testing.T, ctx context.Context, policy *PartitionRetentionPolicy, table string) partman.ParentInfo {
+	t.Helper()
+
+	parent, err := policy.storedParent(ctx, table)
+	require.NoError(t, err)
+	return parent
+}
+
+// A 10-day-old adopted heap is expired under 24h and live under 720h. The
+// drop must follow the stored window, not the in-process period, or the two
+// drop paths disagree after a config change that has not been reconciled.
+func TestDropAdoptedPartitionUsesStoredRetentionPeriod(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithDelivery(t, db, time.Now().AddDate(0, 0, -10))
+	partitionDeliveries(t, ctx, db)
+
+	registered := newDropPolicy(t, db, 720*time.Hour)
+	registered.registerParents(ctx)
+
+	inProcess := newDropPolicy(t, db, 24*time.Hour)
+	dropped, err := inProcess.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.False(t, dropped, "dropped on the in-process 24h period instead of the stored 720h window")
+	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
+
+	inProcess.registerParents(ctx)
+	dropped, err = inProcess.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped, "stored 24h window did not drop a 10-day-old history partition")
+	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
+func storedRetentionPeriod(t *testing.T, ctx context.Context, policy *PartitionRetentionPolicy, table string) time.Duration {
+	t.Helper()
+	return storedParent(t, ctx, policy, table).RetentionPeriod
+}
+
+func storedPremake(t *testing.T, ctx context.Context, policy *PartitionRetentionPolicy, table string) int {
+	t.Helper()
+	return storedParent(t, ctx, policy, table).Premake
 }
 
 func newDropPolicy(t *testing.T, db database.Database, period time.Duration) *PartitionRetentionPolicy {
