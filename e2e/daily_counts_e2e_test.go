@@ -71,10 +71,16 @@ func TestE2E_DailyCounts_SummaryMatchesLiveAcrossRepeatedRefreshes(t *testing.T)
 		SELECT completed_at IS NOT NULL
 		FROM convoy.event_delivery_daily_counts_meta
 		WHERE name = 'backfill'`).Scan(&completed))
-	require.True(t, completed, "summary is still answering from a live scan")
+	require.True(t, completed, "delivery summary is still answering from a live scan")
+
+	require.NoError(t, env.App.DB.GetDB().QueryRowContext(ctx, `
+		SELECT completed_at IS NOT NULL
+		FROM convoy.event_delivery_daily_counts_meta
+		WHERE name = 'events_backfill'`).Scan(&completed))
+	require.True(t, completed, "events sent is still answering from a live scan")
 
 	fromRollup := fetchPortalSummary(t, env, link, "daily", start, end)
-	require.Equal(t, uint64(sent), fromRollup.EventsSent, "rollup disagrees with the deliveries the project holds")
+	require.Equal(t, uint64(sent), fromRollup.EventsSent, "rollup disagrees with the events the project holds")
 
 	// Summed rather than pinned to one bucket: a run that crosses UTC midnight
 	// splits these deliveries across two days.
@@ -91,7 +97,7 @@ func TestE2E_DailyCounts_SummaryMatchesLiveAcrossRepeatedRefreshes(t *testing.T)
 	runWorkerJob(t, job)
 
 	updated := fetchPortalSummary(t, env, link, "daily", start, end)
-	require.Equal(t, uint64(sent+1), updated.EventsSent, "rollup did not pick up a later delivery")
+	require.Equal(t, uint64(sent+1), updated.EventsSent, "rollup did not pick up a later event")
 }
 
 // TestE2E_DailyCounts_BackfillCompletesAndPrunes walks the backfill to
@@ -123,6 +129,11 @@ func TestE2E_DailyCounts_BackfillCompletesAndPrunes(t *testing.T) {
 		SET created_at = NOW() - INTERVAL '3 days', updated_at = NOW() - INTERVAL '3 days'
 		WHERE project_id = $1`, env.Project.UID)
 	require.NoError(t, err)
+	_, err = db.GetDB().ExecContext(ctx, `
+		UPDATE convoy.events
+		SET created_at = NOW() - INTERVAL '3 days', updated_at = NOW() - INTERVAL '3 days'
+		WHERE project_id = $1`, env.Project.UID)
+	require.NoError(t, err)
 
 	// The job advances one day per run, so run it enough times to finish and
 	// then a few more. Every run past completion re-refreshes populated days.
@@ -148,4 +159,14 @@ func TestE2E_DailyCounts_BackfillCompletesAndPrunes(t *testing.T) {
 			WHERE deleted_at IS NULL
 		)`).Scan(&stale))
 	require.Zero(t, stale, "rollup holds days the live table no longer covers")
+
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM convoy.event_daily_counts
+		WHERE day < (
+			SELECT MIN((created_at AT TIME ZONE 'UTC')::date)
+			FROM convoy.events
+			WHERE deleted_at IS NULL
+		)`).Scan(&stale))
+	require.Zero(t, stale, "event rollup holds days the events table no longer covers")
 }
