@@ -75,22 +75,8 @@ func seedPortalLink(t *testing.T, env *E2ETestEnv, ownerID string) *datastore.Po
 }
 
 // fetchPortalSummary reads the dashboard summary the way the portal does.
-//
-// The handler caches each answer for an hour and serves the cached copy while
-// refreshing in the background, so a test that read twice would compare a
-// stale value against itself and pass no matter what the rollup holds. Dropping
-// the key the handler builds forces a real computation on every call.
 func fetchPortalSummary(t *testing.T, env *E2ETestEnv, link *datastore.PortalLink, period, startDate, endDate string) models.DashboardSummary {
 	t.Helper()
-
-	const format = "2006-01-02T15:04:05"
-	startT, err := time.Parse(format, startDate)
-	require.NoError(t, err)
-	endT, err := time.Parse(format, endDate)
-	require.NoError(t, err)
-
-	key := fmt.Sprintf("%v:%v:%v:%v:%v", env.Project.UID, startT.Unix(), endT.Unix(), period, link.UID)
-	require.NoError(t, env.App.Cache.Delete(context.Background(), key))
 
 	path := fmt.Sprintf("/portal-api/dashboard/summary?startDate=%s&endDate=%s&type=%s", startDate, endDate, period)
 	data := authGet(t, env, path, link.Token)

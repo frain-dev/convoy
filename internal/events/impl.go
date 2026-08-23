@@ -162,6 +162,20 @@ func (s *Service) CreateEvent(ctx context.Context, event *datastore.Event) error
 		}
 	}
 
+	// Same predicate as a delivery status update: today's UTC day is already
+	// inside the minute refresh window. An event whose created_at is older
+	// than that day has to mark the shared stale table so the job rewrites it.
+	_, err = tx.Exec(ctx, `
+		INSERT INTO convoy.event_delivery_daily_counts_stale (day)
+		SELECT (e.created_at AT TIME ZONE 'UTC')::date
+		FROM convoy.events e
+		WHERE e.id = $1
+		  AND e.created_at < DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+		ON CONFLICT (day) DO NOTHING`, event.UID)
+	if err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
 }
 

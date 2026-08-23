@@ -72,6 +72,10 @@ func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) 
 		return fmt.Errorf("refresh event delivery daily counts: %w", err)
 	}
 
+	if err = refreshEventDailyCounts(ctx, tx, startDay, endDay); err != nil {
+		return err
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("refresh event delivery daily counts: %w", err)
 	}
@@ -194,7 +198,16 @@ func (s *Service) RefreshRecentDailyCounts(ctx context.Context) error {
 		return err
 	}
 	if completed {
-		return s.maybePruneDailyCountsBeforeLiveHistory(ctx)
+		if err := s.maybePruneDailyCountsBeforeLiveHistory(ctx); err != nil {
+			return err
+		}
+	}
+	eventsCompleted, err := s.eventDailyCountsBackfillCompleted(ctx)
+	if err != nil {
+		return err
+	}
+	if eventsCompleted {
+		return s.maybePruneEventDailyCountsBeforeLiveHistory(ctx)
 	}
 	return nil
 }
@@ -215,7 +228,7 @@ func (s *Service) PruneDailyCountsBeforeLiveHistory(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("prune event delivery daily counts: %w", err)
 	}
-	return nil
+	return s.PruneEventDailyCountsBeforeLiveHistory(ctx)
 }
 
 func (s *Service) maybePruneDailyCountsBeforeLiveHistory(ctx context.Context) error {

@@ -413,6 +413,14 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 	userRepo := users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
+
+	// The backfill flags are instance-wide. A prior test that marks them
+	// complete would make this test's first summary read an empty rollup.
+	_, err = s.ConvoyApp.A.DB.GetDB().ExecContext(context.Background(), `
+		UPDATE convoy.event_delivery_daily_counts_meta
+		SET completed_at = NULL, next_day = NULL
+		WHERE name IN ('backfill', 'events_backfill')`)
+	require.NoError(s.T(), err)
 }
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
@@ -437,77 +445,35 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	err := endpointRepo.CreateEndpoint(ctx, endpoint, endpoint.ProjectID)
 	require.NoError(s.T(), err)
 
-	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
-	require.NoError(s.T(), err)
-
 	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 	require.NoError(s.T(), err)
 
-	eventDeliveries := []datastore.EventDelivery{
-		{
+	dates := []time.Time{
+		time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
+		time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+		time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
+	}
+	eventDelivery := event_deliveries.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
+	for _, created := range dates {
+		event, seedErr := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+		require.NoError(s.T(), seedErr)
+		s.stampEventCreatedAt(event.UID, created)
+
+		delivery := datastore.EventDelivery{
 			UID:            ulid.Make().String(),
 			ProjectID:      s.DefaultProject.UID,
 			EndpointID:     endpoint.UID,
 			EventID:        event.UID,
 			SubscriptionID: sub.UID,
 			Metadata:       &datastore.Metadata{},
-			CreatedAt:      time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:      time.Date(2021, time.January, 1, 1, 1, 1, 0, time.UTC),
-		},
-		{
-			UID:            ulid.Make().String(),
-			ProjectID:      s.DefaultProject.UID,
-			EventID:        event.UID,
-			SubscriptionID: sub.UID,
-			Metadata:       &datastore.Metadata{},
-			CreatedAt:      time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:      time.Date(2021, time.January, 10, 1, 1, 1, 0, time.UTC),
-		},
-		{
-			UID:            ulid.Make().String(),
-			ProjectID:      s.DefaultProject.UID,
-			EventID:        event.UID,
-			SubscriptionID: sub.UID,
-			Metadata:       &datastore.Metadata{},
-			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-		},
-		{
-			UID:            ulid.Make().String(),
-			ProjectID:      s.DefaultProject.UID,
-			EventID:        event.UID,
-			SubscriptionID: sub.UID,
-			Metadata:       &datastore.Metadata{},
-			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-		},
-		{
-			UID:            ulid.Make().String(),
-			ProjectID:      s.DefaultProject.UID,
-			EventID:        event.UID,
-			SubscriptionID: sub.UID,
-			Metadata:       &datastore.Metadata{},
-			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-		},
-		{
-			UID:            ulid.Make().String(),
-			ProjectID:      s.DefaultProject.UID,
-			EventID:        event.UID,
-			SubscriptionID: sub.UID,
-			Metadata:       &datastore.Metadata{},
-			CreatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-			UpdatedAt:      time.Date(2022, time.March, 20, 1, 1, 1, 0, time.UTC),
-		},
-	}
-
-	eventDelivery := event_deliveries.New(log.New("convoy", log.LevelError), s.ConvoyApp.A.DB)
-	for i := range eventDeliveries {
-		err = eventDelivery.CreateEventDelivery(ctx, &eventDeliveries[i])
-		require.NoError(s.T(), err)
-		_, err = s.ConvoyApp.A.DB.GetDB().ExecContext(context.Background(), "UPDATE convoy.event_deliveries SET created_at=$1,updated_at=$2 WHERE id=$3",
-			eventDeliveries[i].CreatedAt, eventDeliveries[i].UpdatedAt, eventDeliveries[i].UID)
-		require.NoError(s.T(), err)
+			CreatedAt:      created,
+			UpdatedAt:      created,
+		}
+		require.NoError(s.T(), eventDelivery.CreateEventDelivery(ctx, &delivery))
+		s.stampDeliveryCreatedAt(delivery.UID, created)
 	}
 
 	type urlQuery struct {
@@ -664,15 +630,6 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollup() {
 	}
 	s.markDailyCountsBackfillCompleted(ctx)
 
-	startT, err := time.Parse("2006-01-02T15:04:05", startDate)
-	require.NoError(s.T(), err)
-	endT, err := time.Parse("2006-01-02T15:04:05", endDate)
-	require.NoError(s.T(), err)
-	for _, period := range periods {
-		qs := fmt.Sprintf("%v:%v:%v:%v", s.DefaultProject.UID, startT.Unix(), endT.Unix(), period)
-		require.NoError(s.T(), s.ConvoyApp.A.Cache.Delete(ctx, qs))
-	}
-
 	for _, period := range periods {
 		got := s.fetchDashboardSummary(s.T(), period, startDate, endDate)
 		require.Equal(s.T(), live[period].EventsSent, got.EventsSent, period)
@@ -700,6 +657,8 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollupPortalF
 	require.NoError(s.T(), err)
 
 	created := time.Date(2021, time.January, 5, 12, 0, 0, 0, time.UTC)
+	s.stampEventCreatedAt(eventA.UID, created)
+	s.stampEventCreatedAt(eventB.UID, created)
 	for i := 0; i < 2; i++ {
 		d, seedErr := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, eventA, epA, s.DefaultProject.UID, "", datastore.SuccessEventStatus, subA)
 		require.NoError(s.T(), seedErr)
@@ -724,7 +683,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollupPortalF
 	startDate := "2021-01-01T00:00:00"
 	endDate := "2021-01-31T00:00:00"
 	jwt := s.fetchDashboardSummary(s.T(), "daily", startDate, endDate)
-	require.Equal(s.T(), uint64(3), jwt.EventsSent)
+	require.Equal(s.T(), uint64(2), jwt.EventsSent)
 
 	portalURL := fmt.Sprintf("/portal-api/dashboard/summary?startDate=%s&endDate=%s&type=daily", startDate, endDate)
 	req := createRequest(http.MethodGet, portalURL, portalLink.Token, nil)
@@ -734,8 +693,71 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFromRollupPortalF
 
 	var portal models.DashboardSummary
 	parseResponse(s.T(), w.Result(), &portal)
-	require.Equal(s.T(), uint64(2), portal.EventsSent)
+	require.Equal(s.T(), uint64(1), portal.EventsSent)
 	require.Equal(s.T(), 1, portal.Applications)
+}
+
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryFanOutCountsEventsOnce() {
+	ctx := context.Background()
+	epA, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "fanout-a", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+	epB, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "fanout-b", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, epA, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+	_, err = s.ConvoyApp.A.DB.GetDB().ExecContext(ctx,
+		"INSERT INTO convoy.events_endpoints (event_id, endpoint_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+		event.UID, epB.UID)
+	require.NoError(s.T(), err)
+
+	subA, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, epA, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+	subB, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, epB, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	require.NoError(s.T(), err)
+
+	created := time.Date(2020, time.June, 15, 12, 0, 0, 0, time.UTC)
+	s.stampEventCreatedAt(event.UID, created)
+	for _, pair := range []struct {
+		ep  *datastore.Endpoint
+		sub *datastore.Subscription
+	}{{epA, subA}, {epB, subB}} {
+		d, seedErr := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, pair.ep, s.DefaultProject.UID, "", datastore.SuccessEventStatus, pair.sub)
+		require.NoError(s.T(), seedErr)
+		s.stampDeliveryCreatedAt(d.UID, created)
+	}
+
+	svc := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	for i := 0; i < 2; i++ {
+		require.NoError(s.T(), svc.RefreshDailyCounts(ctx,
+			time.Date(2020, time.June, 15, 0, 0, 0, 0, time.UTC),
+			time.Date(2020, time.June, 16, 0, 0, 0, 0, time.UTC),
+		))
+	}
+	s.markDailyCountsBackfillCompleted(ctx)
+
+	startDate := "2020-06-01T00:00:00"
+	endDate := "2020-06-30T00:00:00"
+	summary := s.fetchDashboardSummary(s.T(), "daily", startDate, endDate)
+	require.Equal(s.T(), uint64(1), summary.EventsSent)
+
+	totals := s.fetchDeliveryStatusTotals(s.T(), startDate, endDate)
+	require.Equal(s.T(), int64(2), totals.Totals[string(datastore.SuccessEventStatus)])
+}
+
+func (s *DashboardIntegrationTestSuite) TestGetDashboardSummaryDoesNotCache() {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", "nocache", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	start := time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02T15:04:05")
+	end := time.Now().UTC().AddDate(0, 0, 1).Format("2006-01-02T15:04:05")
+	first := s.fetchDashboardSummary(s.T(), "daily", start, end)
+
+	_, err = testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	second := s.fetchDashboardSummary(s.T(), "daily", start, end)
+	require.Equal(s.T(), first.EventsSent+1, second.EventsSent)
 }
 
 func (s *DashboardIntegrationTestSuite) seedDashboardSummaryDeliveries(ctx context.Context) {
@@ -754,8 +776,6 @@ func (s *DashboardIntegrationTestSuite) seedDashboardSummaryDeliveries(ctx conte
 	}
 	require.NoError(s.T(), endpoints.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).CreateEndpoint(ctx, endpoint, endpoint.ProjectID))
 
-	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
-	require.NoError(s.T(), err)
 	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.IncomingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 	require.NoError(s.T(), err)
 
@@ -769,6 +789,10 @@ func (s *DashboardIntegrationTestSuite) seedDashboardSummaryDeliveries(ctx conte
 	}
 	ed := event_deliveries.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	for _, created := range dates {
+		event, seedErr := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+		require.NoError(s.T(), seedErr)
+		s.stampEventCreatedAt(event.UID, created)
+
 		delivery := datastore.EventDelivery{
 			UID:            ulid.Make().String(),
 			ProjectID:      s.DefaultProject.UID,
@@ -792,12 +816,20 @@ func (s *DashboardIntegrationTestSuite) stampDeliveryCreatedAt(id string, create
 	require.NoError(s.T(), err)
 }
 
+func (s *DashboardIntegrationTestSuite) stampEventCreatedAt(id string, created time.Time) {
+	s.T().Helper()
+	_, err := s.ConvoyApp.A.DB.GetDB().ExecContext(context.Background(),
+		"UPDATE convoy.events SET created_at=$1, updated_at=$2 WHERE id=$3",
+		created, created, id)
+	require.NoError(s.T(), err)
+}
+
 func (s *DashboardIntegrationTestSuite) markDailyCountsBackfillCompleted(ctx context.Context) {
 	s.T().Helper()
 	_, err := s.ConvoyApp.A.DB.GetDB().ExecContext(ctx, `
 		UPDATE convoy.event_delivery_daily_counts_meta
 		SET completed_at = NOW(), next_day = NULL
-		WHERE name = 'backfill'`)
+		WHERE name IN ('backfill', 'events_backfill')`)
 	require.NoError(s.T(), err)
 }
 
@@ -813,6 +845,20 @@ func (s *DashboardIntegrationTestSuite) fetchDashboardSummary(t *testing.T, peri
 	var summary models.DashboardSummary
 	parseResponse(t, w.Result(), &summary)
 	return summary
+}
+
+func (s *DashboardIntegrationTestSuite) fetchDeliveryStatusTotals(t *testing.T, startDate, endDate string) models.DeliveryStatusTotalsResponse {
+	t.Helper()
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/eventdeliveries/statustotals?startDate=%s&endDate=%s",
+		s.DefaultOrg.UID, s.DefaultProject.UID, startDate, endDate)
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	require.NoError(t, s.AuthenticatorFn(req, s.Router))
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+	var totals models.DeliveryStatusTotalsResponse
+	parseResponse(t, w.Result(), &totals)
+	return totals
 }
 
 func nonZeroDashboardBuckets(summary models.DashboardSummary) []datastore.EventInterval {

@@ -74,14 +74,12 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
 	endpointIDs := make([]string, 0)
 	authUser := middleware.GetAuthUserFromContext(r.Context())
-	pLQ := ""
 	if h.IsReqWithPortalLinkToken(authUser) {
 		portalLink, innerErr := h.retrievePortalLinkFromToken(r)
 		if innerErr != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
-		pLQ = ":" + portalLink.UID
 
 		eIDs, innerErr := h.getEndpoints(r, portalLink)
 		if innerErr != nil {
@@ -104,21 +102,6 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		}
 
 		endpointIDs = append(endpointIDs, eIDs...)
-	}
-
-	qs := fmt.Sprintf("%v:%v:%v:%v%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period, pLQ)
-
-	var data *models.DashboardSummary
-	err = h.A.Cache.Get(r.Context(), qs, &data)
-	if err != nil {
-		h.A.Logger.Error("failed to get dashboard summary from cache", "error", err)
-	}
-
-	if data != nil {
-		h.cacheNewDashboardDataInBackground(project, searchParams, p, period, qs, endpointIDs)
-		_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
-			data, http.StatusOK))
-		return
 	}
 
 	var endpoints int64
@@ -152,79 +135,15 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		PeriodData:   &messages,
 	}
 
-	err = h.A.Cache.Set(r.Context(), qs, dashboard, time.Hour)
-
-	if err != nil {
-		h.A.Logger.Error("failed to cache dashboard", "error", err)
-	}
-
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 		dashboard, http.StatusOK))
-}
-
-func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, searchParams datastore.SearchParams, p datastore.Period, period, qs string, endpointIds []string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	qsQuery := qs + ":query"
-	var dashboardQ *models.DashboardSummary
-	_ = h.A.Cache.Get(ctx, qsQuery, &dashboardQ)
-	if dashboardQ != nil {
-		h.A.Logger.Warn("Query still running in a Goroutine")
-		return
-	}
-
-	go func() {
-		dashboardQ = &models.DashboardSummary{}
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-
-		err := h.A.Cache.Set(ctx, qsQuery, dashboardQ, 2*time.Minute)
-		if err != nil {
-			h.A.Logger.Error("failed to cache query item: "+qsQuery, "error", err)
-			return
-		}
-
-		var endpoints int64
-		if len(endpointIds) == 0 {
-			endpoints, err = endpointsvc.New(h.A.Logger, h.A.DB).CountProjectEndpoints(ctx, project.UID)
-			if err != nil {
-				h.A.Logger.Error("failed to count project endpoints", "error", err)
-				return
-			}
-		} else {
-			endpoints = int64(len(endpointIds))
-		}
-		eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p, endpointIds)
-		if err != nil {
-			h.A.Logger.Error("an error occurred while fetching messages", "error", err)
-			return
-		}
-
-		dashboard := models.DashboardSummary{
-			Applications: int(endpoints),
-			EventsSent:   eventsSent,
-			Period:       period,
-			PeriodData:   &messages,
-		}
-
-		err = h.A.Cache.Set(ctx, qs, dashboard, time.Hour)
-		if err != nil {
-			h.A.Logger.Error("failed to cache item", "error", err)
-		}
-
-		err = h.A.Cache.Delete(ctx, qsQuery)
-		if err != nil {
-			h.A.Logger.Error("failed to delete cache item", "error", err)
-		}
-	}()
 }
 
 func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period, endpointIds []string) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
 	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
-	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, endpointIds)
+	messages, err := eventDeliveryRepo.LoadEventIntervals(ctx, projectID, searchParams, period, endpointIds)
 	if err != nil {
 		h.A.Logger.ErrorContext(ctx, "failed to load message intervals - ", "error", err)
 		return 0, nil, err
