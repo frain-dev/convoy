@@ -72,7 +72,7 @@ func (s *Service) RefreshDailyCounts(ctx context.Context, start, end time.Time) 
 		return fmt.Errorf("refresh event delivery daily counts: %w", err)
 	}
 
-	if err = refreshEventDailyCounts(ctx, tx, startDay, endDay); err != nil {
+	if err := refreshEventDailyCounts(ctx, tx, startDay, endDay); err != nil {
 		return err
 	}
 
