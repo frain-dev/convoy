@@ -153,16 +153,16 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	clearEndpointFilter() {
 		this.selectedEndpointData = undefined;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' });
 		delete this.queryParams.endpointId;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		this.refreshDeliveries();
 	}
 
 	setEventType(eventType?: string) {
 		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType });
 		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: '' });
 			delete this.queryParams.eventType;
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		}
 		this.refreshDeliveries();
 	}
@@ -178,9 +178,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	applyDateFilter(dateRange?: { startDate: string; endDate: string }) {
 		if (dateRange) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
 		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' });
 			delete this.queryParams.startDate;
 			delete this.queryParams.endDate;
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		}
 		this.refreshDeliveries();
 	}
@@ -209,8 +209,8 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			const query = this.searchString.trim();
 			if (query) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query });
 			else {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' });
 				delete this.queryParams.query;
-				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 			}
 			this.refreshDeliveries();
 		}, 300);
