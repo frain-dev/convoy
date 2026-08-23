@@ -664,7 +664,12 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	}
 
 	getRouteStatus(event: EVENT): string {
-		return this.hasMatchedSubscription(event) ? 'Delivered' : 'Unmatched';
+		return this.hasMatchedSubscription(event) ? 'Matched' : 'Unmatched';
+	}
+
+	routeChipClass(event?: EVENT): string {
+		if (this.hasMatchedSubscription(event)) return 'bg-success-a3 text-success-11';
+		return 'bg-new.surface-muted text-new.text-secondary';
 	}
 
 	// Prefer the server's reason. Without it we can only guess, and the guess is
