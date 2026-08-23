@@ -24,9 +24,10 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -443,5 +444,5 @@ func enableOAuth2FeatureFlag(t *testing.T, db database.Database, orgID string) e
 		EnabledAt:      null.TimeFrom(time.Now()),
 	}
 
-	return postgres.UpsertEarlyAdopterFeature(context.Background(), db, feature)
+	return feature_flags.New(log.New("convoy", log.LevelInfo), db).UpsertEarlyAdopterFeature(context.Background(), feature)
 }

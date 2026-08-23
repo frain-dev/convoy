@@ -644,18 +644,18 @@ type ProjectConfig struct {
 	// AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the
 	// project's endpoint URL templates auto-create an endpoint. Default false
 	// rejects unmatched URLs.
-	AllowUnmatchedDynamicURLs bool                           `json:"allow_unmatched_dynamic_urls" db:"allow_unmatched_dynamic_urls"`
+	AllowUnmatchedDynamicURLs bool `json:"allow_unmatched_dynamic_urls" db:"allow_unmatched_dynamic_urls"`
 	// SearchPolicy is an optional Go duration (e.g. "24h") shown in project settings.
 	// When set, the dashboard explains that payload/JSON search is additionally clamped
 	// to this lookback intersected with the Events log date picker. Empty means opt-out.
-	SearchPolicy              string                         `json:"search_policy" db:"search_policy"`
-	SSL                       *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
-	RateLimit                 *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
-	Strategy                  *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
-	Signature                 *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
-	RequestIDHeader           config.RequestIDHeaderProvider `json:"request_id_header"`
-	MetaEvent                 *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
-	CircuitBreaker            *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
+	SearchPolicy    string                         `json:"search_policy" db:"search_policy"`
+	SSL             *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
+	RateLimit       *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
+	Strategy        *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
+	Signature       *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
+	RequestIDHeader config.RequestIDHeaderProvider `json:"request_id_header"`
+	MetaEvent       *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
+	CircuitBreaker  *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -824,6 +824,10 @@ var (
 	ErrSecretNotFound                                = errors.New("secret not found")
 	ErrMetaEventNotFound                             = errors.New("meta event not found")
 	ErrMissingIdempotencyKeyForCustomRequestIDHeader = errors.New("idempotency_key is required when a custom request_id_header is configured")
+	ErrJobNotFound                                   = errors.New("job not found")
+	ErrFeatureFlagNotFound                           = errors.New("feature flag not found")
+	ErrFeatureFlagOverrideNotFound                   = errors.New("feature flag override not found")
+	ErrEarlyAdopterFeatureNotFound                   = errors.New("early adopter feature not found")
 )
 
 type AppMetadata struct {

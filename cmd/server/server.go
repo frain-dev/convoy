@@ -14,10 +14,10 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -130,8 +130,7 @@ func StartConvoyServer(a *cli.App) error {
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-	featureFlagFetcher := postgres.NewFeatureFlagFetcher(a.DB)
-	earlyAdopterFeatureFetcher := postgres.NewEarlyAdopterFeatureFetcher(a.DB)
+	featureFlagSvc := feature_flags.New(a.Logger, a.DB)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -146,8 +145,9 @@ func StartConvoyServer(a *cli.App) error {
 
 	apiOpts := &types.APIOptions{
 		FFlag:                      flag,
-		FeatureFlagFetcher:         featureFlagFetcher,
-		EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
+		FeatureFlagFetcher:         featureFlagSvc,
+		EarlyAdopterFeatureFetcher: featureFlagSvc,
+		FeatureFlagService:         featureFlagSvc,
 		DB:                         a.DB,
 		Logger:                     lo,
 		Licenser:                   a.Licenser,

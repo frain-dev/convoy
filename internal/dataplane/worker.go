@@ -9,7 +9,6 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/backup_jobs"
@@ -20,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/endpoints/disable"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/filters"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
@@ -132,6 +132,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	backupJobRepo := backup_jobs.New(opts.Logger, opts.DB)
 	filterRepo := cached.NewCachedFilterRepository(filters.New(opts.Logger, opts.DB), opts.Cache, cached.DefaultFilterTTL, lo)
 	batchRetryRepo := batch_retries.New(lo, opts.DB)
+	ffService := feature_flags.New(opts.Logger, opts.DB)
 
 	rateLimiter := opts.Broker.RateLimiter
 
@@ -189,7 +190,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	// Single source of truth for circuit-breaker enablement: env folded into the
 	// instance DB flag, with per-org overrides winning. Shared by the sampler gate,
 	// per-delivery enforcement, and dashboard display so they never disagree.
-	featureFlagFetcher := postgres.NewFeatureFlagFetcher(opts.DB)
+	featureFlagFetcher := ffService
 	cbEnablement := cbenablement.NewResolver(featureFlag, featureFlagFetcher, clock.NewRealClock(), lo)
 
 	masterDefaults := cb.CircuitBreakerConfig{
@@ -365,7 +366,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		CBEnablement:               cbEnablement,
 		FeatureFlag:                featureFlag,
 		FeatureFlagFetcher:         featureFlagFetcher,
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		EarlyAdopterFeatureFetcher: ffService,
 		OAuth2TokenService:         oauth2TokenService,
 		Logger:                     lo,
 	}
@@ -383,7 +384,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Licenser:           opts.Licenser,
 		OAuth2TokenService: oauth2TokenService,
 		FeatureFlag:        featureFlag,
-		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(opts.DB),
+		FeatureFlagFetcher: ffService,
 		Acker:              dynamicEventAcker,
 		Logger:             lo,
 	}
@@ -414,8 +415,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Licenser:                   opts.Licenser,
 		OAuth2TokenService:         oauth2TokenService,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		FeatureFlagFetcher:         ffService,
+		EarlyAdopterFeatureFetcher: ffService,
 		Acker:                      dynamicEventAcker,
 		Logger:                     lo,
 	}
@@ -444,8 +445,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		ProjectRepo:                projectRepo,
 		Licenser:                   opts.Licenser,
 		FeatureFlag:                featureFlag,
-		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(opts.DB),
-		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(opts.DB),
+		FeatureFlagFetcher:         ffService,
+		EarlyAdopterFeatureFetcher: ffService,
 		Logger:                     lo,
 	}
 	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
