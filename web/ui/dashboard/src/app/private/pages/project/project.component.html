@@ -1,11 +1,11 @@
-<div class="pt-0 pb-0 w-full min-h-screen bg-new.surface-page">
+<div class="pt-0 pb-0 w-full min-h-screen bg-new.surface-page overflow-x-hidden">
   <div class="w-full border-b border-new.border fixed top-60px z-[12] bg-white-100">
-    <nav class="flex items-center justify-between gap-16px max-w-[1449px] m-auto px-24px h-60px">
+    <nav class="flex items-center justify-between gap-8px mobile:gap-4px max-w-[1449px] m-auto px-24px mobile:px-12px h-60px min-w-0">
       <div class="flex items-center gap-8px flex-1 min-w-0">
         <!-- Project selector -->
         <div convoy-dropdown position="center" class="shrink-0" size="lg" className="!overflow-visible">
           <button dropdownTrigger class="flex items-center gap-8px py-4px px-8px rounded-full transition-colors hover:bg-new.surface-muted">
-            <span class="max-w-[160px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ projectDetails?.name }}</span>
+            <span class="max-w-[160px] mobile:max-w-[96px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-primary">{{ projectDetails?.name }}</span>
             <img src="/assets/img/svg/chevron-grabber.svg" class="w-16px h-16px" alt="" />
           </button>
 
@@ -86,7 +86,7 @@
         </div>
 
         @if (projectDetails) {
-          <ul class="flex items-center gap-8px overflow-x-auto overflow-y-hidden min-w-0">
+          <ul class="flex items-center gap-8px overflow-x-auto overflow-y-hidden min-w-0 overscroll-x-contain">
             @for (nav of sideBarItems; track $index) {
               <li>
                 <a [routerLink]="'.' + nav.route" routerLinkActive="!bg-new.surface-muted !font-medium" class="block font-body font-normal text-[14px] leading-normal text-new.text-primary whitespace-nowrap p-8px rounded-full transition-colors hover:bg-new.surface-muted">
@@ -106,8 +106,8 @@
       </div>
 
       @if (projectDetails) {
-        <a routerLink="./settings" routerLinkActive="!bg-new.surface-muted" class="flex items-center gap-4px py-4px px-8px rounded-full transition-colors hover:bg-new.surface-muted shrink-0">
-          <span class="font-body font-normal text-[14px] leading-normal text-new.text-primary whitespace-nowrap">Project Settings</span>
+        <a routerLink="./settings" routerLinkActive="!bg-new.surface-muted" class="flex items-center gap-4px py-4px px-8px rounded-full transition-colors hover:bg-new.surface-muted shrink-0" title="Project Settings">
+          <span class="font-body font-normal text-[14px] leading-normal text-new.text-primary whitespace-nowrap mobile:hidden">Project Settings</span>
           <svg width="16" height="16" class="fill-new.text-secondary">
             <use xlink:href="#settings-icon"></use>
           </svg>
@@ -116,7 +116,7 @@
     </nav>
   </div>
 
-  <main class="w-full pl-24px pr-24px pt-24px relative transition-all duration-200 max-w-[1449px] m-auto mt-60px">
+  <main class="w-full pl-24px pr-24px mobile:px-12px pt-24px relative transition-all duration-200 max-w-[1449px] m-auto mt-60px min-w-0">
     <router-outlet></router-outlet>
   </main>
 </div>

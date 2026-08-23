@@ -298,27 +298,18 @@ func (s *Service) CountEventDeliveries(ctx context.Context, projectID string, en
 	status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
 	start, end := getCreatedDateFilter(params.CreatedAtStart, params.CreatedAtEnd)
 
-	statuses := make([]string, len(status))
-	for i, st := range status {
-		statuses[i] = string(st)
+	f := listFilter{
+		ProjectID:   projectID,
+		EventID:     eventID,
+		Start:       start,
+		End:         end,
+		EndpointIDs: endpointIDs,
+		Statuses:    statusStrings(status),
 	}
-
-	p := repo.CountEventDeliveriesParams{
-		ProjectID:      common.StringToPgText(projectID),
-		EventID:        common.StringToPgText(eventID),
-		StartDate:      common.TimeToPgTimestamptz(start),
-		EndDate:        common.TimeToPgTimestamptz(end),
-		HasEndpointIds: common.BoolToPgBool(len(endpointIDs) > 0),
-		EndpointIds:    endpointIDs,
-		HasStatus:      common.BoolToPgBool(len(statuses) > 0),
-		Statuses:       statuses,
-	}
-
-	count, err := s.repo.CountEventDeliveries(ctx, p)
-	if err != nil {
+	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return 0, err
 	}
-	return common.PgInt8ToInt64(count), nil
+	return s.queryDeliveryCount(ctx, f)
 }
 
 func (s *Service) CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string,
@@ -375,39 +366,48 @@ func (s *Service) LoadEventDeliveriesPaged(
 		statuses[i] = string(st)
 	}
 
-	p := repo.LoadEventDeliveriesPagedInnerDescParams{
-		SortOrder:          common.StringToPgText(sortOrder),
-		ProjectID:          common.StringToPgText(projectID),
-		EventID:            common.StringToPgText(eventID),
-		EventType:          common.StringToPgText(eventType),
-		StartDate:          common.TimeToPgTimestamptz(start),
-		EndDate:            common.TimeToPgTimestamptz(end),
-		HasEndpointIds:     common.BoolToPgBool(len(endpointIDs) > 0),
-		EndpointIds:        endpointIDs,
-		HasStatus:          common.BoolToPgBool(len(statuses) > 0),
-		Statuses:           statuses,
-		HasSubscriptionID:  common.BoolToPgBool(!util.IsStringEmpty(subscriptionID)),
-		SubscriptionID:     common.StringToPgText(subscriptionID),
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(brokerMessageId)),
-		BrokerMessageID:    common.StringToPgText(brokerMessageId),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(idempotencyKey)),
-		IdempotencyKey:     common.StringToPgText(idempotencyKey),
-		Cursor:             common.StringToPgText(cursor),
-		PageLimit:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
+	f := listFilter{
+		ProjectID:       projectID,
+		EventID:         eventID,
+		EventType:       eventType,
+		Start:           start,
+		End:             end,
+		EndpointIDs:     endpointIDs,
+		Statuses:        statuses,
+		SubscriptionID:  subscriptionID,
+		BrokerMessageID: brokerMessageId,
+		IdempotencyKey:  idempotencyKey,
 	}
-
-	rows, err := s.loadEventDeliveriesPagedRows(ctx, p, sortOrder, direction)
-	if err != nil {
+	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	deliveries := make([]datastore.EventDelivery, 0, len(rows))
-	for _, row := range rows {
-		d, err := rowToEventDelivery(row)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
+	keysetAt, keysetID, hasKeyset, err := s.resolveCursor(ctx, projectID, cursor)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	if hasKeyset {
+		f.HasKeyset = true
+		f.KeysetAt = keysetAt
+		f.KeysetID = keysetID
+		if eventDeliveriesPagedInnerDesc(sortOrder, direction) {
+			f.KeysetOp = "<="
+		} else {
+			f.KeysetOp = ">="
 		}
-		deliveries = append(deliveries, *d)
+	}
+
+	ids, err := s.queryDeliveryIDs(ctx, f, pageable.Limit(), eventDeliveriesPagedInnerDesc(sortOrder, direction))
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	if direction == "prev" {
+		reverseStrings(ids)
+	}
+
+	deliveries, err := s.hydrateEventDeliveriesPage(ctx, projectID, ids)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
 	}
 
 	// Calculate PrevRowCount if not first page
@@ -415,20 +415,19 @@ func (s *Service) LoadEventDeliveriesPaged(
 	isFirstPage := util.IsStringEmpty(cursor)
 	if len(deliveries) > 0 && !isFirstPage {
 		first := deliveries[0]
-		rowCount, err = s.countPrevDeliveries(ctx, projectID, eventID, eventType, endpointIDs,
-			statuses, subscriptionID, brokerMessageId, idempotencyKey, first.UID, start, end, sortOrder)
+		rowCount, err = s.countPrevDeliveries(ctx, f, first, sortOrder)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 	}
 
-	ids := make([]string, len(deliveries))
+	pageIDs := make([]string, len(deliveries))
 	for i := range deliveries {
-		ids[i] = deliveries[i].UID
+		pageIDs[i] = deliveries[i].UID
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
-	pagination = pagination.Build(pageable, ids)
+	pagination = pagination.Build(pageable, pageIDs)
 
 	if len(deliveries) > pageable.PerPage {
 		deliveries = deliveries[:len(deliveries)-1]
@@ -441,57 +440,62 @@ func eventDeliveriesPagedInnerDesc(sortOrder, direction string) bool {
 	return (sortOrder == "DESC" && direction == "next") || (sortOrder == "ASC" && direction == "prev")
 }
 
-func (s *Service) loadEventDeliveriesPagedRows(ctx context.Context, p repo.LoadEventDeliveriesPagedInnerDescParams, sortOrder, direction string) ([]any, error) {
-	if eventDeliveriesPagedInnerDesc(sortOrder, direction) {
-		rows, err := s.repo.LoadEventDeliveriesPagedInnerDesc(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]any, len(rows))
-		for i := range rows {
-			out[i] = rows[i]
-		}
-		return out, nil
+func (s *Service) hydrateEventDeliveriesPage(ctx context.Context, projectID string, ids []string) ([]datastore.EventDelivery, error) {
+	if len(ids) == 0 {
+		return []datastore.EventDelivery{}, nil
 	}
-	rows, err := s.repo.LoadEventDeliveriesPagedInnerAsc(ctx, repo.LoadEventDeliveriesPagedInnerAscParams(p))
+	rows, err := s.repo.HydrateEventDeliveriesPage(ctx, repo.HydrateEventDeliveriesPageParams{
+		ProjectID: common.StringToPgText(projectID),
+		Ids:       ids,
+	})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]any, len(rows))
+	byID := make(map[string]*datastore.EventDelivery, len(rows))
 	for i := range rows {
-		out[i] = rows[i]
+		d, err := rowToEventDelivery(rows[i])
+		if err != nil {
+			return nil, err
+		}
+		byID[d.UID] = d
+	}
+	out := make([]datastore.EventDelivery, 0, len(ids))
+	for _, id := range ids {
+		if d, ok := byID[id]; ok {
+			out = append(out, *d)
+		}
 	}
 	return out, nil
 }
 
-func (s *Service) countPrevDeliveries(ctx context.Context, projectID, eventID, eventType string,
-	endpointIDs, statuses []string, subscriptionID, brokerMessageId, idempotencyKey, cursor string,
-	start, end time.Time, sortOrder string) (datastore.PrevRowCount, error) {
-	params := repo.CountPrevEventDeliveriesParams{
-		ProjectID:          common.StringToPgText(projectID),
-		EventID:            common.StringToPgText(eventID),
-		EventType:          common.StringToPgText(eventType),
-		StartDate:          common.TimeToPgTimestamptz(start),
-		EndDate:            common.TimeToPgTimestamptz(end),
-		HasEndpointIds:     common.BoolToPgBool(len(endpointIDs) > 0),
-		EndpointIds:        endpointIDs,
-		HasStatus:          common.BoolToPgBool(len(statuses) > 0),
-		Statuses:           statuses,
-		HasSubscriptionID:  common.BoolToPgBool(!util.IsStringEmpty(subscriptionID)),
-		SubscriptionID:     common.StringToPgText(subscriptionID),
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(brokerMessageId)),
-		BrokerMessageID:    common.StringToPgText(brokerMessageId),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(idempotencyKey)),
-		IdempotencyKey:     common.StringToPgText(idempotencyKey),
-		SortOrder:          common.StringToPgText(sortOrder),
-		Cursor:             common.StringToPgTextNullable(cursor),
+func (s *Service) countPrevDeliveries(ctx context.Context, f listFilter, first datastore.EventDelivery, sortOrder string) (datastore.PrevRowCount, error) {
+	f.HasKeyset = true
+	f.KeysetAt = first.CreatedAt
+	f.KeysetID = first.UID
+	if sortOrder == "ASC" {
+		f.KeysetOp = "<"
+	} else {
+		f.KeysetOp = ">"
 	}
-
-	count, err := s.repo.CountPrevEventDeliveries(ctx, params)
+	n, err := s.queryDeliveryCount(ctx, f)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
+	return datastore.PrevRowCount{Count: int(n)}, nil
+}
+
+func reverseStrings(ids []string) {
+	for i, j := 0, len(ids)-1; i < j; i, j = i+1, j-1 {
+		ids[i], ids[j] = ids[j], ids[i]
+	}
+}
+
+func statusStrings(status []datastore.EventDeliveryStatus) []string {
+	out := make([]string, len(status))
+	for i, st := range status {
+		out[i] = string(st)
+	}
+	return out
 }
 
 func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, endpointIds []string) ([]datastore.EventInterval, error) {

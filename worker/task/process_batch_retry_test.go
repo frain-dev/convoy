@@ -329,6 +329,50 @@ func TestProcessBatchRetry(t *testing.T) {
 					Return(nil).Times(1)
 			},
 		},
+		{
+			name:          "should_pass_table_search_query_to_list",
+			expectedError: nil,
+			batchRetry: &datastore.BatchRetry{
+				ID:        "batch-retry-1",
+				ProjectID: "project-1",
+				Status:    datastore.BatchRetryStatusPending,
+				Filter: datastore.FromFilterStruct(datastore.Filter{
+					ProjectID: "project-1",
+					Query:     "invoice.paid",
+					SearchParams: datastore.SearchParams{
+						CreatedAtStart: 1704067200,
+						CreatedAtEnd:   1704153600,
+						Query:          "invoice.paid",
+					},
+					Pageable: datastore.Pageable{
+						PerPage:    1000,
+						Direction:  datastore.Next,
+						NextCursor: datastore.DefaultCursor,
+					},
+				}),
+			},
+			dbFn: func(br *mocks.MockBatchRetryRepository, ed *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, retry *datastore.BatchRetry) {
+				br.EXPECT().
+					FindActiveBatchRetry(gomock.Any(), "project-1").
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
+				br.EXPECT().
+					UpdateBatchRetry(gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+				br.EXPECT().
+					FindActiveBatchRetry(gomock.Any(), "project-1").
+					Return(retry, nil).Times(1)
+				ed.EXPECT().
+					LoadEventDeliveriesPaged(
+						gomock.Any(), "project-1", gomock.Any(), "", "", gomock.Any(),
+						datastore.SearchParams{CreatedAtStart: 1704067200, CreatedAtEnd: 1704153600, Query: "invoice.paid"},
+						gomock.Any(), "", "", "",
+					).
+					Return([]datastore.EventDelivery{}, datastore.PaginationData{HasNextPage: false}, nil).Times(1)
+				br.EXPECT().
+					UpdateBatchRetry(gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+			},
+		},
 	}
 
 	for _, tc := range tt {

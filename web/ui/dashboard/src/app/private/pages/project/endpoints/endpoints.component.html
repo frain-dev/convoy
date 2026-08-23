@@ -110,8 +110,10 @@
         </button>
       </div>
     } @else {
+      <div class="overflow-x-auto">
+      <div class="min-w-[940px]">
       <!-- Header row -->
-      <div class="grid w-full grid-cols-[minmax(0,1.5fr)_minmax(0,2.4fr)_minmax(0,1.5fr)_120px_150px_56px] bg-new.surface-subtle border-b border-new.border">
+      <div class="grid w-full grid-cols-[minmax(240px,1.8fr)_minmax(200px,2.4fr)_minmax(160px,1.5fr)_120px_150px_56px] bg-new.surface-subtle border-b border-new.border">
         <div class="flex items-center px-20px h-36px">
           <span class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Endpoint</span>
         </div>
@@ -132,17 +134,17 @@
 
       <!-- Rows -->
       @for (endpoint of filteredEndpoints; track endpoint.uid) {
-        <div class="grid w-full grid-cols-[minmax(0,1.5fr)_minmax(0,2.4fr)_minmax(0,1.5fr)_120px_150px_56px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle group" (click)="selectedEndpoint = endpoint">
+        <div class="grid w-full grid-cols-[minmax(240px,1.8fr)_minmax(200px,2.4fr)_minmax(160px,1.5fr)_120px_150px_56px] items-center border-b border-new.border last:border-b-0 transition-colors hover:bg-new.surface-subtle group" (click)="selectedEndpoint = endpoint">
           <!-- Endpoint: status pill + name -->
           <div class="flex items-center gap-8px px-20px h-40px min-w-0">
             @if (circuitBreakerOpen(endpoint)) {
-              <convoy-tooltip [withIcon]="false" position="top" [className]="statusTooltipClass">
+              <convoy-tooltip class="shrink-0" [withIcon]="false" position="top" [className]="statusTooltipClass">
                 <p>{{ cbStatusTooltip(endpoint) }}</p>
                 <p class="mt-6px text-new.text-secondary">{{ cbStatusTooltipDetail(endpoint) }}</p>
                 <span tooltipToggle class="inline-flex items-center h-20px px-4px rounded-4px font-body font-medium text-[12px] leading-[14px] text-new.text-primary" [class]="statusPillClass(endpoint)">{{ statusPillLabel(endpoint) }}</span>
               </convoy-tooltip>
             } @else if (endpoint.status) {
-              <convoy-tooltip [withIcon]="false" position="top" [className]="statusTooltipClass">
+              <convoy-tooltip class="shrink-0" [withIcon]="false" position="top" [className]="statusTooltipClass">
                 <p>{{ statusTooltip(endpoint) }}</p>
                 @if (statusTooltipDetail(endpoint)) {
                   <p class="mt-6px text-new.text-secondary">{{ statusTooltipDetail(endpoint) }}</p>
@@ -150,7 +152,7 @@
                 <span tooltipToggle class="inline-flex items-center h-20px px-4px rounded-4px font-body font-medium text-[12px] leading-[14px] text-new.text-primary" [class]="statusPillClass(endpoint)">{{ statusPillLabel(endpoint) }}</span>
               </convoy-tooltip>
             }
-            <span class="font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ endpoint.name || endpoint.title }}</span>
+            <span class="min-w-0 font-body font-medium text-[14px] leading-[16px] text-new.text-primary truncate">{{ endpoint.name || endpoint.title }}</span>
           </div>
 
           <!-- URL + copy -->
@@ -233,6 +235,8 @@
           </div>
         </div>
       }
+      </div>
+      </div>
 
       <!-- Pagination footer -->
       <div class="flex items-center justify-between px-20px h-56px bg-white-100">

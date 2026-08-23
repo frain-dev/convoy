@@ -1,6 +1,6 @@
-<div class="bg-white-100 min-h-screen overflow-y-auto flex flex-col justify-between">
+<div class="bg-white-100 min-h-screen overflow-y-auto overflow-x-hidden flex flex-col justify-between">
   <header class="w-full border-b border-new.border bg-white-100 fixed z-[50]">
-    <div class="flex items-center justify-between w-full max-w-[1449px] m-auto px-24px h-60px">
+    <div class="flex items-center justify-between w-full max-w-[1449px] m-auto px-24px mobile:px-12px h-60px min-w-0">
       <div class="flex items-center gap-16px">
         <a routerLink="/" rel="noreferrer">
           <img src="/assets/img/logo-v2.svg" alt="convoy logo" class="w-auto h-24px" />
@@ -10,7 +10,7 @@
           <div convoy-dropdown size="lg" position="center" className="!overflow-visible" #organisationDropdown>
             <button dropdownTrigger class="flex items-center gap-10px p-4px rounded-full transition-colors hover:bg-new.surface-muted">
               @if (userOrganization?.name) {
-                <span class="max-w-[160px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ userOrganization?.name }}</span>
+                <span class="max-w-[160px] mobile:max-w-[96px] truncate font-body font-medium text-[14px] leading-[16px] text-new.text-secondary">{{ userOrganization?.name }}</span>
               }
               <img src="/assets/img/svg/chevron-grabber.svg" class="w-16px h-16px" alt="" />
             </button>

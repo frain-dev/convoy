@@ -323,7 +323,16 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	searchParams = datastore.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
+		Query:          listSearchQuery(r),
 	}
 
 	return searchParams, nil
+}
+
+func listSearchQuery(r *http.Request) string {
+	q := strings.TrimSpace(r.URL.Query().Get("query"))
+	if q == "" {
+		q = strings.TrimSpace(r.URL.Query().Get("q"))
+	}
+	return q
 }

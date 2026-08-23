@@ -45,6 +45,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	loadingFilterEndpoints = false;
 	endpointSearchString = '';
 	private endpointSearchTimeout: any;
+	private tableSearchTimeout: any;
 	eventTypes: EVENT_TYPE[] = [];
 	sortOrder: 'asc' | 'desc' | string = 'desc';
 	searchString = '';
@@ -82,6 +83,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
 		clearTimeout(this.endpointSearchTimeout);
+		clearTimeout(this.tableSearchTimeout);
 	}
 
 	get isOutgoingProject(): boolean {
@@ -97,6 +99,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.statusFilter = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
 		this.statusDraft = [...this.statusFilter];
 		this.sortOrder = this.queryParams?.sort || 'desc';
+		this.searchString = this.queryParams.query || '';
 	}
 
 	formatPreciseTimestamp(value?: string): string {
@@ -150,16 +153,16 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	clearEndpointFilter() {
 		this.selectedEndpointData = undefined;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' });
 		delete this.queryParams.endpointId;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		this.refreshDeliveries();
 	}
 
 	setEventType(eventType?: string) {
 		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType });
 		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: '' });
 			delete this.queryParams.eventType;
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		}
 		this.refreshDeliveries();
 	}
@@ -175,9 +178,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	applyDateFilter(dateRange?: { startDate: string; endDate: string }) {
 		if (dateRange) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
 		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' });
 			delete this.queryParams.startDate;
 			delete this.queryParams.endDate;
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		}
 		this.refreshDeliveries();
 	}
@@ -200,19 +203,17 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		return keys.length > 0 || !!this.searchString.trim();
 	}
 
-	// ------- search (client-side over the loaded page) -------
-
 	onSearch() {
-		if (this.eventDeliveries?.content) this.displayedEventDeliveries = this.setEventDeliveriesContent(this.eventDeliveries.content);
-	}
-
-	private applySearch(eventDeliveriesData: EVENT_DELIVERY[]): EVENT_DELIVERY[] {
-		const searchTerm = this.searchString.trim().toLowerCase();
-		if (!searchTerm) return eventDeliveriesData;
-
-		return eventDeliveriesData.filter(delivery =>
-			[delivery.uid, delivery.event_metadata?.event_type, delivery.endpoint_metadata?.title, delivery.endpoint_metadata?.name, delivery.source_metadata?.name].some(value => value?.toLowerCase().includes(searchTerm))
-		);
+		clearTimeout(this.tableSearchTimeout);
+		this.tableSearchTimeout = setTimeout(() => {
+			const query = this.searchString.trim();
+			if (query) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query });
+			else {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' });
+				delete this.queryParams.query;
+			}
+			this.refreshDeliveries();
+		}, 300);
 	}
 
 	// ------- tail mode -------
@@ -280,7 +281,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	setEventDeliveriesContent(eventDeliveriesData: EVENT_DELIVERY[]): { date: string; content: EVENT_DELIVERY[] }[] {
-		return this.generalService.setContentDisplayed(this.applySearch(eventDeliveriesData) as any, this.queryParams?.sort || 'desc');
+		return this.generalService.setContentDisplayed(eventDeliveriesData as any, this.queryParams?.sort || 'desc');
 	}
 
 	async refreshTotalCount() {
