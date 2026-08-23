@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	partman "github.com/jirevwe/gopartman"
 
 	"github.com/frain-dev/convoy/database"
@@ -25,10 +27,11 @@ import (
 var RetentionTables = []string{"events", "events_search", "event_deliveries", "delivery_attempts"}
 
 const (
-	retentionSchema      = "convoy"
-	retentionTenantCol   = "project_id"
-	retentionPartitionBy = "created_at"
-	retentionPremake     = 10
+	retentionSchema            = "convoy"
+	retentionTenantCol         = "project_id"
+	retentionPartitionBy       = "created_at"
+	retentionPremake           = 10
+	retentionPartitionInterval = "daily"
 )
 
 // UnpartitionedTables returns the retention-managed tables that are not yet
@@ -271,6 +274,9 @@ func (r *PartitionRetentionPolicy) registerParents(ctx context.Context) {
 			r.logger.Error(fmt.Sprintf("failed to register convoy.%s with gopartman", table), "error", err)
 			continue
 		}
+		if err := r.reconcileParent(ctx, table); err != nil {
+			r.logger.Error(fmt.Sprintf("failed to reconcile convoy.%s parent config", table), "error", err)
+		}
 
 		ref := partman.ParentRef{SchemaName: retentionSchema, TableName: table}
 		report, err := r.manager.ImportExisting(ctx, ref)
@@ -280,6 +286,67 @@ func (r *PartitionRetentionPolicy) registerParents(ctx context.Context) {
 		}
 		r.logImportReport(table, report)
 	}
+}
+
+// storedParent reads the partman.parent_tables row Maintain and
+// dropAdoptedPartition both use for the retention window.
+func (r *PartitionRetentionPolicy) storedParent(ctx context.Context, table string) (partman.ParentInfo, error) {
+	parents, err := r.manager.ListParents(ctx)
+	if err != nil {
+		return partman.ParentInfo{}, err
+	}
+	for _, parent := range parents {
+		if parent.SchemaName == retentionSchema && parent.TableName == table {
+			return parent, nil
+		}
+	}
+	return partman.ParentInfo{}, fmt.Errorf("partman has no parent row for convoy.%s", table)
+}
+
+// reconcileParent writes the operator's current parentConfig onto an
+// already-registered partman.parent_tables row. RegisterParent is
+// insert-if-absent (ON CONFLICT DO NOTHING), so a config change plus a
+// restart otherwise leaves retention_period, premake, and
+// partition_interval on the first write. Maintain and dropAdoptedPartition
+// both read that stored window. Config wins on write.
+func (r *PartitionRetentionPolicy) reconcileParent(ctx context.Context, table string) error {
+	stored, err := r.storedParent(ctx, table)
+	if err != nil {
+		return err
+	}
+
+	desired := r.parentConfig(table)
+	if stored.RetentionPeriod == desired.RetentionPeriod &&
+		stored.Premake == desired.Premake &&
+		stored.PartitionInterval == retentionPartitionInterval {
+		return nil
+	}
+
+	_, err = r.db.GetConn().Exec(ctx, `
+        UPDATE partman.parent_tables
+        SET retention_period = $1,
+            premake = $2,
+            partition_interval = $3,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE schema_name = $4 AND table_name = $5`,
+		pgtype.Interval{Microseconds: desired.RetentionPeriod.Microseconds(), Valid: true},
+		desired.Premake,
+		retentionPartitionInterval,
+		retentionSchema,
+		table,
+	)
+	if err != nil {
+		return err
+	}
+
+	r.logger.Info(fmt.Sprintf(
+		"corrected convoy.%s parent config: retention_period %s -> %s, premake %d -> %d, partition_interval %s -> %s",
+		table,
+		stored.RetentionPeriod, desired.RetentionPeriod,
+		stored.Premake, desired.Premake,
+		stored.PartitionInterval, retentionPartitionInterval,
+	))
+	return nil
 }
 
 // logImportReport surfaces the outcome of ImportExisting. gopartman reports
@@ -342,7 +409,9 @@ func (r *PartitionRetentionPolicy) registerTenants(ctx context.Context) {
 // Parent registration is re-attempted on each tick so a transient boot-time
 // RegisterParent/ImportExisting failure does not leave Maintain with no
 // managed tables for the life of the process (ErrParentAlreadyExists is
-// treated as success). It does not start gopartman's internal ticker;
+// treated as success). Already-registered rows are then rewritten from
+// parentConfig so a later retention-period change is not stuck on the
+// first insert. It does not start gopartman's internal ticker;
 // Perform (the asynq nightly job) calls Maintain.
 func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 	go func(r *PartitionRetentionPolicy) {
@@ -409,7 +478,11 @@ func (r *PartitionRetentionPolicy) dropExpiredAdoptedPartitions(ctx context.Cont
 }
 
 // dropAdoptedPartition drops <table>_default when every row in it is older than
-// the retention period.
+// the stored retention period.
+//
+// The window is the partman.parent_tables row Maintain already reads, not
+// the in-process config. reconcileParent writes that row from config first.
+// A zero stored period means retention is off, same as Maintain.
 //
 // Two gates, both necessary. The partition must carry the bounds constraint the
 // attach conversion writes, which is what distinguishes an adopted table from
@@ -448,7 +521,15 @@ func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, tab
 	// An empty adopted partition is left alone. It still routes rows below the
 	// conversion's cutoff, and reclaiming nothing is not worth a destructive
 	// statement.
-	if newest == nil || newest.After(time.Now().Add(-r.retentionPeriod)) {
+	if newest == nil {
+		return false, nil
+	}
+
+	parent, err := r.storedParent(ctx, table)
+	if err != nil {
+		return false, err
+	}
+	if parent.RetentionPeriod <= 0 || newest.After(time.Now().Add(-parent.RetentionPeriod)) {
 		return false, nil
 	}
 
