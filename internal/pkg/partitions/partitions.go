@@ -294,8 +294,7 @@ func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy 
 
 	go func() {
 		detached := context.WithoutCancel(ctx)
-		err := s.rebuild(detached, run, d)
-		s.noteRebuildOutcome(detached, d.Name, err)
+		_ = s.rebuild(detached, run, d)
 		s.startQueuedDroppedIndexes(detached, d.Name)
 	}()
 
@@ -312,9 +311,7 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 	if err != nil {
 		return err
 	}
-	err = s.rebuild(ctx, run, d)
-	s.noteRebuildOutcome(ctx, indexName, err)
-	return err
+	return s.rebuild(ctx, run, d)
 }
 
 const bootTriggeredBy = "boot"
@@ -676,7 +673,12 @@ func (s *Service) convert(ctx context.Context, run *Run) error {
 // here as it is for a conversion.
 func (s *Service) rebuild(ctx context.Context, run *Run, d indexes.Dropped) error {
 	return s.execute(ctx, run, func(ctx context.Context) error {
-		return s.rebuilder.rebuild(ctx, d)
+		err := s.rebuilder.rebuild(ctx, d)
+		// Record the skip before finish writes Failed. Callers that wait on
+		// status then read the map must see the same outcome, and a boot
+		// walker that starts after Failed must not retry this name.
+		s.noteRebuildOutcome(ctx, d.Name, err)
+		return err
 	})
 }
 
