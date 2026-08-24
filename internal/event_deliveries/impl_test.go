@@ -947,11 +947,12 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 		require.True(t, pagination1.HasNextPage)
 
 		pageable.NextCursor = pagination1.NextPageCursor
-		page2, _, err := service.LoadEventDeliveriesPaged(
+		page2, pagination2, err := service.LoadEventDeliveriesPaged(
 			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
 		require.Len(t, page2, 5)
+		require.True(t, pagination2.HasPreviousPage)
 
 		// No overlap
 		page1IDs := make(map[string]bool)
@@ -988,15 +989,17 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
+		require.True(t, pagination2.HasPreviousPage)
 
 		// Go back
 		pageable.Direction = datastore.Prev
 		pageable.PrevCursor = pagination2.PrevPageCursor
-		pageBack, _, err := service.LoadEventDeliveriesPaged(
+		pageBack, paginationBack, err := service.LoadEventDeliveriesPaged(
 			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
 		require.Len(t, pageBack, 5)
+		require.False(t, paginationBack.HasPreviousPage)
 
 		for i := range page1 {
 			require.Equal(t, page1[i].UID, pageBack[i].UID)
@@ -1165,11 +1168,12 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 		require.True(t, pagination1.HasNextPage)
 
 		pageable.NextCursor = pagination1.NextPageCursor
-		page2, _, err := service.LoadEventDeliveriesPaged(
+		page2, pagination2, err := service.LoadEventDeliveriesPaged(
 			ctx, project.UID, nil, "", "", []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
 		require.Len(t, page2, 1)
+		require.True(t, pagination2.HasPreviousPage)
 		require.Equal(t, successIDs[1], page2[0].UID)
 		require.Equal(t, datastore.SuccessEventStatus, page2[0].Status)
 	})
@@ -2385,4 +2389,58 @@ func TestPartitionEventDeliveriesTableNamesForRetention(t *testing.T) {
 
 	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
 	testenv.RequirePartitionsAddressableByRetention(t, db, "event_deliveries", project.UID)
+}
+
+func TestObservedEventTypes(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	other := seedTestProject(t, db)
+	ep1 := seedTestEndpoint(t, db, project.UID)
+	ep2 := seedTestEndpoint(t, db, project.UID)
+	otherEp := seedTestEndpoint(t, db, other.UID)
+	src := seedTestSource(t, db, project.UID)
+	otherSrc := seedTestSource(t, db, other.UID)
+	sub1 := seedSubscription(t, db, project.UID, ep1.UID, src.UID)
+	sub2 := seedSubscription(t, db, project.UID, ep2.UID, src.UID)
+	otherSub := seedSubscription(t, db, other.UID, otherEp.UID, otherSrc.UID)
+	event := seedEvent(t, db, project.UID, ep1.UID, src.UID)
+	otherEvent := seedEvent(t, db, other.UID, otherEp.UID, otherSrc.UID)
+
+	createTyped := func(projectID, eventID, endpointID, subID, eventType string) *datastore.EventDelivery {
+		t.Helper()
+		d := createTestEventDelivery(t, projectID, eventID, endpointID, subID)
+		d.EventType = datastore.EventType(eventType)
+		require.NoError(t, service.CreateEventDelivery(ctx, d))
+		return d
+	}
+
+	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "invoice.paid")
+	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "invoice.paid")
+	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "*")
+	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "")
+	createTyped(project.UID, event.UID, ep2.UID, sub2.UID, "order.created")
+	old := createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "old.event")
+	createTyped(other.UID, otherEvent.UID, otherEp.UID, otherSub.UID, "webhook.received")
+
+	_, err := db.GetConn().Exec(ctx,
+		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
+		time.Now().Add(-48*time.Hour), old.UID)
+	require.NoError(t, err)
+
+	names, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"invoice.paid", "order.created"}, names)
+
+	scoped, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), []string{ep1.UID})
+	require.NoError(t, err)
+	require.Equal(t, []string{"invoice.paid"}, scoped)
+
+	catalog, observed := GroupFilterEventTypes([]datastore.ProjectEventType{
+		{Name: "invoice.paid"},
+		{Name: "*"},
+	}, names)
+	require.Equal(t, []string{"invoice.paid"}, catalog)
+	require.Equal(t, []string{"order.created"}, observed)
 }

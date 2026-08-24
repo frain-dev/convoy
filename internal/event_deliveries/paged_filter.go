@@ -106,17 +106,47 @@ func (f listFilter) appendWhere(b *strings.Builder, args []any) []any {
 	return args
 }
 
+func (f listFilter) orderBy(desc bool) string {
+	if desc {
+		return `ed.created_at DESC, ed.id DESC`
+	}
+	return `ed.created_at ASC, ed.id ASC`
+}
+
 func (f listFilter) pageSQL(limit int, desc bool) (string, []any) {
+	if len(f.Statuses) > 0 {
+		return f.pageSQLPerStatus(limit, f.orderBy(desc))
+	}
 	var b strings.Builder
 	b.WriteString(`SELECT ed.id `)
 	args := f.appendWhere(&b, nil)
-	if desc {
-		b.WriteString(` ORDER BY ed.created_at DESC, ed.id DESC`)
-	} else {
-		b.WriteString(` ORDER BY ed.created_at ASC, ed.id ASC`)
-	}
 	args = append(args, limit)
-	fmt.Fprintf(&b, ` LIMIT $%d`, len(args))
+	fmt.Fprintf(&b, ` ORDER BY %s LIMIT $%d`, f.orderBy(desc), len(args))
+	return b.String(), args
+}
+
+// pageSQLPerStatus probes each requested status on
+// idx_event_deliveries_usage. A generic prepared plan for
+// `status = ANY($1)` plus a (created_at, id) keyset walks
+// idx_event_deliveries_project_created_id_deleted and filters
+// Success rows until LIMIT fills, which 504s the 5s list budget.
+func (f listFilter) pageSQLPerStatus(limit int, order string) (string, []any) {
+	statuses := f.Statuses
+	f.Statuses = nil
+
+	var inner strings.Builder
+	inner.WriteString(`SELECT ed.id, ed.created_at `)
+	args := []any{statuses}
+	args = f.appendWhere(&inner, args)
+	inner.WriteString(` AND ed.status = s.status`)
+	args = append(args, limit)
+	limitN := len(args)
+	fmt.Fprintf(&inner, ` ORDER BY %s LIMIT $%d`, order, limitN)
+
+	var b strings.Builder
+	b.WriteString(`SELECT ed.id FROM unnest($1::text[]) AS s(status) JOIN LATERAL (`)
+	b.WriteString(inner.String())
+	fmt.Fprintf(&b, `) ed ON true ORDER BY %s LIMIT $%d`, order, limitN)
 	return b.String(), args
 }
 
@@ -125,6 +155,11 @@ func (f listFilter) countSQL() (string, []any) {
 	b.WriteString(`SELECT COUNT(*) `)
 	args := f.appendWhere(&b, nil)
 	return b.String(), args
+}
+
+func (f listFilter) existsSQL() (string, []any) {
+	inner, args := f.pageSQL(1, true)
+	return `SELECT EXISTS (` + inner + `)`, args
 }
 
 func escapeLike(q string) string {
@@ -245,4 +280,13 @@ func (s *Service) queryDeliveryCount(ctx context.Context, f listFilter) (int64, 
 		return 0, err
 	}
 	return n, nil
+}
+
+func (s *Service) queryDeliveryExists(ctx context.Context, f listFilter) (bool, error) {
+	sql, args := f.existsSQL()
+	var ok bool
+	if err := s.db.QueryRow(ctx, sql, args...).Scan(&ok); err != nil {
+		return false, err
+	}
+	return ok, nil
 }

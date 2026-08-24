@@ -477,11 +477,11 @@ func (s *Service) countPrevDeliveries(ctx context.Context, f listFilter, first d
 	} else {
 		f.KeysetOp = ">"
 	}
-	n, err := s.queryDeliveryCount(ctx, f)
+	ok, err := s.queryDeliveryExists(ctx, f)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	return datastore.PrevRowCount{Count: int(n)}, nil
+	return datastore.PrevRowCount{Exists: ok}, nil
 }
 
 func reverseStrings(ids []string) {

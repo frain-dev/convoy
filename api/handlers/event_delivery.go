@@ -14,6 +14,7 @@ import (
 	batch_retries "github.com/frain-dev/convoy/internal/batch_retries"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
+	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
@@ -471,6 +472,77 @@ func (h *Handler) EventDeliveryStatusTotals(w http.ResponseWriter, r *http.Reque
 
 	_ = render.Render(w, r, util.NewServerResponse("event delivery status totals fetched successfully",
 		models.DeliveryStatusTotalsResponse{Totals: out, Source: string(source)}, http.StatusOK))
+}
+
+// EventDeliveryFilterEventTypes serves the Event Deliveries type dropdown.
+// Catalog comes from the declared project catalog. Observed comes from live
+// deliveries in the date window. A name that is both stays in catalog only.
+//
+// Failure policy: observed is fail-closed (504/500). Catalog is fail-open so
+// a catalog read error still returns traffic types. Empty portal scope is
+// empty lists, not project-wide observed types.
+func (h *Handler) EventDeliveryFilterEventTypes(w http.ResponseWriter, r *http.Request) {
+	var q *models.QueryListEventDelivery
+
+	data, err := q.Transform(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	endpointIDs := data.Filter.EndpointIDs
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, innerErr := h.retrievePortalLinkFromToken(r)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		endpointIDs, innerErr = h.portalScopedEndpointIDs(r, portalLink, endpointIDs)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("event delivery filter event types fetched successfully",
+				models.DeliveryFilterEventTypesResponse{Catalog: []string{}, Observed: []string{}}, http.StatusOK))
+			return
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
+	defer cancel()
+
+	observed, err := event_deliveries.New(h.A.Logger, h.A.DB).
+		ObservedEventTypes(ctx, project.UID, data.Filter.SearchParams, endpointIDs)
+	if err != nil {
+		if renderEventDeliveriesTimeout(w, r, err) {
+			return
+		}
+		h.A.Logger.ErrorContext(r.Context(), "an error occurred while fetching observed event types", "error", err)
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	var catalog []datastore.ProjectEventType
+	fetched, catalogErr := event_types.New(h.A.Logger, h.A.DB).FetchAllEventTypes(ctx, project.UID)
+	if catalogErr != nil {
+		h.A.Logger.ErrorContext(r.Context(), "filter event types catalog fetch failed; returning observed only", "error", catalogErr)
+	} else {
+		catalog = fetched
+	}
+
+	catalogOut, observedOut := event_deliveries.GroupFilterEventTypes(catalog, observed)
+	_ = render.Render(w, r, util.NewServerResponse("event delivery filter event types fetched successfully",
+		models.DeliveryFilterEventTypesResponse{Catalog: catalogOut, Observed: observedOut}, http.StatusOK))
 }
 
 const eventDeliveriesTimeoutMsg = "Event deliveries took too long. Narrow the date range."
