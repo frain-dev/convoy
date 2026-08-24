@@ -240,6 +240,10 @@ func seedSubscription(t *testing.T, db database.Database, projectID, endpointID,
 }
 
 func seedEvent(t *testing.T, db database.Database, projectID, endpointID, sourceID string) *datastore.Event {
+	return seedEventNamed(t, db, projectID, endpointID, sourceID, "test.event")
+}
+
+func seedEventNamed(t *testing.T, db database.Database, projectID, endpointID, sourceID, eventType string) *datastore.Event {
 	t.Helper()
 
 	logger := log.New("convoy", log.LevelInfo)
@@ -250,7 +254,7 @@ func seedEvent(t *testing.T, db database.Database, projectID, endpointID, source
 	now := time.Now()
 	event := &datastore.Event{
 		UID:            eventID,
-		EventType:      datastore.EventType("test.event"),
+		EventType:      datastore.EventType(eventType),
 		ProjectID:      projectID,
 		SourceID:       sourceID,
 		Endpoints:      []string{endpointID},
@@ -2405,24 +2409,26 @@ func TestObservedEventTypes(t *testing.T) {
 	sub1 := seedSubscription(t, db, project.UID, ep1.UID, src.UID)
 	sub2 := seedSubscription(t, db, project.UID, ep2.UID, src.UID)
 	otherSub := seedSubscription(t, db, other.UID, otherEp.UID, otherSrc.UID)
-	event := seedEvent(t, db, project.UID, ep1.UID, src.UID)
-	otherEvent := seedEvent(t, db, other.UID, otherEp.UID, otherSrc.UID)
+	eventPaid := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "invoice.paid")
+	eventOrder := seedEventNamed(t, db, project.UID, ep2.UID, src.UID, "order.created")
+	eventStar := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "*")
+	eventOld := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "old.event")
+	otherEvent := seedEventNamed(t, db, other.UID, otherEp.UID, otherSrc.UID, "webhook.received")
 
-	createTyped := func(projectID, eventID, endpointID, subID, eventType string) *datastore.EventDelivery {
+	createFor := func(projectID, eventID, endpointID, subID string) *datastore.EventDelivery {
 		t.Helper()
 		d := createTestEventDelivery(t, projectID, eventID, endpointID, subID)
-		d.EventType = datastore.EventType(eventType)
+		d.EventType = ""
 		require.NoError(t, service.CreateEventDelivery(ctx, d))
 		return d
 	}
 
-	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "invoice.paid")
-	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "invoice.paid")
-	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "*")
-	createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "")
-	createTyped(project.UID, event.UID, ep2.UID, sub2.UID, "order.created")
-	old := createTyped(project.UID, event.UID, ep1.UID, sub1.UID, "old.event")
-	createTyped(other.UID, otherEvent.UID, otherEp.UID, otherSub.UID, "webhook.received")
+	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID)
+	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID)
+	createFor(project.UID, eventStar.UID, ep1.UID, sub1.UID)
+	createFor(project.UID, eventOrder.UID, ep2.UID, sub2.UID)
+	old := createFor(project.UID, eventOld.UID, ep1.UID, sub1.UID)
+	createFor(other.UID, otherEvent.UID, otherEp.UID, otherSub.UID)
 
 	_, err := db.GetConn().Exec(ctx,
 		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
@@ -2443,4 +2449,48 @@ func TestObservedEventTypes(t *testing.T) {
 	}, names)
 	require.Equal(t, []string{"invoice.paid"}, catalog)
 	require.Equal(t, []string{"order.created"}, observed)
+}
+
+func TestObservedEventTypesReadsEventMetadataWhenDeliveryTypeBlank(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	ep := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, ep.UID, src.UID)
+	event := seedEventNamed(t, db, project.UID, ep.UID, src.UID, "bench.event")
+
+	d := createTestEventDelivery(t, project.UID, event.UID, ep.UID, sub.UID)
+	d.EventType = ""
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+	listed, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	require.NotNil(t, listed[0].Event)
+	require.Equal(t, "bench.event", string(listed[0].Event.EventType))
+	require.Empty(t, string(listed[0].EventType))
+
+	observed, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"bench.event"}, observed)
+
+	observedAgain, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, observed, observedAgain)
+
+	filtered, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "bench.event", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	require.Equal(t, d.UID, filtered[0].UID)
+
+	catalog, grouped := GroupFilterEventTypes(nil, observed)
+	require.Empty(t, catalog)
+	require.Equal(t, []string{"bench.event"}, grouped)
 }
