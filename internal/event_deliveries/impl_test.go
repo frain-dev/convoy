@@ -2437,7 +2437,10 @@ func TestObservedEventTypes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"invoice.paid"}, scoped)
 
-	catalog, observed := GroupFilterEventTypes([]string{"invoice.paid", "*"}, names)
+	catalog, observed := GroupFilterEventTypes([]datastore.ProjectEventType{
+		{Name: "invoice.paid"},
+		{Name: "*"},
+	}, names)
 	require.Equal(t, []string{"invoice.paid"}, catalog)
 	require.Equal(t, []string{"order.created"}, observed)
 }

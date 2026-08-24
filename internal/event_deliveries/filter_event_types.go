@@ -18,11 +18,25 @@ const FilterEventTypeLimit = 200
 // filter. Wildcard "*", empty names, and deprecated types are omitted. Catalog
 // rows themselves are unchanged: ingest does not write them.
 func CatalogFilterNames(types []datastore.ProjectEventType) []string {
+	return collectDeclaredNames(types, true)
+}
+
+// declaredFilterNames returns every declared name, including deprecated.
+// Observed uses this as the exclusion set so a deprecated catalog type with
+// traffic does not reappear as traffic-only.
+func declaredFilterNames(types []datastore.ProjectEventType) []string {
+	return collectDeclaredNames(types, false)
+}
+
+func collectDeclaredNames(types []datastore.ProjectEventType, dropDeprecated bool) []string {
 	seen := make(map[string]struct{}, len(types))
 	out := make([]string, 0, len(types))
 	for _, et := range types {
 		name := strings.TrimSpace(et.Name)
-		if name == "" || name == "*" || et.DeprecatedAt.Valid {
+		if name == "" || name == "*" {
+			continue
+		}
+		if dropDeprecated && et.DeprecatedAt.Valid {
 			continue
 		}
 		if _, ok := seen[name]; ok {
@@ -36,13 +50,15 @@ func CatalogFilterNames(types []datastore.ProjectEventType) []string {
 }
 
 // GroupFilterEventTypes splits names for the grouped dropdown. Catalog keeps
-// declared names. Observed keeps traffic-only names so a type that is both
-// declared and seen is not listed twice. Both slices are sorted and never nil.
-func GroupFilterEventTypes(catalog, observed []string) (catalogOut, observedOut []string) {
-	catalogOut = uniqueSortedNames(catalog)
-	inCatalog := make(map[string]struct{}, len(catalogOut))
-	for _, name := range catalogOut {
-		inCatalog[name] = struct{}{}
+// non-deprecated declared names. Observed keeps traffic-only names that are
+// not already declared, including names declared but deprecated. Both slices
+// are sorted and never nil.
+func GroupFilterEventTypes(types []datastore.ProjectEventType, observed []string) (catalogOut, observedOut []string) {
+	catalogOut = CatalogFilterNames(types)
+	declared := declaredFilterNames(types)
+	inDeclared := make(map[string]struct{}, len(declared))
+	for _, name := range declared {
+		inDeclared[name] = struct{}{}
 	}
 
 	observedOut = make([]string, 0, len(observed))
@@ -52,7 +68,7 @@ func GroupFilterEventTypes(catalog, observed []string) (catalogOut, observedOut 
 		if name == "" || name == "*" {
 			continue
 		}
-		if _, ok := inCatalog[name]; ok {
+		if _, ok := inDeclared[name]; ok {
 			continue
 		}
 		if _, ok := seen[name]; ok {
@@ -63,24 +79,6 @@ func GroupFilterEventTypes(catalog, observed []string) (catalogOut, observedOut 
 	}
 	sort.Strings(observedOut)
 	return catalogOut, observedOut
-}
-
-func uniqueSortedNames(names []string) []string {
-	seen := make(map[string]struct{}, len(names))
-	out := make([]string, 0, len(names))
-	for _, raw := range names {
-		name := strings.TrimSpace(raw)
-		if name == "" || name == "*" {
-			continue
-		}
-		if _, ok := seen[name]; ok {
-			continue
-		}
-		seen[name] = struct{}{}
-		out = append(out, name)
-	}
-	sort.Strings(out)
-	return out
 }
 
 func observedEventTypesSQL(projectID string, start, end time.Time, endpointIDs []string) (string, []any) {

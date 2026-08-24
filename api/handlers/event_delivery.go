@@ -532,15 +532,15 @@ func (h *Handler) EventDeliveryFilterEventTypes(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	catalogNames := []string{}
-	catalog, catalogErr := event_types.New(h.A.Logger, h.A.DB).FetchAllEventTypes(ctx, project.UID)
+	var catalog []datastore.ProjectEventType
+	fetched, catalogErr := event_types.New(h.A.Logger, h.A.DB).FetchAllEventTypes(ctx, project.UID)
 	if catalogErr != nil {
 		h.A.Logger.ErrorContext(r.Context(), "filter event types catalog fetch failed; returning observed only", "error", catalogErr)
 	} else {
-		catalogNames = event_deliveries.CatalogFilterNames(catalog)
+		catalog = fetched
 	}
 
-	catalogOut, observedOut := event_deliveries.GroupFilterEventTypes(catalogNames, observed)
+	catalogOut, observedOut := event_deliveries.GroupFilterEventTypes(catalog, observed)
 	_ = render.Render(w, r, util.NewServerResponse("event delivery filter event types fetched successfully",
 		models.DeliveryFilterEventTypesResponse{Catalog: catalogOut, Observed: observedOut}, http.StatusOK))
 }

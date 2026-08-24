@@ -25,10 +25,27 @@ func TestCatalogFilterNamesOmitsWildcardDeprecatedAndEmpty(t *testing.T) {
 
 func TestGroupFilterEventTypesPutsOverlapInCatalogOnly(t *testing.T) {
 	catalog, observed := GroupFilterEventTypes(
-		[]string{"invoice.paid", "*", "order.created", " invoice.paid "},
+		[]datastore.ProjectEventType{
+			{Name: "invoice.paid"},
+			{Name: "*"},
+			{Name: "order.created"},
+			{Name: " invoice.paid "},
+		},
 		[]string{"invoice.paid", "canary.heartbeat", "*", "", "canary.heartbeat"},
 	)
 	require.Equal(t, []string{"invoice.paid", "order.created"}, catalog)
+	require.Equal(t, []string{"canary.heartbeat"}, observed)
+}
+
+func TestGroupFilterEventTypesKeepsDeprecatedOutOfObserved(t *testing.T) {
+	catalog, observed := GroupFilterEventTypes(
+		[]datastore.ProjectEventType{
+			{Name: "invoice.paid"},
+			{Name: "legacy.event", DeprecatedAt: null.TimeFrom(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))},
+		},
+		[]string{"legacy.event", "canary.heartbeat"},
+	)
+	require.Equal(t, []string{"invoice.paid"}, catalog)
 	require.Equal(t, []string{"canary.heartbeat"}, observed)
 }
 
