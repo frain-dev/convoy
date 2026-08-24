@@ -35,9 +35,12 @@ func TestListFilterEmitsRealStatusAndKeyset(t *testing.T) {
 
 	sql, args := f.pageSQL(21, true)
 	require.NotContains(t, sql, "CASE")
-	require.Contains(t, sql, "ed.status = ANY($")
+	require.Contains(t, sql, "unnest($1::text[])")
+	require.Contains(t, sql, "JOIN LATERAL")
+	require.Contains(t, sql, "ed.status = s.status")
+	require.NotContains(t, sql, "ed.status = ANY($")
 	require.Contains(t, sql, "(ed.created_at, ed.id) <= ($")
-	require.Equal(t, []string{"Retry"}, args[3])
+	require.Equal(t, []string{"Retry"}, args[0])
 	require.Equal(t, "del_1", args[5])
 }
 
@@ -69,6 +72,23 @@ func TestListFilterCountUsesSameWhere(t *testing.T) {
 	require.Contains(t, sql, "ed.status = ANY($")
 	require.NotContains(t, sql, "LIMIT")
 	require.Equal(t, []string{"Success"}, args[3])
+}
+
+func TestListFilterExistsUsesPerStatusPage(t *testing.T) {
+	f := testListFilter()
+	f.Statuses = []string{"Failure", "Retry"}
+	f.HasKeyset = true
+	f.KeysetAt = time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
+	f.KeysetID = "del_1"
+	f.KeysetOp = ">"
+
+	sql, args := f.existsSQL()
+	require.Contains(t, strings.ToUpper(sql), "SELECT EXISTS")
+	require.Contains(t, sql, "unnest($1::text[])")
+	require.Contains(t, sql, "JOIN LATERAL")
+	require.NotContains(t, sql, "COUNT(*)")
+	require.Equal(t, []string{"Failure", "Retry"}, args[0])
+	require.Equal(t, 1, args[len(args)-1])
 }
 
 func TestLooksLikeID(t *testing.T) {

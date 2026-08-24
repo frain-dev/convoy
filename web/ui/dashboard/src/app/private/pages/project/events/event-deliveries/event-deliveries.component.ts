@@ -2,7 +2,7 @@ import { Component, ElementRef, EventEmitter, Input, OnInit, OnDestroy, Output, 
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { format } from 'date-fns';
-import { EVENT_DELIVERY, EVENT_TYPE, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
+import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -46,7 +46,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	endpointSearchString = '';
 	private endpointSearchTimeout: any;
 	private tableSearchTimeout: any;
-	eventTypes: EVENT_TYPE[] = [];
+	catalogEventTypes: string[] = [];
+	observedEventTypes: string[] = [];
+	private eventTypesFetchId = 0;
 	sortOrder: 'asc' | 'desc' | string = 'desc';
 	searchString = '';
 	enableTailMode = false;
@@ -149,6 +151,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	updateEndpointFilter(endpoint: ENDPOINT) {
 		this.selectedEndpointData = endpoint;
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: endpoint.uid });
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
@@ -156,6 +159,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.selectedEndpointData = undefined;
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' });
 		delete this.queryParams.endpointId;
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
@@ -183,6 +187,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			delete this.queryParams.startDate;
 			delete this.queryParams.endDate;
 		}
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
@@ -196,6 +201,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		const sort = this.queryParams?.sort;
 		this.queryParams = sort ? { sort } : {};
 		this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
@@ -306,12 +312,15 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	async getEventTypesForFilter() {
 		if (!this.isOutgoingProject) return;
-		try {
-			const response = await this.privateService.getEventTypes();
-			// Older backends return { event_types: [...] }, newer ones return the array directly.
-			const types: EVENT_TYPE[] = Array.isArray(response.data) ? response.data : response.data?.event_types || [];
-			this.eventTypes = types.filter(type => !type.deprecated_at);
-		} catch (error) {}
+		const fetchId = ++this.eventTypesFetchId;
+		const types = await this.eventsService.getFilterEventTypes({
+			startDate: this.queryParams.startDate,
+			endDate: this.queryParams.endDate,
+			endpointId: this.queryParams.endpointId
+		});
+		if (fetchId !== this.eventTypesFetchId || !types) return;
+		this.catalogEventTypes = types.catalog;
+		this.observedEventTypes = types.observed;
 	}
 
 	async getSelectedEndpointData() {

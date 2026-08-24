@@ -239,6 +239,15 @@ type DeliveryStatusTotalsResponse struct {
 	Source string           `json:"source"`
 }
 
+// DeliveryFilterEventTypesResponse is the Event Deliveries type dropdown.
+// Catalog is declared names (minus "*", deprecated). Observed is distinct
+// event_deliveries.event_type values in the date window that are not already
+// in Catalog. Ingest does not write catalog rows.
+type DeliveryFilterEventTypesResponse struct {
+	Catalog  []string `json:"catalog"`
+	Observed []string `json:"observed"`
+}
+
 func (qc *QueryCountAffectedEvents) Transform(r *http.Request) (*QueryCountAffectedEventsResponse, error) {
 	searchParams, err := getSearchParams(r)
 	if err != nil {

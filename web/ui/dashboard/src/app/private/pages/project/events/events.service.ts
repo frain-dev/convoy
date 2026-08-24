@@ -157,6 +157,29 @@ export class EventsService {
 		}
 	}
 
+	// Grouped Event Deliveries type filter. Catalog is declared names;
+	// observed is traffic in the date window that is not already in catalog.
+	// hideNotification, and null on transport/timeout so a failed read leaves
+	// the previous dropdown in place.
+	async getFilterEventTypes(requestDetails: { startDate?: string; endDate?: string; endpointId?: string }): Promise<{ catalog: string[]; observed: string[] } | null> {
+		try {
+			const response = await this.http.request({
+				url: `/eventdeliveries/eventtypes`,
+				method: 'get',
+				level: 'org_project',
+				query: requestDetails,
+				hideNotification: true
+			});
+
+			return {
+				catalog: Array.isArray(response?.data?.catalog) ? response.data.catalog : [],
+				observed: Array.isArray(response?.data?.observed) ? response.data.observed : []
+			};
+		} catch (error) {
+			return null;
+		}
+	}
+
 	// Success/failure totals for the summary cards. Shared by the project and
 	// portal delivery screens. A missing status on a successful response is 0;
 	// a failed request is null so the caller shows a dash.
