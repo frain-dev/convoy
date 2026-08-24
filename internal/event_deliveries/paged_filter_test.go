@@ -68,11 +68,11 @@ func TestListFilterSearchIsExactIDOrTypeOrEndpoint(t *testing.T) {
 
 func TestListFilterEventTypeUsesDisplayExpr(t *testing.T) {
 	f := testListFilter()
-	f.EventType = "pde996.bench"
+	f.EventType = "bench.event"
 	sql, args := f.pageSQL(21, true)
 	require.Contains(t, sql, "EXISTS (SELECT 1 FROM convoy.events ev")
 	require.Contains(t, sql, "ev.event_type = $")
-	require.Equal(t, "pde996.bench", args[3])
+	require.Equal(t, "bench.event", args[3])
 }
 
 func TestListFilterCountUsesSameWhere(t *testing.T) {

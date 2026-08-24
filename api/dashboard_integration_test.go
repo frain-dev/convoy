@@ -2057,12 +2057,12 @@ func (s *EventIntegrationTestSuite) Test_EventDeliveryFilterEventTypes_ObservedF
 	})
 	require.NoError(s.T(), err)
 
-	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "pde996.bench", "", []byte(`{}`))
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "bench.event", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
 	delivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.ScheduledEventStatus, subscription)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), datastore.EventType("pde996.bench"), delivery.EventType)
+	require.Equal(s.T(), datastore.EventType("bench.event"), delivery.EventType)
 
 	start := time.Now().UTC().Add(-time.Hour).Format("2006-01-02T15:04:05")
 	end := time.Now().UTC().Add(time.Hour).Format("2006-01-02T15:04:05")
@@ -2079,7 +2079,7 @@ func (s *EventIntegrationTestSuite) Test_EventDeliveryFilterEventTypes_ObservedF
 	require.Len(s.T(), listed, 1)
 	require.Equal(s.T(), delivery.UID, listed[0].UID)
 	require.NotNil(s.T(), listed[0].Event)
-	require.Equal(s.T(), datastore.EventType("pde996.bench"), listed[0].Event.EventType)
+	require.Equal(s.T(), datastore.EventType("bench.event"), listed[0].Event.EventType)
 
 	typesURL := fmt.Sprintf("%s/eventtypes?startDate=%s&endDate=%s", base, start, end)
 	getTypes := func() models.DeliveryFilterEventTypesResponse {
@@ -2094,14 +2094,14 @@ func (s *EventIntegrationTestSuite) Test_EventDeliveryFilterEventTypes_ObservedF
 	}
 
 	first := getTypes()
-	require.Contains(s.T(), first.Observed, "pde996.bench")
-	require.NotContains(s.T(), first.Catalog, "pde996.bench")
+	require.Contains(s.T(), first.Observed, "bench.event")
+	require.NotContains(s.T(), first.Catalog, "bench.event")
 
 	second := getTypes()
 	require.Equal(s.T(), first.Observed, second.Observed)
 	require.Equal(s.T(), first.Catalog, second.Catalog)
 
-	filterReq := createRequest(http.MethodGet, fmt.Sprintf("%s?startDate=%s&endDate=%s&eventType=%s", base, start, end, "pde996.bench"), "", nil)
+	filterReq := createRequest(http.MethodGet, fmt.Sprintf("%s?startDate=%s&endDate=%s&eventType=%s", base, start, end, "bench.event"), "", nil)
 	require.NoError(s.T(), s.AuthenticatorFn(filterReq, s.Router))
 	filterW := httptest.NewRecorder()
 	s.Router.ServeHTTP(filterW, filterReq)
