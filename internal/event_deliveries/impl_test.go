@@ -2415,20 +2415,20 @@ func TestObservedEventTypes(t *testing.T) {
 	eventOld := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "old.event")
 	otherEvent := seedEventNamed(t, db, other.UID, otherEp.UID, otherSrc.UID, "webhook.received")
 
-	createFor := func(projectID, eventID, endpointID, subID string) *datastore.EventDelivery {
+	createFor := func(projectID, eventID, endpointID, subID string, eventType datastore.EventType) *datastore.EventDelivery {
 		t.Helper()
 		d := createTestEventDelivery(t, projectID, eventID, endpointID, subID)
-		d.EventType = ""
+		d.EventType = eventType
 		require.NoError(t, service.CreateEventDelivery(ctx, d))
 		return d
 	}
 
-	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID)
-	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID)
-	createFor(project.UID, eventStar.UID, ep1.UID, sub1.UID)
-	createFor(project.UID, eventOrder.UID, ep2.UID, sub2.UID)
-	old := createFor(project.UID, eventOld.UID, ep1.UID, sub1.UID)
-	createFor(other.UID, otherEvent.UID, otherEp.UID, otherSub.UID)
+	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID, eventPaid.EventType)
+	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID, eventPaid.EventType)
+	createFor(project.UID, eventStar.UID, ep1.UID, sub1.UID, eventStar.EventType)
+	createFor(project.UID, eventOrder.UID, ep2.UID, sub2.UID, eventOrder.EventType)
+	old := createFor(project.UID, eventOld.UID, ep1.UID, sub1.UID, eventOld.EventType)
+	createFor(other.UID, otherEvent.UID, otherEp.UID, otherSub.UID, otherEvent.EventType)
 
 	_, err := db.GetConn().Exec(ctx,
 		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
@@ -2451,7 +2451,49 @@ func TestObservedEventTypes(t *testing.T) {
 	require.Equal(t, []string{"order.created"}, observed)
 }
 
-func TestObservedEventTypesReadsEventMetadataWhenDeliveryTypeBlank(t *testing.T) {
+func TestObservedEventTypesReadsDeliveryEventType(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	ep := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, ep.UID, src.UID)
+	event := seedEventNamed(t, db, project.UID, ep.UID, src.UID, "bench.event")
+
+	d := createTestEventDelivery(t, project.UID, event.UID, ep.UID, sub.UID)
+	d.EventType = event.EventType
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+	listed, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	require.Equal(t, "bench.event", string(listed[0].EventType))
+
+	observed, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"bench.event"}, observed)
+
+	observedAgain, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, observed, observedAgain)
+
+	filtered, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "bench.event", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	require.Equal(t, d.UID, filtered[0].UID)
+
+	catalog, grouped := GroupFilterEventTypes(nil, observed)
+	require.Empty(t, catalog)
+	require.Equal(t, []string{"bench.event"}, grouped)
+}
+
+func TestObservedEventTypesSkipsBlankDeliveryType(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
 
@@ -2477,11 +2519,7 @@ func TestObservedEventTypesReadsEventMetadataWhenDeliveryTypeBlank(t *testing.T)
 
 	observed, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
 	require.NoError(t, err)
-	require.Equal(t, []string{"bench.event"}, observed)
-
-	observedAgain, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
-	require.NoError(t, err)
-	require.Equal(t, observed, observedAgain)
+	require.Empty(t, observed)
 
 	filtered, _, err := service.LoadEventDeliveriesPaged(
 		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "bench.event", "",
@@ -2489,8 +2527,4 @@ func TestObservedEventTypesReadsEventMetadataWhenDeliveryTypeBlank(t *testing.T)
 	require.NoError(t, err)
 	require.Len(t, filtered, 1)
 	require.Equal(t, d.UID, filtered[0].UID)
-
-	catalog, grouped := GroupFilterEventTypes(nil, observed)
-	require.Empty(t, catalog)
-	require.Equal(t, []string{"bench.event"}, grouped)
 }

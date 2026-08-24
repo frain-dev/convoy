@@ -1,6 +1,7 @@
 package event_deliveries
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -61,8 +62,10 @@ func TestObservedEventTypesSQLOmitsEndpointPredicateWhenUnscoped(t *testing.T) {
 	sql, args := observedEventTypesSQL("proj_1", time.Unix(1, 0), time.Unix(2, 0), nil)
 	require.NotContains(t, sql, "CASE")
 	require.NotContains(t, sql, "endpoint_id")
-	require.Contains(t, sql, "INNER JOIN convoy.events ev")
-	require.Contains(t, sql, "SELECT DISTINCT ev.event_type")
+	require.NotContains(t, sql, "INNER JOIN convoy.events")
+	require.NotContains(t, sql, "SELECT DISTINCT")
+	require.Contains(t, sql, "WITH RECURSIVE types AS")
+	require.Contains(t, sql, "ed.event_type > types.event_type")
 	require.Contains(t, sql, "LIMIT 200")
 	require.Equal(t, []any{"proj_1", time.Unix(1, 0), time.Unix(2, 0)}, args)
 }
@@ -72,4 +75,5 @@ func TestObservedEventTypesSQLUsesRealEndpointAny(t *testing.T) {
 	require.NotContains(t, sql, "CASE")
 	require.Contains(t, sql, "ed.endpoint_id = ANY($4::TEXT[])")
 	require.Equal(t, []string{"ep_1"}, args[3])
+	require.Equal(t, 2, strings.Count(sql, "ed.endpoint_id = ANY($4::TEXT[])"))
 }

@@ -430,13 +430,15 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	usage := newBlockingRebuilder("event_deliveries", "idx_event_deliveries_usage")
 	deliveries := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectCreated)
+	observed := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectEventTypeCreated)
 	gin := newBlockingRebuilder("events", indexes.PayloadGIN)
 	s := newRebuildService(t, db, &multiRebuilder{
-		order: []string{"idx_event_deliveries_usage", indexes.EventDeliveriesProjectCreated, indexes.PayloadGIN},
+		order: []string{"idx_event_deliveries_usage", indexes.EventDeliveriesProjectCreated, indexes.EventDeliveriesProjectEventTypeCreated, indexes.PayloadGIN},
 		byName: map[string]*blockingRebuilder{
-			"idx_event_deliveries_usage":          usage,
-			indexes.EventDeliveriesProjectCreated: deliveries,
-			indexes.PayloadGIN:                    gin,
+			"idx_event_deliveries_usage":                   usage,
+			indexes.EventDeliveriesProjectCreated:          deliveries,
+			indexes.EventDeliveriesProjectEventTypeCreated: observed,
+			indexes.PayloadGIN:                             gin,
 		},
 	})
 
@@ -445,6 +447,8 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	select {
 	case <-deliveries.started:
 		t.Fatal("list index started while the usage rebuild held the slot")
+	case <-observed.started:
+		t.Fatal("observed-types index started while the usage rebuild held the slot")
 	case <-gin.started:
 		t.Fatal("payload GIN started while the usage rebuild held the slot")
 	default:
@@ -453,19 +457,29 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	close(usage.release)
 	<-deliveries.started
 	select {
+	case <-observed.started:
+		t.Fatal("observed-types index started while the list index rebuild held the slot")
 	case <-gin.started:
 		t.Fatal("payload GIN started while the list index rebuild held the slot")
 	default:
 	}
 
 	close(deliveries.release)
+	<-observed.started
+	select {
+	case <-gin.started:
+		t.Fatal("payload GIN started while the observed-types rebuild held the slot")
+	default:
+	}
+
+	close(observed.release)
 	<-gin.started
 	close(gin.release)
 
 	runs, err := s.List(ctx, 10)
 	require.NoError(t, err)
-	require.Len(t, runs, 3)
-	names := make(map[string]string, 3)
+	require.Len(t, runs, 4)
+	names := make(map[string]string, 4)
 	for _, run := range runs {
 		require.NotNil(t, run.IndexName)
 		waitForStatus(t, s, ctx, run.UID, StatusCompleted)
@@ -473,6 +487,7 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	}
 	require.Equal(t, bootTriggeredBy, names["idx_event_deliveries_usage"])
 	require.Equal(t, bootTriggeredBy, names[indexes.EventDeliveriesProjectCreated])
+	require.Equal(t, bootTriggeredBy, names[indexes.EventDeliveriesProjectEventTypeCreated])
 	require.Equal(t, bootTriggeredBy, names[indexes.PayloadGIN])
 }
 

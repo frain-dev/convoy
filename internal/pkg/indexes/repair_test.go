@@ -481,18 +481,22 @@ func TestDroppedIndexesOfferTheDeliveriesListIndexAheadOfOlderNonUniqueIndexes(t
 	owed, err := ListDropped(ctx, db)
 	require.NoError(t, err)
 
-	listPos, ginPos := -1, -1
+	listPos, observedPos, ginPos := -1, -1, -1
 	for i, d := range owed {
 		switch d.Name {
 		case EventDeliveriesProjectCreated:
 			listPos = i
+		case EventDeliveriesProjectEventTypeCreated:
+			observedPos = i
 		case PayloadGIN:
 			ginPos = i
 		}
 	}
 	require.GreaterOrEqual(t, listPos, 0, "migrate queues the deliveries list index")
+	require.GreaterOrEqual(t, observedPos, 0, "migrate queues the observed-types index")
 	require.GreaterOrEqual(t, ginPos, 0, "migrate queues the payload GIN")
-	require.Less(t, listPos, ginPos)
+	require.Less(t, listPos, observedPos)
+	require.Less(t, observedPos, ginPos)
 }
 
 // A concurrent build cannot run in a transaction, so the rebuild's lock_timeout
@@ -782,9 +786,9 @@ func names(invalid []Invalid) []string {
 	return out
 }
 
-// sql/1787200001.sql and sql/1787251200.sql always queue these names on
-// every migrated test DB. Repair assertions that count other dropped
-// indexes have to look past those rows.
+// sql/1787200001.sql, sql/1787251200.sql, and sql/1787702400.sql always
+// queue these names on every migrated test DB. Repair assertions that
+// count other dropped indexes have to look past those rows.
 func exceptPayloadGIN(owed []Dropped) []Dropped {
 	out := make([]Dropped, 0, len(owed))
 	for _, d := range owed {
