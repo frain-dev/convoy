@@ -159,6 +159,26 @@ func TestEventDeliveriesProjectCreatedDefinitionMatchesMigration(t *testing.T) {
 	require.NotRegexp(t, `(?m)^CREATE INDEX`, string(body))
 }
 
+func TestEventDeliveriesProjectEventTypeCreatedDefinitionIsRebuildable(t *testing.T) {
+	stmt, err := concurrently(EventDeliveriesProjectEventTypeCreatedDefinition)
+	require.NoError(t, err)
+	require.Equal(t, `CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_project_event_type_created `+
+		`ON convoy.event_deliveries USING btree (project_id, event_type, created_at) `+
+		`WHERE (deleted_at IS NULL)`, stmt)
+
+	parent, err := parentStatement(EventDeliveriesProjectEventTypeCreated, "event_deliveries", EventDeliveriesProjectEventTypeCreatedDefinition)
+	require.NoError(t, err)
+	require.Contains(t, parent, " ON ONLY ")
+	require.NotContains(t, parent, "CONCURRENTLY")
+}
+
+func TestEventDeliveriesProjectEventTypeCreatedDefinitionMatchesMigration(t *testing.T) {
+	body, err := os.ReadFile("../../../sql/1787702400.sql")
+	require.NoError(t, err)
+	require.Contains(t, string(body), EventDeliveriesProjectEventTypeCreatedDefinition)
+	require.NotRegexp(t, `(?m)^CREATE INDEX`, string(body))
+}
+
 func TestEventPayloadJsonbIsParallelUnsafe(t *testing.T) {
 	for _, name := range []string{"../../../sql/1787200000.sql", "../../../sql/1787200002.sql"} {
 		body, err := os.ReadFile(name)

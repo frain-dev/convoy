@@ -85,9 +85,17 @@ const EventDeliveriesProjectCreated = "idx_event_deliveries_project_created_id_d
 // It has to match the row sql/1787251200.sql inserts.
 const EventDeliveriesProjectCreatedDefinition = `CREATE INDEX idx_event_deliveries_project_created_id_deleted ON convoy.event_deliveries USING btree (project_id, created_at DESC, id DESC) WHERE (deleted_at IS NULL)`
 
+// EventDeliveriesProjectEventTypeCreated is the Observed event-type dropdown index.
+// sql/1787702400.sql inserts this name into dropped_indexes instead of CREATE INDEX at migrate.
+const EventDeliveriesProjectEventTypeCreated = "idx_event_deliveries_project_event_type_created"
+
+// EventDeliveriesProjectEventTypeCreatedDefinition is the statement the rebuild must execute.
+// It has to match the row sql/1787702400.sql inserts.
+const EventDeliveriesProjectEventTypeCreatedDefinition = `CREATE INDEX idx_event_deliveries_project_event_type_created ON convoy.event_deliveries USING btree (project_id, event_type, created_at) WHERE (deleted_at IS NULL)`
+
 // BootQueuedNames are the indexes migrate always inserts into dropped_indexes
 // instead of CREATE INDEX, so every upgraded instance owes them a rebuild.
-var BootQueuedNames = []string{EventDeliveriesProjectCreated, PayloadGIN}
+var BootQueuedNames = []string{EventDeliveriesProjectCreated, EventDeliveriesProjectEventTypeCreated, PayloadGIN}
 
 // BootQueued reports whether migrate always queues this name. Repair tests use
 // it to look past those rows when counting operator-dropped indexes.
@@ -196,8 +204,9 @@ func ListInvalid(ctx context.Context, db *pgxpool.Pool) ([]Invalid, error) {
 // unique index is not just slower, it is not enforcing its key, and hours spent
 // on a large non-unique index first leaves that gap open for those hours. Among
 // non-unique indexes the Event Deliveries list index is next: that query times
-// out until it is valid, and dropped_at alone would put the hours-long payload
-// GIN first because migrate queued GIN earlier.
+// out until it is valid. The Observed-types index follows it: the same page
+// 504s the type dropdown until that btree is valid. dropped_at alone would put
+// the hours-long payload GIN first because migrate queued GIN earlier.
 //
 // This is the only place the order is decided, so the list an operator reads and
 // the list --rebuild works through cannot disagree.
@@ -209,6 +218,7 @@ func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
          ORDER BY (index_name = 'idx_partition_runs_single_active') DESC,
                   (definition LIKE 'CREATE UNIQUE %') DESC,
                   (index_name = '`+EventDeliveriesProjectCreated+`') DESC,
+                  (index_name = '`+EventDeliveriesProjectEventTypeCreated+`') DESC,
                   dropped_at`)
 	if err != nil {
 		return nil, fmt.Errorf("reading dropped indexes: %w", err)
