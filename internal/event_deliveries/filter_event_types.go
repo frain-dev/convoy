@@ -81,28 +81,32 @@ func GroupFilterEventTypes(types []datastore.ProjectEventType, observed []string
 	return catalogOut, observedOut
 }
 
+func eventMetadataTypeExistsSQL(arg string) string {
+	return `EXISTS (SELECT 1 FROM convoy.events ev WHERE ev.id = ed.event_id AND ev.project_id = ed.project_id AND ev.event_type ` + arg + `)`
+}
+
 func observedEventTypesSQL(projectID string, start, end time.Time, endpointIDs []string) (string, []any) {
 	var b strings.Builder
 	args := make([]any, 0, 5)
-	b.WriteString(`SELECT DISTINCT ed.event_type FROM convoy.event_deliveries ed WHERE ed.deleted_at IS NULL`)
+	b.WriteString(`SELECT DISTINCT ev.event_type FROM convoy.event_deliveries ed INNER JOIN convoy.events ev ON ev.id = ed.event_id AND ev.project_id = ed.project_id WHERE ed.deleted_at IS NULL`)
 	args = append(args, projectID)
 	fmt.Fprintf(&b, ` AND ed.project_id = $%d`, len(args))
 	args = append(args, start)
 	fmt.Fprintf(&b, ` AND ed.created_at >= $%d`, len(args))
 	args = append(args, end)
 	fmt.Fprintf(&b, ` AND ed.created_at <= $%d`, len(args))
-	b.WriteString(` AND ed.event_type <> '' AND ed.event_type <> '*'`)
+	b.WriteString(` AND ev.event_type <> '' AND ev.event_type <> '*'`)
 	if len(endpointIDs) > 0 {
 		args = append(args, endpointIDs)
 		fmt.Fprintf(&b, ` AND ed.endpoint_id = ANY($%d::TEXT[])`, len(args))
 	}
-	fmt.Fprintf(&b, ` ORDER BY ed.event_type LIMIT %d`, FilterEventTypeLimit)
+	fmt.Fprintf(&b, ` ORDER BY ev.event_type LIMIT %d`, FilterEventTypeLimit)
 	return b.String(), args
 }
 
-// ObservedEventTypes returns distinct live event_type values in the date
-// window. Empty and "*" are excluded. When endpointIDs is set the predicate is
-// a real ANY, not a CASE flag.
+// ObservedEventTypes returns distinct live event types in the date window,
+// using the same COALESCE as the list table. Empty and "*" are excluded.
+// When endpointIDs is set the predicate is a real ANY, not a CASE flag.
 func (s *Service) ObservedEventTypes(ctx context.Context, projectID string, params datastore.SearchParams, endpointIDs []string) ([]string, error) {
 	start, end := getCreatedDateFilter(params.CreatedAtStart, params.CreatedAtEnd)
 	query, args := observedEventTypesSQL(projectID, start, end, endpointIDs)

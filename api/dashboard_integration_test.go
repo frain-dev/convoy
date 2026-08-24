@@ -2047,6 +2047,72 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	}
 }
 
+func (s *EventIntegrationTestSuite) Test_EventDeliveryFilterEventTypes_ObservedFromEventMetadata() {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "pde996.bench", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	delivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.ScheduledEventStatus, subscription)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), datastore.EventType("pde996.bench"), delivery.EventType)
+
+	start := time.Now().UTC().Add(-time.Hour).Format("2006-01-02T15:04:05")
+	end := time.Now().UTC().Add(time.Hour).Format("2006-01-02T15:04:05")
+	base := fmt.Sprintf("/ui/organisations/%s/projects/%s/eventdeliveries", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+
+	listReq := createRequest(http.MethodGet, fmt.Sprintf("%s?startDate=%s&endDate=%s", base, start, end), "", nil)
+	require.NoError(s.T(), s.AuthenticatorFn(listReq, s.Router))
+	listW := httptest.NewRecorder()
+	s.Router.ServeHTTP(listW, listReq)
+	require.Equal(s.T(), http.StatusOK, listW.Code)
+
+	var listed []datastore.EventDelivery
+	parseResponse(s.T(), listW.Result(), &pagedResponse{Content: &listed})
+	require.Len(s.T(), listed, 1)
+	require.Equal(s.T(), delivery.UID, listed[0].UID)
+	require.NotNil(s.T(), listed[0].Event)
+	require.Equal(s.T(), datastore.EventType("pde996.bench"), listed[0].Event.EventType)
+
+	typesURL := fmt.Sprintf("%s/eventtypes?startDate=%s&endDate=%s", base, start, end)
+	getTypes := func() models.DeliveryFilterEventTypesResponse {
+		req := createRequest(http.MethodGet, typesURL, "", nil)
+		require.NoError(s.T(), s.AuthenticatorFn(req, s.Router))
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+		require.Equal(s.T(), http.StatusOK, w.Code)
+		var types models.DeliveryFilterEventTypesResponse
+		parseResponse(s.T(), w.Result(), &types)
+		return types
+	}
+
+	first := getTypes()
+	require.Contains(s.T(), first.Observed, "pde996.bench")
+	require.NotContains(s.T(), first.Catalog, "pde996.bench")
+
+	second := getTypes()
+	require.Equal(s.T(), first.Observed, second.Observed)
+	require.Equal(s.T(), first.Catalog, second.Catalog)
+
+	filterReq := createRequest(http.MethodGet, fmt.Sprintf("%s?startDate=%s&endDate=%s&eventType=%s", base, start, end, "pde996.bench"), "", nil)
+	require.NoError(s.T(), s.AuthenticatorFn(filterReq, s.Router))
+	filterW := httptest.NewRecorder()
+	s.Router.ServeHTTP(filterW, filterReq)
+	require.Equal(s.T(), http.StatusOK, filterW.Code)
+
+	var filtered []datastore.EventDelivery
+	parseResponse(s.T(), filterW.Result(), &pagedResponse{Content: &filtered})
+	require.Len(s.T(), filtered, 1)
+	require.Equal(s.T(), delivery.UID, filtered[0].UID)
+}
+
 func TestEventIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(EventIntegrationTestSuite))
 }

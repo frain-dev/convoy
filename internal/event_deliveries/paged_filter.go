@@ -52,7 +52,7 @@ func (f listFilter) appendWhere(b *strings.Builder, args []any) []any {
 	}
 	if f.EventType != "" {
 		args = append(args, f.EventType)
-		fmt.Fprintf(b, ` AND ed.event_type = $%d`, len(args))
+		fmt.Fprintf(b, ` AND %s`, eventMetadataTypeExistsSQL(fmt.Sprintf(`= $%d`, len(args))))
 	}
 	if len(f.EndpointIDs) > 0 {
 		args = append(args, f.EndpointIDs)
@@ -86,7 +86,9 @@ func (f listFilter) appendWhere(b *strings.Builder, args []any) []any {
 		var parts []string
 		if f.TypePrefix != "" {
 			args = append(args, f.TypePrefix)
-			parts = append(parts, fmt.Sprintf(`ed.event_type ILIKE $%d ESCAPE '\'`, len(args)))
+			n := len(args)
+			parts = append(parts, fmt.Sprintf(`ed.event_type ILIKE $%d ESCAPE '\'`, n))
+			parts = append(parts, eventMetadataTypeExistsSQL(fmt.Sprintf(`ILIKE $%d ESCAPE '\'`, n)))
 		}
 		if len(f.SearchEndpoints) > 0 {
 			args = append(args, f.SearchEndpoints)

@@ -404,7 +404,8 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 	return ev, nil
 }
 
-// SeedEventDelivery creates a random event delivery for integration tests.
+// SeedEventDelivery creates an event delivery the same way the match worker
+// does: EventType is copied from the event. Do not leave it blank.
 func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
@@ -413,6 +414,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 	eventDelivery := &datastore.EventDelivery{
 		UID:            uid,
 		EventID:        event.UID,
+		EventType:      event.EventType,
 		EndpointID:     endpoint.UID,
 		Status:         status,
 		SubscriptionID: subcription.UID,

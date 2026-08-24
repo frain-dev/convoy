@@ -61,7 +61,8 @@ func TestObservedEventTypesSQLOmitsEndpointPredicateWhenUnscoped(t *testing.T) {
 	sql, args := observedEventTypesSQL("proj_1", time.Unix(1, 0), time.Unix(2, 0), nil)
 	require.NotContains(t, sql, "CASE")
 	require.NotContains(t, sql, "endpoint_id")
-	require.Contains(t, sql, "ed.event_type <> '*'")
+	require.Contains(t, sql, "INNER JOIN convoy.events ev")
+	require.Contains(t, sql, "SELECT DISTINCT ev.event_type")
 	require.Contains(t, sql, "LIMIT 200")
 	require.Equal(t, []any{"proj_1", time.Unix(1, 0), time.Unix(2, 0)}, args)
 }
