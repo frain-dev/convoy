@@ -70,8 +70,10 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 			Type: storageType,
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "720h",
-			IsRetentionPolicyEnabled: true,
+			Period: "720h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 
@@ -132,8 +134,10 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "168h",
-			IsRetentionPolicyEnabled: true,
+			Period: "168h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 
@@ -150,8 +154,8 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 	require.Equal(t, "my-bucket", loaded.StoragePolicy.S3.Bucket.String)
 	require.Equal(t, "us-west-2", loaded.StoragePolicy.S3.Region.String)
 	require.Equal(t, "convoy-events/", loaded.StoragePolicy.S3.Prefix.String)
-	require.Equal(t, "168h", loaded.RetentionPolicy.Policy)
-	require.True(t, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, "168h", loaded.RetentionPolicy.Period)
+	require.True(t, loaded.WebhookArchiving.Enabled)
 }
 
 func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
@@ -180,8 +184,10 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "720h",
-			IsRetentionPolicyEnabled: false,
+			Period: "720h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: false,
 		},
 	}
 
@@ -199,8 +205,8 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 	require.True(t, loaded.StoragePolicy.OnPrem.Path.Valid)
 	// S3 should be nil for OnPrem type
 	require.Nil(t, loaded.StoragePolicy.S3)
-	require.Equal(t, "720h", loaded.RetentionPolicy.Policy)
-	require.False(t, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, "720h", loaded.RetentionPolicy.Period)
+	require.False(t, loaded.WebhookArchiving.Enabled)
 }
 
 func TestCreateConfiguration_WithMinimalFields(t *testing.T) {
@@ -220,8 +226,10 @@ func TestCreateConfiguration_WithMinimalFields(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "",
-			IsRetentionPolicyEnabled: false,
+			Period: "",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: false,
 		},
 	}
 
@@ -271,8 +279,10 @@ func TestCreateConfiguration_S3StorageNormalization(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "72h",
-			IsRetentionPolicyEnabled: true,
+			Period: "72h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 
@@ -309,8 +319,10 @@ func TestCreateConfiguration_OnPremStorageNormalization(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "72h",
-			IsRetentionPolicyEnabled: true,
+			Period: "72h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 
@@ -345,8 +357,10 @@ func TestCreateConfiguration_WithAzureBlobStorage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "720h",
-			IsRetentionPolicyEnabled: true,
+			Period: "720h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 
@@ -385,8 +399,10 @@ func TestCreateConfiguration_VerifyTimestamps(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "168h",
-			IsRetentionPolicyEnabled: true,
+			Period: "168h",
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 

@@ -310,7 +310,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	// so `convoy utils partition` activates retention without a worker restart.
 	// Until tables are partitioned it deletes nothing and logs the action.
 	var ret retention.Retentioner
-	if opts.Licenser.RetentionPolicy() {
+	if opts.Licenser.RetentionPolicy() && cfg.Retention.Enabled {
 		if _, pErr := retention.UnpartitionedTables(ctx, opts.DB); pErr != nil {
 			// Fail closed: a lookup failure is not a definitive "unpartitioned"
 			// verdict, and boot-time DB reads already abort startup above
@@ -318,9 +318,9 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 			return nil, fmt.Errorf("failed to check retention partition state: %w", pErr)
 		}
 
-		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+		policy, _err := time.ParseDuration(cfg.Retention.Period)
 		if _err != nil {
-			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
+			return nil, fmt.Errorf("failed to parse retention period: %w", _err)
 		}
 
 		ret = retention.NewLicensedRetentionPolicy(opts.DB, lo, policy)
@@ -395,9 +395,13 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if opts.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, ret, lo), nil)
+		// RetentionPolicies needs a constructed Retentioner (gated on Retention.Enabled).
+		// Registering with a nil ret panics on any stale or manually queued task.
+		if ret != nil {
+			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, ret, lo), nil)
+		}
 		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
-		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
+		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo), nil)
 	}
 
 	// ManualBackupJob is always registered — it bypasses CDC and retention checks.
@@ -464,18 +468,22 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	// Optionally start the CDC-based backup collector
 	var collector *backup_collector.BackupCollector
-	lo.Info(fmt.Sprintf("CDC backup config: enabled=%v, retention=%v", cfg.RetentionPolicy.CDCBackupEnabled, cfg.RetentionPolicy.IsRetentionPolicyEnabled))
-	if cfg.RetentionPolicy.CDCBackupEnabled && cfg.RetentionPolicy.IsRetentionPolicyEnabled {
+	lo.Info(fmt.Sprintf("CDC backup config: cdc=%v, webhook_archiving=%v", cfg.WebhookArchiving.CDCEnabled, cfg.WebhookArchiving.Enabled))
+	if cfg.WebhookArchiving.CDCEnabled && cfg.WebhookArchiving.Enabled {
+		if usableErr := blobstore.StoragePolicyUsable(loadConfiguration.StoragePolicy); usableErr != nil {
+			return nil, fmt.Errorf("storage not usable for CDC backup: %w", usableErr)
+		}
+
 		blobStoreClient, blobErr := blobstore.NewBlobStoreClient(loadConfiguration.StoragePolicy, lo)
 		if blobErr != nil {
 			return nil, fmt.Errorf("failed to create blob store for CDC backup: %w", blobErr)
 		}
 
-		flushInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+		flushInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
 
 		// ReplicationDSN connects directly to Postgres (bypassing pgbouncer)
 		// for the WAL replication protocol. Falls back to normal DSN if not set.
-		replDSN := cfg.RetentionPolicy.ReplicationDSN
+		replDSN := cfg.WebhookArchiving.ReplicationDSN
 		if replDSN == "" {
 			replDSN = cfg.Database.BuildDsn()
 		}

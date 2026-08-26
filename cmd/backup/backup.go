@@ -37,7 +37,7 @@ func AddBackupCommand(a *cli.App) *cobra.Command {
 
 			// Default time window: last backup interval to now
 			end := time.Now()
-			start := end.Add(-exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval))
+			start := end.Add(-exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval))
 
 			// Override with flags if provided
 			if endFlag != "" {
@@ -65,10 +65,18 @@ func AddBackupCommand(a *cli.App) *cobra.Command {
 			eventDeliveryRepo := event_deliveries.New(a.Logger, a.DB)
 			attemptsRepo := delivery_attempts.New(a.Logger, a.DB)
 
-			// Load DB config for storage policy
+			// Load DB config for storage policy and archiving enable
 			dbConfig, err := configRepo.LoadConfiguration(ctx)
 			if err != nil {
 				return fmt.Errorf("failed to load configuration: %w", err)
+			}
+
+			if !dbConfig.GetWebhookArchivingConfig().Enabled {
+				return fmt.Errorf("webhook archiving is not enabled; set CONVOY_WEBHOOK_ARCHIVING_ENABLED=true")
+			}
+
+			if err := blobstore.StoragePolicyUsable(dbConfig.StoragePolicy); err != nil {
+				return fmt.Errorf("storage not usable for archive export: %w", err)
 			}
 
 			// Create blob store

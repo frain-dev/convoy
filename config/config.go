@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/configmigrate"
 )
 
 const (
@@ -99,10 +100,13 @@ var DefaultConfiguration = Configuration{
 			Path: convoy.DefaultOnPremDir,
 		},
 	},
-	RetentionPolicy: RetentionPolicyConfiguration{
-		Policy:                   "720h",
-		IsRetentionPolicyEnabled: false,
-		BackupInterval:           "1h",
+	Retention: RetentionConfiguration{
+		Enabled: true,
+		Period:  "720h",
+	},
+	WebhookArchiving: WebhookArchivingConfiguration{
+		Enabled:  false,
+		Interval: "1h",
 	},
 	CircuitBreaker: CircuitBreakerConfiguration{
 		SampleRate:                  30,
@@ -614,12 +618,25 @@ type DatadogConfiguration struct {
 	AgentURL string `json:"agent_url" envconfig:"CONVOY_DATADOG_AGENT_URL"`
 }
 
-type RetentionPolicyConfiguration struct {
-	Policy                   string `json:"policy" envconfig:"CONVOY_RETENTION_POLICY"`
-	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
-	BackupInterval           string `json:"backup_interval" envconfig:"CONVOY_BACKUP_INTERVAL"`
-	CDCBackupEnabled         bool   `json:"cdc_backup_enabled" envconfig:"CONVOY_CDC_BACKUP_ENABLED"`
-	ReplicationDSN           string `json:"replication_dsn" envconfig:"CONVOY_REPLICATION_DSN"`
+// RetentionConfiguration is partition drop only (enable + keep window).
+type RetentionConfiguration struct {
+	// Enabled gates the licensed 01:00 partition drop. Default true.
+	// Env: CONVOY_RETENTION_ENABLED.
+	Enabled bool `json:"enabled" envconfig:"CONVOY_RETENTION_ENABLED"`
+	// Period is the keep window. Env: CONVOY_RETENTION_PERIOD.
+	// Legacy CONVOY_RETENTION_POLICY migrates here at load.
+	Period string `json:"period" envconfig:"CONVOY_RETENTION_PERIOD"`
+}
+
+// WebhookArchivingConfiguration gates cold-storage export of webhook data.
+// Distinct from RetentionConfiguration — not nested under retention_policy.
+type WebhookArchivingConfiguration struct {
+	// Enabled turns on archive/export jobs. Env: CONVOY_WEBHOOK_ARCHIVING_ENABLED.
+	// Legacy CONVOY_RETENTION_POLICY_ENABLED migrates here at load.
+	Enabled        bool   `json:"enabled" envconfig:"CONVOY_WEBHOOK_ARCHIVING_ENABLED"`
+	Interval       string `json:"interval" envconfig:"CONVOY_BACKUP_INTERVAL"`
+	CDCEnabled     bool   `json:"cdc_enabled" envconfig:"CONVOY_CDC_BACKUP_ENABLED"`
+	ReplicationDSN string `json:"replication_dsn" envconfig:"CONVOY_REPLICATION_DSN"`
 }
 
 type CircuitBreakerConfiguration struct {
@@ -740,35 +757,36 @@ const (
 )
 
 type Configuration struct {
-	InstanceId         string                       `json:"instance_id"`
-	APIVersion         string                       `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth               AuthConfiguration            `json:"auth,omitempty"`
-	Database           DatabaseConfiguration        `json:"database"`
-	Redis              RedisConfiguration           `json:"redis"`
-	Prometheus         PrometheusConfiguration      `json:"prometheus"`
-	Server             ServerConfiguration          `json:"server"`
-	MaxResponseSize    uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration            `json:"smtp"`
-	Environment        string                       `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration          `json:"logger"`
-	Tracer             TracerConfiguration          `json:"tracer"`
-	Host               string                       `json:"host" envconfig:"CONVOY_HOST"`
-	RootPath           string                       `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
-	Pyroscope          PyroscopeConfiguration       `json:"pyroscope"`
-	CustomDomainSuffix string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	EnableFeatureFlag  []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
-	RetentionPolicy    RetentionPolicyConfiguration `json:"retention_policy"`
-	CircuitBreaker     CircuitBreakerConfiguration  `json:"circuit_breaker"`
-	Analytics          AnalyticsConfiguration       `json:"analytics"`
-	StoragePolicy      StoragePolicyConfiguration   `json:"storage_policy"`
-	ConsumerPoolSize   int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	QueueProvider      QueueProvider                `json:"queue_provider" envconfig:"CONVOY_QUEUE_PROVIDER"`
-	Queue              QueueConfiguration           `json:"queue"`
-	Cache              CacheConfiguration           `json:"cache"`
-	EnableProfiling    bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
-	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
-	InstanceIngestRate int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
-	ApiRateLimit       int                          `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
+	InstanceId         string                        `json:"instance_id"`
+	APIVersion         string                        `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth               AuthConfiguration             `json:"auth,omitempty"`
+	Database           DatabaseConfiguration         `json:"database"`
+	Redis              RedisConfiguration            `json:"redis"`
+	Prometheus         PrometheusConfiguration       `json:"prometheus"`
+	Server             ServerConfiguration           `json:"server"`
+	MaxResponseSize    uint64                        `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration             `json:"smtp"`
+	Environment        string                        `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration           `json:"logger"`
+	Tracer             TracerConfiguration           `json:"tracer"`
+	Host               string                        `json:"host" envconfig:"CONVOY_HOST"`
+	RootPath           string                        `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
+	Pyroscope          PyroscopeConfiguration        `json:"pyroscope"`
+	CustomDomainSuffix string                        `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	EnableFeatureFlag  []string                      `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
+	Retention          RetentionConfiguration        `json:"retention"`
+	WebhookArchiving   WebhookArchivingConfiguration `json:"webhook_archiving"`
+	CircuitBreaker     CircuitBreakerConfiguration   `json:"circuit_breaker"`
+	Analytics          AnalyticsConfiguration        `json:"analytics"`
+	StoragePolicy      StoragePolicyConfiguration    `json:"storage_policy"`
+	ConsumerPoolSize   int                           `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	QueueProvider      QueueProvider                 `json:"queue_provider" envconfig:"CONVOY_QUEUE_PROVIDER"`
+	Queue              QueueConfiguration            `json:"queue"`
+	Cache              CacheConfiguration            `json:"cache"`
+	EnableProfiling    bool                          `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics            MetricsConfiguration          `json:"metrics" envconfig:"CONVOY_METRICS"`
+	InstanceIngestRate int                           `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
+	ApiRateLimit       int                           `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
 	// VerifyDynamicEventsTimeout is the max seconds POST /events/dynamic waits for
 	// endpoint/subscription resolve when project config verify_dynamic_events is true.
 	VerifyDynamicEventsTimeout uint64                      `json:"verify_dynamic_events_timeout" envconfig:"CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT"`
@@ -995,6 +1013,18 @@ func Override(newCfg *Configuration) error {
 	return nil
 }
 
+// ForceBools applies bool fields that Override skips when false (reflect zero).
+// Call only for values the operator explicitly set (cobra Flags().Changed, etc.).
+func ForceBools(mutate func(*Configuration)) error {
+	c, err := Get()
+	if err != nil {
+		return err
+	}
+	mutate(&c)
+	cfgSingleton.Store(&c)
+	return nil
+}
+
 func overrideFields(ov, nv reflect.Value) {
 	for i := 0; i < ov.NumField(); i++ {
 		ovField := ov.Field(i)
@@ -1053,11 +1083,24 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		if err != nil {
 			return err
 		}
-
 		defer f.Close()
 
-		// load config from config.json
-		if err := json.NewDecoder(f).Decode(&c); err != nil {
+		var jsonRoot map[string]any
+		if err := json.NewDecoder(f).Decode(&jsonRoot); err != nil {
+			return err
+		}
+
+		deps, err := jsonRetentionArchivingMigrations().Apply(configmigrate.OSEnv{}, jsonRoot)
+		if err != nil {
+			return err
+		}
+		configmigrate.Warn(deps)
+
+		raw, err := json.Marshal(jsonRoot)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(raw, &c); err != nil {
 			return err
 		}
 		applyServiceDefaults(&c)
@@ -1065,12 +1108,17 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		return fmt.Errorf("failed to check if config file exists: %w", err)
 	}
 
-	// override config from environment variables
 	for _, opt := range opts {
 		if err := opt(&c); err != nil {
 			return err
 		}
 	}
+
+	deps, err := envRetentionArchivingMigrations(&c).Apply(configmigrate.OSEnv{}, nil)
+	if err != nil {
+		return err
+	}
+	configmigrate.Warn(deps)
 
 	warnRenamedEnvVars()
 

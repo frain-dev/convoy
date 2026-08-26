@@ -28,11 +28,17 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		rc = &datastore.DefaultRetentionPolicy
 	}
 
+	wa := c.NewConfig.WebhookArchiving.Transform()
+	if wa == nil {
+		wa = &datastore.DefaultWebhookArchiving
+	}
+
 	config := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		StoragePolicy:      storagePolicy,
 		IsAnalyticsEnabled: true,
 		RetentionPolicy:    rc,
+		WebhookArchiving:   wa,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}

@@ -1,6 +1,9 @@
 package models
 
 import (
+	"errors"
+	"time"
+
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -17,20 +20,39 @@ type Configuration struct {
 	// Used to configure where events removed by retention policies are stored
 	StoragePolicy *StoragePolicyConfiguration `json:"storage_policy"`
 
-	// Used to configure whether the retention policy job runs and at what intervals
-	RetentionPolicy *RetentionPolicyConfiguration
+	// Keep window for partition drop (period only).
+	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy"`
+
+	// Cold-storage archive/export enable.
+	WebhookArchiving *WebhookArchivingConfiguration `json:"webhook_archiving"`
 }
 
 func (c *Configuration) Validate() error {
-	return util.Validate(c)
+	if err := util.Validate(c); err != nil {
+		return err
+	}
+	if c.RetentionPolicy == nil {
+		return nil
+	}
+	period := c.RetentionPolicy.Period
+	if util.IsStringEmpty(period) {
+		period = c.RetentionPolicy.Policy
+	}
+	if util.IsStringEmpty(period) {
+		return nil
+	}
+	if _, err := time.ParseDuration(period); err != nil {
+		return errors.New("please provide a valid retention period duration")
+	}
+	return nil
 }
 
 type RetentionPolicyConfiguration struct {
-	// Controls whether the retention policy is active on this instance.
-	IsRetentionPolicyEnabled bool `json:"retention_policy_enabled"`
+	// Keep window for licensed partition drop (e.g. 720h).
+	Period string `json:"period" valid:"duration~please provide a valid retention period duration"`
 
-	// Specify the number of hours the policy job should go back before deleting events and deliveries.
-	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+	// Policy is the deprecated request alias for Period.
+	Policy string `json:"policy"`
 }
 
 func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyConfiguration {
@@ -38,7 +60,24 @@ func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyCon
 		return nil
 	}
 
-	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy, IsRetentionPolicyEnabled: r.IsRetentionPolicyEnabled}
+	period := r.Period
+	if util.IsStringEmpty(period) {
+		period = r.Policy
+	}
+
+	return &datastore.RetentionPolicyConfiguration{Period: period}
+}
+
+type WebhookArchivingConfiguration struct {
+	Enabled bool `json:"enabled"`
+}
+
+func (w *WebhookArchivingConfiguration) Transform() *datastore.WebhookArchivingConfiguration {
+	if w == nil {
+		return nil
+	}
+
+	return &datastore.WebhookArchivingConfiguration{Enabled: w.Enabled}
 }
 
 type ConfigurationResponse struct {

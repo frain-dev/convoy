@@ -3720,7 +3720,8 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 	    "name": "project_1",
 	"type": "outgoing",
 	    "config": {
-	        "retention_policy":{"policy":"1h"},
+	        "retention_policy":{"period":"1h"},
+	        "webhook_archiving":{"enabled":true},
 	        "strategy": {
 	            "type": "exponential",
 	            "duration": 10,

@@ -60,10 +60,12 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 		setStoragePolicyCreateParams(&params, cfg.StoragePolicy)
 	}
 
-	// Handle retention policy
+	// Handle retention period (partition drop window) and webhook archiving enable
+	// (persisted in retention_policy_enabled until a dedicated column exists).
 	rc := cfg.GetRetentionPolicyConfig()
-	params.RetentionPolicyPolicy = common.StringToPgText(rc.Policy)
-	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
+	wa := cfg.GetWebhookArchivingConfig()
+	params.RetentionPolicyPolicy = common.StringToPgText(rc.Period)
+	params.RetentionPolicyEnabled = pgtype.Bool{Bool: wa.Enabled, Valid: true}
 
 	return params
 }
@@ -128,10 +130,12 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 		setStoragePolicyUpdateParams(&params, cfg.StoragePolicy)
 	}
 
-	// Handle retention policy
+	// Handle retention period (partition drop window) and webhook archiving enable
+	// (persisted in retention_policy_enabled until a dedicated column exists).
 	rc := cfg.GetRetentionPolicyConfig()
-	params.RetentionPolicyPolicy = common.StringToPgText(rc.Policy)
-	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
+	wa := cfg.GetWebhookArchivingConfig()
+	params.RetentionPolicyPolicy = common.StringToPgText(rc.Period)
+	params.RetentionPolicyEnabled = pgtype.Bool{Bool: wa.Enabled, Valid: true}
 
 	return params
 }
@@ -223,10 +227,13 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 		}
 	}
 
-	// Reconstruct retention policy
+	// Reconstruct retention period and webhook archiving enable (separate models;
+	// enabled column historically lived under retention_policy).
 	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Policy:                   row.RetentionPolicyPolicy,
-		IsRetentionPolicyEnabled: row.RetentionPolicyEnabled,
+		Period: row.RetentionPolicyPolicy,
+	}
+	cfg.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: row.RetentionPolicyEnabled,
 	}
 
 	return cfg

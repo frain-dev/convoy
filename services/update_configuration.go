@@ -39,6 +39,10 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		cfg.RetentionPolicy = c.Config.RetentionPolicy.Transform()
 	}
 
+	if c.Config.WebhookArchiving != nil {
+		cfg.WebhookArchiving = c.Config.WebhookArchiving.Transform()
+	}
+
 	err = c.ConfigRepo.UpdateConfiguration(ctx, cfg)
 	if err != nil {
 		c.Logger.ErrorContext(ctx, "failed to update configuration", "error", err)

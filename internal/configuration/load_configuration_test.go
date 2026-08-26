@@ -98,8 +98,8 @@ func TestLoadConfiguration_VerifyRetentionPolicy(t *testing.T) {
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, loaded.RetentionPolicy)
-	require.Equal(t, seeded.RetentionPolicy.Policy, loaded.RetentionPolicy.Policy)
-	require.Equal(t, seeded.RetentionPolicy.IsRetentionPolicyEnabled, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
+	require.Equal(t, seeded.WebhookArchiving.Enabled, loaded.WebhookArchiving.Enabled)
 }
 
 func TestLoadConfiguration_VerifyS3FieldsReconstructed(t *testing.T) {
@@ -228,6 +228,6 @@ func TestLoadConfiguration_CompleteDataIntegrity(t *testing.T) {
 	require.Equal(t, seeded.StoragePolicy.S3.Bucket.String, loaded.StoragePolicy.S3.Bucket.String)
 	require.Equal(t, seeded.StoragePolicy.S3.AccessKey.String, loaded.StoragePolicy.S3.AccessKey.String)
 	require.Equal(t, seeded.StoragePolicy.S3.Region.String, loaded.StoragePolicy.S3.Region.String)
-	require.Equal(t, seeded.RetentionPolicy.Policy, loaded.RetentionPolicy.Policy)
-	require.Equal(t, seeded.RetentionPolicy.IsRetentionPolicyEnabled, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
+	require.Equal(t, seeded.WebhookArchiving.Enabled, loaded.WebhookArchiving.Enabled)
 }

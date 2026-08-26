@@ -139,8 +139,11 @@ func buildRootCommand() *cobra.Command {
 	var prometheusMetricsSampleTime uint64
 	var prometheusMetricsQueryTimeout uint64
 	var prometheusMetricsMaterializedViewRefreshInterval uint64
+	var retentionPeriod string
+	var retentionEnabled bool
 	var retentionPolicy string
 	var retentionPolicyEnabled bool
+	var webhookArchivingEnabled bool
 	var maxRetrySeconds uint64
 	var instanceIngestRate int
 	var apiRateLimit int
@@ -199,8 +202,11 @@ func buildRootCommand() *cobra.Command {
 	fs.Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
 	fs.Uint64Var(&prometheusMetricsQueryTimeout, "metrics-prometheus-query-timeout", 30, "Prometheus metrics query timeout in seconds")
 	fs.Uint64Var(&prometheusMetricsMaterializedViewRefreshInterval, "metrics-prometheus-materialized-view-refresh-interval", 2, "Materialized view refresh interval in minutes")
-	fs.StringVar(&retentionPolicy, "retention-policy", "", "Retention Policy Duration")
-	fs.BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Retention Policy Enabled")
+	fs.StringVar(&retentionPeriod, "retention-period", "", "Retention keep window (e.g. 720h)")
+	fs.BoolVar(&retentionEnabled, "retention-enabled", true, "Enable licensed partition retention drop")
+	fs.BoolVar(&webhookArchivingEnabled, "webhook-archiving-enabled", false, "Enable webhook cold-storage archiving")
+	fs.StringVar(&retentionPolicy, "retention-policy", "", "Deprecated: use --retention-period")
+	fs.BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Deprecated: use --webhook-archiving-enabled")
 	fs.Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
 	fs.String("hcp-client-id", "", "HCP Vault client ID")

@@ -619,6 +619,14 @@ func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
 
+	// Per-statement bound inside the snapshot tx (COUNT + each export batch),
+	// not the overall job deadline (backupExportDeadline). Keeps a stuck scan
+	// from holding the pool for the full export window while still allowing
+	// multi-minute batches on large payloads.
+	if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5min'"); err != nil {
+		return 0, fmt.Errorf("set statement_timeout: %w", err)
+	}
+
 	txRepo := repo.New(tx)
 
 	count, err := txRepo.CountExportedEventDeliveries(ctx, repo.CountExportedEventDeliveriesParams{

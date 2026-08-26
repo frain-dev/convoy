@@ -349,8 +349,10 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: false,
-		Policy:                   "720h",
+		Period: "720h",
+	}
+	DefaultWebhookArchiving = WebhookArchivingConfiguration{
+		Enabled: false,
 	}
 	// DefaultCircuitBreakerConfiguration holds the non-zero defaults for
 	// project-level circuit breaker settings.
@@ -770,9 +772,16 @@ type CircuitBreakerConfiguration struct {
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
+// RetentionPolicyConfiguration is the keep window for partition drop only.
+// Cold-storage archive enable lives on WebhookArchivingConfiguration.
 type RetentionPolicyConfiguration struct {
-	Policy                   string `json:"policy" db:"policy"`
-	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
+	Period string `json:"period" db:"policy"`
+}
+
+// WebhookArchivingConfiguration gates export of webhook data to cold storage.
+// Persisted in configuration.retention_policy_enabled until a dedicated column exists.
+type WebhookArchivingConfiguration struct {
+	Enabled bool `json:"enabled" db:"enabled"`
 }
 
 type ProjectStatistics struct {
@@ -1803,8 +1812,9 @@ type Configuration struct {
 	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
 
-	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
-	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
+	StoragePolicy    *StoragePolicyConfiguration    `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
+	RetentionPolicy  *RetentionPolicyConfiguration  `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
+	WebhookArchiving *WebhookArchivingConfiguration `json:"webhook_archiving" db:"webhook_archiving" extensions:"x-nullable"`
 
 	LicenseKey              string                               `json:"license_key,omitempty" db:"license_key"`
 	CheckoutLicenseKey      string                               `json:"checkout_license_key,omitempty" db:"checkout_license_key"`
@@ -1842,6 +1852,13 @@ func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 		return *c.RetentionPolicy
 	}
 	return RetentionPolicyConfiguration{}
+}
+
+func (c *Configuration) GetWebhookArchivingConfig() WebhookArchivingConfiguration {
+	if c.WebhookArchiving != nil {
+		return *c.WebhookArchiving
+	}
+	return WebhookArchivingConfiguration{}
 }
 
 type StoragePolicyConfiguration struct {
