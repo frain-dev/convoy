@@ -72,6 +72,17 @@ func TestStoragePolicyUsable(t *testing.T) {
 			wantErr: "s3 access_key and secret_key are required",
 		},
 		{
+			name: "s3 access without secret",
+			policy: &datastore.StoragePolicyConfiguration{
+				Type: datastore.S3,
+				S3: &datastore.S3Storage{
+					Bucket:    null.StringFrom("bucket"),
+					AccessKey: null.StringFrom("ak"),
+				},
+			},
+			wantErr: "s3 access_key and secret_key are required",
+		},
+		{
 			name: "s3 valid",
 			policy: &datastore.StoragePolicyConfiguration{
 				Type: datastore.S3,

@@ -41,7 +41,7 @@ func StoragePolicyUsable(policy *datastore.StoragePolicyConfiguration) error {
 		}
 		access := strings.TrimSpace(policy.S3.AccessKey.ValueOrZero())
 		secret := strings.TrimSpace(policy.S3.SecretKey.ValueOrZero())
-		if access == "" && secret == "" {
+		if access == "" || secret == "" {
 			return errors.New("s3 access_key and secret_key are required for archive export")
 		}
 		return nil

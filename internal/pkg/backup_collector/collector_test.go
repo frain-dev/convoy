@@ -110,7 +110,7 @@ func TestCollector_StartStop(t *testing.T) {
 	store, err := blobstore.NewOnPremClient(blobstore.BlobStoreOptions{OnPremStorageDir: tmpDir}, logger)
 	require.NoError(t, err)
 
-	collector := NewBackupCollector(pool, dsn, store, 10*time.Second, logger)
+	collector := NewBackupCollector(pool, dsn, store, 10*time.Second, logger, nil)
 
 	ctx := context.Background()
 	err = collector.Start(ctx)
@@ -143,7 +143,7 @@ func TestCollector_CaptureInserts(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use short flush interval for tests
-	collector := NewBackupCollector(pool, dsn, store, 3*time.Second, logger)
+	collector := NewBackupCollector(pool, dsn, store, 3*time.Second, logger, nil)
 
 	ctx := context.Background()
 	err = collector.Start(ctx)
@@ -193,7 +193,7 @@ func TestCollector_IgnoreUpdatesDeletes(t *testing.T) {
 	store, err := blobstore.NewOnPremClient(blobstore.BlobStoreOptions{OnPremStorageDir: tmpDir}, logger)
 	require.NoError(t, err)
 
-	collector := NewBackupCollector(pool, dsn, store, 3*time.Second, logger)
+	collector := NewBackupCollector(pool, dsn, store, 3*time.Second, logger, nil)
 
 	ctx := context.Background()
 	err = collector.Start(ctx)

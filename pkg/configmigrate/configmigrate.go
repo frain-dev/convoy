@@ -77,7 +77,7 @@ func Warn(deps []Deprecation) {
 }
 
 // LookupBool returns a parsed bool when key is set. Missing key → ok false.
-func LookupBool(env Env, key string) (value bool, ok bool, err error) {
+func LookupBool(env Env, key string) (value, ok bool, err error) {
 	raw, found := env.Lookup(key)
 	if !found {
 		return false, false, nil

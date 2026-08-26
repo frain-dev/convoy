@@ -42,7 +42,33 @@ func (c *BackupCollector) flushLoop(ctx context.Context) {
 // On restart, the WAL replays from the last good LSN, re-exporting all tables
 // (including ones that succeeded). This is simpler and safer than re-queuing
 // failed entries, which risks unbounded memory growth.
+//
+// When flushGate denies upload (archiving disabled), the buffer is discarded
+// and the LSN is still advanced so the replication slot does not retain WAL
+// forever while cold storage is intentionally off.
 func (c *BackupCollector) doFlush(ctx context.Context) {
+	if c.flushGate != nil {
+		allowed, err := c.flushGate(ctx)
+		if err != nil {
+			c.logger.Error(fmt.Sprintf("flush gate error (skipping flush): %v", err))
+			return
+		}
+		if !allowed {
+			records, swapLSN := c.buffer.Swap()
+			total := 0
+			for _, entries := range records {
+				total += len(entries)
+			}
+			if total > 0 {
+				c.logger.Warn(fmt.Sprintf("webhook archiving disabled; discarded %d buffered records without upload", total))
+			}
+			if swapLSN > 0 {
+				c.flushedLSN.Store(uint64(swapLSN))
+			}
+			return
+		}
+	}
+
 	records, swapLSN := c.buffer.Swap()
 	if len(records) == 0 {
 		return

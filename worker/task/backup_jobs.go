@@ -26,8 +26,8 @@ const (
 	backupClaimStaleMinutes = 45
 )
 
-// EnqueueBackupJobs runs hourly. It inserts a pending backup_job row for each
-// (project, hour) pair and reclaims any stale claimed jobs.
+// EnqueueBackupJobs runs on the configured backup interval. It inserts a
+// pending backup_job row when idle and reclaims any stale claimed jobs.
 func EnqueueBackupJobs(
 	configRepo datastore.ConfigurationRepository,
 	backupJobRepo datastore.BackupJobRepository,
@@ -109,11 +109,6 @@ func processBackupJob(
 	backupJobRepo datastore.BackupJobRepository,
 	logger log.Logger,
 ) error {
-	dbConfig, err := configRepo.LoadConfiguration(ctx)
-	if err != nil {
-		return err
-	}
-
 	agentID := generateAgentID()
 
 	job, err := backupJobRepo.ClaimBackupJob(ctx, agentID)
@@ -126,6 +121,14 @@ func processBackupJob(
 
 	logger.Info(fmt.Sprintf("processing backup job %s [%s, %s)",
 		job.ID, job.HourStart.Format(time.RFC3339), job.HourEnd.Format(time.RFC3339)))
+
+	// Load config after claim so mid-flight dashboard toggles apply to this job.
+	// Do not Fail on load error: leave the claim for reclaim so a transient DB
+	// blip does not terminal-fail the window.
+	dbConfig, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		return fmt.Errorf("load configuration after claim %s: %w", job.ID, err)
+	}
 
 	// Fail claimed work when archiving or storage is no longer usable so pending
 	// rows do not sit forever after a mid-flight config change.
@@ -149,14 +152,22 @@ func processBackupJob(
 
 	blobStoreClient, err := blobstore.NewBlobStoreClient(dbConfig.StoragePolicy, logger)
 	if err != nil {
-		_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("create blob store: %v", err))
-		return err
+		reason := fmt.Sprintf("create blob store: %v", err)
+		if failErr := backupJobRepo.FailBackupJob(ctx, job.ID, reason); failErr != nil {
+			return fmt.Errorf("fail backup job %s after blob store error: %w", job.ID, failErr)
+		}
+		logger.Warn(fmt.Sprintf("failed backup job %s: %s", job.ID, reason))
+		return nil
 	}
 
 	e, err := exporter.NewExporterWithWindow(eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo, job.HourStart, job.HourEnd, logger)
 	if err != nil {
-		_ = backupJobRepo.FailBackupJob(ctx, job.ID, fmt.Sprintf("create exporter: %v", err))
-		return err
+		reason := fmt.Sprintf("create exporter: %v", err)
+		if failErr := backupJobRepo.FailBackupJob(ctx, job.ID, reason); failErr != nil {
+			return fmt.Errorf("fail backup job %s after exporter error: %w", job.ID, failErr)
+		}
+		logger.Warn(fmt.Sprintf("failed backup job %s: %s", job.ID, reason))
+		return nil
 	}
 
 	exportCtx, cancel := context.WithTimeout(ctx, backupExportDeadline)
@@ -165,8 +176,11 @@ func processBackupJob(
 	result, err := e.StreamExport(exportCtx, blobStoreClient)
 	if err != nil {
 		reason := fmt.Sprintf("stream export: %v", err)
-		_ = backupJobRepo.FailBackupJob(ctx, job.ID, reason)
-		return err
+		if failErr := backupJobRepo.FailBackupJob(ctx, job.ID, reason); failErr != nil {
+			return fmt.Errorf("fail backup job %s after stream error: %w", job.ID, failErr)
+		}
+		logger.Warn(fmt.Sprintf("failed backup job %s: %s", job.ID, reason))
+		return nil
 	}
 
 	counts := make(map[string]int64)
@@ -195,9 +209,11 @@ func ManualBackup(
 	logger log.Logger,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		return skipIfLockBusy(locker.WithLock(ctx, backupExportMutexName, backupExportMaxRuntime, func(ctx context.Context) error {
+		// Do not skipIfLockBusy: TriggerBackup already returned 202, so a silent
+		// skip would report success with no export. Return ErrLockBusy so asynq retries.
+		return locker.WithLock(ctx, backupExportMutexName, backupExportMaxRuntime, func(ctx context.Context) error {
 			return manualBackup(ctx, t, configRepo, eventRepo, eventDeliveryRepo, attemptsRepo, logger)
-		}))
+		})
 	}
 }
 

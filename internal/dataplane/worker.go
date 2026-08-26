@@ -318,7 +318,11 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 			return nil, fmt.Errorf("failed to check retention partition state: %w", pErr)
 		}
 
-		policy, _err := time.ParseDuration(cfg.Retention.Period)
+		policyPeriod := strings.TrimSpace(loadConfiguration.GetRetentionPolicyConfig().Period)
+		if policyPeriod == "" {
+			policyPeriod = cfg.Retention.Period
+		}
+		policy, _err := time.ParseDuration(policyPeriod)
 		if _err != nil {
 			return nil, fmt.Errorf("failed to parse retention period: %w", _err)
 		}
@@ -404,7 +408,9 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo), nil)
 	}
 
-	// ManualBackupJob is always registered — it bypasses CDC and retention checks.
+	// ManualBackupJob is always registered so instance-admin triggers work
+	// without a license gate on the handler path. The task still requires DB
+	// webhook_archiving.enabled and usable storage before exporting.
 	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, locker, lo), nil)
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
@@ -466,29 +472,52 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}
 
-	// Optionally start the CDC-based backup collector
+	// Optionally start the CDC-based backup collector.
+	// CONVOY_CDC_BACKUP_ENABLED selects architecture (CDC vs cron). DB
+	// webhook_archiving.enabled gates uploads on every flush so a dashboard
+	// disable stops cold-storage export without a worker restart.
 	var collector *backup_collector.BackupCollector
-	lo.Info(fmt.Sprintf("CDC backup config: cdc=%v, webhook_archiving=%v", cfg.WebhookArchiving.CDCEnabled, cfg.WebhookArchiving.Enabled))
-	if cfg.WebhookArchiving.CDCEnabled && cfg.WebhookArchiving.Enabled {
-		if usableErr := blobstore.StoragePolicyUsable(loadConfiguration.StoragePolicy); usableErr != nil {
-			return nil, fmt.Errorf("storage not usable for CDC backup: %w", usableErr)
+	dbArchivingEnabled := loadConfiguration.GetWebhookArchivingConfig().Enabled
+	lo.Info(fmt.Sprintf("CDC backup config: cdc=%v, webhook_archiving_db=%v", cfg.WebhookArchiving.CDCEnabled, dbArchivingEnabled))
+	if cfg.WebhookArchiving.CDCEnabled {
+		usableErr := blobstore.StoragePolicyUsable(loadConfiguration.StoragePolicy)
+		if usableErr != nil {
+			if dbArchivingEnabled {
+				return nil, fmt.Errorf("storage not usable for CDC backup: %w", usableErr)
+			}
+			// Archiving off: do not block worker boot on cold-storage config.
+			lo.Warn(fmt.Sprintf("CDC enabled but storage not usable; skipping collector until storage is fixed and worker restarts: %v", usableErr))
+		} else {
+			blobStoreClient, blobErr := blobstore.NewBlobStoreClient(loadConfiguration.StoragePolicy, lo)
+			if blobErr != nil {
+				return nil, fmt.Errorf("failed to create blob store for CDC backup: %w", blobErr)
+			}
+
+			flushInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
+
+			// ReplicationDSN connects directly to Postgres (bypassing pgbouncer)
+			// for the WAL replication protocol. Falls back to normal DSN if not set.
+			replDSN := cfg.WebhookArchiving.ReplicationDSN
+			if replDSN == "" {
+				replDSN = cfg.Database.BuildDsn()
+			}
+
+			collector = backup_collector.NewBackupCollector(opts.DB.GetConn(), replDSN, blobStoreClient, flushInterval, lo, func(ctx context.Context) (bool, error) {
+				dbCfg, err := configRepo.LoadConfiguration(ctx)
+				if err != nil {
+					return false, err
+				}
+				if !dbCfg.GetWebhookArchivingConfig().Enabled {
+					return false, nil
+				}
+				// Enabled but unusable: error so doFlush skips without discarding,
+				// keeping the buffer and LSN until storage is fixed.
+				if err := blobstore.StoragePolicyUsable(dbCfg.StoragePolicy); err != nil {
+					return false, err
+				}
+				return true, nil
+			})
 		}
-
-		blobStoreClient, blobErr := blobstore.NewBlobStoreClient(loadConfiguration.StoragePolicy, lo)
-		if blobErr != nil {
-			return nil, fmt.Errorf("failed to create blob store for CDC backup: %w", blobErr)
-		}
-
-		flushInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
-
-		// ReplicationDSN connects directly to Postgres (bypassing pgbouncer)
-		// for the WAL replication protocol. Falls back to normal DSN if not set.
-		replDSN := cfg.WebhookArchiving.ReplicationDSN
-		if replDSN == "" {
-			replDSN = cfg.Database.BuildDsn()
-		}
-
-		collector = backup_collector.NewBackupCollector(opts.DB.GetConn(), replDSN, blobStoreClient, flushInterval, lo)
 	}
 
 	return &Worker{

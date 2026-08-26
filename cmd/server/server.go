@@ -176,9 +176,12 @@ func StartConvoyServer(a *cli.App) error {
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 
 	if a.Licenser.RetentionPolicy() {
-		// Register cron-based backup tasks only when CDC backup is not enabled.
-		// When CDC is active, the BackupCollector in the worker handles exports continuously.
-		if cfg.WebhookArchiving.Enabled && !cfg.WebhookArchiving.CDCEnabled {
+		// Register cron-based backup tasks when CDC backup is not enabled.
+		// When CDC is active, the BackupCollector in the worker handles exports.
+		// Do not gate registration on cfg.WebhookArchiving.Enabled (env): workers
+		// read DB webhook_archiving.enabled, so a dashboard toggle must not wait
+		// for an env change and server restart.
+		if !cfg.WebhookArchiving.CDCEnabled {
 			backupInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
 			enqueueCron := exporter.DurationToCron(backupInterval)
 			processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
