@@ -205,8 +205,10 @@ func buildRootCommand() *cobra.Command {
 	fs.StringVar(&retentionPeriod, "retention-period", "", "Retention keep window (e.g. 720h)")
 	fs.BoolVar(&retentionEnabled, "retention-enabled", true, "Enable licensed partition retention drop")
 	fs.BoolVar(&webhookArchivingEnabled, "webhook-archiving-enabled", false, "Enable webhook cold-storage archiving")
-	fs.StringVar(&retentionPolicy, "retention-policy", "", "Deprecated: use --retention-period")
-	fs.BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Deprecated: use --webhook-archiving-enabled")
+	fs.StringVar(&retentionPolicy, "retention-policy", "", "Retention keep window (legacy alias)")
+	fs.BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Enable webhook cold-storage archiving (legacy alias)")
+	_ = fs.MarkDeprecated("retention-policy", "use --retention-period instead")
+	_ = fs.MarkDeprecated("retention-policy-enabled", "use --webhook-archiving-enabled instead")
 	fs.Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
 	fs.String("hcp-client-id", "", "HCP Vault client ID")

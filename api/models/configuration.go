@@ -51,7 +51,7 @@ type RetentionPolicyConfiguration struct {
 	// Keep window for licensed partition drop (e.g. 720h).
 	Period string `json:"period" valid:"duration~please provide a valid retention period duration"`
 
-	// Policy is the deprecated request alias for Period.
+	// Deprecated: use Period.
 	Policy string `json:"policy"`
 }
 

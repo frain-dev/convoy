@@ -80,8 +80,8 @@ func main() {
 
 	var retentionPeriod string
 	var retentionEnabled bool
-	var retentionPolicy string      // deprecated alias for retention-period
-	var retentionPolicyEnabled bool // deprecated alias for webhook-archiving-enabled
+	var retentionPolicy string      // Deprecated: use retentionPeriod (--retention-period).
+	var retentionPolicyEnabled bool // Deprecated: use webhookArchivingEnabled (--webhook-archiving-enabled).
 	var webhookArchivingEnabled bool
 
 	var maxRetrySeconds uint64
@@ -160,8 +160,10 @@ func main() {
 	c.Flags().StringVar(&retentionPeriod, "retention-period", "", "Retention keep window (e.g. 720h)")
 	c.Flags().BoolVar(&retentionEnabled, "retention-enabled", true, "Enable licensed partition retention drop")
 	c.Flags().BoolVar(&webhookArchivingEnabled, "webhook-archiving-enabled", false, "Enable webhook cold-storage archiving")
-	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "Deprecated: use --retention-period")
-	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Deprecated: use --webhook-archiving-enabled")
+	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "Retention keep window (legacy alias)")
+	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Enable webhook cold-storage archiving (legacy alias)")
+	_ = c.Flags().MarkDeprecated("retention-policy", "use --retention-period instead")
+	_ = c.Flags().MarkDeprecated("retention-policy-enabled", "use --webhook-archiving-enabled instead")
 
 	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
