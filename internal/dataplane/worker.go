@@ -405,7 +405,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	}
 
 	// ManualBackupJob is always registered — it bypasses CDC and retention checks.
-	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, lo), nil)
+	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, locker, lo), nil)
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
 		Channels:                   channels,

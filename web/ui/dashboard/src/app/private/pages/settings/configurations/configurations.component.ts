@@ -85,8 +85,7 @@ export class ConfigurationsComponent implements OnInit {
 			const period = configurations.retention_policy?.period || configurations.retention_policy?.policy;
 			if (period) {
 				this.configForm.get('retention_policy.period')?.patchValue(this.getHours(period));
-			}
-			if (configurations.webhook_archiving?.enabled || configurations.retention_policy?.retention_policy_enabled) {
+				// Retention period is independent of webhook archiving.
 				this.configurations.forEach(c => {
 					if (c.uid === 'retention_policy') c.show = true;
 				});

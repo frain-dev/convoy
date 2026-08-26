@@ -19,7 +19,11 @@ import (
 const (
 	backupExportMutexName  = "convoy:backup:mutex"
 	backupExportMaxRuntime = 2 * time.Hour
-	backupExportDeadline   = 30 * time.Minute
+	// backupExportDeadline bounds a single StreamExport. Must stay strictly
+	// below backupClaimStaleMinutes so ReclaimStaleJobs cannot return a still-
+	// running claim to pending before FailBackupJob / CompleteBackupJob.
+	backupExportDeadline    = 30 * time.Minute
+	backupClaimStaleMinutes = 45
 )
 
 // EnqueueBackupJobs runs hourly. It inserts a pending backup_job row for each
@@ -38,7 +42,7 @@ func EnqueueBackupJobs(
 		if !dbConfig.GetWebhookArchivingConfig().Enabled {
 			// Still reclaim stale claims so a disable mid-flight cannot leave
 			// claimed rows blocking EnqueueBackupJobIfIdle forever.
-			if _, err := backupJobRepo.ReclaimStaleJobs(ctx, 30); err != nil {
+			if _, err := backupJobRepo.ReclaimStaleJobs(ctx, backupClaimStaleMinutes); err != nil {
 				logger.Error(fmt.Sprintf("failed to reclaim stale backup jobs: %v", err))
 			}
 			return nil
@@ -64,8 +68,8 @@ func EnqueueBackupJobs(
 			}
 		}
 
-		// Reclaim jobs that have been stuck in 'claimed' for > 30 minutes
-		reclaimed, err := backupJobRepo.ReclaimStaleJobs(ctx, 30)
+		// Reclaim jobs stuck in 'claimed' longer than the export deadline headroom.
+		reclaimed, err := backupJobRepo.ReclaimStaleJobs(ctx, backupClaimStaleMinutes)
 		if err != nil {
 			logger.Error(fmt.Sprintf("failed to reclaim stale jobs: %v", err))
 		} else if reclaimed > 0 {
@@ -180,63 +184,80 @@ func processBackupJob(
 
 // ManualBackup runs a one-time backup with an explicit time window.
 // It always uses the cron-based Exporter, never CDC, regardless of config.
+// Shares the instance export mutex with ProcessBackupJob so a trigger cannot
+// overlap a scheduled export and starve the DB pool.
 func ManualBackup(
 	configRepo datastore.ConfigurationRepository,
 	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	attemptsRepo datastore.DeliveryAttemptsRepository,
+	locker JobLocker,
 	logger log.Logger,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
-		var payload struct {
-			Start time.Time `json:"start"`
-			End   time.Time `json:"end"`
-		}
-
-		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-			return fmt.Errorf("decode manual backup payload: %w", err)
-		}
-
-		dbConfig, err := configRepo.LoadConfiguration(ctx)
-		if err != nil {
-			return fmt.Errorf("load configuration: %w", err)
-		}
-
-		if !dbConfig.GetWebhookArchivingConfig().Enabled {
-			return fmt.Errorf("webhook archiving is not enabled")
-		}
-
-		if err := blobstore.StoragePolicyUsable(dbConfig.StoragePolicy); err != nil {
-			return fmt.Errorf("storage not usable for archive export: %w", err)
-		}
-
-		store, err := blobstore.NewBlobStoreClient(dbConfig.StoragePolicy, logger)
-		if err != nil {
-			return fmt.Errorf("create blob store: %w", err)
-		}
-
-		exp, err := exporter.NewExporterWithWindow(
-			eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo,
-			payload.Start, payload.End, logger,
-		)
-		if err != nil {
-			return fmt.Errorf("create exporter: %w", err)
-		}
-
-		exportCtx, cancel := context.WithTimeout(ctx, backupExportDeadline)
-		defer cancel()
-
-		result, err := exp.StreamExport(exportCtx, store)
-		if err != nil {
-			return fmt.Errorf("stream export: %w", err)
-		}
-
-		for table, r := range result {
-			logger.Info(fmt.Sprintf("manual backup: %s — %d records → %s", table, r.NumDocs, r.ExportFile))
-		}
-
-		return nil
+		return skipIfLockBusy(locker.WithLock(ctx, backupExportMutexName, backupExportMaxRuntime, func(ctx context.Context) error {
+			return manualBackup(ctx, t, configRepo, eventRepo, eventDeliveryRepo, attemptsRepo, logger)
+		}))
 	}
+}
+
+func manualBackup(
+	ctx context.Context,
+	t *asynq.Task,
+	configRepo datastore.ConfigurationRepository,
+	eventRepo datastore.EventRepository,
+	eventDeliveryRepo datastore.EventDeliveryRepository,
+	attemptsRepo datastore.DeliveryAttemptsRepository,
+	logger log.Logger,
+) error {
+	var payload struct {
+		Start time.Time `json:"start"`
+		End   time.Time `json:"end"`
+	}
+
+	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+		return fmt.Errorf("decode manual backup payload: %w", err)
+	}
+
+	dbConfig, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		return fmt.Errorf("load configuration: %w", err)
+	}
+
+	if !dbConfig.GetWebhookArchivingConfig().Enabled {
+		return fmt.Errorf("webhook archiving is not enabled")
+	}
+
+	if err := blobstore.StoragePolicyUsable(dbConfig.StoragePolicy); err != nil {
+		return fmt.Errorf("storage not usable for archive export: %w", err)
+	}
+
+	store, err := blobstore.NewBlobStoreClient(dbConfig.StoragePolicy, logger)
+	if err != nil {
+		return fmt.Errorf("create blob store: %w", err)
+	}
+
+	exp, err := exporter.NewExporterWithWindow(
+		eventRepo, eventDeliveryRepo, dbConfig, attemptsRepo,
+		payload.Start, payload.End, logger,
+	)
+	if err != nil {
+		return fmt.Errorf("create exporter: %w", err)
+	}
+
+	exportCtx, cancel := context.WithTimeout(ctx, backupExportDeadline)
+	defer cancel()
+
+	result, err := exp.StreamExport(exportCtx, store)
+	if err != nil {
+		return fmt.Errorf("stream export: %w", err)
+	}
+
+	for table, r := range result {
+		logger.Info(fmt.Sprintf("manual backup: %s — %d records → %s", table, r.NumDocs, r.ExportFile))
+	}
+
+	return nil
 }
 
 func generateAgentID() string {
