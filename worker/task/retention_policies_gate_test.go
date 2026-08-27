@@ -49,8 +49,27 @@ func TestRetentionPolicies_SkipsWhenDisabled(t *testing.T) {
 	cfgRepo := &stubConfigRepo{
 		cfg: &datastore.Configuration{
 			RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-				Period:  "720h",
-				Enabled: false,
+				Period:       "720h",
+				Enabled:      false,
+				EnabledKnown: true,
+			},
+		},
+	}
+
+	task := asynq.NewTask(string(convoy.RetentionPolicies), nil)
+	err := RetentionPolicies(passthroughLocker{}, cfgRepo, ret, log.New("test", log.LevelInfo))(context.Background(), task)
+	require.NoError(t, err)
+	require.False(t, ret.called)
+}
+
+func TestRetentionPolicies_SkipsWhenEnabledUnknown(t *testing.T) {
+	ret := &stubRetentioner{}
+	cfgRepo := &stubConfigRepo{
+		cfg: &datastore.Configuration{
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+				Period:       "720h",
+				Enabled:      true,
+				EnabledKnown: false,
 			},
 		},
 	}
@@ -66,8 +85,9 @@ func TestRetentionPolicies_RunsWhenEnabled(t *testing.T) {
 	cfgRepo := &stubConfigRepo{
 		cfg: &datastore.Configuration{
 			RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-				Period:  "720h",
-				Enabled: true,
+				Period:       "720h",
+				Enabled:      true,
+				EnabledKnown: true,
 			},
 		},
 	}

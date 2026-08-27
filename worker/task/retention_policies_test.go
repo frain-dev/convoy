@@ -350,8 +350,9 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period:  "72h",
-			Enabled: true,
+			Period:       "72h",
+			Enabled:      true,
+			EnabledKnown: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,

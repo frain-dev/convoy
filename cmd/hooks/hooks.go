@@ -425,12 +425,13 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		AzureBlob: &azureBlob,
 	}
 
-	// Retention/archiving knobs are seeded from env on first create only.
-	// After that the configurations row is definitive (dashboard/API), matching
-	// webhook_archiving.enabled flush gates — env must not overwrite on every boot.
+	// Retention/archiving: create seeds from env. Upgrade rows with
+	// retention_enabled NULL get a one-shot env copy (seedRetentionEnabledFromEnv).
+	// After EnabledKnown, dashboard/API owns the bool — env must not overwrite.
 	retentionPolicy := &datastore.RetentionPolicyConfiguration{
-		Period:  cfg.Retention.Period,
-		Enabled: cfg.Retention.Enabled,
+		Period:       cfg.Retention.Period,
+		Enabled:      cfg.Retention.Enabled,
+		EnabledKnown: true,
 	}
 	webhookArchiving := &datastore.WebhookArchivingConfiguration{
 		Enabled: cfg.WebhookArchiving.Enabled,
@@ -457,12 +458,36 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		return configuration, err
 	}
 
+	seedRetentionEnabledFromEnv(configuration, cfg)
+
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
+}
+
+// seedRetentionEnabledFromEnv copies CONVOY_RETENTION_ENABLED into the
+// configurations row when retention_enabled is still NULL (EnabledKnown false).
+// Period already lives on the renamed retention_period column; only Enabled is
+// filled. Once known, later boots leave the dashboard/API value alone.
+func seedRetentionEnabledFromEnv(configuration *datastore.Configuration, cfg config.Configuration) {
+	if configuration == nil {
+		return
+	}
+	if configuration.RetentionPolicy != nil && configuration.RetentionPolicy.EnabledKnown {
+		return
+	}
+	period := cfg.Retention.Period
+	if configuration.RetentionPolicy != nil && strings.TrimSpace(configuration.RetentionPolicy.Period) != "" {
+		period = configuration.RetentionPolicy.Period
+	}
+	configuration.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
+		Period:       period,
+		Enabled:      cfg.Retention.Enabled,
+		EnabledKnown: true,
+	}
 }
 
 // applyExplicitRetentionArchivingFlags force-applies Retention.Enabled and

@@ -349,8 +349,9 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Period:  "720h",
-		Enabled: true,
+		Period:       "720h",
+		Enabled:      true,
+		EnabledKnown: true,
 	}
 	DefaultWebhookArchiving = WebhookArchivingConfiguration{
 		Enabled: false,
@@ -778,6 +779,9 @@ type CircuitBreakerConfiguration struct {
 type RetentionPolicyConfiguration struct {
 	Period  string `json:"period" db:"period"`
 	Enabled bool   `json:"enabled" db:"enabled"`
+	// EnabledKnown is false when convoy.configurations.retention_enabled is NULL
+	// (pre-seed upgrade). Not serialized; boot seeds Enabled from env once.
+	EnabledKnown bool `json:"-"`
 }
 
 // WebhookArchivingConfiguration gates export of webhook data to cold storage.

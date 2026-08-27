@@ -70,8 +70,9 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 			Type: storageType,
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period:  "720h",
-			Enabled: true,
+			Period:       "720h",
+			Enabled:      true,
+			EnabledKnown: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -158,6 +159,7 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 	require.Equal(t, "convoy-events/", loaded.StoragePolicy.S3.Prefix.String)
 	require.Equal(t, "168h", loaded.RetentionPolicy.Period)
 	require.True(t, loaded.RetentionPolicy.Enabled)
+	require.True(t, loaded.RetentionPolicy.EnabledKnown)
 	require.True(t, loaded.WebhookArchiving.Enabled)
 }
 
@@ -187,8 +189,9 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period:  "720h",
-			Enabled: true,
+			Period:       "720h",
+			Enabled:      true,
+			EnabledKnown: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: false,
@@ -364,8 +367,9 @@ func TestCreateConfiguration_WithAzureBlobStorage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period:  "720h",
-			Enabled: true,
+			Period:       "720h",
+			Enabled:      true,
+			EnabledKnown: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,

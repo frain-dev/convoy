@@ -226,8 +226,9 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 	}
 
 	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period:  row.RetentionPeriod,
-		Enabled: row.RetentionEnabled,
+		Period:       row.RetentionPeriod,
+		Enabled:      row.RetentionEnabled.Valid && row.RetentionEnabled.Bool,
+		EnabledKnown: row.RetentionEnabled.Valid,
 	}
 	cfg.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
 		Enabled: row.WebhookArchivingEnabled,

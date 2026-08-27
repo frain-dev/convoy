@@ -231,3 +231,20 @@ func TestLoadConfiguration_CompleteDataIntegrity(t *testing.T) {
 	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
 	require.Equal(t, seeded.WebhookArchiving.Enabled, loaded.WebhookArchiving.Enabled)
 }
+
+func TestLoadConfiguration_RetentionEnabledNull(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.S3)
+
+	_, err := db.GetConn().Exec(ctx, `UPDATE convoy.configurations SET retention_enabled = NULL WHERE id = $1`, seeded.UID)
+	require.NoError(t, err)
+
+	loaded, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.False(t, loaded.RetentionPolicy.EnabledKnown)
+	require.False(t, loaded.RetentionPolicy.Enabled)
+	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
+}

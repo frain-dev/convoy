@@ -21,7 +21,7 @@ func RetentionPolicies(locker JobLocker, configRepo datastore.ConfigurationRepos
 				return fmt.Errorf("load configuration for retention: %w", err)
 			}
 			rc := cfg.GetRetentionPolicyConfig()
-			if !rc.Enabled {
+			if !rc.EnabledKnown || !rc.Enabled {
 				logger.InfoContext(ctx, "retention disabled in configuration; skipping partition drop")
 				return nil
 			}

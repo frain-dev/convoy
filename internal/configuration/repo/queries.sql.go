@@ -13,6 +13,7 @@ import (
 )
 
 const createConfiguration = `-- name: CreateConfiguration :exec
+
 INSERT INTO convoy.configurations (
 	id,
 	is_analytics_enabled,
@@ -158,7 +159,7 @@ type LoadConfigurationRow struct {
 	AzureEndpoint           pgtype.Text
 	AzurePrefix             pgtype.Text
 	RetentionPeriod         string
-	RetentionEnabled        bool
+	RetentionEnabled        pgtype.Bool
 	WebhookArchivingEnabled bool
 	CreatedAt               pgtype.Timestamptz
 	UpdatedAt               pgtype.Timestamptz
