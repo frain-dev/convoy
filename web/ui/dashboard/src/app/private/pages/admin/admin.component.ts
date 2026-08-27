@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfigurationsComponent } from '../settings/configurations/configurations.component';
@@ -21,10 +22,12 @@ export class AdminComponent implements OnInit {
 		{ name: 'table partitions', icon: 'table-grid', svg: 'fill' },
 		{ name: 'table indexes', icon: 'key', svg: 'fill' }
 	];
+	// External href for the back control so middle-click / open-in-new-tab keep RootPath.
+	projectsHref = '/projects';
 
 	@ViewChild(ConfigurationsComponent) configurations?: ConfigurationsComponent;
 
-	constructor(private route: ActivatedRoute, private router: Router) {}
+	constructor(private route: ActivatedRoute, private router: Router, private location: Location) {}
 
 	// Every class is written out in full because Tailwind reads these files as text:
 	// a name assembled from parts at runtime is never generated, and the missing
@@ -40,6 +43,9 @@ export class AdminComponent implements OnInit {
 	}
 
 	ngOnInit() {
+		this.projectsHref = this.location.prepareExternalUrl(
+			this.router.serializeUrl(this.router.createUrlTree(['/projects']))
+		);
 		// Set active page from URL query parameter
 		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'configurations';
 		this.toggleActivePage(requestedPage);
@@ -61,14 +67,21 @@ export class AdminComponent implements OnInit {
 		this.addPageToUrl();
 	}
 
-	leaveAdmin(event: Event) {
-		// Always take navigation: routerLink on the same anchor still fires after
-		// preventDefault alone, so Cancel would discard unsaved Configurations.
-		event.preventDefault();
-		event.stopPropagation();
+	leaveAdmin(event: MouseEvent) {
 		if (!this.confirmLeaveConfigurations(null)) {
+			event.preventDefault();
+			event.stopPropagation();
 			return;
 		}
+		const modified =
+			event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+		if (modified) {
+			// Allow the browser to follow projectsHref (includes RootPath / base href).
+			return;
+		}
+		// Primary click: SPA navigate. Do not rely on href alone so Cancel can block.
+		event.preventDefault();
+		event.stopPropagation();
 		void this.router.navigate(['/projects']);
 	}
 
