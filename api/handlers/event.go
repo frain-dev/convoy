@@ -34,9 +34,10 @@ import (
 //	@Id				CreateEndpointEvent
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
-//	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID	path	string				true	"Project ID"
+//	@Param			event		body	models.CreateEvent	true	"Event Details"
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
@@ -137,7 +138,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", models.NewEventQueuedResponse(id, newMessage.EventType, newMessage.IdempotencyKey), http.StatusCreated))
 }
 
 // CreateBroadcastEvent
@@ -148,9 +149,10 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Param			projectID	path	string					true	"Project ID"
+//	@Param			event		body	models.BroadcastEvent	true	"Broadcast Event Details"
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
@@ -200,7 +202,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Broadcast event created successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Broadcast event created successfully", models.NewEventQueuedResponse(cbe.BroadcastEvent.EventID, cbe.BroadcastEvent.EventType, cbe.BroadcastEvent.IdempotencyKey), http.StatusCreated))
 }
 
 // CreateEndpointFanoutEvent
@@ -211,9 +213,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
-//	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID	path	string				true	"Project ID"
+//	@Param			event		body	models.FanoutEvent	true	"Event Details"
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
@@ -301,24 +304,26 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		"is_duplicate", event.IsDuplicateEvent,
 	)
 
+	receipt := models.NewEventQueuedResponse(event.UID, string(event.EventType), event.IdempotencyKey)
 	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", receipt, http.StatusCreated))
 	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", receipt, http.StatusCreated))
 	}
 }
 
 // CreateDynamicEvent
 //
 //	@Summary		Dynamic Events
-//	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+//	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events.
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send. Get and retry a delivery require an event delivery id from that list.
 //	@Id				CreateDynamicEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
@@ -369,7 +374,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Dynamic event created successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Dynamic event created successfully", models.NewEventQueuedResponse(cde.DynamicEvent.EventID, cde.DynamicEvent.EventType, cde.DynamicEvent.IdempotencyKey), http.StatusCreated))
 }
 
 // ReplayEndpointEvent

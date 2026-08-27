@@ -4146,7 +4146,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint creates an endpoint event",
+        "description": "This endpoint creates an endpoint event\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -4188,12 +4188,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/definitions/handlers.Stub"
-                        }
-                      ],
-                      "x-nullable": true
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -4491,7 +4486,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.",
+        "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -4533,7 +4528,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/models.EventResponse"
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -4831,7 +4826,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events",
+        "description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send. Get and retry a delivery require an event delivery id from that list.",
         "consumes": [
           "application/json"
         ],
@@ -4873,12 +4868,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/definitions/handlers.Stub"
-                        }
-                      ],
-                      "x-nullable": true
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -4964,7 +4954,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
+        "description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -5006,12 +4996,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/definitions/handlers.Stub"
-                        }
-                      ],
-                      "x-nullable": true
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -12412,6 +12397,21 @@
           "type": "string"
         },
         "url_query_params": {
+          "type": "string"
+        }
+      }
+    },
+    "models.EventQueuedResponse": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string"
+        },
+        "idempotency_key": {
+          "type": "string"
+        },
+        "uid": {
+          "description": "UID is the event id.",
           "type": "string"
         }
       }

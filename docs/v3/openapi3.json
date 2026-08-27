@@ -4679,12 +4679,7 @@
                     {
                       "properties": {
                         "data": {
-                          "allOf": [
-                            {
-                              "$ref": "#/components/schemas/handlers.Stub"
-                            }
-                          ],
-                          "nullable": true
+                          "$ref": "#/components/schemas/models.EventQueuedResponse"
                         }
                       },
                       "type": "object"
@@ -4785,7 +4780,7 @@
         "tags": [
           "Events"
         ],
-        "description": "This endpoint creates an endpoint event",
+        "description": "This endpoint creates an endpoint event\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "operationId": "CreateEndpointEvent",
         "requestBody": {
           "content": {
@@ -5074,7 +5069,7 @@
                     {
                       "properties": {
                         "data": {
-                          "$ref": "#/components/schemas/models.EventResponse"
+                          "$ref": "#/components/schemas/models.EventQueuedResponse"
                         }
                       },
                       "type": "object"
@@ -5175,7 +5170,7 @@
         "tags": [
           "Events"
         ],
-        "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.",
+        "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "operationId": "CreateBroadcastEvent",
         "requestBody": {
           "content": {
@@ -5464,12 +5459,7 @@
                     {
                       "properties": {
                         "data": {
-                          "allOf": [
-                            {
-                              "$ref": "#/components/schemas/handlers.Stub"
-                            }
-                          ],
-                          "nullable": true
+                          "$ref": "#/components/schemas/models.EventQueuedResponse"
                         }
                       },
                       "type": "object"
@@ -5570,7 +5560,7 @@
         "tags": [
           "Events"
         ],
-        "description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events",
+        "description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send. Get and retry a delivery require an event delivery id from that list.",
         "operationId": "CreateDynamicEvent",
         "requestBody": {
           "content": {
@@ -5611,12 +5601,7 @@
                     {
                       "properties": {
                         "data": {
-                          "allOf": [
-                            {
-                              "$ref": "#/components/schemas/handlers.Stub"
-                            }
-                          ],
-                          "nullable": true
+                          "$ref": "#/components/schemas/models.EventQueuedResponse"
                         }
                       },
                       "type": "object"
@@ -5717,7 +5702,7 @@
         "tags": [
           "Events"
         ],
-        "description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
+        "description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "operationId": "CreateEndpointFanoutEvent",
         "requestBody": {
           "content": {
@@ -13622,6 +13607,21 @@
             "type": "string"
           },
           "url_query_params": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "models.EventQueuedResponse": {
+        "properties": {
+          "event_type": {
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string"
+          },
+          "uid": {
+            "description": "UID is the event id.",
             "type": "string"
           }
         },
