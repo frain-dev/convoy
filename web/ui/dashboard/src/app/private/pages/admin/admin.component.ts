@@ -68,15 +68,16 @@ export class AdminComponent implements OnInit {
 	}
 
 	leaveAdmin(event: MouseEvent) {
-		if (!this.confirmLeaveConfigurations(null)) {
-			event.preventDefault();
-			event.stopPropagation();
-			return;
-		}
+		// Modifier / middle-click only opens another tab; this form stays dirty.
+		// Confirming first would block native navigation for a leave that never happens.
 		const modified =
 			event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
 		if (modified) {
-			// Allow the browser to follow projectsHref (includes RootPath / base href).
+			return;
+		}
+		if (!this.confirmLeaveConfigurations(null)) {
+			event.preventDefault();
+			event.stopPropagation();
 			return;
 		}
 		// Primary click: SPA navigate. Do not rely on href alone so Cancel can block.
