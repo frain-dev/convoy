@@ -111,20 +111,23 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-disabled.json")
 	require.NoError(u.T(), err)
 
-	// Arrange Request
+	instanceCfg, err := u.ConvoyApp.A.ConfigRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		require.ErrorIs(u.T(), err, datastore.ErrConfigNotFound)
+		instanceCfg, err = testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+		require.NoError(u.T(), err)
+	}
+	instanceCfg.IsSignupEnabled = false
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), instanceCfg))
+
 	url := "/ui/configuration/auth"
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
-
-	// Act
 	u.Router.ServeHTTP(w, req)
 
-	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
-
 	var response map[string]interface{}
 	parseResponse(u.T(), w.Result(), &response)
-
 	require.Equal(u.T(), false, response["is_signup_enabled"])
 }
 
@@ -132,20 +135,23 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-enabled.json")
 	require.NoError(u.T(), err)
 
-	// Arrange Request
+	instanceCfg, err := u.ConvoyApp.A.ConfigRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		require.ErrorIs(u.T(), err, datastore.ErrConfigNotFound)
+		instanceCfg, err = testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+		require.NoError(u.T(), err)
+	}
+	instanceCfg.IsSignupEnabled = true
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), instanceCfg))
+
 	url := "/ui/configuration/auth"
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
-
-	// Act
 	u.Router.ServeHTTP(w, req)
 
-	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
-
 	var response map[string]interface{}
 	parseResponse(u.T(), w.Result(), &response)
-
 	require.Equal(u.T(), true, response["is_signup_enabled"])
 }
 

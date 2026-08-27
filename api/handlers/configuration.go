@@ -216,9 +216,19 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		ssoEnabled = result.SSOAvailable
 	}
 
+	authSignupEnabled := cfg.Auth.IsSignupEnabled
+	// Prefer DB: register/oauth gate on IsSignupEnabled from configurations.
+	// Env is only the bootstrap seed; Admin owns the live value. On missing row
+	// or load error, keep env so this pre-login surface still answers.
+	if dbCfg, dbErr := h.A.ConfigRepo.LoadConfiguration(r.Context()); dbErr == nil && dbCfg != nil {
+		authSignupEnabled = dbCfg.IsSignupEnabled
+	} else if dbErr != nil && !errors.Is(dbErr, datastore.ErrConfigNotFound) {
+		h.A.Logger.ErrorContext(r.Context(), "failed to load instance config for signup flag", "error", dbErr)
+	}
+
 	authConfig := map[string]interface{}{
 		"billing_strategy":  string(cfg.BillingMode(instanceLicenseKey)),
-		"is_signup_enabled": cfg.Auth.IsSignupEnabled,
+		"is_signup_enabled": authSignupEnabled,
 		"google_oauth": map[string]interface{}{
 			"enabled":      cfg.Auth.GoogleOAuth.Enabled && h.A.Licenser.GoogleOAuth(),
 			"client_id":    cfg.Auth.GoogleOAuth.ClientID,
