@@ -305,12 +305,14 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
 	// Retention is paid-only and partition-based; the license is the single
-	// gate (the delete-query retention system and its feature flag were
-	// removed). LicensedRetentionPolicy re-reads partition state at job time
-	// so `convoy utils partition` activates retention without a worker restart.
-	// Until tables are partitioned it deletes nothing and logs the action.
+	// install gate. DB retention_enabled is checked on each RetentionPolicies
+	// job (like webhook_archiving.enabled on export), so a dashboard disable
+	// does not wait for a worker restart. LicensedRetentionPolicy re-reads
+	// partition state at job time so `convoy utils partition` activates
+	// retention without a restart. Until tables are partitioned it deletes
+	// nothing and logs the action.
 	var ret retention.Retentioner
-	if opts.Licenser.RetentionPolicy() && cfg.Retention.Enabled {
+	if opts.Licenser.RetentionPolicy() {
 		if _, pErr := retention.UnpartitionedTables(ctx, opts.DB); pErr != nil {
 			// Fail closed: a lookup failure is not a definitive "unpartitioned"
 			// verdict, and boot-time DB reads already abort startup above
@@ -399,10 +401,10 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if opts.Licenser.RetentionPolicy() {
-		// RetentionPolicies needs a constructed Retentioner (gated on Retention.Enabled).
-		// Registering with a nil ret panics on any stale or manually queued task.
+		// RetentionPolicies re-reads DB retention_enabled and retention_period
+		// each run so dashboard toggles apply without a worker restart.
 		if ret != nil {
-			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, ret, lo), nil)
+			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, configRepo, ret, lo), nil)
 		}
 		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
 		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo), nil)

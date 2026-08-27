@@ -47,6 +47,7 @@ export class ConfigurationsComponent implements OnInit {
 			enabled: [false]
 		}),
 		retention_policy: this.formBuilder.group({
+			enabled: [true],
 			period: [720]
 		}),
 		storage_policy: this.formBuilder.group({

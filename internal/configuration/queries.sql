@@ -20,8 +20,9 @@ INSERT INTO convoy.configurations (
 	azure_container_name,
 	azure_endpoint,
 	azure_prefix,
-	retention_policy_policy,
-	retention_policy_enabled
+	retention_period,
+	retention_enabled,
+	webhook_archiving_enabled
 ) VALUES (
 	@id,
 	@is_analytics_enabled,
@@ -40,8 +41,9 @@ INSERT INTO convoy.configurations (
 	@azure_container_name,
 	@azure_endpoint,
 	@azure_prefix,
-	@retention_policy_policy,
-	@retention_policy_enabled
+	@retention_period,
+	@retention_enabled,
+	@webhook_archiving_enabled
 );
 
 -- name: LoadConfiguration :one
@@ -64,8 +66,9 @@ SELECT
 	azure_container_name,
 	azure_endpoint,
 	azure_prefix,
-	retention_policy_policy,
-	retention_policy_enabled,
+	retention_period,
+	retention_enabled,
+	webhook_archiving_enabled,
 	created_at,
 	updated_at,
 	deleted_at
@@ -92,7 +95,8 @@ SET
 	azure_container_name = @azure_container_name,
 	azure_endpoint = @azure_endpoint,
 	azure_prefix = @azure_prefix,
-	retention_policy_policy = @retention_policy_policy,
-	retention_policy_enabled = @retention_policy_enabled,
+	retention_period = @retention_period,
+	retention_enabled = @retention_enabled,
+	webhook_archiving_enabled = @webhook_archiving_enabled,
 	updated_at = NOW()
 WHERE id = @id AND deleted_at IS NULL;

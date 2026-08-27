@@ -53,6 +53,10 @@ type RetentionPolicyConfiguration struct {
 
 	// Deprecated: use Period.
 	Policy string `json:"policy"`
+
+	// Gates licensed 01:00 partition drop. Pointer so omitted JSON keeps the
+	// stored value on update (period-only clients must not force-disable).
+	Enabled *bool `json:"enabled"`
 }
 
 func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyConfiguration {
@@ -65,7 +69,14 @@ func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyCon
 		period = r.Policy
 	}
 
-	return &datastore.RetentionPolicyConfiguration{Period: period}
+	out := &datastore.RetentionPolicyConfiguration{
+		Period:  period,
+		Enabled: true,
+	}
+	if r.Enabled != nil {
+		out.Enabled = *r.Enabled
+	}
+	return out
 }
 
 type WebhookArchivingConfiguration struct {

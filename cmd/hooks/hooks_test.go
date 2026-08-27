@@ -110,3 +110,54 @@ func TestApplyLicensePrecedence(t *testing.T) {
 		assert.Equal(t, "legacy-guest-license", instCfg.CheckoutLicenseKey)
 	})
 }
+
+func TestSeedRetentionEnabledFromEnv(t *testing.T) {
+	t.Run("copies env when EnabledKnown is false", func(t *testing.T) {
+		inst := &datastore.Configuration{
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+				Period:       "168h",
+				Enabled:      true,
+				EnabledKnown: false,
+			},
+		}
+		cfg := config.Configuration{}
+		cfg.Retention.Period = "720h"
+		cfg.Retention.Enabled = false
+
+		seedRetentionEnabledFromEnv(inst, cfg)
+
+		assert.True(t, inst.RetentionPolicy.EnabledKnown)
+		assert.False(t, inst.RetentionPolicy.Enabled)
+		assert.Equal(t, "168h", inst.RetentionPolicy.Period)
+	})
+
+	t.Run("uses env period when row period empty", func(t *testing.T) {
+		inst := &datastore.Configuration{}
+		cfg := config.Configuration{}
+		cfg.Retention.Period = "48h"
+		cfg.Retention.Enabled = true
+
+		seedRetentionEnabledFromEnv(inst, cfg)
+
+		assert.True(t, inst.RetentionPolicy.EnabledKnown)
+		assert.True(t, inst.RetentionPolicy.Enabled)
+		assert.Equal(t, "48h", inst.RetentionPolicy.Period)
+	})
+
+	t.Run("leaves known row alone when env differs", func(t *testing.T) {
+		inst := &datastore.Configuration{
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+				Period:       "168h",
+				Enabled:      true,
+				EnabledKnown: true,
+			},
+		}
+		cfg := config.Configuration{}
+		cfg.Retention.Enabled = false
+
+		seedRetentionEnabledFromEnv(inst, cfg)
+
+		assert.True(t, inst.RetentionPolicy.Enabled)
+		assert.Equal(t, "168h", inst.RetentionPolicy.Period)
+	})
+}

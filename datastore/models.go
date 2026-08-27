@@ -349,7 +349,9 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Period: "720h",
+		Period:       "720h",
+		Enabled:      true,
+		EnabledKnown: true,
 	}
 	DefaultWebhookArchiving = WebhookArchivingConfiguration{
 		Enabled: false,
@@ -772,14 +774,17 @@ type CircuitBreakerConfiguration struct {
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
-// RetentionPolicyConfiguration is the keep window for partition drop only.
+// RetentionPolicyConfiguration is partition drop only (enable + keep window).
 // Cold-storage archive enable lives on WebhookArchivingConfiguration.
 type RetentionPolicyConfiguration struct {
-	Period string `json:"period" db:"policy"`
+	Period  string `json:"period" db:"period"`
+	Enabled bool   `json:"enabled" db:"enabled"`
+	// EnabledKnown is false when convoy.configurations.retention_enabled is NULL
+	// (pre-seed upgrade). Not serialized; boot seeds Enabled from env once.
+	EnabledKnown bool `json:"-"`
 }
 
 // WebhookArchivingConfiguration gates export of webhook data to cold storage.
-// Persisted in configuration.retention_policy_enabled until a dedicated column exists.
 type WebhookArchivingConfiguration struct {
 	Enabled bool `json:"enabled" db:"enabled"`
 }

@@ -36,7 +36,17 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 	}
 
 	if c.Config.RetentionPolicy != nil {
-		cfg.RetentionPolicy = c.Config.RetentionPolicy.Transform()
+		next := c.Config.RetentionPolicy.Transform()
+		if cfg.RetentionPolicy != nil {
+			// Partial retention_policy payloads must not wipe the other knob.
+			if c.Config.RetentionPolicy.Enabled == nil {
+				next.Enabled = cfg.RetentionPolicy.Enabled
+			}
+			if next.Period == "" {
+				next.Period = cfg.RetentionPolicy.Period
+			}
+		}
+		cfg.RetentionPolicy = next
 	}
 
 	if c.Config.WebhookArchiving != nil {

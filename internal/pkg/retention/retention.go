@@ -100,6 +100,19 @@ func NewLicensedRetentionPolicy(db database.Database, logger log.Logger, period 
 	return &LicensedRetentionPolicy{db: db, logger: logger, period: period}
 }
 
+// SetPeriod updates the keep window from configurations.retention_period.
+// Propagates into an already-activated PartitionRetentionPolicy so the next
+// Perform/reconcile rewrites partman.parent_tables without leaking a second
+// reconcile goroutine.
+func (l *LicensedRetentionPolicy) SetPeriod(period time.Duration) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.period = period
+	if l.inner != nil {
+		l.inner.setRetentionPeriod(period)
+	}
+}
+
 func (l *LicensedRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 	l.mu.Lock()
 	l.interval = sampleRate
@@ -240,6 +253,10 @@ func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period
 		logger:          logger,
 		db:              db,
 	}, nil
+}
+
+func (r *PartitionRetentionPolicy) setRetentionPeriod(period time.Duration) {
+	r.retentionPeriod = period
 }
 
 func applyPartmanMigrations(ctx context.Context, db database.Database) error {

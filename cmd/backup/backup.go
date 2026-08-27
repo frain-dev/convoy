@@ -72,7 +72,7 @@ func AddBackupCommand(a *cli.App) *cobra.Command {
 			}
 
 			if !dbConfig.GetWebhookArchivingConfig().Enabled {
-				return fmt.Errorf("webhook archiving is not enabled; set CONVOY_WEBHOOK_ARCHIVING_ENABLED=true")
+				return fmt.Errorf("webhook archiving is not enabled; enable webhook_archiving in instance configuration (dashboard Settings or API)")
 			}
 
 			if err := blobstore.StoragePolicyUsable(dbConfig.StoragePolicy); err != nil {

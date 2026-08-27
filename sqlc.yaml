@@ -96,6 +96,9 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
+        overrides:
+          - column: "convoy.configurations.retention_enabled"
+            go_type: "github.com/jackc/pgx/v5/pgtype.Bool"
   - queries: ./internal/projects/queries.sql
     engine: postgresql
     database: *db_config
