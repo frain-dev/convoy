@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -141,6 +142,9 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 			}
 
 			require.Nil(t, err)
+			require.NotEmpty(t, es.DynamicEvent.EventID)
+			_, parseErr := ulid.Parse(es.DynamicEvent.EventID)
+			require.NoError(t, parseErr)
 		})
 	}
 }
@@ -186,6 +190,7 @@ func TestCreateDynamicEventService_SyncAckWaitSuccessWithBrokerCache(t *testing.
 
 	err := es.Run(context.Background())
 	require.NoError(t, err)
+	require.NotEmpty(t, de.EventID)
 }
 
 func TestCreateDynamicEventService_SyncAckWaitResolveError(t *testing.T) {

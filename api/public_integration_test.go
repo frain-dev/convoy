@@ -956,13 +956,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
-
-	// // Deep Assert.
-	// var event datastore.Event
-	// parseResponse(s.T(), w.Result(), &event)
-	//
-	// require.NotEmpty(s.T(), event.UID)
-	// require.Equal(s.T(), event.Endpoinints[0], endpointID)
+	requireQueuedEventUID(s.T(), w, "*", "")
 }
 
 // The event creation path must be charged to the ingest bucket and nothing else.
@@ -1260,6 +1254,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+	requireQueuedEventUID(s.T(), w, "*", "idem-key-1")
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateBroadcastEvent() {
@@ -1289,6 +1284,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateBroadcastEvent() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+	requireQueuedEventUID(s.T(), w, "*", "idem-key-1")
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoints() {
@@ -1310,6 +1306,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoin
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+	requireQueuedEventUID(s.T(), w, "*", "")
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_Event() {

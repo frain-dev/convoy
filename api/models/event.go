@@ -215,6 +215,28 @@ type EventResponse struct {
 	*datastore.Event
 }
 
+// EventQueuedResponse is the 201 body from create, broadcast, fan-out, and
+// dynamic ingest. The event id is assigned before the worker persists the
+// row. Use UID to retrieve the event or list its deliveries. Get and retry
+// a delivery need an event delivery id from that list; this receipt does
+// not include one.
+type EventQueuedResponse struct {
+	// UID is the event id.
+	UID string `json:"uid"`
+
+	EventType string `json:"event_type,omitempty"`
+
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+}
+
+func NewEventQueuedResponse(uid, eventType, idempotencyKey string) EventQueuedResponse {
+	return EventQueuedResponse{
+		UID:            uid,
+		EventType:      eventType,
+		IdempotencyKey: idempotencyKey,
+	}
+}
+
 type QueryCountAffectedEvents struct {
 	SourceID   string `json:"sourceId"`
 	EndpointID string `json:"endpointId"`

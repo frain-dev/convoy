@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -92,6 +93,9 @@ func TestCreateBroadcastEventService_Run(t *testing.T) {
 			}
 
 			require.Nil(t, err)
+			require.NotEmpty(t, es.BroadcastEvent.EventID)
+			_, parseErr := ulid.Parse(es.BroadcastEvent.EventID)
+			require.NoError(t, parseErr)
 		})
 	}
 }

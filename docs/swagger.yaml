@@ -1832,6 +1832,16 @@ definitions:
       url_query_params:
         type: string
     type: object
+  models.EventQueuedResponse:
+    properties:
+      event_type:
+        type: string
+      idempotency_key:
+        type: string
+      uid:
+        description: UID is the event id.
+        type: string
+    type: object
   models.EventResponse:
     properties:
       acknowledged_at:
@@ -5122,7 +5132,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint creates an endpoint event
+      description: |-
+        This endpoint creates an endpoint event
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateEndpointEvent
       parameters:
         - description: Project ID
@@ -5146,9 +5158,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    allOf:
-                      - $ref: '#/definitions/handlers.Stub'
-                    x-nullable: true
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
@@ -5457,7 +5467,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
+      description: |-
+        This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateBroadcastEvent
       parameters:
         - description: Project ID
@@ -5481,7 +5493,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/models.EventResponse'
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
@@ -5656,7 +5668,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+      description: |-
+        This endpoint creates a dynamic event without creating the endpoint and subscription ahead of time.
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateDynamicEvent
       parameters:
         - description: Project ID
@@ -5680,9 +5694,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    allOf:
-                      - $ref: '#/definitions/handlers.Stub'
-                    x-nullable: true
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
@@ -5726,7 +5738,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint uses the owner_id to fan out an event to multiple endpoints.
+      description: |-
+        This endpoint uses the owner_id to fan out an event to multiple endpoints.
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateEndpointFanoutEvent
       parameters:
         - description: Project ID
@@ -5750,9 +5764,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    allOf:
-                      - $ref: '#/definitions/handlers.Stub'
-                    x-nullable: true
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
