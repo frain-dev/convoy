@@ -69,21 +69,21 @@ export class AdminComponent implements OnInit {
 
 	leaveAdmin(event: MouseEvent) {
 		// Modifier / middle-click only opens another tab; this form stays dirty.
-		// Confirming first would block native navigation for a leave that never happens.
 		const modified =
 			event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
 		if (modified) {
 			return;
 		}
-		if (!this.confirmLeaveConfigurations(null)) {
-			event.preventDefault();
-			event.stopPropagation();
-			return;
-		}
-		// Primary click: SPA navigate. Do not rely on href alone so Cancel can block.
+		// Primary click: SPA navigate. canDeactivate owns the unsaved confirm so
+		// logo / browser-back / other router exits share one path (no double prompt).
 		event.preventDefault();
 		event.stopPropagation();
 		void this.router.navigate(['/projects']);
+	}
+
+	// Router leaving Admin entirely (back control, shell links, browser history).
+	canDeactivate(): boolean {
+		return this.confirmLeaveConfigurations(null);
 	}
 
 	// next null means leaving Admin entirely (back to projects).

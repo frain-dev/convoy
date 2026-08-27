@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, Routes } from '@angular/router';
+import { CanDeactivateFn, RouterModule, Routes } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
 import { AdminComponent } from './admin.component';
 import { FeatureFlagsComponent } from './feature-flags/feature-flags.component';
@@ -24,7 +24,9 @@ import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ConfigButtonComponent } from '../../components/config-button/config-button.component';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
-const routes: Routes = [{ path: '', component: AdminComponent }];
+const adminUnsavedGuard: CanDeactivateFn<AdminComponent> = component => component.canDeactivate();
+
+const routes: Routes = [{ path: '', component: AdminComponent, canDeactivate: [adminUnsavedGuard] }];
 
 @NgModule({
 	declarations: [
