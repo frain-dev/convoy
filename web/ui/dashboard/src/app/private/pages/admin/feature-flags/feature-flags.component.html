@@ -15,9 +15,10 @@
           <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">{{ getFeatureFlagSourceHint(getCircuitBreakerFlag()!) }}</p>
         </div>
         <convoy-toggle
-          [isChecked]="getCircuitBreakerFlag()!.enabled || !!getCircuitBreakerFlag()!.env_enabled"
+          [isChecked]="getCircuitBreakerFlag()!.admin_managed ? getCircuitBreakerFlag()!.enabled : !!getCircuitBreakerFlag()!.env_enabled"
           [name]="'feature-flag-enabled-circuit-breaker'"
-          [className]="(isUpdatingFeatureFlag || getCircuitBreakerFlag()!.env_enabled) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+          [className]="(isUpdatingFeatureFlag || !getCircuitBreakerFlag()!.admin_managed) ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+          [attr.inert]="isUpdatingFeatureFlag || !getCircuitBreakerFlag()!.admin_managed ? '' : null"
           (onChange)="toggleFeatureFlag(getCircuitBreakerFlag()!, $event)"
         ></convoy-toggle>
       </div>

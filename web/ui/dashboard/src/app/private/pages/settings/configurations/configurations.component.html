@@ -1,10 +1,24 @@
 <div class="flex justify-between items-center mb-28px">
   <h3 class="font-heading font-semibold text-[18px] leading-[26px] text-new.text-primary">Configurations</h3>
 
-  <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isUpdatingConfig || isFetchingConfig || !configLoaded" (click)="updateConfigSettings()">Save Changes</button>
+  <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="!canSave" (click)="updateConfigSettings()">Save Changes</button>
 </div>
 
 <form [formGroup]="configForm">
+  <div class="flex justify-between items-start">
+    <div class="w-3/4">
+      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Admin Managed</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Use the values on this page after restart. When off, environment values win.</p>
+    </div>
+    <convoy-toggle name="admin_managed" formControlName="admin_managed"></convoy-toggle>
+  </div>
+
+  <hr class="border-t border-new.border my-20px" />
+
+  <div
+    [class.opacity-50]="!configForm.get('admin_managed')?.value"
+    [attr.inert]="configForm.get('admin_managed')?.value ? null : ''"
+  >
   <div class="flex justify-between items-start">
     <div class="w-3/4">
       <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Analytics</h4>
@@ -83,7 +97,7 @@
           <convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
           <convoy-radio formControlName="type" label="Azure Blob" _name="type" value="azure_blob" _id="azure_blob" description="Retain events in Azure Blob Storage"></convoy-radio>
         </div>
-        @if (configForm.value.storage_policy.type === 'on_prem') {
+        @if (configForm.get('storage_policy.type')?.value === 'on_prem') {
           <div formGroupName="on_prem">
             <convoy-input-field>
               <label for="path" convoy-label>Storage Path</label>
@@ -91,7 +105,7 @@
             </convoy-input-field>
           </div>
         }
-        @if (configForm.value.storage_policy.type === 's3') {
+        @if (configForm.get('storage_policy.type')?.value === 's3') {
           <div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
             <convoy-input-field>
               <label for="bucket" convoy-label required="true">Bucket</label>
@@ -123,7 +137,7 @@
             </convoy-input-field>
           </div>
         }
-        @if (configForm.value.storage_policy.type === 'azure_blob') {
+        @if (configForm.get('storage_policy.type')?.value === 'azure_blob') {
           <div formGroupName="azure_blob" class="grid grid-cols-2 gap-x-6">
             <convoy-input-field>
               <label for="account_name" convoy-label required="true">Account Name</label>
@@ -163,5 +177,6 @@
         <convoy-config-button (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
       }
     }
+  </div>
   </div>
 </form>

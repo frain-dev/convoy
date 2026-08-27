@@ -85,6 +85,76 @@ func TestLoadConfiguration_NotFound(t *testing.T) {
 	require.Equal(t, datastore.ErrConfigNotFound, err)
 }
 
+func TestCompleteAdminManagedMigration(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.OnPrem)
+	_, err := db.GetConn().Exec(
+		ctx,
+		"UPDATE convoy.configurations SET admin_managed = NULL, retention_enabled = NULL WHERE id = $1",
+		seeded.UID,
+	)
+	require.NoError(t, err)
+
+	legacy, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.False(t, legacy.AdminManagedKnown)
+	require.False(t, legacy.RetentionPolicy.EnabledKnown)
+
+	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
+	require.NoError(t, err)
+	require.True(t, adminManaged)
+	require.False(t, retentionEnabled)
+	adminManaged, retentionEnabled, err = service.CompleteAdminManagedMigration(ctx, seeded.UID, true)
+	require.NoError(t, err)
+	require.True(t, adminManaged)
+	require.False(t, retentionEnabled)
+
+	migrated, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.True(t, migrated.AdminManaged)
+	require.True(t, migrated.AdminManagedKnown)
+	require.False(t, migrated.RetentionPolicy.Enabled)
+	require.True(t, migrated.RetentionPolicy.EnabledKnown)
+	require.Equal(t, seeded.StoragePolicy, migrated.StoragePolicy)
+	require.Equal(t, seeded.IsSignupEnabled, migrated.IsSignupEnabled)
+	require.Equal(t, seeded.IsAnalyticsEnabled, migrated.IsAnalyticsEnabled)
+}
+
+func TestCompleteAdminManagedMigration_ReturnsExistingMode(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.OnPrem)
+
+	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
+	require.NoError(t, err)
+	require.False(t, adminManaged)
+	require.True(t, retentionEnabled)
+}
+
+func TestCompleteAdminManagedMigration_PreservesKnownRetention(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.OnPrem)
+	_, err := db.GetConn().Exec(
+		ctx,
+		"UPDATE convoy.configurations SET admin_managed = NULL WHERE id = $1",
+		seeded.UID,
+	)
+	require.NoError(t, err)
+
+	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
+	require.NoError(t, err)
+	require.True(t, adminManaged)
+	require.True(t, retentionEnabled)
+}
+
 func TestLoadConfiguration_VerifyRetentionPolicy(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()

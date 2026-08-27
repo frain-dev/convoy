@@ -1758,10 +1758,11 @@ type FeatureFlag struct {
 	Enabled    bool      `json:"enabled" db:"enabled"`
 	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	// EnvEnabled is transient (not persisted): whether this flag is forced on
-	// instance-wide via CONVOY_ENABLE_FEATURE_FLAG. Surfaced to the admin UI so it
-	// can show which source is authoritative for the instance default.
+	// EnvEnabled is transient (not persisted): whether this flag is listed in
+	// CONVOY_ENABLE_FEATURE_FLAG.
 	EnvEnabled bool `json:"env_enabled" db:"-"`
+	// AdminManaged is transient and only used by the Admin feature-flags UI.
+	AdminManaged bool `json:"admin_managed" db:"-"`
 }
 
 type FeatureFlagOverride struct {
@@ -1817,6 +1818,8 @@ type Configuration struct {
 	UID                string `json:"uid" db:"id"`
 	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
+	AdminManaged       bool   `json:"admin_managed" db:"admin_managed"`
+	AdminManagedKnown  bool   `json:"-" db:"-"`
 
 	StoragePolicy    *StoragePolicyConfiguration    `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
 	RetentionPolicy  *RetentionPolicyConfiguration  `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`

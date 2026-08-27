@@ -53,6 +53,7 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 		ID:                 common.StringToPgText(cfg.UID),
 		IsAnalyticsEnabled: common.StringToPgText(boolToText(cfg.IsAnalyticsEnabled)),
 		IsSignupEnabled:    pgtype.Bool{Bool: cfg.IsSignupEnabled, Valid: true},
+		AdminManaged:       pgtype.Bool{Bool: cfg.AdminManaged, Valid: true},
 	}
 
 	// Handle storage policy based on type
@@ -122,6 +123,7 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 		ID:                 common.StringToPgText(cfg.UID),
 		IsAnalyticsEnabled: common.StringToPgText(boolToText(cfg.IsAnalyticsEnabled)),
 		IsSignupEnabled:    pgtype.Bool{Bool: cfg.IsSignupEnabled, Valid: true},
+		AdminManaged:       pgtype.Bool{Bool: cfg.AdminManaged, Valid: true},
 	}
 
 	// Handle storage policy based on type
@@ -191,6 +193,8 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 		UID:                row.ID,
 		IsAnalyticsEnabled: textToBool(row.IsAnalyticsEnabled),
 		IsSignupEnabled:    row.IsSignupEnabled,
+		AdminManaged:       row.AdminManaged.Bool,
+		AdminManagedKnown:  row.AdminManaged.Valid,
 		CreatedAt:          row.CreatedAt.Time,
 		UpdatedAt:          row.UpdatedAt.Time,
 		DeletedAt:          common.PgTimestamptzToNullTime(row.DeletedAt),
@@ -276,6 +280,40 @@ func (s *Service) LoadConfiguration(ctx context.Context) (*datastore.Configurati
 
 	cfg := rowToConfiguration(row)
 	return cfg, nil
+}
+
+// CompleteAdminManagedMigration preserves legacy settings and returns the
+// ownership and retention values stored after the migration.
+func (s *Service) CompleteAdminManagedMigration(ctx context.Context, id string, retentionEnabled bool) (bool, bool, error) {
+	result, err := s.repo.CompleteAdminManagedMigration(ctx, repo.CompleteAdminManagedMigrationParams{
+		RetentionEnabled: pgtype.Bool{Bool: retentionEnabled, Valid: true},
+		ID:               common.StringToPgText(id),
+	})
+	if err != nil {
+		s.logger.Error("failed to complete admin-managed migration", "error", err)
+		return false, false, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+	if result.RowsAffected() > 1 {
+		return false, false, util.NewServiceError(
+			http.StatusConflict,
+			errors.New("admin-managed migration updated multiple configurations"),
+		)
+	}
+
+	current, err := s.LoadConfiguration(ctx)
+	if err != nil {
+		return false, false, err
+	}
+	if current.UID != id ||
+		!current.AdminManagedKnown ||
+		current.RetentionPolicy == nil ||
+		!current.RetentionPolicy.EnabledKnown {
+		return false, false, util.NewServiceError(
+			http.StatusConflict,
+			errors.New("admin-managed migration did not update configuration"),
+		)
+	}
+	return current.AdminManaged, current.RetentionPolicy.Enabled, nil
 }
 
 // UpdateConfiguration updates an existing configuration

@@ -382,9 +382,8 @@ func (h *Handler) GetOrganisationFeatureFlags(w http.ResponseWriter, r *http.Req
 	for featureKey := range fflag.DefaultFeaturesState {
 		var enabled bool
 		if featureKey == fflag.CircuitBreaker {
-			// Fold env into the instance base (per-org override still wins) so the
-			// dashboard column-visibility check matches actual display and enforcement.
-			enabled = cbenablement.EnabledForOrg(r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, org.UID)
+			enabled = cbenablement.EnabledForOrg(
+				r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, h.A.AdminManaged, org.UID)
 		} else {
 			enabled = h.A.FFlag.CanAccessOrgFeature(
 				r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
@@ -472,10 +471,9 @@ func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mark which flags are forced on instance-wide via the environment so the admin
-	// UI can show whether the env or this page is the authoritative instance default.
+	// Return both inputs so the Admin UI can show the selected source.
 	for i := range flags {
-		flags[i].EnvEnabled = h.A.FFlag.CanAccessFeature(fflag.FeatureFlagKey(flags[i].FeatureKey))
+		setFeatureFlagSource(&flags[i], h.A.FFlag, h.A.AdminManaged)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flags fetched successfully", flags, http.StatusOK))
@@ -978,8 +976,17 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	setFeatureFlagSource(updatedFlag, h.A.FFlag, h.A.AdminManaged)
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flag updated successfully", updatedFlag, http.StatusOK))
+}
+
+func setFeatureFlagSource(flag *datastore.FeatureFlag, envFlags *fflag.FFlag, adminManaged bool) {
+	if flag == nil {
+		return
+	}
+	flag.EnvEnabled = envFlags != nil && envFlags.CanAccessFeature(fflag.FeatureFlagKey(flag.FeatureKey))
+	flag.AdminManaged = adminManaged
 }
 
 // RetryEventDeliveries retries event deliveries with a particular status in a timeframe (instance admin only)
