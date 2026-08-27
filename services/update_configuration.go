@@ -71,9 +71,9 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 // path) when an update omits them. GetConfiguration redacts secrets, and the
 // Admin form resubmits blank secret fields, so blank means "unchanged", not
 // "clear". Location metadata the form can edit (S3/Azure endpoint and prefix)
-// is not preserved: blank clears those columns so operators can remove a MinIO
-// URL or object prefix. Secrets are only carried over within the same storage
-// type.
+// is not preserved on blank: an emptied field clears the column so operators
+// can remove a MinIO URL or object prefix. Secrets are only carried over within
+// the same storage type.
 //
 // When the type is unchanged but the nested backend object is nil (Admin form
 // has no azure_blob fields today), keep the previous subtree wholesale.
