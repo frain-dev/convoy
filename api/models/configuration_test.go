@@ -4,6 +4,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestRetentionPolicyTransform_PeriodPreferred(t *testing.T) {
@@ -40,6 +43,37 @@ func TestConfigurationValidate_PolicyAliasDuration(t *testing.T) {
 
 	cfg.RetentionPolicy = &RetentionPolicyConfiguration{Policy: "48h"}
 	require.NoError(t, cfg.Validate())
+}
+
+func TestConfigurationValidateForUpdate_AllowsBlankStorageSecrets(t *testing.T) {
+	cfg := &Configuration{
+		RetentionPolicy: &RetentionPolicyConfiguration{Period: "48h"},
+		StoragePolicy: &StoragePolicyConfiguration{
+			Type: datastore.OnPrem,
+			OnPrem: &OnPremStorage{
+				Path: null.String{}, // blank = keep on update
+			},
+		},
+	}
+	require.NoError(t, cfg.ValidateForUpdate())
+
+	cfg.RetentionPolicy = &RetentionPolicyConfiguration{Period: "nope"}
+	require.Error(t, cfg.ValidateForUpdate())
+}
+
+func TestConfigurationValidateForUpdate_RejectsUnknownStorageType(t *testing.T) {
+	cfg := &Configuration{
+		StoragePolicy: &StoragePolicyConfiguration{Type: "gcs"},
+	}
+	require.Error(t, cfg.ValidateForUpdate())
+}
+
+func TestConfigurationValidateForUpdate_RejectsEmptyStorageType(t *testing.T) {
+	// Empty type with a non-nil storage_policy would wipe stored columns on update.
+	cfg := &Configuration{
+		StoragePolicy: &StoragePolicyConfiguration{Type: ""},
+	}
+	require.Error(t, cfg.ValidateForUpdate())
 }
 
 func TestWebhookArchivingTransform(t *testing.T) {

@@ -10,7 +10,7 @@
     </a>
     <div class="flex flex-col gap-2px">
       <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Admin</h2>
-      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Instance-wide tools for feature flags, circuit breakers and queues</p>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Instance-wide tools for configurations, feature flags, circuit breakers and queues</p>
     </div>
   </div>
 
@@ -39,6 +39,10 @@
     </div>
 
     <div class="min-h-[60vh] w-full min-w-0">
+      @if (activePage === 'configurations') {
+        <configurations></configurations>
+      }
+
       @if (activePage === 'feature flags') {
         <app-feature-flags></app-feature-flags>
       }

@@ -39,7 +39,10 @@ export class ConfigurationsComponent implements OnInit {
 	isUpdatingConfig = false;
 	showDeleteModal = false;
 	isFetchingConfig = false;
+	configLoaded = false;
 	loaderIndex: number[] = [0, 1, 2];
+	// Storage secrets and on-prem path are optional on update: GET redacts them,
+	// and blank on PUT means keep (preserveStoragePolicySecrets).
 	configForm: FormGroup = this.formBuilder.group({
 		is_analytics_enabled: [null, Validators.required],
 		is_signup_enabled: [null, Validators.required],
@@ -53,13 +56,15 @@ export class ConfigurationsComponent implements OnInit {
 		storage_policy: this.formBuilder.group({
 			type: [null, Validators.required],
 			on_prem: this.formBuilder.group({
-				path: [null, Validators.required]
+				path: [null]
 			}),
 			s3: this.formBuilder.group({
 				bucket: [null, Validators.required],
 				region: [null, Validators.required],
-				access_key: [null, Validators.required],
-				secret_key: [null, Validators.required],
+				endpoint: [null],
+				prefix: [null],
+				access_key: [null],
+				secret_key: [null],
 				session_token: [null]
 			})
 		})
@@ -86,28 +91,47 @@ export class ConfigurationsComponent implements OnInit {
 			const period = configurations.retention_policy?.period || configurations.retention_policy?.policy;
 			if (period) {
 				this.configForm.get('retention_policy.period')?.patchValue(this.getHours(period));
-				// Retention period is independent of webhook archiving.
 				this.configurations.forEach(c => {
 					if (c.uid === 'retention_policy') c.show = true;
 				});
 			}
+			if (configurations.storage_policy?.type) {
+				this.configurations.forEach(c => {
+					if (c.uid === 'storage_policy') c.show = true;
+				});
+			}
 
+			this.configLoaded = true;
 			this.isFetchingConfig = false;
 		} catch {
+			this.configLoaded = false;
 			this.isFetchingConfig = false;
 		}
 	}
 
 	async updateConfigSettings() {
-		if (this.configForm.value.storage_policy.type === 'on_prem') delete this.configForm.value.storage_policy.s3;
-		if (this.configForm.value.storage_policy.type === 's3') delete this.configForm.value.storage_policy.on_prem;
-		if (typeof this.configForm.value.retention_policy.period === 'number') {
-			this.configForm.value.retention_policy.period = `${this.configForm.value.retention_policy.period}h`;
+		if (!this.configLoaded) {
+			return;
+		}
+		const payload = structuredClone(this.configForm.value);
+		// Omit storage_policy when type is unset or not editable in this form
+		// (azure_blob has no fields yet). ValidateForUpdate + preserve keep
+		// stored Azure when type is resent without a nested object; skipping
+		// avoids accidental type flips via the on_prem/s3 radios.
+		if (payload.storage_policy?.type !== 'on_prem' && payload.storage_policy?.type !== 's3') {
+			delete payload.storage_policy;
+		} else if (payload.storage_policy.type === 'on_prem') {
+			delete payload.storage_policy.s3;
+		} else if (payload.storage_policy.type === 's3') {
+			delete payload.storage_policy.on_prem;
+		}
+		if (typeof payload.retention_policy?.period === 'number') {
+			payload.retention_policy.period = `${payload.retention_policy.period}h`;
 		}
 
 		this.isUpdatingConfig = true;
 		try {
-			const response = await this.settingService.updateConfigSettings(this.configForm.value);
+			const response = await this.settingService.updateConfigSettings(payload);
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isUpdatingConfig = false;
 			this.fetchConfigSettings();

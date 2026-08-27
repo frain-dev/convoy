@@ -31,6 +31,31 @@ func (c *Configuration) Validate() error {
 	if err := util.Validate(c); err != nil {
 		return err
 	}
+	return c.validateRetentionPeriod()
+}
+
+// ValidateForUpdate is for PUT /ui/configuration. GetConfiguration redacts
+// storage secrets and the Admin form resubmits the redacted shape, so blank
+// access keys / on-prem paths mean "keep stored values" (see
+// preserveStoragePolicySecrets), not "clear". Full Validate would reject those
+// blanks via required tags meant for create.
+//
+// When storage_policy is present, type must be a concrete supported value.
+// An empty type still replaces the stored policy in UpdateConfigService and
+// clears every storage column on write.
+func (c *Configuration) ValidateForUpdate() error {
+	if c.StoragePolicy != nil {
+		switch c.StoragePolicy.Type {
+		case datastore.OnPrem, datastore.S3, datastore.AzureBlob:
+			// ok
+		default:
+			return errors.New("please provide a valid storage type")
+		}
+	}
+	return c.validateRetentionPeriod()
+}
+
+func (c *Configuration) validateRetentionPeriod() error {
 	if c.RetentionPolicy == nil {
 		return nil
 	}

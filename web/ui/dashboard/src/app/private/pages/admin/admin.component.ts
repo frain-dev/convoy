@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
-export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
+export type ADMIN_PAGE = 'configurations' | 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
 
 @Component({
     selector: 'app-admin',
@@ -16,6 +16,7 @@ export class AdminComponent implements OnInit {
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
 		{ name: 'resend events', icon: 'retry', svg: 'fill' },
 		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' },
+		{ name: 'configurations', icon: 'settings', svg: 'fill' },
 		{ name: 'table partitions', icon: 'table-grid', svg: 'fill' },
 		{ name: 'table indexes', icon: 'key', svg: 'fill' }
 	];
