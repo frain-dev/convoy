@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ConfigurationsComponent } from '../settings/configurations/configurations.component';
 
 export type ADMIN_PAGE = 'configurations' | 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
 
@@ -20,8 +22,12 @@ export class AdminComponent implements OnInit {
 		{ name: 'table partitions', icon: 'table-grid', svg: 'fill' },
 		{ name: 'table indexes', icon: 'key', svg: 'fill' }
 	];
+	// External href for the back control so middle-click / open-in-new-tab keep RootPath.
+	projectsHref = '/projects';
 
-	constructor(private route: ActivatedRoute, private router: Router) {}
+	@ViewChild(ConfigurationsComponent) configurations?: ConfigurationsComponent;
+
+	constructor(private route: ActivatedRoute, private router: Router, private location: Location) {}
 
 	// Every class is written out in full because Tailwind reads these files as text:
 	// a name assembled from parts at runtime is never generated, and the missing
@@ -37,6 +43,9 @@ export class AdminComponent implements OnInit {
 	}
 
 	ngOnInit() {
+		this.projectsHref = this.location.prepareExternalUrl(
+			this.router.serializeUrl(this.router.createUrlTree(['/projects']))
+		);
 		// Set active page from URL query parameter
 		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'configurations';
 		this.toggleActivePage(requestedPage);
@@ -46,8 +55,49 @@ export class AdminComponent implements OnInit {
 	// page added above cannot be one an ?activePage link silently falls back from.
 	toggleActivePage(page: string) {
 		const known = this.adminMenu.some(menu => menu.name === page);
-		this.activePage = known ? (page as ADMIN_PAGE) : 'configurations';
+		const next = known ? (page as ADMIN_PAGE) : 'configurations';
+		if (next === this.activePage) {
+			this.addPageToUrl();
+			return;
+		}
+		if (!this.confirmLeaveConfigurations(next)) {
+			return;
+		}
+		this.activePage = next;
 		this.addPageToUrl();
+	}
+
+	leaveAdmin(event: MouseEvent) {
+		// Modifier / middle-click only opens another tab; this form stays dirty.
+		const modified =
+			event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+		if (modified) {
+			return;
+		}
+		// Primary click: SPA navigate. canDeactivate owns the unsaved confirm so
+		// logo / browser-back / other router exits share one path (no double prompt).
+		event.preventDefault();
+		event.stopPropagation();
+		void this.router.navigate(['/projects']);
+	}
+
+	// Router leaving Admin entirely (back control, shell links, browser history).
+	canDeactivate(): boolean {
+		return this.confirmLeaveConfigurations(null);
+	}
+
+	// next null means leaving Admin entirely (back to projects).
+	private confirmLeaveConfigurations(next: ADMIN_PAGE | null): boolean {
+		if (this.activePage !== 'configurations') {
+			return true;
+		}
+		if (next === 'configurations') {
+			return true;
+		}
+		if (!this.configurations?.hasUnsavedChanges) {
+			return true;
+		}
+		return window.confirm('You have unsaved configuration changes. Leave without saving?');
 	}
 
 	// The tab is written back to the URL so a reload lands where the operator

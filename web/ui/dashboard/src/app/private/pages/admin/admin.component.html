@@ -3,7 +3,7 @@
 <div class="mt-24px mx-auto w-full max-w-[1000px] pb-60px desktop:px-24px">
   <!-- Page header -->
   <div class="flex items-center gap-12px">
-    <a routerLink="/projects" class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-white-100 transition-colors hover:bg-new.surface-muted">
+    <a [attr.href]="projectsHref" (click)="leaveAdmin($event)" class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-white-100 transition-colors hover:bg-new.surface-muted">
       <svg width="20" height="20" class="fill-new.text-secondary scale-75">
         <use xlink:href="#arrow-left-icon"></use>
       </svg>

@@ -124,4 +124,64 @@ describe('TablePartitionsComponent', () => {
 		component.runsKnown = false;
 		expect(component.canStart).toBeFalse();
 	});
+
+	// Rebuilds share the slot and the API response, but this page only shows
+	// conversions. A rebuild-only history must not look like a past conversion.
+	it('lists conversion runs and hides rebuilds', () => {
+		component.runs = [
+			{
+				uid: 'run-rebuild',
+				table_name: 'events',
+				operation: 'rebuild_index',
+				index_name: 'idx_events_source_id',
+				status: 'completed',
+				phase: null,
+				steps: null,
+				error: null,
+				triggered_by: 'user-1',
+				started_at: '2026-08-19T09:00:00Z',
+				updated_at: '2026-08-19T09:01:00Z',
+				completed_at: '2026-08-19T09:01:00Z'
+			},
+			{
+				uid: 'run-partition',
+				table_name: 'events',
+				operation: 'partition',
+				index_name: null,
+				status: 'completed',
+				phase: null,
+				steps: null,
+				error: null,
+				triggered_by: 'user-1',
+				started_at: '2026-08-18T09:00:00Z',
+				updated_at: '2026-08-18T09:01:00Z',
+				completed_at: '2026-08-18T09:01:00Z'
+			}
+		];
+		component.runsKnown = true;
+
+		expect(component.conversionRuns.map(run => run.uid)).toEqual(['run-partition']);
+	});
+
+	it('treats a rebuild-only history as no conversions yet', () => {
+		component.runs = [
+			{
+				uid: 'run-rebuild',
+				table_name: 'events',
+				operation: 'rebuild_index',
+				index_name: 'idx_events_source_id',
+				status: 'completed',
+				phase: null,
+				steps: null,
+				error: null,
+				triggered_by: 'user-1',
+				started_at: '2026-08-19T09:00:00Z',
+				updated_at: '2026-08-19T09:01:00Z',
+				completed_at: '2026-08-19T09:01:00Z'
+			}
+		];
+		component.runsKnown = true;
+
+		expect(component.conversionRuns.length).toBe(0);
+	});
 });

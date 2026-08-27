@@ -110,15 +110,19 @@
 
       @if (activeRun) {
         <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-12px text-right">
-          A conversion is already running. One runs at a time for the whole instance.
+          @if (activeRun.operation === 'rebuild_index') {
+            An index rebuild is already running. One runs at a time for the whole instance.
+          } @else {
+            A conversion is already running. One runs at a time for the whole instance.
+          }
         </p>
       }
     </div>
   </div>
 
-  <!-- Every maintenance run, not only conversions: a rebuild started from the
-       indexes page or a shell holds the same instance-wide slot, so an operator
-       looking for what is blocking a conversion has to see it here. -->
+  <!-- Conversion history only. Index rebuilds belong on the indexes page.
+       The full list is still loaded so a rebuild holding the instance-wide
+       slot keeps canStart false and the one-liner above can name it. -->
   <div class="flex items-center justify-between mb-12px">
     <h4 class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Runs</h4>
     <button
@@ -131,11 +135,11 @@
     </button>
   </div>
 
-  @if (runs.length === 0) {
+  @if (conversionRuns.length === 0) {
     <div class="bg-white-100 border border-new.border rounded-12px p-20px">
       <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
         @if (runsKnown) {
-          No conversions or index rebuilds have been run on this instance.
+          No conversions have been run on this instance.
         } @else if (runsFailed) {
           The run history could not be loaded. Refresh to try again.
         } @else {
@@ -146,7 +150,7 @@
   }
 
   <div class="flex flex-col gap-12px">
-    @for (run of runs; track run.uid) {
+    @for (run of conversionRuns; track run.uid) {
       <app-admin-run-card [run]="run"></app-admin-run-card>
     }
   </div>

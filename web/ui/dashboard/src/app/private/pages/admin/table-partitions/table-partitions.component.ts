@@ -44,9 +44,9 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 	// for hours, so it should not be one misplaced click away.
 	partitionForm: FormGroup;
 
-	// Every maintenance run, conversions and index rebuilds alike. They share the
-	// server's single-active slot, so a rebuild in flight has to count as an
-	// active run here or the form would offer a start the server refuses.
+	// Full maintenance history from the server. Display filters to conversions;
+	// rebuilds stay on the indexes page. The unfiltered list still drives
+	// activeRun / canStart because any run holds the instance-wide slot.
 	runs: MaintenanceRun[] = [];
 	tableStates: PartitionTable[] = [];
 	// Distinguishes "fetch failed" from "fetch returned no rows". Clearing
@@ -190,6 +190,11 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 
 	get activeRun(): MaintenanceRun | undefined {
 		return this.runs.find(run => run.status === 'running');
+	}
+
+	// Only partition / unpartition rows. Rebuild history is the indexes page's.
+	get conversionRuns(): MaintenanceRun[] {
+		return this.runs.filter(run => run.operation === 'partition' || run.operation === 'unpartition');
 	}
 
 	// runsKnown is part of the gate, not decoration: the slot is instance-wide and a
