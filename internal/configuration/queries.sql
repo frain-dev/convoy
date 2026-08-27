@@ -74,6 +74,7 @@ SELECT
 	deleted_at
 FROM convoy.configurations
 WHERE deleted_at IS NULL
+ORDER BY updated_at DESC NULLS LAST, id DESC
 LIMIT 1;
 
 -- name: UpdateConfiguration :execresult

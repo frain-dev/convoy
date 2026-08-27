@@ -66,18 +66,25 @@ export class ConfigurationsComponent implements OnInit {
 				access_key: [null],
 				secret_key: [null],
 				session_token: [null]
+			}),
+			azure_blob: this.formBuilder.group({
+				account_name: [null, Validators.required],
+				account_key: [null],
+				container_name: [null, Validators.required],
+				endpoint: [null],
+				prefix: [null]
 			})
 		})
 	});
 
-	configurations = [
-		{ uid: 'retention_policy', name: 'Retention Period', show: false },
-		{ uid: 'storage_policy', name: 'Storage Policy', show: false }
-	];
+	configurations = [{ uid: 'storage_policy', name: 'Storage Policy', show: false }];
 
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService) {}
 
 	ngOnInit() {
+		this.configForm.get('retention_policy.enabled')?.valueChanges.subscribe(enabled => {
+			this.syncRetentionPeriodEnabled(!!enabled);
+		});
 		this.fetchConfigSettings();
 	}
 
@@ -91,15 +98,13 @@ export class ConfigurationsComponent implements OnInit {
 			const period = configurations.retention_policy?.period || configurations.retention_policy?.policy;
 			if (period) {
 				this.configForm.get('retention_policy.period')?.patchValue(this.getHours(period));
-				this.configurations.forEach(c => {
-					if (c.uid === 'retention_policy') c.show = true;
-				});
 			}
 			if (configurations.storage_policy?.type) {
 				this.configurations.forEach(c => {
 					if (c.uid === 'storage_policy') c.show = true;
 				});
 			}
+			this.syncRetentionPeriodEnabled(!!this.configForm.get('retention_policy.enabled')?.value);
 
 			this.configLoaded = true;
 			this.isFetchingConfig = false;
@@ -113,17 +118,20 @@ export class ConfigurationsComponent implements OnInit {
 		if (!this.configLoaded) {
 			return;
 		}
-		const payload = structuredClone(this.configForm.value);
-		// Omit storage_policy when type is unset or not editable in this form
-		// (azure_blob has no fields yet). ValidateForUpdate + preserve keep
-		// stored Azure when type is resent without a nested object; skipping
-		// avoids accidental type flips via the on_prem/s3 radios.
-		if (payload.storage_policy?.type !== 'on_prem' && payload.storage_policy?.type !== 's3') {
+		// getRawValue keeps retention period when Retention is off (control disabled).
+		const payload = structuredClone(this.configForm.getRawValue());
+		const storageType = payload.storage_policy?.type;
+		if (storageType !== 'on_prem' && storageType !== 's3' && storageType !== 'azure_blob') {
 			delete payload.storage_policy;
-		} else if (payload.storage_policy.type === 'on_prem') {
+		} else if (storageType === 'on_prem') {
 			delete payload.storage_policy.s3;
-		} else if (payload.storage_policy.type === 's3') {
+			delete payload.storage_policy.azure_blob;
+		} else if (storageType === 's3') {
 			delete payload.storage_policy.on_prem;
+			delete payload.storage_policy.azure_blob;
+		} else if (storageType === 'azure_blob') {
+			delete payload.storage_policy.on_prem;
+			delete payload.storage_policy.s3;
 		}
 		if (typeof payload.retention_policy?.period === 'number') {
 			payload.retention_policy.period = `${payload.retention_policy.period}h`;
@@ -148,6 +156,18 @@ export class ConfigurationsComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
+	}
+
+	syncRetentionPeriodEnabled(enabled: boolean) {
+		const period = this.configForm.get('retention_policy.period');
+		if (!period) {
+			return;
+		}
+		if (enabled) {
+			period.enable({ emitEvent: false });
+		} else {
+			period.disable({ emitEvent: false });
+		}
 	}
 
 	getHours(hours: any) {

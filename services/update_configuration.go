@@ -75,8 +75,8 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 // can remove a MinIO URL or object prefix. Secrets are only carried over within
 // the same storage type.
 //
-// When the type is unchanged but the nested backend object is nil (Admin form
-// has no azure_blob fields today), keep the previous subtree wholesale.
+// When the type is unchanged but the nested backend object is nil (for example
+// a partial client payload), keep the previous subtree wholesale.
 func preserveStoragePolicySecrets(next, prev *datastore.StoragePolicyConfiguration) {
 	if next == nil || prev == nil {
 		return

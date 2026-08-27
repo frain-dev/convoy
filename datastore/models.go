@@ -834,6 +834,7 @@ var (
 	ErrPortalLinkNotFound                            = errors.New("portal link not found")
 	ErrNotAuthorisedToAccessDocument                 = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                                = errors.New("config not found")
+	ErrConfigAlreadyExists                           = errors.New("configuration already exists")
 	ErrDuplicateProjectName                          = errors.New("a project with this name already exists")
 	ErrDuplicateEmail                                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                                = errors.New("no active secret found")

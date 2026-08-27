@@ -110,8 +110,27 @@ func TestCreateConfigService_Run(t *testing.T) {
 			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, IsSignupEnabled: true},
 			dbFn: func(c *CreateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
 				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
+		},
+		{
+			name: "should_reject_when_configuration_exists",
+			args: args{
+				ctx: ctx,
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &models.OnPremStorage{
+						Path: null.NewString("/tmp/", true),
+					},
+				}},
+			},
+			dbFn: func(c *CreateConfigService) {
+				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{UID: "existing"}, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: datastore.ErrConfigAlreadyExists.Error(),
 		},
 	}
 
@@ -129,7 +148,7 @@ func TestCreateConfigService_Run(t *testing.T) {
 			config, err := c.Run(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrMsg, err.Error())
 				return
 			}
 

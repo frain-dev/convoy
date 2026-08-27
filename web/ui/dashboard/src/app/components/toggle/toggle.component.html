@@ -1,9 +1,9 @@
-<label [for]="id || 'convoy-toggle'" class="inline-flex relative items-center cursor-pointer" [class]="class">
+<label [for]="id" class="inline-flex relative items-center cursor-pointer" [class]="class">
   @if (!formControlName) {
-    <input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit($event)" />
+    <input type="checkbox" [id]="id" class="sr-only peer" [checked]="isChecked" (change)="onChange.emit($event)" />
   }
   @if (formControlName) {
-    <input type="checkbox" [id]="id || 'convoy-toggle'" class="sr-only peer" [formControl]="control" [checked]="isChecked" (change)="onChange.emit($event)" />
+    <input type="checkbox" [id]="id" class="sr-only peer" [formControl]="control" [checked]="isChecked" (change)="onChange.emit($event)" />
   }
   <div
 		class="

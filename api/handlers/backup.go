@@ -41,7 +41,7 @@ func (h *Handler) TriggerBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !dbConfig.GetWebhookArchivingConfig().Enabled {
-		_ = render.Render(w, r, util.NewErrorResponse("webhook archiving is not enabled in configuration", http.StatusUnprocessableEntity))
+		_ = render.Render(w, r, util.NewErrorResponse("webhook archiving is not enabled; enable it in Admin → Configurations", http.StatusUnprocessableEntity))
 		return
 	}
 

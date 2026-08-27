@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -18,6 +19,12 @@ type CreateConfigService struct {
 }
 
 func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration, error) {
+	if _, err := c.ConfigRepo.LoadConfiguration(ctx); err == nil {
+		return nil, util.NewServiceError(http.StatusConflict, datastore.ErrConfigAlreadyExists)
+	} else if !errors.Is(err, datastore.ErrConfigNotFound) {
+		return nil, err
+	}
+
 	storagePolicy := c.NewConfig.StoragePolicy.Transform()
 	if storagePolicy == nil {
 		storagePolicy = &datastore.DefaultStoragePolicy

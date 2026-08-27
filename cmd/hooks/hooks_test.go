@@ -124,8 +124,9 @@ func TestSeedRetentionEnabledFromEnv(t *testing.T) {
 		cfg.Retention.Period = "720h"
 		cfg.Retention.Enabled = false
 
-		seedRetentionEnabledFromEnv(inst, cfg)
+		seeded := seedRetentionEnabledFromEnv(inst, cfg)
 
+		assert.True(t, seeded)
 		assert.True(t, inst.RetentionPolicy.EnabledKnown)
 		assert.False(t, inst.RetentionPolicy.Enabled)
 		assert.Equal(t, "168h", inst.RetentionPolicy.Period)
@@ -137,8 +138,9 @@ func TestSeedRetentionEnabledFromEnv(t *testing.T) {
 		cfg.Retention.Period = "48h"
 		cfg.Retention.Enabled = true
 
-		seedRetentionEnabledFromEnv(inst, cfg)
+		seeded := seedRetentionEnabledFromEnv(inst, cfg)
 
+		assert.True(t, seeded)
 		assert.True(t, inst.RetentionPolicy.EnabledKnown)
 		assert.True(t, inst.RetentionPolicy.Enabled)
 		assert.Equal(t, "48h", inst.RetentionPolicy.Period)
@@ -155,8 +157,9 @@ func TestSeedRetentionEnabledFromEnv(t *testing.T) {
 		cfg := config.Configuration{}
 		cfg.Retention.Enabled = false
 
-		seedRetentionEnabledFromEnv(inst, cfg)
+		seeded := seedRetentionEnabledFromEnv(inst, cfg)
 
+		assert.False(t, seeded)
 		assert.True(t, inst.RetentionPolicy.Enabled)
 		assert.Equal(t, "168h", inst.RetentionPolicy.Period)
 	})

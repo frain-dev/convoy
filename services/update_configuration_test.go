@@ -257,7 +257,7 @@ func TestUpdateConfigService_AzureTypeWithoutNestedKeepsPrevious(t *testing.T) {
 		IsAnalyticsEnabled: boolPtr(false),
 		StoragePolicy: &models.StoragePolicyConfiguration{
 			Type: datastore.AzureBlob,
-			// Admin form has no azure fields; Transform leaves AzureBlob nil.
+			// Transform leaves AzureBlob nil on a type-only payload.
 		},
 	})
 	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
