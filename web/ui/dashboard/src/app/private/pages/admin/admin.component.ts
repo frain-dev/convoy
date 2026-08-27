@@ -62,10 +62,14 @@ export class AdminComponent implements OnInit {
 	}
 
 	leaveAdmin(event: Event) {
+		// Always take navigation: routerLink on the same anchor still fires after
+		// preventDefault alone, so Cancel would discard unsaved Configurations.
+		event.preventDefault();
+		event.stopPropagation();
 		if (!this.confirmLeaveConfigurations(null)) {
-			event.preventDefault();
-			event.stopPropagation();
+			return;
 		}
+		void this.router.navigate(['/projects']);
 	}
 
 	// next null means leaving Admin entirely (back to projects).
