@@ -138,7 +138,9 @@ export class ConfigurationsComponent implements OnInit {
 			this.configLoaded = true;
 			this.isFetchingConfig = false;
 		} catch {
-			this.configLoaded = false;
+			// Leave configLoaded alone. A failed refetch after save must not clear
+			// it: the form still holds editable values, and wiping the flag disables
+			// Save and hides dirty leave warnings for later edits.
 			this.isFetchingConfig = false;
 		}
 	}
