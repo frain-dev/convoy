@@ -32,7 +32,7 @@
       "default": "2025-11-24"
     },
     {
-      "json_path": "retention_policy.backup_interval",
+      "json_path": "webhook_archiving.interval",
       "env_var": "CONVOY_BACKUP_INTERVAL",
       "go_type": "string",
       "default": "1h"
@@ -68,7 +68,7 @@
       "default": "postgres"
     },
     {
-      "json_path": "retention_policy.cdc_backup_enabled",
+      "json_path": "webhook_archiving.cdc_enabled",
       "env_var": "CONVOY_CDC_BACKUP_ENABLED",
       "go_type": "bool",
       "default": "false"
@@ -692,22 +692,22 @@
       "default": ""
     },
     {
-      "json_path": "retention_policy.replication_dsn",
+      "json_path": "webhook_archiving.replication_dsn",
       "env_var": "CONVOY_REPLICATION_DSN",
       "go_type": "string",
       "default": ""
     },
     {
-      "json_path": "retention_policy.policy",
-      "env_var": "CONVOY_RETENTION_POLICY",
-      "go_type": "string",
-      "default": "720h"
+      "json_path": "retention.enabled",
+      "env_var": "CONVOY_RETENTION_ENABLED",
+      "go_type": "bool",
+      "default": "true"
     },
     {
-      "json_path": "retention_policy.enabled",
-      "env_var": "CONVOY_RETENTION_POLICY_ENABLED",
-      "go_type": "bool",
-      "default": "false"
+      "json_path": "retention.period",
+      "env_var": "CONVOY_RETENTION_PERIOD",
+      "go_type": "string",
+      "default": "720h"
     },
     {
       "json_path": "root_path",
@@ -954,6 +954,12 @@
       "env_var": "CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT",
       "go_type": "uint64",
       "default": "30"
+    },
+    {
+      "json_path": "webhook_archiving.enabled",
+      "env_var": "CONVOY_WEBHOOK_ARCHIVING_ENABLED",
+      "go_type": "bool",
+      "default": "false"
     },
     {
       "json_path": "worker_execution_mode",
