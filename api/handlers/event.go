@@ -315,8 +315,8 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 // CreateDynamicEvent
 //
 //	@Summary		Dynamic Events
-//	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events.
-//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send. Get and retry a delivery require an event delivery id from that list.
+//	@Description	This endpoint creates a dynamic event without creating the endpoint and subscription ahead of time.
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
 //	@Id				CreateDynamicEvent
 //	@Tags			Events
 //	@Accept			json
