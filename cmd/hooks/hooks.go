@@ -452,19 +452,27 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				UpdatedAt:          time.Now(),
 			}
 
-			return c, configRepo.CreateConfiguration(ctx, c)
+			if createErr := configRepo.CreateConfiguration(ctx, c); createErr != nil {
+				// Concurrent boot: peer won the live-row unique index. Use that row.
+				if loaded, loadErr := configRepo.LoadConfiguration(ctx); loadErr == nil {
+					return loaded, nil
+				}
+				return nil, createErr
+			}
+			return c, nil
 		}
 
 		return configuration, err
 	}
 
-	seedRetentionEnabledFromEnv(configuration, cfg)
-
-	configuration.StoragePolicy = storagePolicy
-	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
-	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	// Existing row: DB / Admin owns storage, signup, analytics, archiving, and
+	// retention. Env only seeds create, plus a one-shot retention_enabled copy
+	// when the column is still NULL. Do not clobber Admin saves on every boot.
+	seeded := seedRetentionEnabledFromEnv(configuration, cfg)
+	if !seeded {
+		return configuration, nil
+	}
 	configuration.UpdatedAt = time.Now()
-
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
 }
 
@@ -472,12 +480,13 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 // configurations row when retention_enabled is still NULL (EnabledKnown false).
 // Period already lives on the renamed retention_period column; only Enabled is
 // filled. Once known, later boots leave the dashboard/API value alone.
-func seedRetentionEnabledFromEnv(configuration *datastore.Configuration, cfg config.Configuration) {
+// Returns true when the in-memory config was mutated and must be persisted.
+func seedRetentionEnabledFromEnv(configuration *datastore.Configuration, cfg config.Configuration) bool {
 	if configuration == nil {
-		return
+		return false
 	}
 	if configuration.RetentionPolicy != nil && configuration.RetentionPolicy.EnabledKnown {
-		return
+		return false
 	}
 	period := cfg.Retention.Period
 	if configuration.RetentionPolicy != nil && strings.TrimSpace(configuration.RetentionPolicy.Period) != "" {
@@ -488,6 +497,7 @@ func seedRetentionEnabledFromEnv(configuration *datastore.Configuration, cfg con
 		Enabled:      cfg.Retention.Enabled,
 		EnabledKnown: true,
 	}
+	return true
 }
 
 // applyExplicitRetentionArchivingFlags force-applies Retention.Enabled and

@@ -176,18 +176,16 @@ func TestLoadConfiguration_OnlyOneConfiguration(t *testing.T) {
 
 	service := New(log.New("convoy", log.LevelInfo), db)
 
-	// Seed multiple configurations (only last one should be loadable due to LIMIT 1)
+	// Seed, soft-delete, seed again so the unique live-row index still holds.
 	cfg1 := seedConfiguration(t, db, datastore.S3)
+	_, err := db.GetConn().Exec(ctx, `UPDATE convoy.configurations SET deleted_at = NOW() WHERE id = $1`, cfg1.UID)
+	require.NoError(t, err)
 	cfg2 := seedConfiguration(t, db, datastore.OnPrem)
 
-	// Load configuration - should return one (most recent based on query)
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, loaded)
-
-	// Should match one of the seeded configs
-	isValidConfig := loaded.UID == cfg1.UID || loaded.UID == cfg2.UID
-	require.True(t, isValidConfig, "Loaded config should match one of the seeded configs")
+	require.Equal(t, cfg2.UID, loaded.UID)
 }
 
 func TestLoadConfiguration_VerifyTimestamps(t *testing.T) {

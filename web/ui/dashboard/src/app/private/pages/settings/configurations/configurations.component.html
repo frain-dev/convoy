@@ -10,7 +10,7 @@
       <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Analytics</h4>
       <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Enabling analytics will provide anonymous metrics to help us understand how you use Convoy, so we can make it even better for you.</p>
     </div>
-    <convoy-toggle formControlName="is_analytics_enabled"></convoy-toggle>
+    <convoy-toggle name="is_analytics_enabled" formControlName="is_analytics_enabled"></convoy-toggle>
   </div>
 
   <hr class="border-t border-new.border my-20px" />
@@ -27,11 +27,29 @@
 
   <div class="flex justify-between items-start">
     <div class="w-3/4">
-      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Webhook Archiving</h4>
-      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Export webhook data to cold storage. Requires usable storage policy. Does not control partition drop.</p>
+      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Retention</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Drop dated partitions older than the keep window. Licensed only. Does not control cold-storage export.</p>
     </div>
-    <div formGroupName="webhook_archiving">
-      <convoy-toggle formControlName="enabled"></convoy-toggle>
+    <div formGroupName="retention_policy">
+      <convoy-toggle name="retention_enabled" formControlName="enabled"></convoy-toggle>
+    </div>
+  </div>
+
+  <div class="mt-16px max-w-md" [class.opacity-50]="!configForm.get('retention_policy.enabled')?.value">
+    <p class="flex items-center font-body font-medium text-[13px] text-new.text-secondary mb-12px">
+      Retention Period
+      <convoy-tooltip size="sm" position="top-right" class="ml-4px">Keep window for licensed partition drop (e.g. 720 hours).</convoy-tooltip>
+    </p>
+    <div formGroupName="retention_policy">
+      <convoy-input-field>
+        <div class="relative">
+          <input type="number" id="period" convoy-input autocomplete="period" formControlName="period" placeholder="e.g. 720" />
+          <div class="absolute top-[50%] right-14px font-body text-[12px] text-new.text-placeholder translate-y-[-50%]">hour(s)</div>
+        </div>
+        @if (configForm.get('retention_policy.period')?.touched && configForm.get('retention_policy.period')?.invalid) {
+          <convoy-input-error>Enter retention period value</convoy-input-error>
+        }
+      </convoy-input-field>
     </div>
   </div>
 
@@ -39,45 +57,18 @@
 
   <div class="flex justify-between items-start">
     <div class="w-3/4">
-      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Retention</h4>
-      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Drop dated partitions older than the keep window. Licensed only. Does not control cold-storage export.</p>
+      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Webhook Archiving</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Export webhook data to cold storage. Requires usable storage policy. Does not control partition drop.</p>
     </div>
-    <div formGroupName="retention_policy">
-      <convoy-toggle formControlName="enabled"></convoy-toggle>
+    <div formGroupName="webhook_archiving">
+      <convoy-toggle name="webhook_archiving_enabled" formControlName="enabled"></convoy-toggle>
     </div>
   </div>
 
   <hr class="border-t border-new.border my-20px" />
 
-  @if (showConfig('retention_policy')) {
-    <div class="border-l-2 border-new.primary-400 pl-16px mb-40px">
-      <div class="flex justify-between items-center mb-24px">
-        <p class="flex items-center font-body font-medium text-[13px] text-new.text-secondary">
-          Retention Period
-          <convoy-tooltip size="sm" position="top-right" class="ml-4px">Keep window for licensed partition drop (e.g. 720 hours).</convoy-tooltip>
-        </p>
-        <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('retention_policy')">
-          <svg width="14" height="14" class="fill-transparent stroke-new.text-secondary">
-            <use xlink:href="#delete-icon2"></use>
-          </svg>
-        </button>
-      </div>
-      <div formGroupName="retention_policy">
-        <convoy-input-field>
-          <div class="relative">
-            <input type="number" id="period" convoy-input autocomplete="period" formControlName="period" placeholder="e.g. 720" />
-            <div class="absolute top-[50%] right-14px font-body text-[12px] text-new.text-placeholder translate-y-[-50%]">hour(s)</div>
-          </div>
-          @if (configForm.get('retention_policy.period')?.touched && configForm.get('retention_policy.period')?.invalid) {
-            <convoy-input-error>Enter retention period value</convoy-input-error>
-          }
-        </convoy-input-field>
-      </div>
-    </div>
-  }
-
   @if (showConfig('storage_policy')) {
-    <div class="border-l-2 border-new.primary-400 pl-16px mb-40px">
+    <div class="mb-40px">
       <div class="flex justify-between items-center mb-24px">
         <p class="font-body font-medium text-[13px] text-new.text-secondary">Storage Policy</p>
         <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('storage_policy')">
@@ -87,9 +78,10 @@
         </button>
       </div>
       <div formGroupName="storage_policy">
-        <div class="grid grid-cols-2 gap-24px mb-24px">
+        <div class="grid grid-cols-3 gap-24px mb-24px">
           <convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
           <convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
+          <convoy-radio formControlName="type" label="Azure Blob" _name="type" value="azure_blob" _id="azure_blob" description="Retain events in Azure Blob Storage"></convoy-radio>
         </div>
         @if (configForm.value.storage_policy.type === 'on_prem') {
           <div formGroupName="on_prem">
@@ -128,6 +120,36 @@
             <convoy-input-field>
               <label for="session_token" convoy-label>Session Key</label>
               <input id="session_token" convoy-input autocomplete="session_token" formControlName="session_token" placeholder="Optional / leave blank to keep" />
+            </convoy-input-field>
+          </div>
+        }
+        @if (configForm.value.storage_policy.type === 'azure_blob') {
+          <div formGroupName="azure_blob" class="grid grid-cols-2 gap-x-6">
+            <convoy-input-field>
+              <label for="account_name" convoy-label required="true">Account Name</label>
+              <input id="account_name" convoy-input autocomplete="account_name" formControlName="account_name" placeholder="Storage account name" />
+              @if (configForm.get('storage_policy.azure_blob.account_name')?.touched && configForm.get('storage_policy.azure_blob.account_name')?.invalid) {
+                <convoy-input-error>Please enter account name</convoy-input-error>
+              }
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="container_name" convoy-label required="true">Container Name</label>
+              <input id="container_name" convoy-input autocomplete="container_name" formControlName="container_name" placeholder="Container name" />
+              @if (configForm.get('storage_policy.azure_blob.container_name')?.touched && configForm.get('storage_policy.azure_blob.container_name')?.invalid) {
+                <convoy-input-error>Please enter container name</convoy-input-error>
+              }
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="account_key" convoy-label>Account Key</label>
+              <input id="account_key" convoy-input autocomplete="account_key" formControlName="account_key" placeholder="Leave blank to keep current" />
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="azure_endpoint" convoy-label>Endpoint</label>
+              <input id="azure_endpoint" convoy-input autocomplete="azure_endpoint" formControlName="endpoint" placeholder="Optional custom endpoint" />
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="azure_prefix" convoy-label>Prefix</label>
+              <input id="azure_prefix" convoy-input autocomplete="azure_prefix" formControlName="prefix" placeholder="Optional object prefix" />
             </convoy-input-field>
           </div>
         }
