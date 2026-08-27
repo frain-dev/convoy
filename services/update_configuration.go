@@ -31,6 +31,10 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		cfg.IsSignupEnabled = *c.Config.IsSignupEnabled
 	}
 
+	if c.Config.AdminManaged != nil {
+		cfg.AdminManaged = *c.Config.AdminManaged
+	}
+
 	if c.Config.StoragePolicy != nil {
 		prevStorage := cfg.StoragePolicy
 		cfg.StoragePolicy = c.Config.StoragePolicy.Transform()

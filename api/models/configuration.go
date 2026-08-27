@@ -17,6 +17,9 @@ type Configuration struct {
 	// Allow or disallow user signups on your instance
 	IsSignupEnabled *bool `json:"is_signup_enabled"`
 
+	// Selects Admin/DB values instead of environment values after restart.
+	AdminManaged *bool `json:"admin_managed"`
+
 	// Used to configure where events removed by retention policies are stored
 	StoragePolicy *StoragePolicyConfiguration `json:"storage_policy"`
 

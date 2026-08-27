@@ -12,6 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeAdminManagedMigration = `-- name: CompleteAdminManagedMigration :execresult
+UPDATE convoy.configurations
+SET
+	admin_managed = true,
+	retention_enabled = COALESCE(retention_enabled, $1),
+	updated_at = NOW()
+WHERE id = $2
+	AND admin_managed IS NULL
+	AND deleted_at IS NULL
+`
+
+type CompleteAdminManagedMigrationParams struct {
+	RetentionEnabled pgtype.Bool
+	ID               pgtype.Text
+}
+
+func (q *Queries) CompleteAdminManagedMigration(ctx context.Context, arg CompleteAdminManagedMigrationParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, completeAdminManagedMigration, arg.RetentionEnabled, arg.ID)
+}
+
 const createConfiguration = `-- name: CreateConfiguration :exec
 
 INSERT INTO convoy.configurations (
@@ -34,7 +54,8 @@ INSERT INTO convoy.configurations (
 	azure_prefix,
 	retention_period,
 	retention_enabled,
-	webhook_archiving_enabled
+	webhook_archiving_enabled,
+	admin_managed
 ) VALUES (
 	$1,
 	$2,
@@ -55,7 +76,8 @@ INSERT INTO convoy.configurations (
 	$17,
 	$18,
 	$19,
-	$20
+	$20,
+	$21
 )
 `
 
@@ -80,6 +102,7 @@ type CreateConfigurationParams struct {
 	RetentionPeriod         pgtype.Text
 	RetentionEnabled        pgtype.Bool
 	WebhookArchivingEnabled pgtype.Bool
+	AdminManaged            pgtype.Bool
 }
 
 // Configuration Queries
@@ -106,6 +129,7 @@ func (q *Queries) CreateConfiguration(ctx context.Context, arg CreateConfigurati
 		arg.RetentionPeriod,
 		arg.RetentionEnabled,
 		arg.WebhookArchivingEnabled,
+		arg.AdminManaged,
 	)
 	return err
 }
@@ -132,6 +156,7 @@ SELECT
 	retention_period,
 	retention_enabled,
 	webhook_archiving_enabled,
+	admin_managed,
 	created_at,
 	updated_at,
 	deleted_at
@@ -162,6 +187,7 @@ type LoadConfigurationRow struct {
 	RetentionPeriod         string
 	RetentionEnabled        pgtype.Bool
 	WebhookArchivingEnabled bool
+	AdminManaged            pgtype.Bool
 	CreatedAt               pgtype.Timestamptz
 	UpdatedAt               pgtype.Timestamptz
 	DeletedAt               pgtype.Timestamptz
@@ -192,6 +218,7 @@ func (q *Queries) LoadConfiguration(ctx context.Context) (LoadConfigurationRow, 
 		&i.RetentionPeriod,
 		&i.RetentionEnabled,
 		&i.WebhookArchivingEnabled,
+		&i.AdminManaged,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -221,8 +248,9 @@ SET
 	retention_period = $17,
 	retention_enabled = $18,
 	webhook_archiving_enabled = $19,
+	admin_managed = $20,
 	updated_at = NOW()
-WHERE id = $20 AND deleted_at IS NULL
+WHERE id = $21 AND deleted_at IS NULL
 `
 
 type UpdateConfigurationParams struct {
@@ -245,6 +273,7 @@ type UpdateConfigurationParams struct {
 	RetentionPeriod         pgtype.Text
 	RetentionEnabled        pgtype.Bool
 	WebhookArchivingEnabled pgtype.Bool
+	AdminManaged            pgtype.Bool
 	ID                      pgtype.Text
 }
 
@@ -269,6 +298,7 @@ func (q *Queries) UpdateConfiguration(ctx context.Context, arg UpdateConfigurati
 		arg.RetentionPeriod,
 		arg.RetentionEnabled,
 		arg.WebhookArchivingEnabled,
+		arg.AdminManaged,
 		arg.ID,
 	)
 }

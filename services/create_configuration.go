@@ -44,6 +44,7 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		UID:                ulid.Make().String(),
 		StoragePolicy:      storagePolicy,
 		IsAnalyticsEnabled: true,
+		AdminManagedKnown:  true,
 		RetentionPolicy:    rc,
 		WebhookArchiving:   wa,
 		CreatedAt:          time.Now(),
@@ -52,6 +53,9 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 
 	if c.NewConfig.IsSignupEnabled != nil {
 		config.IsSignupEnabled = *c.NewConfig.IsSignupEnabled
+	}
+	if c.NewConfig.AdminManaged != nil {
+		config.AdminManaged = *c.NewConfig.AdminManaged
 	}
 
 	err := c.ConfigRepo.CreateConfiguration(ctx, config)

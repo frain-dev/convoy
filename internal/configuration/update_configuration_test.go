@@ -23,6 +23,7 @@ func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	// Update configuration
 	cfg.IsAnalyticsEnabled = false
 	cfg.IsSignupEnabled = false
+	cfg.AdminManaged = true
 	cfg.RetentionPolicy.Period = "336h"
 	cfg.RetentionPolicy.Enabled = false
 	cfg.WebhookArchiving.Enabled = false
@@ -36,6 +37,7 @@ func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	require.Equal(t, cfg.UID, loaded.UID)
 	require.False(t, loaded.IsAnalyticsEnabled)
 	require.False(t, loaded.IsSignupEnabled)
+	require.True(t, loaded.AdminManaged)
 	require.Equal(t, "336h", loaded.RetentionPolicy.Period)
 	require.False(t, loaded.RetentionPolicy.Enabled)
 	require.False(t, loaded.WebhookArchiving.Enabled)

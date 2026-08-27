@@ -269,11 +269,8 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Display gate routes through the same resolver semantics as the sampler and
-	// enforcement (env folded into the instance base, per-org override wins), so the
-	// failure_rate column never disagrees with whether rates are actually computed.
 	circuitBreakerEnabled := cbenablement.EnabledForOrg(
-		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, project.OrganisationID)
+		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, h.A.AdminManaged, project.OrganisationID)
 	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 && h.A.CircuitBreakerStore != nil {
 		keys := make([]string, len(endpoints))
 		for i := 0; i < len(endpoints); i++ {

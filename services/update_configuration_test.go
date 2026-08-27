@@ -136,6 +136,25 @@ func TestUpdateConfigService_RetentionPartialPreservesPeriod(t *testing.T) {
 	require.False(t, got.RetentionPolicy.Enabled)
 }
 
+func TestUpdateConfigService_AdminManaged(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	enabled := true
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{AdminManaged: &enabled})
+	repo := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	repo.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{}, nil)
+	repo.EXPECT().UpdateConfiguration(gomock.Any(), gomock.AssignableToTypeOf(&datastore.Configuration{})).
+		DoAndReturn(func(_ context.Context, cfg *datastore.Configuration) error {
+			require.True(t, cfg.AdminManaged)
+			return nil
+		})
+
+	cfg, err := svc.Run(context.Background())
+	require.NoError(t, err)
+	require.True(t, cfg.AdminManaged)
+}
+
 func TestPreserveStoragePolicySecrets(t *testing.T) {
 	t.Run("blank incoming secrets are preserved from previous within the same type", func(t *testing.T) {
 		prev := &datastore.StoragePolicyConfiguration{

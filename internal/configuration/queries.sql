@@ -22,7 +22,8 @@ INSERT INTO convoy.configurations (
 	azure_prefix,
 	retention_period,
 	retention_enabled,
-	webhook_archiving_enabled
+	webhook_archiving_enabled,
+	admin_managed
 ) VALUES (
 	@id,
 	@is_analytics_enabled,
@@ -43,7 +44,8 @@ INSERT INTO convoy.configurations (
 	@azure_prefix,
 	@retention_period,
 	@retention_enabled,
-	@webhook_archiving_enabled
+	@webhook_archiving_enabled,
+	@admin_managed
 );
 
 -- name: LoadConfiguration :one
@@ -69,6 +71,7 @@ SELECT
 	retention_period,
 	retention_enabled,
 	webhook_archiving_enabled,
+	admin_managed,
 	created_at,
 	updated_at,
 	deleted_at
@@ -99,5 +102,16 @@ SET
 	retention_period = @retention_period,
 	retention_enabled = @retention_enabled,
 	webhook_archiving_enabled = @webhook_archiving_enabled,
+	admin_managed = @admin_managed,
 	updated_at = NOW()
 WHERE id = @id AND deleted_at IS NULL;
+
+-- name: CompleteAdminManagedMigration :execresult
+UPDATE convoy.configurations
+SET
+	admin_managed = true,
+	retention_enabled = COALESCE(retention_enabled, @retention_enabled),
+	updated_at = NOW()
+WHERE id = @id
+	AND admin_managed IS NULL
+	AND deleted_at IS NULL;

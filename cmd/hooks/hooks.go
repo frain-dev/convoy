@@ -26,6 +26,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/broker"
@@ -425,9 +426,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		AzureBlob: &azureBlob,
 	}
 
-	// Retention/archiving: create seeds from env. Upgrade rows with
-	// retention_enabled NULL get a one-shot env copy (seedRetentionEnabledFromEnv).
-	// After EnabledKnown, dashboard/API owns the bool — env must not overwrite.
 	retentionPolicy := &datastore.RetentionPolicyConfiguration{
 		Period:       cfg.Retention.Period,
 		Enabled:      cfg.Retention.Enabled,
@@ -446,6 +444,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				AdminManagedKnown:  true,
 				RetentionPolicy:    retentionPolicy,
 				WebhookArchiving:   webhookArchiving,
 				CreatedAt:          time.Now(),
@@ -465,39 +464,81 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		return configuration, err
 	}
 
-	// Existing row: DB / Admin owns storage, signup, analytics, archiving, and
-	// retention. Env only seeds create, plus a one-shot retention_enabled copy
-	// when the column is still NULL. Do not clobber Admin saves on every boot.
-	seeded := seedRetentionEnabledFromEnv(configuration, cfg)
-	if !seeded {
+	if !configuration.AdminManagedKnown {
+		err = completeAdminManagedMigration(
+			ctx,
+			cfg,
+			configuration,
+			configRepo,
+			feature_flags.New(a.Logger, a.DB),
+		)
+		if err != nil {
+			return configuration, err
+		}
+	}
+
+	if configuration.AdminManaged {
 		return configuration, nil
 	}
+	configuration.StoragePolicy = storagePolicy
+	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
+	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.RetentionPolicy = retentionPolicy
+	configuration.WebhookArchiving = webhookArchiving
 	configuration.UpdatedAt = time.Now()
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
 }
 
-// seedRetentionEnabledFromEnv copies CONVOY_RETENTION_ENABLED into the
-// configurations row when retention_enabled is still NULL (EnabledKnown false).
-// Period already lives on the renamed retention_period column; only Enabled is
-// filled. Once known, later boots leave the dashboard/API value alone.
-// Returns true when the in-memory config was mutated and must be persisted.
-func seedRetentionEnabledFromEnv(configuration *datastore.Configuration, cfg config.Configuration) bool {
-	if configuration == nil {
-		return false
+type adminManagedConfigurationStore interface {
+	CompleteAdminManagedMigration(context.Context, string, bool) (bool, bool, error)
+}
+
+type adminManagedFeatureFlagStore interface {
+	FetchFeatureFlagByKey(context.Context, string) (*datastore.FeatureFlag, error)
+	UpdateFeatureFlag(context.Context, string, bool) error
+}
+
+func completeAdminManagedMigration(
+	ctx context.Context,
+	cfg config.Configuration,
+	configuration *datastore.Configuration,
+	configStore adminManagedConfigurationStore,
+	flagStore adminManagedFeatureFlagStore,
+) error {
+	envFlags := fflag2.NewFFlag(cfg.EnableFeatureFlag)
+	if envFlags.CanAccessFeature(fflag2.CircuitBreaker) {
+		flag, err := flagStore.FetchFeatureFlagByKey(ctx, string(fflag2.CircuitBreaker))
+		if err != nil {
+			return fmt.Errorf("load circuit-breaker flag for admin-managed migration: %w", err)
+		}
+		if flag == nil {
+			return errors.New("load circuit-breaker flag for admin-managed migration: empty result")
+		}
+		if !flag.Enabled {
+			if err = flagStore.UpdateFeatureFlag(ctx, flag.UID, true); err != nil {
+				return fmt.Errorf("enable circuit-breaker flag for admin-managed migration: %w", err)
+			}
+		}
 	}
-	if configuration.RetentionPolicy != nil && configuration.RetentionPolicy.EnabledKnown {
-		return false
+
+	if configuration.RetentionPolicy == nil {
+		return errors.New("complete admin-managed migration: missing retention policy")
 	}
-	period := cfg.Retention.Period
-	if configuration.RetentionPolicy != nil && strings.TrimSpace(configuration.RetentionPolicy.Period) != "" {
-		period = configuration.RetentionPolicy.Period
+	adminManaged, retentionEnabled, err := configStore.CompleteAdminManagedMigration(
+		ctx,
+		configuration.UID,
+		cfg.Retention.Enabled,
+	)
+	if err != nil {
+		return err
 	}
-	configuration.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period:       period,
-		Enabled:      cfg.Retention.Enabled,
-		EnabledKnown: true,
-	}
-	return true
+
+	configuration.AdminManaged = adminManaged
+	configuration.AdminManagedKnown = true
+	configuration.RetentionPolicy.Enabled = retentionEnabled
+	configuration.RetentionPolicy.EnabledKnown = true
+	configuration.UpdatedAt = time.Now()
+	return nil
 }
 
 // applyExplicitRetentionArchivingFlags force-applies Retention.Enabled and

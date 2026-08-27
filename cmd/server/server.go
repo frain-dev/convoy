@@ -131,6 +131,10 @@ func StartConvoyServer(a *cli.App) error {
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 	featureFlagSvc := feature_flags.New(a.Logger, a.DB)
+	instanceConfig, err := configRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		return err
+	}
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -145,6 +149,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	apiOpts := &types.APIOptions{
 		FFlag:                      flag,
+		AdminManaged:               instanceConfig.AdminManaged,
 		FeatureFlagFetcher:         featureFlagSvc,
 		EarlyAdopterFeatureFetcher: featureFlagSvc,
 		FeatureFlagService:         featureFlagSvc,

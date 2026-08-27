@@ -187,11 +187,14 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, fmt.Errorf("failed to create new net dispatcher: %w", err)
 	}
 
-	// Single source of truth for circuit-breaker enablement: env folded into the
-	// instance DB flag, with per-org overrides winning. Shared by the sampler gate,
-	// per-delivery enforcement, and dashboard display so they never disagree.
 	featureFlagFetcher := ffService
-	cbEnablement := cbenablement.NewResolver(featureFlag, featureFlagFetcher, clock.NewRealClock(), lo)
+	cbEnablement := cbenablement.NewResolver(
+		featureFlag,
+		featureFlagFetcher,
+		loadConfiguration.AdminManaged,
+		clock.NewRealClock(),
+		lo,
+	)
 
 	masterDefaults := cb.CircuitBreakerConfig{
 		SampleRate:                  cfg.CircuitBreaker.SampleRate,

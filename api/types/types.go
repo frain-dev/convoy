@@ -40,6 +40,7 @@ type Locker interface {
 
 type APIOptions struct {
 	FFlag                      *fflag.FFlag
+	AdminManaged               bool
 	FeatureFlagFetcher         fflag.FeatureFlagFetcher
 	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 	FeatureFlagService         *feature_flags.Service

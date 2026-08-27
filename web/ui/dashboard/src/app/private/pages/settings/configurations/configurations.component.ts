@@ -44,6 +44,7 @@ export class ConfigurationsComponent implements OnInit {
 	// Storage secrets and on-prem path are optional on update: GET redacts them,
 	// and blank on PUT means keep (preserveStoragePolicySecrets).
 	configForm: FormGroup = this.formBuilder.group({
+		admin_managed: [false, Validators.required],
 		is_analytics_enabled: [null, Validators.required],
 		is_signup_enabled: [null, Validators.required],
 		webhook_archiving: this.formBuilder.group({
@@ -85,7 +86,14 @@ export class ConfigurationsComponent implements OnInit {
 		this.configForm.get('retention_policy.enabled')?.valueChanges.subscribe(enabled => {
 			this.syncRetentionPeriodEnabled(!!enabled);
 		});
+		this.configForm.get('admin_managed')?.valueChanges.subscribe(enabled => {
+			this.syncAdminManaged(!!enabled);
+		});
 		this.fetchConfigSettings();
+	}
+
+	get canSave(): boolean {
+		return this.configLoaded && this.configForm.dirty && !this.isUpdatingConfig && !this.isFetchingConfig;
 	}
 
 	async fetchConfigSettings() {
@@ -104,8 +112,10 @@ export class ConfigurationsComponent implements OnInit {
 					if (c.uid === 'storage_policy') c.show = true;
 				});
 			}
+			this.syncAdminManaged(!!this.configForm.get('admin_managed')?.value);
 			this.syncRetentionPeriodEnabled(!!this.configForm.get('retention_policy.enabled')?.value);
 
+			this.configForm.markAsPristine();
 			this.configLoaded = true;
 			this.isFetchingConfig = false;
 		} catch {
@@ -115,7 +125,7 @@ export class ConfigurationsComponent implements OnInit {
 	}
 
 	async updateConfigSettings() {
-		if (!this.configLoaded) {
+		if (!this.canSave) {
 			return;
 		}
 		// getRawValue keeps retention period when Retention is off (control disabled).
@@ -149,6 +159,9 @@ export class ConfigurationsComponent implements OnInit {
 	}
 
 	toggleConfigForm(configValue: string) {
+		if (!this.configForm.get('admin_managed')?.value) {
+			return;
+		}
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = !config.show;
 		});
@@ -158,12 +171,22 @@ export class ConfigurationsComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 
+	syncAdminManaged(enabled: boolean) {
+		for (const name of ['is_analytics_enabled', 'is_signup_enabled', 'retention_policy', 'webhook_archiving', 'storage_policy']) {
+			const control = this.configForm.get(name);
+			enabled ? control?.enable({ emitEvent: false }) : control?.disable({ emitEvent: false });
+		}
+		if (enabled) {
+			this.syncRetentionPeriodEnabled(!!this.configForm.get('retention_policy.enabled')?.value);
+		}
+	}
+
 	syncRetentionPeriodEnabled(enabled: boolean) {
 		const period = this.configForm.get('retention_policy.period');
 		if (!period) {
 			return;
 		}
-		if (enabled) {
+		if (enabled && this.configForm.get('admin_managed')?.value) {
 			period.enable({ emitEvent: false });
 		} else {
 			period.disable({ emitEvent: false });
