@@ -1584,6 +1584,9 @@ func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation() {
 }
 
 func (s *BillingIntegrationTestSuite) Test_OnboardSubscription() {
+	s.DefaultUser.EmailVerified = true
+	require.NoError(s.T(), users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).UpdateUser(context.Background(), s.DefaultUser))
+
 	onboardData := map[string]interface{}{
 		"plan_id": "plan-uuid-123",
 		"host":    "https://app.getconvoy.io",

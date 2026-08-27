@@ -105,16 +105,16 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 
 	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
 	require.NoError(t, err)
-	require.True(t, adminManaged)
+	require.False(t, adminManaged)
 	require.False(t, retentionEnabled)
 	adminManaged, retentionEnabled, err = service.CompleteAdminManagedMigration(ctx, seeded.UID, true)
 	require.NoError(t, err)
-	require.True(t, adminManaged)
+	require.False(t, adminManaged)
 	require.False(t, retentionEnabled)
 
 	migrated, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
-	require.True(t, migrated.AdminManaged)
+	require.False(t, migrated.AdminManaged)
 	require.True(t, migrated.AdminManagedKnown)
 	require.False(t, migrated.RetentionPolicy.Enabled)
 	require.True(t, migrated.RetentionPolicy.EnabledKnown)
@@ -151,7 +151,7 @@ func TestCompleteAdminManagedMigration_PreservesKnownRetention(t *testing.T) {
 
 	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
 	require.NoError(t, err)
-	require.True(t, adminManaged)
+	require.False(t, adminManaged)
 	require.True(t, retentionEnabled)
 }
 

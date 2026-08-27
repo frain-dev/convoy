@@ -15,7 +15,7 @@ import (
 const completeAdminManagedMigration = `-- name: CompleteAdminManagedMigration :execresult
 UPDATE convoy.configurations
 SET
-	admin_managed = true,
+	admin_managed = false,
 	retention_enabled = COALESCE(retention_enabled, $1),
 	updated_at = NOW()
 WHERE id = $2
