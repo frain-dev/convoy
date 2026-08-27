@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
-export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
+export type ADMIN_PAGE = 'configurations' | 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
 
 @Component({
     selector: 'app-admin',
@@ -10,8 +10,9 @@ export type ADMIN_PAGE = 'feature flags' | 'circuit breaker config' | 'resend ev
     standalone: false
 })
 export class AdminComponent implements OnInit {
-	activePage: ADMIN_PAGE = 'feature flags';
+	activePage: ADMIN_PAGE = 'configurations';
 	adminMenu: { name: ADMIN_PAGE; icon: string; svg: 'stroke' | 'fill' }[] = [
+		{ name: 'configurations', icon: 'settings', svg: 'fill' },
 		{ name: 'feature flags', icon: 'settings', svg: 'fill' },
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
 		{ name: 'resend events', icon: 'retry', svg: 'fill' },
@@ -37,7 +38,7 @@ export class AdminComponent implements OnInit {
 
 	ngOnInit() {
 		// Set active page from URL query parameter
-		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'feature flags';
+		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'configurations';
 		this.toggleActivePage(requestedPage);
 	}
 
@@ -45,7 +46,7 @@ export class AdminComponent implements OnInit {
 	// page added above cannot be one an ?activePage link silently falls back from.
 	toggleActivePage(page: string) {
 		const known = this.adminMenu.some(menu => menu.name === page);
-		this.activePage = known ? (page as ADMIN_PAGE) : 'feature flags';
+		this.activePage = known ? (page as ADMIN_PAGE) : 'configurations';
 		this.addPageToUrl();
 	}
 

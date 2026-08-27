@@ -146,14 +146,10 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 				SecretKey:    null.StringFrom("stored-secret"),
 				SessionToken: null.StringFrom("stored-session"),
 			},
-			AzureBlob: &datastore.AzureBlobStorage{AccountKey: null.StringFrom("stored-azure")},
-			OnPrem:    &datastore.OnPremStorage{Path: null.StringFrom("/stored/path")},
 		}
 		next := &datastore.StoragePolicyConfiguration{
-			Type:      datastore.S3,
-			S3:        &datastore.S3Storage{Bucket: null.StringFrom("bucket")},
-			AzureBlob: &datastore.AzureBlobStorage{},
-			OnPrem:    &datastore.OnPremStorage{},
+			Type: datastore.S3,
+			S3:   &datastore.S3Storage{Bucket: null.StringFrom("bucket")},
 		}
 
 		preserveStoragePolicySecrets(next, prev)
@@ -161,8 +157,24 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 		require.Equal(t, "stored-access", next.S3.AccessKey.String)
 		require.Equal(t, "stored-secret", next.S3.SecretKey.String)
 		require.Equal(t, "stored-session", next.S3.SessionToken.String)
+	})
+
+	t.Run("nil azure subtree is restored when type is unchanged", func(t *testing.T) {
+		prev := &datastore.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			AzureBlob: &datastore.AzureBlobStorage{
+				AccountName:   null.StringFrom("acct"),
+				AccountKey:    null.StringFrom("stored-azure"),
+				ContainerName: null.StringFrom("container"),
+			},
+		}
+		next := &datastore.StoragePolicyConfiguration{Type: datastore.AzureBlob}
+
+		preserveStoragePolicySecrets(next, prev)
+
+		require.NotNil(t, next.AzureBlob)
 		require.Equal(t, "stored-azure", next.AzureBlob.AccountKey.String)
-		require.Equal(t, "/stored/path", next.OnPrem.Path.String)
+		require.Equal(t, "acct", next.AzureBlob.AccountName.String)
 	})
 
 	t.Run("provided incoming secrets override previous", func(t *testing.T) {
@@ -203,4 +215,78 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 			preserveStoragePolicySecrets(&datastore.StoragePolicyConfiguration{}, nil)
 		})
 	})
+}
+
+func TestUpdateConfigService_AzureTypeWithoutNestedKeepsPrevious(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{
+		IsAnalyticsEnabled: boolPtr(false),
+		StoragePolicy: &models.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			// Admin form has no azure fields; Transform leaves AzureBlob nil.
+		},
+	})
+	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	co.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{
+		IsAnalyticsEnabled: true,
+		StoragePolicy: &datastore.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			AzureBlob: &datastore.AzureBlobStorage{
+				AccountName:   null.StringFrom("acct"),
+				AccountKey:    null.StringFrom("key"),
+				ContainerName: null.StringFrom("c"),
+			},
+		},
+	}, nil)
+	co.EXPECT().UpdateConfiguration(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, cfg *datastore.Configuration) error {
+			require.False(t, cfg.IsAnalyticsEnabled)
+			require.Equal(t, datastore.AzureBlob, cfg.StoragePolicy.Type)
+			require.Equal(t, "key", cfg.StoragePolicy.AzureBlob.AccountKey.String)
+			return nil
+		},
+	)
+
+	_, err := svc.Run(context.Background())
+	require.NoError(t, err)
+}
+
+func TestUpdateConfigService_RejectsTypeSwitchWithoutTargetCredentials(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{
+		StoragePolicy: &models.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3: &models.S3Storage{
+				Bucket: null.StringFrom("new-bucket"),
+				// blank secrets; previous was on_prem so preserve cannot help
+			},
+		},
+	})
+	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	co.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{
+		StoragePolicy: &datastore.StoragePolicyConfiguration{
+			Type:   datastore.OnPrem,
+			OnPrem: &datastore.OnPremStorage{Path: null.StringFrom("/old")},
+		},
+	}, nil)
+
+	_, err := svc.Run(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "access_key and secret_key")
+}
+
+func TestAssertStoragePolicyFields(t *testing.T) {
+	require.NoError(t, assertStoragePolicyFields(nil))
+	require.NoError(t, assertStoragePolicyFields(&datastore.StoragePolicyConfiguration{
+		Type:   datastore.OnPrem,
+		OnPrem: &datastore.OnPremStorage{Path: null.StringFrom("/dev/null")},
+	}))
+	require.Error(t, assertStoragePolicyFields(&datastore.StoragePolicyConfiguration{
+		Type: datastore.S3,
+		S3:   &datastore.S3Storage{Bucket: null.StringFrom("b"), AccessKey: null.StringFrom("a")},
+	}))
 }

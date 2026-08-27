@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,7 +28,7 @@ func TestRedactConfigurationSecrets(t *testing.T) {
 			},
 		}
 
-		redactConfigurationSecrets(c)
+		redactConfigurationSecrets(c, false)
 
 		require.Empty(t, c.LicenseKey)
 		require.Empty(t, c.CheckoutLicenseKey)
@@ -55,7 +58,7 @@ func TestRedactConfigurationSecrets(t *testing.T) {
 			},
 		}
 
-		redactConfigurationSecrets(c)
+		redactConfigurationSecrets(c, false)
 
 		require.Empty(t, c.StoragePolicy.S3.AccessKey.String)
 		require.Empty(t, c.StoragePolicy.S3.SecretKey.String)
@@ -78,14 +81,14 @@ func TestRedactConfigurationSecrets(t *testing.T) {
 			},
 		}
 
-		redactConfigurationSecrets(c)
+		redactConfigurationSecrets(c, false)
 
 		require.Empty(t, c.StoragePolicy.AzureBlob.AccountKey.String)
 		require.Equal(t, "acct", c.StoragePolicy.AzureBlob.AccountName.String)
 		require.Equal(t, "container", c.StoragePolicy.AzureBlob.ContainerName.String)
 	})
 
-	t.Run("strips on-prem path", func(t *testing.T) {
+	t.Run("strips on-prem path for non-admins", func(t *testing.T) {
 		c := &datastore.Configuration{
 			StoragePolicy: &datastore.StoragePolicyConfiguration{
 				Type:   datastore.OnPrem,
@@ -93,17 +96,45 @@ func TestRedactConfigurationSecrets(t *testing.T) {
 			},
 		}
 
-		redactConfigurationSecrets(c)
+		redactConfigurationSecrets(c, false)
 
 		require.Empty(t, c.StoragePolicy.OnPrem.Path.String)
 	})
 
+	t.Run("keeps on-prem path for instance admins", func(t *testing.T) {
+		c := &datastore.Configuration{
+			StoragePolicy: &datastore.StoragePolicyConfiguration{
+				Type:   datastore.OnPrem,
+				OnPrem: &datastore.OnPremStorage{Path: null.StringFrom("/var/lib/convoy/backups")},
+			},
+		}
+
+		redactConfigurationSecrets(c, true)
+
+		require.Equal(t, "/var/lib/convoy/backups", c.StoragePolicy.OnPrem.Path.String)
+	})
+
 	t.Run("nil configuration is a no-op", func(t *testing.T) {
-		require.NotPanics(t, func() { redactConfigurationSecrets(nil) })
+		require.NotPanics(t, func() { redactConfigurationSecrets(nil, false) })
 	})
 
 	t.Run("nil storage policy is a no-op", func(t *testing.T) {
 		c := &datastore.Configuration{UID: "cfg-2"}
-		require.NotPanics(t, func() { redactConfigurationSecrets(c) })
+		require.NotPanics(t, func() { redactConfigurationSecrets(c, false) })
 	})
+}
+
+// PUT /ui/configuration is gated by RequireInstanceAdmin on the router. Without
+// an authenticated instance admin the middleware must 403 before Update runs
+// (no ConfigRepo on this handler, so a miss would panic).
+func TestUpdateConfigurationRequiresInstanceAdmin(t *testing.T) {
+	h := &Handler{}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/ui/configuration",
+		strings.NewReader(`{"retention_policy":{"enabled":false,"period":"48h"}}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	h.RequireInstanceAdmin()(http.HandlerFunc(h.UpdateConfiguration)).ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusForbidden, rec.Code)
 }

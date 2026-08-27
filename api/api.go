@@ -768,6 +768,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
+			// Instance-admin only: dashboard Admin → Configurations writes the
+			// instance configurations row (retention / archiving / storage).
+			configRouter.With(handler.RequireInstanceAdmin()).Put("/", handler.UpdateConfiguration)
 			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 

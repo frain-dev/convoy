@@ -10,6 +10,7 @@ import { ResendEventsComponent } from './resend-events/resend-events.component';
 import { TablePartitionsComponent } from './table-partitions/table-partitions.component';
 import { TableIndexesComponent } from './table-indexes/table-indexes.component';
 import { RunCardComponent } from './runs/run-card.component';
+import { ConfigurationsComponent } from '../settings/configurations/configurations.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -19,12 +20,16 @@ import { LabelComponent, InputFieldDirective, InputErrorComponent, InputDirectiv
 import { CardComponent } from 'src/app/components/card/card.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { QueueMonitoringComponent } from '../queue-monitoring/queue-monitoring.component';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
+import { ConfigButtonComponent } from '../../components/config-button/config-button.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [{ path: '', component: AdminComponent }];
 
 @NgModule({
 	declarations: [
 		AdminComponent,
+		ConfigurationsComponent,
 		FeatureFlagsComponent,
 		OrganisationOverridesComponent,
 		CircuitBreakerConfigComponent,
@@ -40,15 +45,18 @@ const routes: Routes = [{ path: '', component: AdminComponent }];
 		QueueMonitoringComponent,
 		CardComponent,
 		SelectComponent,
+		RadioComponent,
 		ToggleComponent,
 		TagComponent,
 		StatusColorModule,
 		ButtonComponent,
+		ConfigButtonComponent,
 		LoaderModule,
 		LabelComponent,
 		InputFieldDirective,
 		InputErrorComponent,
-		InputDirective
+		InputDirective,
+		TooltipComponent
 	]
 })
 export class AdminModule {}

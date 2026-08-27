@@ -1,7 +1,7 @@
 <div class="flex justify-between items-center mb-28px">
   <h3 class="font-heading font-semibold text-[18px] leading-[26px] text-new.text-primary">Configurations</h3>
 
-  <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isUpdatingConfig" (click)="updateConfigSettings()">Save Changes</button>
+  <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="isUpdatingConfig || isFetchingConfig || !configLoaded" (click)="updateConfigSettings()">Save Changes</button>
 </div>
 
 <form [formGroup]="configForm">
@@ -56,7 +56,7 @@
           Retention Period
           <convoy-tooltip size="sm" position="top-right" class="ml-4px">Keep window for licensed partition drop (e.g. 720 hours).</convoy-tooltip>
         </p>
-        <button type="button" convoy-permission="Project Settings|MANAGE" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('retention_policy')">
+        <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('retention_policy')">
           <svg width="14" height="14" class="fill-transparent stroke-new.text-secondary">
             <use xlink:href="#delete-icon2"></use>
           </svg>
@@ -80,7 +80,7 @@
     <div class="border-l-2 border-new.primary-400 pl-16px mb-40px">
       <div class="flex justify-between items-center mb-24px">
         <p class="font-body font-medium text-[13px] text-new.text-secondary">Storage Policy</p>
-        <button type="button" convoy-permission="Project Settings|MANAGE" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('storage_policy')">
+        <button type="button" class="w-28px h-28px flex items-center justify-center rounded-full bg-new.surface-muted transition-colors hover:opacity-80" (click)="toggleConfigForm('storage_policy')">
           <svg width="14" height="14" class="fill-transparent stroke-new.text-secondary">
             <use xlink:href="#delete-icon2"></use>
           </svg>
@@ -94,11 +94,8 @@
         @if (configForm.value.storage_policy.type === 'on_prem') {
           <div formGroupName="on_prem">
             <convoy-input-field>
-              <label for="path" convoy-label required="true">Storage Path</label>
-              <input id="path" convoy-input autocomplete="path" formControlName="path" placeholder="e.g ../path/to/storage" />
-              @if (configForm.get('storage_policy.on_prem.path')?.touched && configForm.get('storage_policy.on_prem.path')?.invalid) {
-                <convoy-input-error>Please enter a storage path relative to your current device</convoy-input-error>
-              }
+              <label for="path" convoy-label>Storage Path</label>
+              <input id="path" convoy-input autocomplete="path" formControlName="path" placeholder="Leave blank to keep current path" />
             </convoy-input-field>
           </div>
         }
@@ -113,25 +110,16 @@
             </convoy-input-field>
             <convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true" (selectedOption)="configForm.get('storage_policy.s3')?.patchValue({ region: $event })"></convoy-select>
             <convoy-input-field>
-              <label for="access_key" convoy-label required="true">Access Key</label>
-              <input id="access_key" convoy-input autocomplete="access_key" formControlName="access_key" placeholder="Access Key" />
-              @if (configForm.get('storage_policy.s3.access_key')?.touched && configForm.get('storage_policy.s3.access_key')?.invalid) {
-                <convoy-input-error>Please enter access key</convoy-input-error>
-              }
+              <label for="access_key" convoy-label>Access Key</label>
+              <input id="access_key" convoy-input autocomplete="access_key" formControlName="access_key" placeholder="Leave blank to keep current" />
             </convoy-input-field>
             <convoy-input-field>
-              <label for="secret_key" convoy-label required="true">Secret Key</label>
-              <input id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Key" />
-              @if (configForm.get('storage_policy.s3.secret_key')?.touched && configForm.get('storage_policy.s3.secret_key')?.invalid) {
-                <convoy-input-error>Please enter secret key</convoy-input-error>
-              }
+              <label for="secret_key" convoy-label>Secret Key</label>
+              <input id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Leave blank to keep current" />
             </convoy-input-field>
             <convoy-input-field>
-              <label for="session_token" convoy-label required="true">Session Key</label>
-              <input id="session_token" convoy-input autocomplete="session_token" formControlName="session_token" placeholder="Session Key" />
-              @if (configForm.get('storage_policy.s3.session_token')?.touched && configForm.get('storage_policy.s3.session_token')?.invalid) {
-                <convoy-input-error>Please enter session token</convoy-input-error>
-              }
+              <label for="session_token" convoy-label>Session Key</label>
+              <input id="session_token" convoy-input autocomplete="session_token" formControlName="session_token" placeholder="Optional / leave blank to keep" />
             </convoy-input-field>
           </div>
         }
