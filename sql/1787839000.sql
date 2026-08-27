@@ -5,8 +5,8 @@ SET statement_timeout = '30s';
 ALTER TABLE convoy.configurations
 	ADD COLUMN IF NOT EXISTS admin_managed boolean;
 
--- Existing rows stay NULL until first boot preserves their DB settings and
--- completes the one-time ownership migration. New rows default to env.
+-- Existing rows stay NULL until first boot marks ownership known as env
+-- (admin_managed=false). Admin Managed is opt-in via the Admin UI.
 ALTER TABLE convoy.configurations
 	ALTER COLUMN admin_managed SET DEFAULT false;
 

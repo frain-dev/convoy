@@ -107,9 +107,10 @@ SET
 WHERE id = @id AND deleted_at IS NULL;
 
 -- name: CompleteAdminManagedMigration :execresult
+-- Mark legacy NULL ownership as known env-owned. Admin Managed stays opt-in.
 UPDATE convoy.configurations
 SET
-	admin_managed = true,
+	admin_managed = false,
 	retention_enabled = COALESCE(retention_enabled, @retention_enabled),
 	updated_at = NOW()
 WHERE id = @id

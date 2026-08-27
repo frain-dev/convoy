@@ -19,7 +19,6 @@ type migrationConfigurationStore struct {
 	retentionEnabled bool
 	retentionSeed    bool
 	err              error
-	order            *[]string
 }
 
 func (s *migrationConfigurationStore) CompleteAdminManagedMigration(
@@ -27,38 +26,13 @@ func (s *migrationConfigurationStore) CompleteAdminManagedMigration(
 	id string,
 	retentionEnabled bool,
 ) (bool, bool, error) {
-	if s.order != nil {
-		*s.order = append(*s.order, "configuration")
-	}
 	s.completedID = id
 	s.retentionSeed = retentionEnabled
 	return s.managed, s.retentionEnabled, s.err
 }
 
-type migrationFeatureFlagStore struct {
-	flag        *datastore.FeatureFlag
-	fetchErr    error
-	updateErr   error
-	fetchCalls  int
-	updateCalls int
-	order       *[]string
-}
-
-func (s *migrationFeatureFlagStore) FetchFeatureFlagByKey(context.Context, string) (*datastore.FeatureFlag, error) {
-	s.fetchCalls++
-	return s.flag, s.fetchErr
-}
-
-func (s *migrationFeatureFlagStore) UpdateFeatureFlag(context.Context, string, bool) error {
-	if s.order != nil {
-		*s.order = append(*s.order, "circuit-breaker")
-	}
-	s.updateCalls++
-	return s.updateErr
-}
-
 func TestCompleteAdminManagedMigration(t *testing.T) {
-	t.Run("preserves existing configuration", func(t *testing.T) {
+	t.Run("marks legacy ownership as env-owned", func(t *testing.T) {
 		updatedAt := time.Date(2026, time.August, 27, 12, 0, 0, 0, time.UTC)
 		instanceConfig := &datastore.Configuration{
 			UID:                "config-1",
@@ -74,20 +48,18 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 		envConfig.Analytics.IsEnabled = true
 		envConfig.Auth.IsSignupEnabled = true
 		envConfig.Retention.Enabled = true
-		configStore := &migrationConfigurationStore{managed: true, retentionEnabled: true}
-		flagStore := &migrationFeatureFlagStore{}
+		configStore := &migrationConfigurationStore{managed: false, retentionEnabled: true}
 
 		err := completeAdminManagedMigration(
 			context.Background(),
 			envConfig,
 			instanceConfig,
 			configStore,
-			flagStore,
 		)
 
 		require.NoError(t, err)
 		assert.Equal(t, "config-1", configStore.completedID)
-		assert.True(t, instanceConfig.AdminManaged)
+		assert.False(t, instanceConfig.AdminManaged)
 		assert.True(t, instanceConfig.AdminManagedKnown)
 		assert.False(t, instanceConfig.IsAnalyticsEnabled)
 		assert.False(t, instanceConfig.IsSignupEnabled)
@@ -96,93 +68,6 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 		assert.True(t, instanceConfig.RetentionPolicy.EnabledKnown)
 		assert.True(t, configStore.retentionSeed)
 		assert.True(t, instanceConfig.UpdatedAt.After(updatedAt))
-		assert.Zero(t, flagStore.fetchCalls)
-	})
-
-	t.Run("mirrors an env-enabled circuit breaker before selecting DB ownership", func(t *testing.T) {
-		order := make([]string, 0, 2)
-		instanceConfig := &datastore.Configuration{
-			UID:             "config-1",
-			RetentionPolicy: &datastore.RetentionPolicyConfiguration{},
-		}
-		envConfig := config.Configuration{
-			EnableFeatureFlag: []string{"circuit-breaker"},
-		}
-		configStore := &migrationConfigurationStore{managed: true, order: &order}
-		flagStore := &migrationFeatureFlagStore{
-			flag:  &datastore.FeatureFlag{UID: "flag-1"},
-			order: &order,
-		}
-
-		err := completeAdminManagedMigration(
-			context.Background(),
-			envConfig,
-			instanceConfig,
-			configStore,
-			flagStore,
-		)
-
-		require.NoError(t, err)
-		assert.Equal(t, []string{"circuit-breaker", "configuration"}, order)
-		assert.Equal(t, 1, flagStore.fetchCalls)
-		assert.Equal(t, 1, flagStore.updateCalls)
-		assert.True(t, instanceConfig.AdminManaged)
-		assert.True(t, instanceConfig.AdminManagedKnown)
-	})
-
-	t.Run("does not complete ownership migration when circuit breaker cannot be preserved", func(t *testing.T) {
-		instanceConfig := &datastore.Configuration{
-			UID:             "config-1",
-			RetentionPolicy: &datastore.RetentionPolicyConfiguration{},
-		}
-		envConfig := config.Configuration{
-			EnableFeatureFlag: []string{"circuit-breaker"},
-		}
-		configStore := &migrationConfigurationStore{}
-		flagStore := &migrationFeatureFlagStore{
-			fetchErr: errors.New("database unavailable"),
-		}
-
-		err := completeAdminManagedMigration(
-			context.Background(),
-			envConfig,
-			instanceConfig,
-			configStore,
-			flagStore,
-		)
-
-		require.ErrorContains(t, err, "load circuit-breaker flag")
-		assert.Empty(t, configStore.completedID)
-		assert.False(t, instanceConfig.AdminManaged)
-		assert.False(t, instanceConfig.AdminManagedKnown)
-	})
-
-	t.Run("does not complete ownership migration when circuit breaker update fails", func(t *testing.T) {
-		instanceConfig := &datastore.Configuration{
-			UID:             "config-1",
-			RetentionPolicy: &datastore.RetentionPolicyConfiguration{},
-		}
-		envConfig := config.Configuration{
-			EnableFeatureFlag: []string{"circuit-breaker"},
-		}
-		configStore := &migrationConfigurationStore{}
-		flagStore := &migrationFeatureFlagStore{
-			flag:      &datastore.FeatureFlag{UID: "flag-1"},
-			updateErr: errors.New("database unavailable"),
-		}
-
-		err := completeAdminManagedMigration(
-			context.Background(),
-			envConfig,
-			instanceConfig,
-			configStore,
-			flagStore,
-		)
-
-		require.ErrorContains(t, err, "enable circuit-breaker flag")
-		assert.Empty(t, configStore.completedID)
-		assert.False(t, instanceConfig.AdminManaged)
-		assert.False(t, instanceConfig.AdminManagedKnown)
 	})
 
 	t.Run("does not change in-memory ownership when persistence fails", func(t *testing.T) {
@@ -199,7 +84,6 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 			config.Configuration{},
 			instanceConfig,
 			configStore,
-			&migrationFeatureFlagStore{},
 		)
 
 		require.EqualError(t, err, "database unavailable")

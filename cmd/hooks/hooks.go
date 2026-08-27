@@ -26,7 +26,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
-	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/broker"
@@ -465,13 +464,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	}
 
 	if !configuration.AdminManagedKnown {
-		err = completeAdminManagedMigration(
-			ctx,
-			cfg,
-			configuration,
-			configRepo,
-			feature_flags.New(a.Logger, a.DB),
-		)
+		err = completeAdminManagedMigration(ctx, cfg, configuration, configRepo)
 		if err != nil {
 			return configuration, err
 		}
@@ -493,34 +486,14 @@ type adminManagedConfigurationStore interface {
 	CompleteAdminManagedMigration(context.Context, string, bool) (bool, bool, error)
 }
 
-type adminManagedFeatureFlagStore interface {
-	FetchFeatureFlagByKey(context.Context, string) (*datastore.FeatureFlag, error)
-	UpdateFeatureFlag(context.Context, string, bool) error
-}
-
+// completeAdminManagedMigration marks a legacy NULL ownership column as known
+// env-owned (false). Admin Managed is opt-in; upgrades must not flip it on.
 func completeAdminManagedMigration(
 	ctx context.Context,
 	cfg config.Configuration,
 	configuration *datastore.Configuration,
 	configStore adminManagedConfigurationStore,
-	flagStore adminManagedFeatureFlagStore,
 ) error {
-	envFlags := fflag2.NewFFlag(cfg.EnableFeatureFlag)
-	if envFlags.CanAccessFeature(fflag2.CircuitBreaker) {
-		flag, err := flagStore.FetchFeatureFlagByKey(ctx, string(fflag2.CircuitBreaker))
-		if err != nil {
-			return fmt.Errorf("load circuit-breaker flag for admin-managed migration: %w", err)
-		}
-		if flag == nil {
-			return errors.New("load circuit-breaker flag for admin-managed migration: empty result")
-		}
-		if !flag.Enabled {
-			if err = flagStore.UpdateFeatureFlag(ctx, flag.UID, true); err != nil {
-				return fmt.Errorf("enable circuit-breaker flag for admin-managed migration: %w", err)
-			}
-		}
-	}
-
 	if configuration.RetentionPolicy == nil {
 		return errors.New("complete admin-managed migration: missing retention policy")
 	}
