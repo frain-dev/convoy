@@ -67,13 +67,13 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 	return cfg, nil
 }
 
-// preserveStoragePolicySecrets keeps previously stored storage credentials when
-// an update omits them. GetConfiguration redacts these secrets, and the settings
-// UI resubmits the whole storage policy on save, so a blank incoming secret means
-// "unchanged", not "clear". Without this, saving any config field through the
-// dashboard would wipe the stored S3/Azure/on-prem storage credentials. Secrets
-// are only carried over within the same storage type, so switching type still
-// applies the incoming values.
+// preserveStoragePolicySecrets keeps previously stored credentials (and on-prem
+// path) when an update omits them. GetConfiguration redacts secrets, and the
+// Admin form resubmits blank secret fields, so blank means "unchanged", not
+// "clear". Location metadata the form can edit (S3/Azure endpoint and prefix)
+// is not preserved: blank clears those columns so operators can remove a MinIO
+// URL or object prefix. Secrets are only carried over within the same storage
+// type.
 //
 // When the type is unchanged but the nested backend object is nil (Admin form
 // has no azure_blob fields today), keep the previous subtree wholesale.
@@ -104,14 +104,6 @@ func preserveStoragePolicySecrets(next, prev *datastore.StoragePolicyConfigurati
 		if next.S3.SessionToken.String == "" {
 			next.S3.SessionToken = prev.S3.SessionToken
 		}
-		// Admin form has no endpoint/prefix controls; GET drops prefix on redact.
-		// Blank means keep so MinIO and prefixed buckets survive a retention save.
-		if next.S3.Endpoint.String == "" {
-			next.S3.Endpoint = prev.S3.Endpoint
-		}
-		if next.S3.Prefix.String == "" {
-			next.S3.Prefix = prev.S3.Prefix
-		}
 	case datastore.AzureBlob:
 		if next.AzureBlob == nil {
 			next.AzureBlob = prev.AzureBlob
@@ -122,12 +114,6 @@ func preserveStoragePolicySecrets(next, prev *datastore.StoragePolicyConfigurati
 		}
 		if next.AzureBlob.AccountKey.String == "" {
 			next.AzureBlob.AccountKey = prev.AzureBlob.AccountKey
-		}
-		if next.AzureBlob.Endpoint.String == "" {
-			next.AzureBlob.Endpoint = prev.AzureBlob.Endpoint
-		}
-		if next.AzureBlob.Prefix.String == "" {
-			next.AzureBlob.Prefix = prev.AzureBlob.Prefix
 		}
 	case datastore.OnPrem:
 		if next.OnPrem == nil {
