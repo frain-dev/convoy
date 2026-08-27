@@ -51,6 +51,7 @@ func TestRedactConfigurationSecrets(t *testing.T) {
 					Bucket:       null.StringFrom("my-bucket"),
 					Region:       null.StringFrom("us-east-1"),
 					Endpoint:     null.StringFrom("https://s3.example.com"),
+					Prefix:       null.StringFrom("archives/"),
 					AccessKey:    null.StringFrom("AKIA-secret"),
 					SecretKey:    null.StringFrom("super-secret"),
 					SessionToken: null.StringFrom("session-secret"),
@@ -66,6 +67,7 @@ func TestRedactConfigurationSecrets(t *testing.T) {
 		require.Equal(t, "my-bucket", c.StoragePolicy.S3.Bucket.String)
 		require.Equal(t, "us-east-1", c.StoragePolicy.S3.Region.String)
 		require.Equal(t, "https://s3.example.com", c.StoragePolicy.S3.Endpoint.String)
+		require.Equal(t, "archives/", c.StoragePolicy.S3.Prefix.String)
 	})
 
 	t.Run("strips Azure account key, keeps location metadata", func(t *testing.T) {

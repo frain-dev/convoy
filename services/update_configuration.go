@@ -104,6 +104,14 @@ func preserveStoragePolicySecrets(next, prev *datastore.StoragePolicyConfigurati
 		if next.S3.SessionToken.String == "" {
 			next.S3.SessionToken = prev.S3.SessionToken
 		}
+		// Admin form has no endpoint/prefix controls; GET drops prefix on redact.
+		// Blank means keep so MinIO and prefixed buckets survive a retention save.
+		if next.S3.Endpoint.String == "" {
+			next.S3.Endpoint = prev.S3.Endpoint
+		}
+		if next.S3.Prefix.String == "" {
+			next.S3.Prefix = prev.S3.Prefix
+		}
 	case datastore.AzureBlob:
 		if next.AzureBlob == nil {
 			next.AzureBlob = prev.AzureBlob
@@ -114,6 +122,12 @@ func preserveStoragePolicySecrets(next, prev *datastore.StoragePolicyConfigurati
 		}
 		if next.AzureBlob.AccountKey.String == "" {
 			next.AzureBlob.AccountKey = prev.AzureBlob.AccountKey
+		}
+		if next.AzureBlob.Endpoint.String == "" {
+			next.AzureBlob.Endpoint = prev.AzureBlob.Endpoint
+		}
+		if next.AzureBlob.Prefix.String == "" {
+			next.AzureBlob.Prefix = prev.AzureBlob.Prefix
 		}
 	case datastore.OnPrem:
 		if next.OnPrem == nil {

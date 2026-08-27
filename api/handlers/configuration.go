@@ -82,6 +82,7 @@ func redactStoragePolicySecrets(c *datastore.Configuration, keepOnPremPath bool)
 			Bucket:   s3.Bucket,
 			Endpoint: s3.Endpoint,
 			Region:   s3.Region,
+			Prefix:   s3.Prefix,
 		}
 	}
 

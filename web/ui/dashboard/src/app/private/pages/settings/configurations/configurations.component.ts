@@ -61,6 +61,8 @@ export class ConfigurationsComponent implements OnInit {
 			s3: this.formBuilder.group({
 				bucket: [null, Validators.required],
 				region: [null, Validators.required],
+				endpoint: [null],
+				prefix: [null],
 				access_key: [null],
 				secret_key: [null],
 				session_token: [null]

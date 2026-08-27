@@ -145,6 +145,8 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 				AccessKey:    null.StringFrom("stored-access"),
 				SecretKey:    null.StringFrom("stored-secret"),
 				SessionToken: null.StringFrom("stored-session"),
+				Endpoint:     null.StringFrom("https://minio.example"),
+				Prefix:       null.StringFrom("archives/"),
 			},
 		}
 		next := &datastore.StoragePolicyConfiguration{
@@ -157,6 +159,8 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 		require.Equal(t, "stored-access", next.S3.AccessKey.String)
 		require.Equal(t, "stored-secret", next.S3.SecretKey.String)
 		require.Equal(t, "stored-session", next.S3.SessionToken.String)
+		require.Equal(t, "https://minio.example", next.S3.Endpoint.String)
+		require.Equal(t, "archives/", next.S3.Prefix.String)
 	})
 
 	t.Run("nil azure subtree is restored when type is unchanged", func(t *testing.T) {

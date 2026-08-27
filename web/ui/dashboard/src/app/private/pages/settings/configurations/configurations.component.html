@@ -110,6 +110,14 @@
             </convoy-input-field>
             <convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true" (selectedOption)="configForm.get('storage_policy.s3')?.patchValue({ region: $event })"></convoy-select>
             <convoy-input-field>
+              <label for="endpoint" convoy-label>Endpoint</label>
+              <input id="endpoint" convoy-input autocomplete="endpoint" formControlName="endpoint" placeholder="Optional (e.g. MinIO URL)" />
+            </convoy-input-field>
+            <convoy-input-field>
+              <label for="prefix" convoy-label>Prefix</label>
+              <input id="prefix" convoy-input autocomplete="prefix" formControlName="prefix" placeholder="Optional object prefix" />
+            </convoy-input-field>
+            <convoy-input-field>
               <label for="access_key" convoy-label>Access Key</label>
               <input id="access_key" convoy-input autocomplete="access_key" formControlName="access_key" placeholder="Leave blank to keep current" />
             </convoy-input-field>
