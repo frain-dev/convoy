@@ -513,6 +513,13 @@ func (h *BillingHandler) OnboardSubscription(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Cloud-only: require a verified user email before starting paid checkout.
+	// Same fail-closed policy as StartTrial so unverified accounts cannot mint.
+	if !h.cloudBillingEmailVerified(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("verify your email before subscribing", http.StatusForbidden))
+		return
+	}
+
 	var requestData billing.OnboardSubscriptionRequest
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
@@ -544,7 +551,7 @@ func (h *BillingHandler) StartTrial(w http.ResponseWriter, r *http.Request) {
 
 	// Cloud-only: require a verified user email before minting a free trial.
 	// Failure policy: fail closed when the auth user is missing or unverified.
-	if !h.cloudTrialEmailVerified(r) {
+	if !h.cloudBillingEmailVerified(r) {
 		_ = render.Render(w, r, util.NewErrorResponse("verify your email before starting a trial", http.StatusForbidden))
 		return
 	}
@@ -575,10 +582,10 @@ func (h *BillingHandler) StartTrial(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Trial started successfully", resp.Data, http.StatusOK))
 }
 
-// cloudTrialEmailVerified is true when the caller may start a cloud free trial.
-// Self-hosted / non-cloud modes always pass. Cloud fails closed on missing or
-// unverified auth user.
-func (h *BillingHandler) cloudTrialEmailVerified(r *http.Request) bool {
+// cloudBillingEmailVerified is true when the caller may start a cloud trial or
+// paid checkout. Self-hosted / non-cloud modes always pass. Cloud fails closed
+// on missing or unverified auth user.
+func (h *BillingHandler) cloudBillingEmailVerified(r *http.Request) bool {
 	if !h.A.Cfg.UsesOrgBilling() {
 		return true
 	}
