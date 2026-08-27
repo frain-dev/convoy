@@ -99,7 +99,9 @@ export class ConfigurationsComponent implements OnInit {
 	}
 
 	get hasUnsavedChanges(): boolean {
-		return this.configLoaded && this.configForm.dirty;
+		// Exclude in-flight save/refetch: after PUT the form is still dirty until
+		// markAsPristine, and a refetch patch briefly dirties it again.
+		return this.configLoaded && this.configForm.dirty && !this.isUpdatingConfig && !this.isFetchingConfig;
 	}
 
 	// Reload / tab close while the form is dirty. Sidebar leave is handled by Admin.
@@ -176,8 +178,12 @@ export class ConfigurationsComponent implements OnInit {
 					: response.message,
 				style: ownershipChanged ? 'info' : 'success'
 			});
+			// Saved bytes are on the server; clear dirty before refetch so leave
+			// confirms and the banner do not treat the post-PUT window as unsaved.
+			this.savedAdminManaged = nextAdminManaged;
+			this.configForm.markAsPristine();
 			this.isUpdatingConfig = false;
-			this.fetchConfigSettings();
+			await this.fetchConfigSettings();
 		} catch {
 			this.isUpdatingConfig = false;
 		}
