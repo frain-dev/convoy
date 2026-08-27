@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -617,6 +618,17 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 }
 
 func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
+	ctx := context.TODO()
+
+	existing, err := configRepo.LoadConfiguration(ctx)
+	if err == nil {
+		return existing, nil
+	}
+	if !errors.Is(err, datastore.ErrConfigNotFound) {
+		return nil, err
+	}
+
 	c := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
@@ -625,10 +637,12 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		RetentionPolicy:    &datastore.DefaultRetentionPolicy,
 	}
 
-	// Seed Data
-	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
-	err := configRepo.CreateConfiguration(context.TODO(), c)
+	err = configRepo.CreateConfiguration(ctx, c)
 	if err != nil {
+		var se *util.ServiceError
+		if errors.As(err, &se) && se.ErrCode() == http.StatusConflict {
+			return configRepo.LoadConfiguration(ctx)
+		}
 		return nil, err
 	}
 

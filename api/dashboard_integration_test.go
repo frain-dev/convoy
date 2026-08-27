@@ -4679,9 +4679,18 @@ func (u *UserIntegrationTestSuite) TearDownTest() {
 	metrics.Reset()
 }
 
-func (u *UserIntegrationTestSuite) Test_RegisterUser() {
-	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+func (u *UserIntegrationTestSuite) ensureSignupEnabled() {
+	instanceCfg, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
 	require.NoError(u.T(), err)
+	if instanceCfg.IsSignupEnabled {
+		return
+	}
+	instanceCfg.IsSignupEnabled = true
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), instanceCfg))
+}
+
+func (u *UserIntegrationTestSuite) Test_RegisterUser() {
+	u.ensureSignupEnabled()
 
 	r := &models.RegisterUser{
 		FirstName:        "test",
@@ -4730,10 +4739,8 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 	configuration, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
 	require.NoError(u.T(), err)
 
-	// disable registration
 	configuration.IsSignupEnabled = false
-	configRepo := u.ConvoyApp.A.ConfigRepo
-	require.NoError(u.T(), configRepo.UpdateConfiguration(context.Background(), configuration))
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), configuration))
 
 	r := &models.RegisterUser{
 		FirstName:        "test",
@@ -4761,8 +4768,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
-	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
-	require.NoError(u.T(), err)
+	u.ensureSignupEnabled()
 
 	r := &models.RegisterUser{
 		LastName:         "test",
@@ -4788,8 +4794,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
-	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
-	require.NoError(u.T(), err)
+	u.ensureSignupEnabled()
 
 	r := &models.RegisterUser{
 		FirstName:        "test",
