@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, HostListener, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {SettingsService} from '../settings.service';
 import {GeneralService} from 'src/app/services/general/general.service';
@@ -41,6 +41,8 @@ export class ConfigurationsComponent implements OnInit {
 	isFetchingConfig = false;
 	configLoaded = false;
 	loaderIndex: number[] = [0, 1, 2];
+	// Last value returned from GET/Save. Used to toast when ownership flips.
+	private savedAdminManaged = false;
 	// Storage secrets and on-prem path are optional on update: GET redacts them,
 	// and blank on PUT means keep (preserveStoragePolicySecrets).
 	configForm: FormGroup = this.formBuilder.group({
@@ -96,6 +98,20 @@ export class ConfigurationsComponent implements OnInit {
 		return this.configLoaded && this.configForm.dirty && !this.isUpdatingConfig && !this.isFetchingConfig;
 	}
 
+	get hasUnsavedChanges(): boolean {
+		return this.configLoaded && this.configForm.dirty;
+	}
+
+	// Reload / tab close while the form is dirty. Sidebar leave is handled by Admin.
+	@HostListener('window:beforeunload', ['$event'])
+	onBeforeUnload(event: BeforeUnloadEvent) {
+		if (!this.hasUnsavedChanges) {
+			return;
+		}
+		event.preventDefault();
+		event.returnValue = true;
+	}
+
 	async fetchConfigSettings() {
 		this.isFetchingConfig = true;
 		try {
@@ -114,6 +130,7 @@ export class ConfigurationsComponent implements OnInit {
 			}
 			this.syncAdminManaged(!!this.configForm.get('admin_managed')?.value);
 			this.syncRetentionPeriodEnabled(!!this.configForm.get('retention_policy.enabled')?.value);
+			this.savedAdminManaged = !!this.configForm.get('admin_managed')?.value;
 
 			this.configForm.markAsPristine();
 			this.configLoaded = true;
@@ -147,10 +164,18 @@ export class ConfigurationsComponent implements OnInit {
 			payload.retention_policy.period = `${payload.retention_policy.period}h`;
 		}
 
+		const nextAdminManaged = !!payload.admin_managed;
+		const ownershipChanged = this.savedAdminManaged !== nextAdminManaged;
+
 		this.isUpdatingConfig = true;
 		try {
 			const response = await this.settingService.updateConfigSettings(payload);
-			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.generalService.showNotification({
+				message: ownershipChanged
+					? 'Saved. Restart server (and agent) for boot ownership and circuit-breaker defaults.'
+					: response.message,
+				style: ownershipChanged ? 'info' : 'success'
+			});
 			this.isUpdatingConfig = false;
 			this.fetchConfigSettings();
 		} catch {

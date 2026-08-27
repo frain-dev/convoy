@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ConfigurationsComponent } from '../settings/configurations/configurations.component';
 
 export type ADMIN_PAGE = 'configurations' | 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
 
@@ -20,6 +21,8 @@ export class AdminComponent implements OnInit {
 		{ name: 'table partitions', icon: 'table-grid', svg: 'fill' },
 		{ name: 'table indexes', icon: 'key', svg: 'fill' }
 	];
+
+	@ViewChild(ConfigurationsComponent) configurations?: ConfigurationsComponent;
 
 	constructor(private route: ActivatedRoute, private router: Router) {}
 
@@ -46,8 +49,37 @@ export class AdminComponent implements OnInit {
 	// page added above cannot be one an ?activePage link silently falls back from.
 	toggleActivePage(page: string) {
 		const known = this.adminMenu.some(menu => menu.name === page);
-		this.activePage = known ? (page as ADMIN_PAGE) : 'configurations';
+		const next = known ? (page as ADMIN_PAGE) : 'configurations';
+		if (next === this.activePage) {
+			this.addPageToUrl();
+			return;
+		}
+		if (!this.confirmLeaveConfigurations(next)) {
+			return;
+		}
+		this.activePage = next;
 		this.addPageToUrl();
+	}
+
+	leaveAdmin(event: Event) {
+		if (!this.confirmLeaveConfigurations(null)) {
+			event.preventDefault();
+			event.stopPropagation();
+		}
+	}
+
+	// next null means leaving Admin entirely (back to projects).
+	private confirmLeaveConfigurations(next: ADMIN_PAGE | null): boolean {
+		if (this.activePage !== 'configurations') {
+			return true;
+		}
+		if (next === 'configurations') {
+			return true;
+		}
+		if (!this.configurations?.hasUnsavedChanges) {
+			return true;
+		}
+		return window.confirm('You have unsaved configuration changes. Leave without saving?');
 	}
 
 	// The tab is written back to the URL so a reload lands where the operator

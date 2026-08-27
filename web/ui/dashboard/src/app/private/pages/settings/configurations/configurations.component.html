@@ -4,11 +4,17 @@
   <button type="button" class="px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50" [disabled]="!canSave" (click)="updateConfigSettings()">Save Changes</button>
 </div>
 
+@if (hasUnsavedChanges) {
+  <div class="mb-20px px-14px py-10px rounded-8px border border-new.border bg-new.surface-muted font-body text-[13px] leading-[18px] text-new.text-primary">
+    Unsaved changes. Save before leaving this page or they will be lost.
+  </div>
+}
+
 <form [formGroup]="configForm">
   <div class="flex justify-between items-start">
     <div class="w-3/4">
       <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Admin Managed</h4>
-      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Use the values on this page after restart. When off, environment values win.</p>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">When off, environment values win on boot. When on, Save this page, then restart server (and agent) so boot and circuit-breaker ownership use these values.</p>
     </div>
     <convoy-toggle name="admin_managed" formControlName="admin_managed"></convoy-toggle>
   </div>
