@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/util"
 )
 
 func boolPtr(b bool) *bool {
@@ -128,6 +130,27 @@ func TestCreateConfigService_Run(t *testing.T) {
 			dbFn: func(c *CreateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{UID: "existing"}, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: datastore.ErrConfigAlreadyExists.Error(),
+		},
+		{
+			name: "should_conflict_when_create_races_unique_index",
+			args: args{
+				ctx: ctx,
+				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &models.OnPremStorage{
+						Path: null.NewString("/tmp/", true),
+					},
+				}},
+			},
+			dbFn: func(c *CreateConfigService) {
+				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
+				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(
+					util.NewServiceError(http.StatusConflict, datastore.ErrConfigAlreadyExists),
+				)
 			},
 			wantErr:    true,
 			wantErrMsg: datastore.ErrConfigAlreadyExists.Error(),

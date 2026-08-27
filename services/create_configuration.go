@@ -56,6 +56,10 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 
 	err := c.ConfigRepo.CreateConfiguration(ctx, config)
 	if err != nil {
+		var se *util.ServiceError
+		if errors.As(err, &se) && se.ErrCode() == http.StatusConflict {
+			return nil, se
+		}
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

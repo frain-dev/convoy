@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -251,6 +252,10 @@ func (s *Service) CreateConfiguration(ctx context.Context, cfg *datastore.Config
 
 	err := s.repo.CreateConfiguration(ctx, params)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return util.NewServiceError(http.StatusConflict, datastore.ErrConfigAlreadyExists)
+		}
 		s.logger.Error("failed to create configuration", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
