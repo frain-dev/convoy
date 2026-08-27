@@ -421,8 +421,10 @@ func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, 
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: true,
-		Policy:                   "720h",
+		Period: "720h",
+	}
+	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: true,
 	}
 
 	err = configRepo.UpdateConfiguration(ctx, config)
@@ -456,8 +458,10 @@ func createMinIOConfigWithBucket(t *testing.T, db database.Database, ctx context
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: true,
-		Policy:                   "720h",
+		Period: "720h",
+	}
+	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: true,
 	}
 
 	err = configRepo.UpdateConfiguration(ctx, config)
@@ -483,8 +487,10 @@ func createAzuriteConfigWithContainer(t *testing.T, db database.Database, ctx co
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: true,
-		Policy:                   "720h",
+		Period: "720h",
+	}
+	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: true,
 	}
 
 	err = configRepo.UpdateConfiguration(ctx, config)
@@ -519,8 +525,10 @@ func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context,
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: true,
-		Policy:                   "720h",
+		Period: "720h",
+	}
+	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: true,
 	}
 
 	err = configRepo.UpdateConfiguration(ctx, config)
@@ -548,8 +556,10 @@ func createAzuriteConfig(t *testing.T, db database.Database, ctx context.Context
 		},
 	}
 	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: true,
-		Policy:                   "720h",
+		Period: "720h",
+	}
+	cfg.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: true,
 	}
 
 	err = configRepo.UpdateConfiguration(ctx, cfg)

@@ -138,10 +138,13 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
-				RetentionPolicy: RetentionPolicyConfiguration{
-					Policy:                   "720h",
-					IsRetentionPolicyEnabled: true,
-					BackupInterval:           "1h",
+				Retention: RetentionConfiguration{
+					Enabled: true,
+					Period:  "720h",
+				},
+				WebhookArchiving: WebhookArchivingConfiguration{
+					Enabled:  true,
+					Interval: "1h",
 				},
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
@@ -234,7 +237,8 @@ func TestLoadConfig(t *testing.T) {
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
 				QueueProvider:    RedisQueueProvider,
-				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
+				Retention:        DefaultConfiguration.Retention,
+				WebhookArchiving: DefaultConfiguration.WebhookArchiving,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -341,7 +345,8 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
-				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
+				Retention:        DefaultConfiguration.Retention,
+				WebhookArchiving: DefaultConfiguration.WebhookArchiving,
 				ConsumerPoolSize: 100,
 				QueueProvider:    RedisQueueProvider,
 				CircuitBreaker: CircuitBreakerConfiguration{

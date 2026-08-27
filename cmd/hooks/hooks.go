@@ -78,6 +78,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		if err := applyExplicitRetentionArchivingFlags(cmd); err != nil {
+			return err
+		}
+
 		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
@@ -422,8 +426,10 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	}
 
 	retentionPolicy := &datastore.RetentionPolicyConfiguration{
-		Policy:                   cfg.RetentionPolicy.Policy,
-		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
+		Period: cfg.Retention.Period,
+	}
+	webhookArchiving := &datastore.WebhookArchivingConfiguration{
+		Enabled: cfg.WebhookArchiving.Enabled,
 	}
 
 	configuration, err := configRepo.LoadConfiguration(ctx)
@@ -436,6 +442,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
 				RetentionPolicy:    retentionPolicy,
+				WebhookArchiving:   webhookArchiving,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
 			}
@@ -450,9 +457,54 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.RetentionPolicy = retentionPolicy
+	configuration.WebhookArchiving = webhookArchiving
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
+}
+
+// applyExplicitRetentionArchivingFlags force-applies Retention.Enabled and
+// WebhookArchiving.Enabled when the operator set the CLI flags. config.Override
+// skips false bools (reflect zero), so --retention-enabled=false would otherwise
+// leave the default true and keep the 01:00 partition-drop cron registered.
+func applyExplicitRetentionArchivingFlags(cmd *cobra.Command) error {
+	var retentionEnabled *bool
+	if cmd.Flags().Changed("retention-enabled") {
+		v, err := cmd.Flags().GetBool("retention-enabled")
+		if err != nil {
+			return err
+		}
+		retentionEnabled = &v
+	}
+
+	var webhookArchivingEnabled *bool
+	switch {
+	case cmd.Flags().Changed("webhook-archiving-enabled"):
+		v, err := cmd.Flags().GetBool("webhook-archiving-enabled")
+		if err != nil {
+			return err
+		}
+		webhookArchivingEnabled = &v
+	case cmd.Flags().Changed("retention-policy-enabled"):
+		v, err := cmd.Flags().GetBool("retention-policy-enabled")
+		if err != nil {
+			return err
+		}
+		webhookArchivingEnabled = &v
+	}
+
+	if retentionEnabled == nil && webhookArchivingEnabled == nil {
+		return nil
+	}
+
+	return config.ForceBools(func(c *config.Configuration) {
+		if retentionEnabled != nil {
+			c.Retention.Enabled = *retentionEnabled
+		}
+		if webhookArchivingEnabled != nil {
+			c.WebhookArchiving.Enabled = *webhookArchivingEnabled
+		}
+	})
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
@@ -649,25 +701,43 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Addresses:  redisAddresses,
 	}
 
-	// CONVOY_RETENTION_POLICY
-	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
+	// CONVOY_RETENTION_PERIOD (legacy: --retention-policy / CONVOY_RETENTION_POLICY)
+	retentionPeriod, err := cmd.Flags().GetString("retention-period")
 	if err != nil {
 		return nil, err
 	}
-
-	if !util.IsStringEmpty(retentionPolicy) {
-		c.RetentionPolicy.Policy = retentionPolicy
+	if util.IsStringEmpty(retentionPeriod) {
+		retentionPeriod, err = cmd.Flags().GetString("retention-policy")
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !util.IsStringEmpty(retentionPeriod) {
+		c.Retention.Period = retentionPeriod
 	}
 
-	// CONVOY_RETENTION_POLICY_ENABLED
-	isRetentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
-	if isRetentionPolicyEnabledSet {
+	// CONVOY_RETENTION_ENABLED
+	if cmd.Flags().Changed("retention-enabled") {
+		retentionEnabled, err := cmd.Flags().GetBool("retention-enabled")
+		if err != nil {
+			return nil, err
+		}
+		c.Retention.Enabled = retentionEnabled
+	}
+
+	// CONVOY_WEBHOOK_ARCHIVING_ENABLED (legacy: --retention-policy-enabled)
+	if cmd.Flags().Changed("webhook-archiving-enabled") {
+		webhookArchivingEnabled, err := cmd.Flags().GetBool("webhook-archiving-enabled")
+		if err != nil {
+			return nil, err
+		}
+		c.WebhookArchiving.Enabled = webhookArchivingEnabled
+	} else if cmd.Flags().Changed("retention-policy-enabled") {
 		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
 		if err != nil {
 			return nil, err
 		}
-
-		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
+		c.WebhookArchiving.Enabled = retentionPolicyEnabled
 	}
 
 	// CONVOY_DISPATCHER_BLOCK_LIST

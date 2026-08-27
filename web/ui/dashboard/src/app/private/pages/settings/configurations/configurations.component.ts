@@ -43,9 +43,11 @@ export class ConfigurationsComponent implements OnInit {
 	configForm: FormGroup = this.formBuilder.group({
 		is_analytics_enabled: [null, Validators.required],
 		is_signup_enabled: [null, Validators.required],
-		retention_policy_enabled: [true],
+		webhook_archiving: this.formBuilder.group({
+			enabled: [false]
+		}),
 		retention_policy: this.formBuilder.group({
-			policy: [720]
+			period: [720]
 		}),
 		storage_policy: this.formBuilder.group({
 			type: [null, Validators.required],
@@ -63,7 +65,7 @@ export class ConfigurationsComponent implements OnInit {
 	});
 
 	configurations = [
-		{ uid: 'retention_policy', name: 'Retention Policy', show: false },
+		{ uid: 'retention_policy', name: 'Retention Period', show: false },
 		{ uid: 'storage_policy', name: 'Storage Policy', show: false }
 	];
 
@@ -80,7 +82,14 @@ export class ConfigurationsComponent implements OnInit {
 
 			const configurations = response.data[0];
 			this.configForm.patchValue(configurations);
-			this.configForm.get('retention_policy.policy')?.patchValue(this.getHours(configurations.retention_policy.policy));
+			const period = configurations.retention_policy?.period || configurations.retention_policy?.policy;
+			if (period) {
+				this.configForm.get('retention_policy.period')?.patchValue(this.getHours(period));
+				// Retention period is independent of webhook archiving.
+				this.configurations.forEach(c => {
+					if (c.uid === 'retention_policy') c.show = true;
+				});
+			}
 
 			this.isFetchingConfig = false;
 		} catch {
@@ -91,7 +100,9 @@ export class ConfigurationsComponent implements OnInit {
 	async updateConfigSettings() {
 		if (this.configForm.value.storage_policy.type === 'on_prem') delete this.configForm.value.storage_policy.s3;
 		if (this.configForm.value.storage_policy.type === 's3') delete this.configForm.value.storage_policy.on_prem;
-		if (typeof this.configForm.value.retention_policy.policy === 'number') this.configForm.value.retention_policy.policy = `${this.configForm.value.retention_policy.policy}h`;
+		if (typeof this.configForm.value.retention_policy.period === 'number') {
+			this.configForm.value.retention_policy.period = `${this.configForm.value.retention_policy.period}h`;
+		}
 
 		this.isUpdatingConfig = true;
 		try {
@@ -107,7 +118,6 @@ export class ConfigurationsComponent implements OnInit {
 	toggleConfigForm(configValue: string) {
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = !config.show;
-			if (configValue === 'retention_policy' && config.uid === 'retention_policy') this.configForm.patchValue({ retention_policy_enabled: config.show });
 		});
 	}
 

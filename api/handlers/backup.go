@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	blobstore "github.com/frain-dev/convoy/internal/pkg/blob-store"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
@@ -33,20 +34,31 @@ func (h *Handler) TriggerBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	dbConfig, err := h.A.ConfigRepo.LoadConfiguration(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusInternalServerError))
+		return
+	}
+
+	if !dbConfig.GetWebhookArchivingConfig().Enabled {
+		_ = render.Render(w, r, util.NewErrorResponse("webhook archiving is not enabled in configuration", http.StatusUnprocessableEntity))
+		return
+	}
+
+	if err := blobstore.StoragePolicyUsable(dbConfig.StoragePolicy); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnprocessableEntity))
+		return
+	}
+
 	cfg, err := config.Get()
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusInternalServerError))
 		return
 	}
 
-	if !cfg.RetentionPolicy.IsRetentionPolicyEnabled {
-		_ = render.Render(w, r, util.NewErrorResponse("backup is not enabled in configuration", http.StatusUnprocessableEntity))
-		return
-	}
-
 	// Default time window: last backup interval to now
 	end := time.Now()
-	start := end.Add(-exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval))
+	start := end.Add(-exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval))
 
 	// Parse optional overrides from request body (empty body is fine)
 	var req triggerBackupRequest

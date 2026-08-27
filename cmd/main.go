@@ -78,8 +78,11 @@ func main() {
 	var prometheusMetricsQueryTimeout uint64
 	var prometheusMetricsMaterializedViewRefreshInterval uint64
 
-	var retentionPolicy string
-	var retentionPolicyEnabled bool
+	var retentionPeriod string
+	var retentionEnabled bool
+	var retentionPolicy string      // Deprecated: use retentionPeriod (--retention-period).
+	var retentionPolicyEnabled bool // Deprecated: use webhookArchivingEnabled (--webhook-archiving-enabled).
+	var webhookArchivingEnabled bool
 
 	var maxRetrySeconds uint64
 
@@ -154,8 +157,13 @@ func main() {
 	c.Flags().Uint64Var(&prometheusMetricsQueryTimeout, "metrics-prometheus-query-timeout", 30, "Prometheus metrics query timeout in seconds")
 	c.Flags().Uint64Var(&prometheusMetricsMaterializedViewRefreshInterval, "metrics-prometheus-materialized-view-refresh-interval", 2, "Materialized view refresh interval in minutes")
 
-	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "Retention Policy Duration")
-	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Retention Policy Enabled")
+	c.Flags().StringVar(&retentionPeriod, "retention-period", "", "Retention keep window (e.g. 720h)")
+	c.Flags().BoolVar(&retentionEnabled, "retention-enabled", true, "Enable licensed partition retention drop")
+	c.Flags().BoolVar(&webhookArchivingEnabled, "webhook-archiving-enabled", false, "Enable webhook cold-storage archiving")
+	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "Retention keep window (legacy alias)")
+	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Enable webhook cold-storage archiving (legacy alias)")
+	_ = c.Flags().MarkDeprecated("retention-policy", "use --retention-period instead")
+	_ = c.Flags().MarkDeprecated("retention-policy-enabled", "use --webhook-archiving-enabled instead")
 
 	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 

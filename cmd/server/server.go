@@ -176,10 +176,13 @@ func StartConvoyServer(a *cli.App) error {
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 
 	if a.Licenser.RetentionPolicy() {
-		// Register cron-based backup tasks only when CDC backup is not enabled.
-		// When CDC is active, the BackupCollector in the worker handles exports continuously.
-		if !cfg.RetentionPolicy.CDCBackupEnabled {
-			backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+		// Register cron-based backup tasks when CDC backup is not enabled.
+		// When CDC is active, the BackupCollector in the worker handles exports.
+		// Do not gate registration on cfg.WebhookArchiving.Enabled (env): workers
+		// read DB webhook_archiving.enabled, so a dashboard toggle must not wait
+		// for an env change and server restart.
+		if !cfg.WebhookArchiving.CDCEnabled {
+			backupInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
 			enqueueCron := exporter.DurationToCron(backupInterval)
 			processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
 
@@ -187,8 +190,9 @@ func StartConvoyServer(a *cli.App) error {
 			s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
 		}
 
-		// Retention always runs at 1am
-		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
+		if cfg.Retention.Enabled {
+			s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
+		}
 	}
 
 	// Nightly anonymized usage snapshot for license-validate pings (licensed only).

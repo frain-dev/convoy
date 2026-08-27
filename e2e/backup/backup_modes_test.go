@@ -100,7 +100,7 @@ func TestBackup_CDC_OnPrem(t *testing.T) {
 	store, err := blobstore.NewOnPremClient(blobstore.BlobStoreOptions{OnPremStorageDir: tmpDir}, logger)
 	require.NoError(t, err)
 
-	collector := backup_collector.NewBackupCollector(pool, replDSN, store, 3*time.Second, logger)
+	collector := backup_collector.NewBackupCollector(pool, replDSN, store, 3*time.Second, logger, nil)
 	err = collector.Start(ctx)
 	require.NoError(t, err)
 
@@ -181,7 +181,7 @@ func TestBackup_CDC_S3(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
-	collector := backup_collector.NewBackupCollector(pool, replDSN, store, 3*time.Second, logger)
+	collector := backup_collector.NewBackupCollector(pool, replDSN, store, 3*time.Second, logger, nil)
 	err = collector.Start(ctx)
 	require.NoError(t, err)
 
@@ -251,7 +251,7 @@ func TestBackup_CDC_Azure(t *testing.T) {
 	}, logger)
 	require.NoError(t, err)
 
-	collector := backup_collector.NewBackupCollector(pool, replDSN, store, 3*time.Second, logger)
+	collector := backup_collector.NewBackupCollector(pool, replDSN, store, 3*time.Second, logger, nil)
 	err = collector.Start(ctx)
 	require.NoError(t, err)
 
