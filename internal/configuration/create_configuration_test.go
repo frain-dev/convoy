@@ -70,7 +70,8 @@ func seedConfiguration(t *testing.T, db database.Database, storageType datastore
 			Type: storageType,
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "720h",
+			Period:  "720h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -134,7 +135,8 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "168h",
+			Period:  "168h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -155,6 +157,7 @@ func TestCreateConfiguration_WithS3Storage(t *testing.T) {
 	require.Equal(t, "us-west-2", loaded.StoragePolicy.S3.Region.String)
 	require.Equal(t, "convoy-events/", loaded.StoragePolicy.S3.Prefix.String)
 	require.Equal(t, "168h", loaded.RetentionPolicy.Period)
+	require.True(t, loaded.RetentionPolicy.Enabled)
 	require.True(t, loaded.WebhookArchiving.Enabled)
 }
 
@@ -184,7 +187,8 @@ func TestCreateConfiguration_WithOnPremStorage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "720h",
+			Period:  "720h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: false,
@@ -226,7 +230,8 @@ func TestCreateConfiguration_WithMinimalFields(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "",
+			Period:  "",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: false,
@@ -279,7 +284,8 @@ func TestCreateConfiguration_S3StorageNormalization(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "72h",
+			Period:  "72h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -319,7 +325,8 @@ func TestCreateConfiguration_OnPremStorageNormalization(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "72h",
+			Period:  "72h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -357,7 +364,8 @@ func TestCreateConfiguration_WithAzureBlobStorage(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "720h",
+			Period:  "720h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -399,7 +407,8 @@ func TestCreateConfiguration_VerifyTimestamps(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "168h",
+			Period:  "168h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,

@@ -189,7 +189,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// Backup is now handled separately by CDC collector or ProcessBackupJob task.
 	// This test only validates retention (deletion) behavior.
 
-	err = RetentionPolicies(&redisJobLocker{rd: r.ConvoyApp.redis, logger: r.ConvoyApp.logger}, ret, r.ConvoyApp.logger)(context.Background(), retentionTask)
+	err = RetentionPolicies(&redisJobLocker{rd: r.ConvoyApp.redis, logger: r.ConvoyApp.logger}, r.ConvoyApp.configRepo, ret, r.ConvoyApp.logger)(context.Background(), retentionTask)
 	require.NoError(r.T(), err)
 
 	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)
@@ -350,7 +350,8 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "72h",
+			Period:  "72h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,

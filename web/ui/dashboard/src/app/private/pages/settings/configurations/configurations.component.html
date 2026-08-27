@@ -37,6 +37,18 @@
 
   <hr class="border-t border-new.border my-20px" />
 
+  <div class="flex justify-between items-start">
+    <div class="w-3/4">
+      <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">Retention</h4>
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-4px">Drop dated partitions older than the keep window. Licensed only. Does not control cold-storage export.</p>
+    </div>
+    <div formGroupName="retention_policy">
+      <convoy-toggle formControlName="enabled"></convoy-toggle>
+    </div>
+  </div>
+
+  <hr class="border-t border-new.border my-20px" />
+
   @if (showConfig('retention_policy')) {
     <div class="border-l-2 border-new.primary-400 pl-16px mb-40px">
       <div class="flex justify-between items-center mb-24px">

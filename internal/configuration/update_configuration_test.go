@@ -24,6 +24,7 @@ func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	cfg.IsAnalyticsEnabled = false
 	cfg.IsSignupEnabled = false
 	cfg.RetentionPolicy.Period = "336h"
+	cfg.RetentionPolicy.Enabled = false
 	cfg.WebhookArchiving.Enabled = false
 
 	err := service.UpdateConfiguration(ctx, cfg)
@@ -36,6 +37,7 @@ func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	require.False(t, loaded.IsAnalyticsEnabled)
 	require.False(t, loaded.IsSignupEnabled)
 	require.Equal(t, "336h", loaded.RetentionPolicy.Period)
+	require.False(t, loaded.RetentionPolicy.Enabled)
 	require.False(t, loaded.WebhookArchiving.Enabled)
 }
 
@@ -253,7 +255,8 @@ func TestUpdateConfiguration_NonExistentConfiguration(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "72h",
+			Period:  "72h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: true,
@@ -448,7 +451,8 @@ func TestUpdateConfiguration_VerifyNoRowsAffectedError(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Period: "72h",
+			Period:  "72h",
+			Enabled: true,
 		},
 		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
 			Enabled: false,

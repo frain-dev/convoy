@@ -421,7 +421,8 @@ func createMinIOConfig(t *testing.T, db database.Database, ctx context.Context, 
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period: "720h",
+		Period:  "720h",
+		Enabled: true,
 	}
 	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
 		Enabled: true,
@@ -458,7 +459,8 @@ func createMinIOConfigWithBucket(t *testing.T, db database.Database, ctx context
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period: "720h",
+		Period:  "720h",
+		Enabled: true,
 	}
 	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
 		Enabled: true,
@@ -487,7 +489,8 @@ func createAzuriteConfigWithContainer(t *testing.T, db database.Database, ctx co
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period: "720h",
+		Period:  "720h",
+		Enabled: true,
 	}
 	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
 		Enabled: true,
@@ -525,7 +528,8 @@ func createOnPremConfig(t *testing.T, db database.Database, ctx context.Context,
 		},
 	}
 	config.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period: "720h",
+		Period:  "720h",
+		Enabled: true,
 	}
 	config.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
 		Enabled: true,
@@ -556,7 +560,8 @@ func createAzuriteConfig(t *testing.T, db database.Database, ctx context.Context
 		},
 	}
 	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Period: "720h",
+		Period:  "720h",
+		Enabled: true,
 	}
 	cfg.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
 		Enabled: true,

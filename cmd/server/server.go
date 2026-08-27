@@ -190,9 +190,9 @@ func StartConvoyServer(a *cli.App) error {
 			s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
 		}
 
-		if cfg.Retention.Enabled {
-			s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
-		}
+		// Same pattern as backup: register when licensed; the job re-reads DB
+		// retention_enabled so a dashboard disable does not wait for restart.
+		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 
 	// Nightly anonymized usage snapshot for license-validate pings (licensed only).

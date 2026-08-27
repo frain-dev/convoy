@@ -425,8 +425,12 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		AzureBlob: &azureBlob,
 	}
 
+	// Retention/archiving knobs are seeded from env on first create only.
+	// After that the configurations row is definitive (dashboard/API), matching
+	// webhook_archiving.enabled flush gates — env must not overwrite on every boot.
 	retentionPolicy := &datastore.RetentionPolicyConfiguration{
-		Period: cfg.Retention.Period,
+		Period:  cfg.Retention.Period,
+		Enabled: cfg.Retention.Enabled,
 	}
 	webhookArchiving := &datastore.WebhookArchivingConfiguration{
 		Enabled: cfg.WebhookArchiving.Enabled,
@@ -456,8 +460,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
-	configuration.RetentionPolicy = retentionPolicy
-	configuration.WebhookArchiving = webhookArchiving
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
