@@ -453,8 +453,10 @@ func isMetadataOrLinkLocal(ip netip.Addr) bool {
 }
 
 // embeddedV4 extracts the IPv4 address embedded in a NAT64 (64:ff9b::/96) or
-// 6to4 (2002::/16) IPv6 address.
+// 6to4 (2002::/16) IPv6 address. The zone is stripped first: netip.Prefix.Contains
+// is false for any zoned IPv6 address, which would otherwise skip NAT64 unwrap.
 func embeddedV4(ip netip.Addr) (netip.Addr, bool) {
+	ip = ip.WithZone("")
 	b := ip.As16()
 
 	if nat64WellKnown.Contains(ip) {

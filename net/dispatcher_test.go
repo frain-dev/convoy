@@ -1673,6 +1673,9 @@ func TestBlockPrivateNetworks(t *testing.T) {
 		{name: "6to4-wrapped loopback", address: "[2002:7f00:1::1]:80", blocked: true},
 		{name: "6to4-wrapped private", address: "[2002:a00:1::1]:80", blocked: true},
 		{name: "nat64-wrapped public", address: "[64:ff9b::808:808]:80", blocked: false},
+		{name: "zoned nat64-wrapped loopback", address: "[64:ff9b::7f00:1%eth0]:80", blocked: true},
+		{name: "zoned nat64-wrapped private", address: "[64:ff9b::a00:1%eth0]:80", blocked: true},
+		{name: "zoned nat64-wrapped public", address: "[64:ff9b::808:808%eth0]:80", blocked: false},
 		{name: "unparseable", address: "not-an-ip:80", blocked: true},
 	}
 
@@ -1702,6 +1705,7 @@ func TestBlockMetadataEndpoints(t *testing.T) {
 		{name: "aws imds v6", address: "[fd00:ec2::254]:80", blocked: true},
 		{name: "ipv4-mapped metadata", address: "[::ffff:169.254.169.254]:80", blocked: true},
 		{name: "nat64-wrapped metadata", address: "[64:ff9b::a9fe:a9fe]:80", blocked: true},
+		{name: "zoned nat64-wrapped metadata", address: "[64:ff9b::a9fe:a9fe%eth0]:80", blocked: true},
 		{name: "6to4-wrapped metadata", address: "[2002:a9fe:a9fe::1]:80", blocked: true},
 		{name: "unparseable", address: "not-an-ip:80", blocked: true},
 
