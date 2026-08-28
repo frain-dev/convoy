@@ -155,6 +155,62 @@ func TestOAuth2TokenService_RedactsNonOKResponseBody(t *testing.T) {
 	require.NotContains(t, err.Error(), "internal metadata secret")
 }
 
+func TestOAuth2TokenService_NotificationClientBlocksPrivateByDefault(t *testing.T) {
+	ctx := context.Background()
+	memCache := mcache.NewMemoryCache()
+	logger := log.New("convoy", log.LevelError)
+
+	hits := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "blocked-token",
+			"token_type":   "Bearer",
+			"expires_in":   3600,
+		})
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().IpRules().AnyTimes().Return(false)
+
+	dispatcher, err := convoynet.NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{}),
+		convoynet.LoggerOption(logger),
+	)
+	require.NoError(t, err)
+
+	service := NewOAuth2TokenService(
+		memCache,
+		logger,
+		WithOAuth2HTTPClient(dispatcher.NotificationHTTPClient()),
+		WithOAuth2Context(dispatcher.ContextWithRules),
+	)
+
+	endpoint := &datastore.Endpoint{
+		UID: "test-private-default",
+		Authentication: &datastore.EndpointAuthentication{
+			Type: datastore.OAuth2Authentication,
+			OAuth2: &datastore.OAuth2{
+				URL:                server.URL,
+				ClientID:           "test-client-id",
+				AuthenticationType: datastore.SharedSecretAuth,
+				ClientSecret:       "test-client-secret",
+			},
+		},
+	}
+
+	_, err = service.GetAccessToken(ctx, endpoint)
+	require.Error(t, err)
+	require.Equal(t, 0, hits)
+	require.NotContains(t, err.Error(), "blocked-token")
+}
+
 func TestOAuth2TokenService_UsesNetJailRules(t *testing.T) {
 	ctx := context.Background()
 	memCache := mcache.NewMemoryCache()
