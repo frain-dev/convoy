@@ -1668,6 +1668,11 @@ func TestBlockPrivateNetworks(t *testing.T) {
 		{name: "unspecified", address: "0.0.0.0:80", blocked: true},
 		{name: "ipv6 ula", address: "[fd00::1]:80", blocked: true},
 		{name: "ipv4-mapped loopback", address: "[::ffff:127.0.0.1]:80", blocked: true},
+		{name: "nat64-wrapped loopback", address: "[64:ff9b::7f00:1]:80", blocked: true},
+		{name: "nat64-wrapped private", address: "[64:ff9b::a00:1]:80", blocked: true},
+		{name: "6to4-wrapped loopback", address: "[2002:7f00:1::1]:80", blocked: true},
+		{name: "6to4-wrapped private", address: "[2002:a00:1::1]:80", blocked: true},
+		{name: "nat64-wrapped public", address: "[64:ff9b::808:808]:80", blocked: false},
 		{name: "unparseable", address: "not-an-ip:80", blocked: true},
 	}
 
