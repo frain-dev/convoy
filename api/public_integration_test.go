@@ -710,6 +710,39 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Aut
 	require.Equal(s.T(), "testapikey", endpoint.Authentication.ApiKey.HeaderValue)
 }
 
+func (s *PublicEndpointIntegrationTestSuite) Test_TestOAuth2Connection_BlocksInternalTokenURLByDefault() {
+	hits := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusTeapot)
+		_, _ = w.Write([]byte("metadata secret"))
+	}))
+	defer server.Close()
+
+	body := serialize(`{
+		"oauth2": {
+			"url": "%s",
+			"client_id": "client-id",
+			"client_secret": "client-secret",
+			"authentication_type": "shared_secret"
+		}
+	}`, server.URL)
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/oauth2/test", s.DefaultProject.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code)
+	require.Equal(s.T(), 0, hits)
+
+	var resp models.TestOAuth2Response
+	parseResponse(s.T(), w.Result(), &resp)
+	require.False(s.T(), resp.Success)
+	require.Empty(s.T(), resp.AccessToken)
+	require.NotContains(s.T(), resp.Error, "metadata secret")
+}
+
 func (s *PublicEndpointIntegrationTestSuite) Test_TestOAuth2Connection_BlocksInternalTokenURL() {
 	hits := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
