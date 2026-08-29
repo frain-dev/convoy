@@ -47,7 +47,6 @@ export class ConfigurationsComponent implements OnInit {
 	// and blank on PUT means keep (preserveStoragePolicySecrets).
 	configForm: FormGroup = this.formBuilder.group({
 		admin_managed: [false, Validators.required],
-		is_analytics_enabled: [null, Validators.required],
 		is_signup_enabled: [null, Validators.required],
 		webhook_archiving: this.formBuilder.group({
 			enabled: [false]
@@ -205,7 +204,7 @@ export class ConfigurationsComponent implements OnInit {
 	}
 
 	syncAdminManaged(enabled: boolean) {
-		for (const name of ['is_analytics_enabled', 'is_signup_enabled', 'retention_policy', 'webhook_archiving', 'storage_policy']) {
+		for (const name of ['is_signup_enabled', 'retention_policy', 'webhook_archiving', 'storage_policy']) {
 			const control = this.configForm.get(name);
 			enabled ? control?.enable({ emitEvent: false }) : control?.disable({ emitEvent: false });
 		}

@@ -11,9 +11,6 @@ import (
 )
 
 type Configuration struct {
-	// Determines whether your convoy instance sends us analytical data e.g event count
-	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
-
 	// Allow or disallow user signups on your instance
 	IsSignupEnabled *bool `json:"is_signup_enabled"`
 

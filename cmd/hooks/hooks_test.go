@@ -35,9 +35,8 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 	t.Run("marks legacy ownership as env-owned", func(t *testing.T) {
 		updatedAt := time.Date(2026, time.August, 27, 12, 0, 0, 0, time.UTC)
 		instanceConfig := &datastore.Configuration{
-			UID:                "config-1",
-			IsAnalyticsEnabled: false,
-			IsSignupEnabled:    false,
+			UID:             "config-1",
+			IsSignupEnabled: false,
 			StoragePolicy: &datastore.StoragePolicyConfiguration{
 				Type: datastore.OnPrem,
 			},
@@ -45,7 +44,6 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 			UpdatedAt:       updatedAt,
 		}
 		envConfig := config.Configuration{}
-		envConfig.Analytics.IsEnabled = true
 		envConfig.Auth.IsSignupEnabled = true
 		envConfig.Retention.Enabled = true
 		configStore := &migrationConfigurationStore{managed: false, retentionEnabled: true}
@@ -61,7 +59,6 @@ func TestCompleteAdminManagedMigration(t *testing.T) {
 		assert.Equal(t, "config-1", configStore.completedID)
 		assert.False(t, instanceConfig.AdminManaged)
 		assert.True(t, instanceConfig.AdminManagedKnown)
-		assert.False(t, instanceConfig.IsAnalyticsEnabled)
 		assert.False(t, instanceConfig.IsSignupEnabled)
 		assert.Equal(t, datastore.OnPrem, instanceConfig.StoragePolicy.Type)
 		assert.True(t, instanceConfig.RetentionPolicy.Enabled)

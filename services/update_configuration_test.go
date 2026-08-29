@@ -41,14 +41,14 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			name: "should_update_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
 					},
 				}},
 			},
-			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
+			wantConfig: &datastore.Configuration{StoragePolicy: &datastore.StoragePolicyConfiguration{
 				Type: datastore.OnPrem,
 				OnPrem: &datastore.OnPremStorage{
 					Path: null.NewString("/tmp/", true),
@@ -56,7 +56,7 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			}},
 			dbFn: func(c *UpdateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
-				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
@@ -69,7 +69,7 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			name: "should_fail_to_update_configuration",
 			args: args{
 				ctx:       ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true)},
+				newConfig: &models.Configuration{},
 			},
 			dbFn: func(c *UpdateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
@@ -273,7 +273,6 @@ func TestUpdateConfigService_AzureTypeWithoutNestedKeepsPrevious(t *testing.T) {
 	defer ctrl.Finish()
 
 	svc := provideUpdateConfigService(ctrl, &models.Configuration{
-		IsAnalyticsEnabled: boolPtr(false),
 		StoragePolicy: &models.StoragePolicyConfiguration{
 			Type: datastore.AzureBlob,
 			// Transform leaves AzureBlob nil on a type-only payload.
@@ -281,7 +280,6 @@ func TestUpdateConfigService_AzureTypeWithoutNestedKeepsPrevious(t *testing.T) {
 	})
 	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
 	co.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{
-		IsAnalyticsEnabled: true,
 		StoragePolicy: &datastore.StoragePolicyConfiguration{
 			Type: datastore.AzureBlob,
 			AzureBlob: &datastore.AzureBlobStorage{
@@ -293,7 +291,6 @@ func TestUpdateConfigService_AzureTypeWithoutNestedKeepsPrevious(t *testing.T) {
 	}, nil)
 	co.EXPECT().UpdateConfiguration(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(_ context.Context, cfg *datastore.Configuration) error {
-			require.False(t, cfg.IsAnalyticsEnabled)
 			require.Equal(t, datastore.AzureBlob, cfg.StoragePolicy.Type)
 			require.Equal(t, "key", cfg.StoragePolicy.AzureBlob.AccountKey.String)
 			return nil

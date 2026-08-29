@@ -38,7 +38,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -136,12 +135,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	rateLimiter := opts.Broker.RateLimiter
 
-	counter := &telemetry.EventsCounter{}
-	pb := telemetry.NewposthogBackend()
-	defer pb.Close()
-	mb := telemetry.NewmixpanelBackend()
-	defer mb.Close()
-
 	loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize configuration: %w", err)
@@ -163,10 +156,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	}
 
 	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-	newTelemetry := telemetry.NewTelemetry(lo, loadConfiguration,
-		telemetry.OptionTracker(counter),
-		telemetry.OptionBackend(pb),
-		telemetry.OptionBackend(mb))
 
 	caCertTLSCfg, err := config.GetCaCert()
 	if err != nil {
@@ -380,7 +369,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Logger:                     lo,
 	}
 
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps))
 
 	eventProcessorDeps := task.EventProcessorDeps{
 		EndpointRepo:       endpointRepo,
@@ -398,25 +387,25 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Logger:             lo,
 	}
 
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
-	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps))
+	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps))
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps))
+	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps))
 
 	if opts.Licenser.RetentionPolicy() {
 		// RetentionPolicies re-reads DB retention_enabled and retention_period
 		// each run so dashboard toggles apply without a worker restart.
 		if ret != nil {
-			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, configRepo, ret, lo), nil)
+			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, configRepo, ret, lo))
 		}
-		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
-		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo), nil)
+		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo))
+		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo))
 	}
 
 	// ManualBackupJob is always registered so instance-admin triggers work
 	// without a license gate on the handler path. The task still requires DB
 	// webhook_archiving.enabled and usable storage before exporting.
-	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, locker, lo), nil)
+	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, locker, lo))
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
 		Channels:                   channels,
@@ -435,24 +424,23 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Acker:                      dynamicEventAcker,
 		Logger:                     lo,
 	}
-	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps))
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, locker, lo), nil)
-	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
-	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, locker), nil)
-	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker), nil)
-	consumer.RegisterHandlers(convoy.RefreshEventDeliveryDailyCounts, task.RefreshEventDeliveryDailyCounts(lo, opts.DB, locker), nil)
-	consumer.RegisterHandlers(convoy.RefreshQueueMetricsSnapshot, task.RefreshQueueMetricsSnapshot(lo, opts.DB, locker), nil)
-	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, locker, lo))
+	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
+	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker))
+	consumer.RegisterHandlers(convoy.RefreshEventDeliveryDailyCounts, task.RefreshEventDeliveryDailyCounts(lo, opts.DB, locker))
+	consumer.RegisterHandlers(convoy.RefreshQueueMetricsSnapshot, task.RefreshQueueMetricsSnapshot(lo, opts.DB, locker))
+	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
 	// events_search tokenization is legacy FTS copy; unified list search (PDE-1009) reads
 	// convoy.events directly and no longer enqueues TokenizeSearch jobs.
 
-	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, locker, lo), nil)
+	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher))
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo))
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, locker, lo))
 
-	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo), nil)
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo))
 
 	bulkOnboardDeps := task.BulkOnboardDeps{
 		EndpointRepo:               endpointRepo,
@@ -464,12 +452,12 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		EarlyAdopterFeatureFetcher: ffService,
 		Logger:                     lo,
 	}
-	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps))
 
 	var billingClient billing.Client
 	if cfg.UsesOrgBilling() {
 		billingClient = billing.NewClient(cfg.Billing)
-		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, locker, lo), nil)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, locker, lo))
 	}
 
 	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)

@@ -1816,7 +1816,7 @@ type UsageMetrics struct {
 
 type Configuration struct {
 	UID                string `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsAnalyticsEnabled bool   `json:"-" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
 	AdminManaged       bool   `json:"admin_managed" db:"admin_managed"`
 	AdminManagedKnown  bool   `json:"-" db:"-"`

@@ -102,14 +102,14 @@ func TestCreateConfigService_Run(t *testing.T) {
 			name: "should_create_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
 					},
 				}},
 			},
-			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, IsSignupEnabled: true},
+			wantConfig: &datastore.Configuration{IsSignupEnabled: true},
 			dbFn: func(c *CreateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
 				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
@@ -120,7 +120,7 @@ func TestCreateConfigService_Run(t *testing.T) {
 			name: "should_reject_when_configuration_exists",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
@@ -138,7 +138,7 @@ func TestCreateConfigService_Run(t *testing.T) {
 			name: "should_conflict_when_create_races_unique_index",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
@@ -176,7 +176,6 @@ func TestCreateConfigService_Run(t *testing.T) {
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, config.IsAnalyticsEnabled, tc.wantConfig.IsAnalyticsEnabled)
 			require.Equal(t, config.IsSignupEnabled, tc.wantConfig.IsSignupEnabled)
 		})
 	}
