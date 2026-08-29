@@ -91,9 +91,6 @@ var DefaultConfiguration = Configuration{
 	Logger: LoggerConfiguration{
 		Level: "error",
 	},
-	Analytics: AnalyticsConfiguration{
-		IsEnabled: true,
-	},
 	StoragePolicy: StoragePolicyConfiguration{
 		Type: "on-prem",
 		OnPrem: OnPremStorage{
@@ -650,10 +647,6 @@ type CircuitBreakerConfiguration struct {
 	SkipSleep                   bool   `json:"skip_sleep" envconfig:"CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP"`
 }
 
-type AnalyticsConfiguration struct {
-	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
-}
-
 type StoragePolicyConfiguration struct {
 	Type      string           `json:"type" envconfig:"CONVOY_STORAGE_POLICY_TYPE"`
 	S3        S3Storage        `json:"s3"`
@@ -777,7 +770,6 @@ type Configuration struct {
 	Retention          RetentionConfiguration        `json:"retention"`
 	WebhookArchiving   WebhookArchivingConfiguration `json:"webhook_archiving"`
 	CircuitBreaker     CircuitBreakerConfiguration   `json:"circuit_breaker"`
-	Analytics          AnalyticsConfiguration        `json:"analytics"`
 	StoragePolicy      StoragePolicyConfiguration    `json:"storage_policy"`
 	ConsumerPoolSize   int                           `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	QueueProvider      QueueProvider                 `json:"queue_provider" envconfig:"CONVOY_QUEUE_PROVIDER"`

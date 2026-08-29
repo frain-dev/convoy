@@ -23,10 +23,6 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	if c.Config.IsAnalyticsEnabled != nil {
-		cfg.IsAnalyticsEnabled = *c.Config.IsAnalyticsEnabled
-	}
-
 	if c.Config.IsSignupEnabled != nil {
 		cfg.IsSignupEnabled = *c.Config.IsSignupEnabled
 	}

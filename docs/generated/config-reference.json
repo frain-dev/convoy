@@ -8,12 +8,6 @@
       "default": "5008"
     },
     {
-      "json_path": "analytics.enabled",
-      "env_var": "CONVOY_ANALYTICS_ENABLED",
-      "go_type": "bool",
-      "default": "true"
-    },
-    {
       "json_path": "auth.file.api_key",
       "env_var": "CONVOY_API_KEY_CONFIG",
       "go_type": "config.APIKeyAuthConfig",

@@ -80,7 +80,7 @@ func TestPostgresConsumerProcessesJob(t *testing.T) {
 	c.RegisterHandlers(pgTestTask, func(ctx context.Context, tk *asynq.Task) error {
 		ran.Store(true)
 		return nil
-	}, nil)
+	})
 	require.NoError(t, c.Start())
 	t.Cleanup(c.Stop)
 
@@ -108,7 +108,7 @@ func TestPostgresConsumerRateLimitDoesNotIncrementRetry(t *testing.T) {
 			return &task.RateLimitError{Err: errors.New("limited")}
 		}
 		return nil
-	}, nil)
+	})
 	require.NoError(t, c.Start())
 	t.Cleanup(c.Stop)
 
@@ -125,7 +125,7 @@ func TestPostgresConsumerArchivesAfterMaxRetry(t *testing.T) {
 	c, q := setupPostgresConsumer(t)
 	c.RegisterHandlers(pgTestTask, func(ctx context.Context, tk *asynq.Task) error {
 		return errors.New("always")
-	}, nil)
+	})
 	require.NoError(t, c.Start())
 	t.Cleanup(c.Stop)
 
@@ -155,7 +155,7 @@ func TestPostgresConsumerStopWaitsForInFlight(t *testing.T) {
 		close(entered)
 		<-release
 		return nil
-	}, nil)
+	})
 	require.NoError(t, c.Start())
 
 	require.NoError(t, q.Write(context.Background(), pgTestTask, convoy.EventQueue, &queue.Job{
@@ -259,7 +259,7 @@ func TestPostgresConsumerRenewsLeaseWhileHandlerRuns(t *testing.T) {
 		close(entered)
 		<-release
 		return nil
-	}, nil)
+	})
 	require.NoError(t, c.Start())
 
 	select {

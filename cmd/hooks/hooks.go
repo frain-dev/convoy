@@ -36,7 +36,6 @@ import (
 	licenseusage "github.com/frain-dev/convoy/internal/pkg/license/usage"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/internal/users"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/util"
@@ -172,22 +171,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
-			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
-			if err != nil {
+			if _, err := ensureInstanceConfig(context.Background(), app, cfg); err != nil {
 				return err
 			}
 
 			if err := applyInstanceLicenseConfig(context.Background(), app, &cfg); err != nil {
-				return err
-			}
-
-			t := telemetry.NewTelemetry(lo, dbCfg,
-				telemetry.OptionBackend(telemetry.NewposthogBackend()),
-				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
-
-			err = t.Identify(cmd.Context(), dbCfg.UID)
-			if err != nil {
-				// do nothing?
 				return err
 			}
 		}
@@ -441,7 +429,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 			c := &datastore.Configuration{
 				UID:                ulid.Make().String(),
 				StoragePolicy:      storagePolicy,
-				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
+				IsAnalyticsEnabled: true,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
 				AdminManagedKnown:  true,
 				RetentionPolicy:    retentionPolicy,
@@ -475,7 +463,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	}
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
-	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.RetentionPolicy = retentionPolicy
 	configuration.WebhookArchiving = webhookArchiving
 	configuration.UpdatedAt = time.Now()

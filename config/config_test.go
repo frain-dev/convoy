@@ -185,9 +185,6 @@ func TestLoadConfig(t *testing.T) {
 				Billing: BillingConfiguration{
 					UsageSource: BillingUsageSourcePostgres,
 				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
-				},
 				StoragePolicy: StoragePolicyConfiguration{
 					Type: "on-prem",
 					OnPrem: OnPremStorage{
@@ -295,9 +292,6 @@ func TestLoadConfig(t *testing.T) {
 				Billing: BillingConfiguration{
 					UsageSource: BillingUsageSourcePostgres,
 				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
-				},
 				StoragePolicy: StoragePolicyConfiguration{
 					Type: "on-prem",
 					OnPrem: OnPremStorage{
@@ -403,9 +397,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Billing: BillingConfiguration{
 					UsageSource: BillingUsageSourcePostgres,
-				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
 				},
 				StoragePolicy: StoragePolicyConfiguration{
 					Type: "on-prem",
