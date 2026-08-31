@@ -63,9 +63,12 @@ func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 // wrong keys evict live entries, and leaving the full derivation cost on the
 // failing path keeps brute force expensive.
 func (n *NativeRealm) verifyAPIKey(key, salt string, want []byte) bool {
-	// The cache key covers the salt as well as the key, so a rotated salt is not
-	// answered with the derivation from the previous one. want is compared on
-	// every call, including cache hits, so a re-hashed key still fails here.
+	// Index only: this digest is the in-memory map key, not the verifier.
+	// PBKDF2 at 4096 rounds is still what proves the secret, and want is
+	// compared on every call, cache hits included. Hashing (salt, key) rather
+	// than storing the secret itself keeps the LRU from holding plaintext API
+	// keys. A rotated salt is a different index, so it is never answered from
+	// the previous derivation.
 	h := sha256.New()
 	h.Write([]byte(salt))
 	h.Write([]byte{0})
