@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
-import { PORTAL_LINK } from 'src/app/models/endpoint.model';
+import type { PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';

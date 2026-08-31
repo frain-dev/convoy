@@ -8,7 +8,7 @@ import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
 import { Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
 import { EventDeliveriesComponent } from './event-deliveries/event-deliveries.component';
 
 @Component({

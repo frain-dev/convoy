@@ -6,7 +6,7 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CreatePortalLinkComponent } from 'src/app/private/components/create-portal-link/create-portal-link.component';
 import { PortalLinksService } from './portal-links.service';
-import { PORTAL_LINK } from 'src/app/models/endpoint.model';
+import type { PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { FormsModule } from '@angular/forms';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';

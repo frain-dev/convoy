@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { GeneralService } from 'src/app/services/general/general.service';
-import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
+import type { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
 import { EndpointsService } from '../endpoints.service';
 
 @Component({

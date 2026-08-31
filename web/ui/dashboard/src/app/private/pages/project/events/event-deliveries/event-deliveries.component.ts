@@ -9,7 +9,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { ProjectService } from '../../project.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
 
 @Component({
     selector: 'app-event-deliveries',
