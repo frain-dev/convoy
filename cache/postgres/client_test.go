@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
@@ -374,6 +375,35 @@ func TestLocalReadsDisabled(t *testing.T) {
 	got = ""
 	require.NoError(t, c.Get(ctx, key, &got))
 	require.Empty(t, got, "without local reads every Get must hit the table")
+}
+
+// TestForgetAdvancesStripeBeforeDroppingLocal is the contract Get's
+// store-after-read guard relies on, asserted at the moment the local entry
+// disappears rather than after forget returns. The LRU onEvict callback runs
+// inside Remove, so if forget still dropped first and bumped second the
+// callback would see the old stripe and this would fail. That is the window
+// an in-flight Get stores into, resurrecting a deleted value for the rest of
+// the entry's lifetime.
+func TestForgetAdvancesStripeBeforeDroppingLocal(t *testing.T) {
+	const key = "k"
+
+	c := &PostgresCache{}
+	var stripeAtEvict uint64
+	var evicted bool
+	c.local = expirable.NewLRU[string, []byte](8, func(k string, _ []byte) {
+		if k == key {
+			evicted = true
+			stripeAtEvict = c.stripeFor(key).Load()
+		}
+	}, time.Minute)
+
+	c.local.Add(key, []byte("v1"))
+	before := c.stripeFor(key).Load()
+	c.forget(key)
+
+	require.True(t, evicted, "forget must drop the local copy")
+	require.Greater(t, stripeAtEvict, before,
+		"the epoch must have moved before the local entry disappeared")
 }
 
 // TestLocalReadsNotResurrectedByConcurrentGet covers the interleaving the
