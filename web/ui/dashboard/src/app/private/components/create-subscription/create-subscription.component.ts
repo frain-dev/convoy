@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
-import {APP, ENDPOINT} from 'src/app/models/endpoint.model';
+import type {APP, ENDPOINT} from 'src/app/models/endpoint.model';
 import {SOURCE} from 'src/app/models/source.model';
 import {PrivateService} from '../../private.service';
 import {CreateEndpointComponent} from '../create-endpoint/create-endpoint.component';

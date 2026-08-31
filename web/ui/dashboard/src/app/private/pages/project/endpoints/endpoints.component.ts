@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE } from 'src/app/models/endpoint.model';
+import type { ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE } from 'src/app/models/endpoint.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';

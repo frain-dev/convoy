@@ -16,7 +16,7 @@ import {PrivateService} from '../../private.service';
 import {FormLoaderComponent} from 'src/app/components/form-loader/form-loader.component';
 import {PermissionDirective} from '../permission/permission.directive';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
-import {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
+import type {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
 import {EndpointsService} from '../../pages/project/endpoints/endpoints.service';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
 import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
