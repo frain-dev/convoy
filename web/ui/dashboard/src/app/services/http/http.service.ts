@@ -5,6 +5,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {GeneralService} from '../general/general.service';
 import {ProjectService} from 'src/app/private/pages/project/project.service';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import {rememberInviteRedirect} from 'src/app/public/accept-invite/invite-redirect';
 
 function axiosErrorMessage(error: AxiosError): string {
 	const data = error.response?.data as { message?: unknown } | string | undefined;
@@ -301,6 +302,9 @@ export class HttpService {
 	}
 
 	logUserOut() {
+		// accept-invite 401 must keep the token so login can return; CONVOY_LAST_AUTH_LOCATION is never read
+		rememberInviteRedirect(this.router.url);
+
 		// save previous location before session timeout
 		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 

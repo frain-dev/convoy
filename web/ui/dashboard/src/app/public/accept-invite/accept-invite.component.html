@@ -8,61 +8,80 @@
 		>
 		<div authCard>
 			@if (!isInviteAccepted) {
-				<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()" class="flex flex-col gap-16px">
-					<div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
-						<div>
-							<label for="first_name" class="auth-label">First name</label>
-							<input id="first_name" class="auth-input read-only:bg-new.surface-muted read-only:text-new.text-secondary" autocomplete="given-name" formControlName="first_name" placeholder="First name" [readonly]="userDetailsAvailable" />
-							@if (acceptInviteForm.get('first_name')?.touched && acceptInviteForm.get('first_name')?.invalid) {
-								<convoy-input-error>First name is required</convoy-input-error>
+				@if (userDetailsAvailable && !isInviteeSession) {
+					<div class="flex flex-col gap-16px">
+						<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+							@if (sessionEmail) {
+								This invite is for {{ inviteeEmail }}. You're signed in as {{ sessionEmail }}.
+							} @else {
+								Sign in as {{ inviteeEmail }} to join this workspace.
 							}
-						</div>
-						<div>
-							<label for="last_name" class="auth-label">Last name</label>
-							<input id="last_name" class="auth-input read-only:bg-new.surface-muted read-only:text-new.text-secondary" autocomplete="family-name" formControlName="last_name" placeholder="Last name" [readonly]="userDetailsAvailable" />
-							@if (acceptInviteForm.get('last_name')?.touched && acceptInviteForm.get('last_name')?.invalid) {
-								<convoy-input-error>Last name is required</convoy-input-error>
-							}
-						</div>
+						</p>
+						<button
+							type="button"
+							class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90"
+							(click)="signInAsInvitee()"
+							>
+							Sign in as the invited user
+						</button>
 					</div>
-
-					<div>
-						<label for="email" class="auth-label">Email address</label>
-						<input type="email" id="email" class="auth-input read-only:bg-new.surface-muted read-only:text-new.text-secondary" autocomplete="email" formControlName="email" [readonly]="true" />
-						@if (acceptInviteForm.get('email')?.touched && acceptInviteForm.get('email')?.invalid) {
-							<convoy-input-error>Email is required</convoy-input-error>
-						}
-					</div>
-
-					@if (!userDetailsAvailable) {
-						<div>
-							<label for="new-password" class="auth-label">Create password</label>
-							<div class="relative">
-								<input [type]="showPassword ? 'text' : 'password'" id="new-password" class="auth-input !pr-40px" autocomplete="new-password" formControlName="password" placeholder="Enter your password" />
-								<button type="button" class="absolute right-10px top-1/2 -translate-y-1/2 w-20px h-20px flex items-center justify-center" (click)="showPassword = !showPassword">
-									<img class="w-full" [src]="showPassword ? '/assets/img/password-visible-icon.svg' : '/assets/img/password-invisible-icon.svg'" [alt]="showPassword ? 'hide password icon' : 'view password icon'" />
-								</button>
+				} @else {
+					<form [formGroup]="acceptInviteForm" (ngSubmit)="acceptInvite()" class="flex flex-col gap-16px">
+						<div class="grid grid-cols-2 gap-16px mobile:grid-cols-1">
+							<div>
+								<label for="first_name" class="auth-label">First name</label>
+								<input id="first_name" class="auth-input read-only:bg-new.surface-muted read-only:text-new.text-secondary" autocomplete="given-name" formControlName="first_name" placeholder="First name" [readonly]="userDetailsAvailable" />
+								@if (acceptInviteForm.get('first_name')?.touched && acceptInviteForm.get('first_name')?.invalid) {
+									<convoy-input-error>First name is required</convoy-input-error>
+								}
 							</div>
-							@if (acceptInviteForm.controls.password.touched && (acceptInviteForm.value.password || '').length < 8) {
-								<span class="flex items-center gap-6px font-body text-[12px] text-new.error-500 mt-8px">Password should be at least 8 characters</span>
-							}
-							@if (acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)) {
-								<span class="flex items-center gap-6px font-body text-[12px] text-new.error-500 mt-8px">Password should have at least one number</span>
-							}
-							@if (acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)) {
-								<span class="flex items-center gap-6px font-body text-[12px] text-new.error-500 mt-8px">Password should have at least one special character</span>
+							<div>
+								<label for="last_name" class="auth-label">Last name</label>
+								<input id="last_name" class="auth-input read-only:bg-new.surface-muted read-only:text-new.text-secondary" autocomplete="family-name" formControlName="last_name" placeholder="Last name" [readonly]="userDetailsAvailable" />
+								@if (acceptInviteForm.get('last_name')?.touched && acceptInviteForm.get('last_name')?.invalid) {
+									<convoy-input-error>Last name is required</convoy-input-error>
+								}
+							</div>
+						</div>
+
+						<div>
+							<label for="email" class="auth-label">Email address</label>
+							<input type="email" id="email" class="auth-input read-only:bg-new.surface-muted read-only:text-new.text-secondary" autocomplete="email" formControlName="email" [readonly]="true" />
+							@if (acceptInviteForm.get('email')?.touched && acceptInviteForm.get('email')?.invalid) {
+								<convoy-input-error>Email is required</convoy-input-error>
 							}
 						</div>
-					}
 
-					<button
-						type="submit"
-						class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
-						[disabled]="loading"
-						>
-						{{ loading ? 'Joining...' : 'Join your team' }}
-					</button>
-				</form>
+						@if (!userDetailsAvailable) {
+							<div>
+								<label for="new-password" class="auth-label">Create password</label>
+								<div class="relative">
+									<input [type]="showPassword ? 'text' : 'password'" id="new-password" class="auth-input !pr-40px" autocomplete="new-password" formControlName="password" placeholder="Enter your password" />
+									<button type="button" class="absolute right-10px top-1/2 -translate-y-1/2 w-20px h-20px flex items-center justify-center" (click)="showPassword = !showPassword">
+										<img class="w-full" [src]="showPassword ? '/assets/img/password-visible-icon.svg' : '/assets/img/password-invisible-icon.svg'" [alt]="showPassword ? 'hide password icon' : 'view password icon'" />
+									</button>
+								</div>
+								@if (acceptInviteForm.controls.password.touched && (acceptInviteForm.value.password || '').length < 8) {
+									<span class="flex items-center gap-6px font-body text-[12px] text-new.error-500 mt-8px">Password should be at least 8 characters</span>
+								}
+								@if (acceptInviteForm.controls.password.touched && !checkForNumber(acceptInviteForm.value.password)) {
+									<span class="flex items-center gap-6px font-body text-[12px] text-new.error-500 mt-8px">Password should have at least one number</span>
+								}
+								@if (acceptInviteForm.controls.password.touched && !checkForSpecialCharacter(acceptInviteForm.value.password)) {
+									<span class="flex items-center gap-6px font-body text-[12px] text-new.error-500 mt-8px">Password should have at least one special character</span>
+								}
+							</div>
+						}
+
+						<button
+							type="submit"
+							class="w-full px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 text-center transition-all hover:opacity-90 disabled:opacity-50"
+							[disabled]="loading"
+							>
+							{{ loading ? 'Joining...' : 'Join your team' }}
+						</button>
+					</form>
+				}
 			} @else {
 				<div class="flex flex-col items-center gap-16px text-center">
 					<span class="w-48px h-48px rounded-full bg-[#16A34A] flex items-center justify-center">

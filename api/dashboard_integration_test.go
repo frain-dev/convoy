@@ -37,6 +37,7 @@ import (
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
 	log "github.com/frain-dev/convoy/pkg/logger"
+	"github.com/frain-dev/convoy/services"
 )
 
 type pagedResponse struct {
@@ -2769,9 +2770,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser() {
-	expectedStatusCode := http.StatusOK
-
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
@@ -2781,18 +2780,46 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
-	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
 	req := createRequest(http.MethodPost, url, "", nil)
-	req.Header.Set("Authorization", "")
+	err = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})(req, s.Router)
+	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
-
-	// Act.
 	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code)
+}
 
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser_RequiresInviteeSession() {
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
+	require.NoError(s.T(), err)
+
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
+		Type:     auth.RoleProjectAdmin,
+		Project:  s.DefaultProject.UID,
+		Endpoint: "",
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
+
+	anon := createRequest(http.MethodPost, url, "", nil)
+	anon.Header.Set("Authorization", "")
+	anonW := httptest.NewRecorder()
+	s.Router.ServeHTTP(anonW, anon)
+	require.Equal(s.T(), http.StatusUnauthorized, anonW.Code)
+	require.Contains(s.T(), anonW.Body.String(), services.ErrInviteeLoginRequired.Error())
+
+	inviter := createRequest(http.MethodPost, url, "", nil)
+	err = s.AuthenticatorFn(inviter, s.Router)
+	require.NoError(s.T(), err)
+	inviterW := httptest.NewRecorder()
+	s.Router.ServeHTTP(inviterW, inviter)
+	require.Equal(s.T(), http.StatusUnauthorized, inviterW.Code)
+	require.Contains(s.T(), inviterW.Body.String(), services.ErrInviteeLoginRequired.Error())
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_InviteExpired() {

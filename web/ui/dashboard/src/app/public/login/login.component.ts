@@ -13,6 +13,7 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {GoogleOAuthService} from 'src/app/services/google-oauth/google-oauth.service';
 import {ConfigService} from 'src/app/services/config/config.service';
 import {GeneralService} from 'src/app/services/general/general.service';
+import {consumeInviteRedirect, rememberInviteRedirect} from '../accept-invite/invite-redirect';
 
 @Component({
     selector: 'app-login',
@@ -56,6 +57,7 @@ export class LoginComponent implements AfterViewInit {
 	) {}
 
 	async ngAfterViewInit() {
+		rememberInviteRedirect(this.router.parseUrl(this.router.url).queryParams['redirect']);
 		const licensePromise = this.licenseService.setLicenses(true);
 
 		try {
@@ -153,7 +155,7 @@ export class LoginComponent implements AfterViewInit {
 			});
 
 			await this.getOrganisations();
-			await this.router.navigateByUrl('/');
+			await this.router.navigateByUrl(this.postLoginDestination());
 		} catch (error: any) {
 			console.error('Login failed:', error);
 
@@ -167,6 +169,11 @@ export class LoginComponent implements AfterViewInit {
 
 			this.disableLoginBtn = false;
 		}
+	}
+
+	private postLoginDestination(): string {
+		const redirect = this.router.parseUrl(this.router.url).queryParams['redirect'];
+		return consumeInviteRedirect(typeof redirect === 'string' ? redirect : null) || '/';
 	}
 
 	async getOrganisations() {
@@ -277,7 +284,7 @@ export class LoginComponent implements AfterViewInit {
 					localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 					await this.getOrganisations();
-					await this.router.navigateByUrl('/');
+					await this.router.navigateByUrl(this.postLoginDestination());
                 }
             }
         } catch (error: any) {
