@@ -411,7 +411,7 @@
               <!-- Import OpenAPI Spec Button -->
               <button
                 type="button"
-                convoy-permission="Project Settings|MANAGE"
+                convoy-permission="Event Types|MANAGE"
                 class="flex items-center gap-4px px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
                 (click)="fileInput.click()"
                 >
@@ -422,7 +422,7 @@
               @if (validEventTypes().length > 0) {
                 <button
                   type="button"
-                  convoy-permission="Project Settings|MANAGE"
+                  convoy-permission="Event Types|MANAGE"
                   class="flex items-center gap-4px px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
                   (click)="openCreateEventTypeModal()"
                   >
@@ -442,15 +442,18 @@
                 <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary">No event types yet</p>
                 <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Event types will be listed here when available.</p>
               </div>
-              <button
-                type="button"
-                class="flex items-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
-                id="create-eventtype-modal-button"
-                (click)="openCreateEventTypeModal()"
-                >
-                <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
-                Create Event Type
-              </button>
+              @if (licenseService.hasLicense('AdvancedSubscriptions')) {
+                <button
+                  type="button"
+                  convoy-permission="Event Types|MANAGE"
+                  class="flex items-center gap-4px min-w-[100px] px-16px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+                  id="create-eventtype-modal-button"
+                  (click)="openCreateEventTypeModal()"
+                  >
+                  <img src="/assets/img/svg/plus-white.svg" class="w-14px h-14px" alt="" />
+                  Create Event Type
+                </button>
+              }
             </div>
           }
           @if (validEventTypes().length > 0) {

@@ -980,6 +980,104 @@ func (s *DashboardIntegrationTestSuite) TestCrossOrgReads_InstanceAdmin_Authoriz
 	}
 }
 
+func (s *DashboardIntegrationTestSuite) Test_CreateEventType_ProjectViewerForbidden() {
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types", s.DefaultOrg.UID, s.DefaultProject.UID)
+	body := serialize(`{"name":"invoice.created","category":"billing","description":"viewer must not create"}`)
+	req := createRequest(http.MethodPost, url, "", body)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *DashboardIntegrationTestSuite) Test_UpdateEventType_ProjectViewerForbidden() {
+	eventTypeID := ulid.Make().String()
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeID, "invoice.created", "desc", "billing")
+	require.NoError(s.T(), err)
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types/%s", s.DefaultOrg.UID, s.DefaultProject.UID, eventTypeID)
+	body := serialize(`{"description":"viewer must not update"}`)
+	req := createRequest(http.MethodPut, url, "", body)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *DashboardIntegrationTestSuite) Test_DeprecateEventType_ProjectViewerForbidden() {
+	eventTypeID := ulid.Make().String()
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeID, "invoice.created", "desc", "billing")
+	require.NoError(s.T(), err)
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types/%s/deprecate", s.DefaultOrg.UID, s.DefaultProject.UID, eventTypeID)
+	req := createRequest(http.MethodPost, url, "", nil)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *DashboardIntegrationTestSuite) Test_GetEventTypes_ProjectViewerAllowed() {
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types", s.DefaultOrg.UID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
+}
+
 func TestDashboardIntegrationTestSuiteTest(t *testing.T) {
 	suite.Run(t, new(DashboardIntegrationTestSuite))
 }

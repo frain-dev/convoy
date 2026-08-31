@@ -469,6 +469,26 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 	return projects, nil
 }
 
+// IDsForRetry returns the single project when scoped, or every live project
+// when projectID is empty. Admin retry count and the retry walk must share this.
+func (s *Service) IDsForRetry(ctx context.Context, projectID string) ([]string, error) {
+	if !util.IsStringEmpty(projectID) {
+		return []string{projectID}, nil
+	}
+	listed, err := s.LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(listed))
+	for _, p := range listed {
+		if p == nil || util.IsStringEmpty(p.UID) {
+			continue
+		}
+		ids = append(ids, p.UID)
+	}
+	return ids, nil
+}
+
 // UpdateProject updates an existing project
 func (s *Service) UpdateProject(ctx context.Context, project *datastore.Project) error {
 	if project == nil {

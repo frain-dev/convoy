@@ -100,18 +100,22 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 			go processEventDeliveryBatch(ctx, projectID, s, eventDeliveryRepo, deliveryChan, eventQueue, &wg, batchID, tracker, logger)
 
-			counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, projectID, s, searchParams)
-			if err != nil {
-				logger.Error("Failed to count event deliveries")
+			var counter int64
+			for _, pid := range projectIDs {
+				n, countErr := eventDeliveryRepo.CountDeliveriesByStatus(ctx, pid, s, searchParams)
+				if countErr != nil {
+					logger.Error("Failed to count event deliveries", "error", countErr, "project_id", pid)
+					continue
+				}
+				counter += n
 			}
 			logger.Info(fmt.Sprintf("Total number of event deliveries to requeue is %d", counter))
 
 			fetchErr := false
 			for _, pid := range projectIDs {
 				pageable := datastore.Pageable{
-					Direction:  datastore.Next,
-					PerPage:    1000,
-					NextCursor: datastore.DefaultCursor,
+					Direction: datastore.Next,
+					PerPage:   1000,
 				}
 				for {
 					deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, pid, []string{}, eventId, "", []datastore.EventDeliveryStatus{s}, searchParams, pageable, "", "", "")
@@ -127,6 +131,9 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 
 					count += len(deliveries)
 					deliveryChan <- deliveries
+					if !pagination.HasNextPage {
+						break
+					}
 					pageable.NextCursor = pagination.NextPageCursor
 				}
 				if fetchErr {
@@ -164,18 +171,7 @@ func retryProjectIDs(ctx context.Context, logger log.Logger, db database.Databas
 	if !util.IsStringEmpty(projectID) {
 		return []string{projectID}, nil
 	}
-	listed, err := projects.New(logger, db).LoadProjects(ctx, &datastore.ProjectFilter{})
-	if err != nil {
-		return nil, err
-	}
-	ids := make([]string, 0, len(listed))
-	for _, p := range listed {
-		if p == nil || util.IsStringEmpty(p.UID) {
-			continue
-		}
-		ids = append(ids, p.UID)
-	}
-	return ids, nil
+	return projects.New(logger, db).IDsForRetry(ctx, "")
 }
 
 func processEventDeliveryBatch(ctx context.Context, projectID string, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q queue.Queuer, wg *sync.WaitGroup, batchID string, t batch_tracker.Tracker, l log.Logger) {

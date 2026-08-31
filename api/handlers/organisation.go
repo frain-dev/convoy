@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -1126,30 +1127,18 @@ func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Reque
 		CreatedAtEnd:   now.Unix(),
 	}
 
-	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
+	projectIDs, err := projects.New(h.A.Logger, h.A.DB).IDsForRetry(r.Context(), "")
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to resolve projects for event delivery count", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
+		return
+	}
 
-	// Count across all statuses
-	var totalCount int64
-	if eventID != "" {
-		// If eventID is provided, use CountEventDeliveries which supports eventID filter
-		// This method accepts multiple statuses, so we can pass all at once
-		totalCount, err = eventDeliveryRepo.CountEventDeliveries(r.Context(), "", []string{}, eventID, statuses, searchParams)
-		if err != nil {
-			h.A.Logger.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
-			return
-		}
-	} else {
-		// Otherwise, count each status separately and sum them
-		for _, deliveryStatus := range statuses {
-			count, err := eventDeliveryRepo.CountDeliveriesByStatus(r.Context(), "", deliveryStatus, searchParams)
-			if err != nil {
-				h.A.Logger.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
-				_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
-				return
-			}
-			totalCount += count
-		}
+	totalCount, err := event_deliveries.New(h.A.Logger, h.A.DB).CountRetryCandidates(r.Context(), projectIDs, statuses, eventID, searchParams)
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
+		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries count successful", map[string]interface{}{
