@@ -1,31 +1,92 @@
 package native
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"golang.org/x/crypto/pbkdf2"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 )
 
+const (
+	// Fixed by the keys already in the database, not tunable: these must stay in
+	// step with the derivation the key-creation services persist, so raising
+	// either value would reject every existing key.
+	pbkdf2Iterations = 4096
+	pbkdf2KeyLength  = 32
+
+	// Sized for the number of distinct API keys an instance authenticates with,
+	// not for request volume, since one key serves every request it makes.
+	derivedKeyCacheSize = 10_000
+	derivedKeyCacheTTL  = 30 * time.Minute
+)
+
 type NativeRealm struct {
 	apiKeyRepo        datastore.APIKeyRepository
 	userRepo          datastore.UserRepository
 	portalLinkService datastore.PortalLinkRepository
+
+	// PBKDF2 over 4096 HMAC-SHA256 rounds was 30% of data plane agent CPU under
+	// load, because the derivation ran per request rather than per key. What is
+	// cached is only the output of a pure function of (key, salt), so it cannot
+	// carry stale authorization: expiry, revocation and role are still read from
+	// the API key row on every request below.
+	derivedKeys *expirable.LRU[string, []byte]
 }
 
 func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
 	portalLinkService datastore.PortalLinkRepository) *NativeRealm {
-	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkService: portalLinkService}
+	return &NativeRealm{
+		apiKeyRepo:        apiKeyRepo,
+		userRepo:          userRepo,
+		portalLinkService: portalLinkService,
+		derivedKeys: expirable.NewLRU[string, []byte](
+			derivedKeyCacheSize, nil, derivedKeyCacheTTL),
+	}
+}
+
+// verifyAPIKey reports whether key derives to want under salt, caching the
+// derivation so the 4096-round PBKDF2 cost is paid per key rather than per
+// request.
+//
+// Only a match is admitted to the cache. Caching a mismatch would let a flood of
+// wrong keys evict live entries, and leaving the full derivation cost on the
+// failing path keeps brute force expensive.
+func (n *NativeRealm) verifyAPIKey(key, salt string, want []byte) bool {
+	// Index only: this digest is the in-memory map key, not the verifier.
+	// PBKDF2 at 4096 rounds is still what proves the secret, and want is
+	// compared on every call, cache hits included. Hashing (salt, key) rather
+	// than storing the secret itself keeps the LRU from holding plaintext API
+	// keys. A rotated salt is a different index, so it is never answered from
+	// the previous derivation.
+	h := sha256.New()
+	h.Write([]byte(salt))
+	h.Write([]byte{0})
+	h.Write([]byte(key))
+	cacheKey := string(h.Sum(nil))
+
+	if dk, ok := n.derivedKeys.Get(cacheKey); ok {
+		return subtle.ConstantTimeCompare(dk, want) == 1
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), pbkdf2Iterations, pbkdf2KeyLength, sha256.New)
+	if subtle.ConstantTimeCompare(dk, want) != 1 {
+		return false
+	}
+
+	n.derivedKeys.Add(cacheKey, dk)
+
+	return true
 }
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
@@ -51,9 +112,7 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	// compute hash & compare.
-	dk := pbkdf2.Key([]byte(cred.APIKey), []byte(apiKey.Salt), 4096, 32, sha256.New)
-
-	if !bytes.Equal(dk, decodedKey) {
+	if !n.verifyAPIKey(cred.APIKey, apiKey.Salt, decodedKey) {
 		// Not Match.
 		return nil, errors.New("invalid api key")
 	}
