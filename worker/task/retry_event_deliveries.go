@@ -168,7 +168,10 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 // retryProjectIDs returns the single project when scoped, or every live
 // project when projectID is empty (instance-admin / --all-projects).
 func retryProjectIDs(ctx context.Context, logger log.Logger, db database.Database, projectID string) ([]string, error) {
-	return projects.New(logger, db).IDsForRetry(ctx, projectID)
+	if !util.IsStringEmpty(projectID) {
+		return []string{projectID}, nil
+	}
+	return projects.New(logger, db).IDsForRetry(ctx, "")
 }
 
 func processEventDeliveryBatch(ctx context.Context, projectID string, s datastore.EventDeliveryStatus, edRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q queue.Queuer, wg *sync.WaitGroup, batchID string, t batch_tracker.Tracker, l log.Logger) {
