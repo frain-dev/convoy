@@ -36,8 +36,48 @@ type CreateEvent struct {
 	IdempotencyKey string `json:"idempotency_key"`
 }
 
+// requiredField pairs the emptiness of one field with the error util.Validate
+// would have produced for it, as "<json name>:<message>".
+//
+// Emptiness is govalidator's: a zero length value, untrimmed. A whitespace-only
+// event type is therefore still accepted here, as it always has been.
+type requiredField struct {
+	empty   bool
+	message string
+}
+
+// requiredFieldsError reports every empty required field in one error, joined
+// with ", " as util.Validate joins govalidator's. A single missing field
+// produces the string it always did; several now come out in field declaration
+// order, where util.Validate ranged over a map and so ordered them at random.
+//
+// The ingest event structs below validate through this rather than through
+// util.Validate because govalidator's slice branch runs the whole validator
+// machinery once per element, and a json.RawMessage payload is a byte slice, so
+// the cost of validating two required fields grew with the size of the webhook
+// body. TestIngestEventValidateEnforcesEveryValidTag keeps these checks in step
+// with the valid: tags, which stay on the fields as the declaration.
+func requiredFieldsError(fields ...requiredField) error {
+	var messages []string
+
+	for _, field := range fields {
+		if field.empty {
+			messages = append(messages, field.message)
+		}
+	}
+
+	if len(messages) == 0 {
+		return nil
+	}
+
+	return errors.New(strings.Join(messages, ", "))
+}
+
 func (e *CreateEvent) Validate() error {
-	if err := util.Validate(e); err != nil {
+	if err := requiredFieldsError(
+		requiredField{len(e.Data) == 0, "data:please provide your data"},
+		requiredField{len(e.EventType) == 0, "event_type:please provide an event type"},
+	); err != nil {
 		return err
 	}
 
@@ -87,7 +127,11 @@ type DynamicEvent struct {
 }
 
 func (de *DynamicEvent) Validate() error {
-	return util.Validate(de)
+	return requiredFieldsError(
+		requiredField{len(de.URL) == 0, "url:please provide an endpoint url"},
+		requiredField{len(de.Data) == 0, "data:please provide your webhook event data"},
+		requiredField{len(de.EventType) == 0, "event_type:please provide an event type"},
+	)
 }
 
 type SearchParams struct {
@@ -159,7 +203,10 @@ type DynamicEventStub struct {
 }
 
 func (ds *DynamicEventStub) Validate() error {
-	return util.Validate(ds)
+	return requiredFieldsError(
+		requiredField{len(ds.EventType) == 0, "event_type:please provide an event type"},
+		requiredField{len(ds.Data) == 0, "data:please provide your data"},
+	)
 }
 
 type BroadcastEvent struct {
@@ -186,7 +233,10 @@ type BroadcastEvent struct {
 }
 
 func (bs *BroadcastEvent) Validate() error {
-	return util.Validate(bs)
+	return requiredFieldsError(
+		requiredField{len(bs.EventType) == 0, "event_type:please provide an event type"},
+		requiredField{len(bs.Data) == 0, "data:please provide your data"},
+	)
 }
 
 type FanoutEvent struct {
@@ -208,7 +258,11 @@ type FanoutEvent struct {
 }
 
 func (fe *FanoutEvent) Validate() error {
-	return util.Validate(fe)
+	return requiredFieldsError(
+		requiredField{len(fe.OwnerID) == 0, "owner_id:please provide an owner id"},
+		requiredField{len(fe.EventType) == 0, "event_type:please provide an event type"},
+		requiredField{len(fe.Data) == 0, "data:please provide your data"},
+	)
 }
 
 type EventResponse struct {
