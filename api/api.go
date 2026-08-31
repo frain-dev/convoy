@@ -515,7 +515,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
 		uiRouter.Post("/users/verify_email", handler.VerifyEmail)
 		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/users/resend_verification_email", handler.ResendVerificationEmail)
-		uiRouter.Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
+		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
