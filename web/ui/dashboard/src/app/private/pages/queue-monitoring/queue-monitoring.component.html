@@ -4,6 +4,19 @@
   </div>
 }
 
+<!-- Above the queue surfaces: on a deployment whose events bypass the queue,
+     this is the only panel that can show a backlog at all. It renders nothing
+     when no data plane reports.
+
+     Gated on licensed, which is not a re-check of a server-gated field: the
+     status route answers 401 without the monitoring license, and the HTTP
+     interceptor logs the user out on any 401 before it looks at
+     hideNotification. Rendering this panel unlicensed would send an admin to
+     the login page on page load. -->
+@if (licensed) {
+  <convoy-queue-monitoring-dataplane></convoy-queue-monitoring-dataplane>
+}
+
 @if (licensed && surface === 'loading') {
   <div class="bg-white-100 border border-new.border rounded-12px p-20px">
     <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Loading queue monitoring.</p>

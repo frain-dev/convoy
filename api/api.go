@@ -595,6 +595,15 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				queueRouter.Post("/{queueName}/pause", handler.PauseQueue)
 				queueRouter.Post("/{queueName}/resume", handler.UnpauseQueue)
 			})
+
+			// Data plane monitoring for the same page. It carries the queue
+			// group's two gates because it answers the same question about the
+			// same instance-wide work, for deployments whose event path does not
+			// run on the queue.
+			adminRouter.Route("/dataplane", func(dataPlaneRouter chi.Router) {
+				dataPlaneRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+				dataPlaneRouter.Get("/status", handler.GetDataPlaneStatus)
+			})
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
@@ -1087,6 +1096,15 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
 			authRouter.Post("/logout", handler.LogoutUser)
+		})
+
+		// This replica's own live snapshot. It carries the same two gates as the
+		// control plane's /ui/admin/dataplane/status, because it answers the same
+		// question about the same instance-wide work; it exists separately so a
+		// reader does not have to wait out a publish interval.
+		uiRouter.Route("/admin/dataplane", func(dataPlaneRouter chi.Router) {
+			dataPlaneRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+			dataPlaneRouter.Get("/snapshot", handler.GetDataPlaneSnapshot)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {

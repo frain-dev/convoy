@@ -8,12 +8,13 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 
 import { QueueMonitoringAsynqmonComponent } from './queue-monitoring-asynqmon.component';
 import { QueueMonitoringBrokerComponent } from './queue-monitoring-broker.component';
+import { QueueMonitoringDataplaneComponent } from './queue-monitoring-dataplane.component';
 
 type QueueMonitoringSurface = 'loading' | 'postgres' | 'redis';
 
 @Component({
 	selector: 'convoy-queue-monitoring',
-	imports: [CommonModule, QueueMonitoringAsynqmonComponent, QueueMonitoringBrokerComponent],
+	imports: [CommonModule, QueueMonitoringAsynqmonComponent, QueueMonitoringBrokerComponent, QueueMonitoringDataplaneComponent],
 	templateUrl: './queue-monitoring.component.html'
 })
 export class QueueMonitoringComponent implements OnInit {

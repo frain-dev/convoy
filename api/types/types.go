@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/internal/pkg/dataplanestats"
 	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -70,6 +71,16 @@ type APIOptions struct {
 	ResendClaims ResendClaimStore
 	UsageLocker  Locker
 	BatchTracker batch_tracker.Tracker
+
+	// DataPlaneReporter describes the data plane running in this process. Nil
+	// unless this process runs one that reports, following the QueueInspector
+	// convention: a nil provider answers 501 rather than an empty report, so a
+	// process with no such plane cannot be read as a plane holding nothing.
+	DataPlaneReporter dataplanestats.Reporter
+
+	// DataPlaneMonitor reads the snapshots replicas published. Nil where no
+	// store is wired, and nil-checked the same way.
+	DataPlaneMonitor dataplanestats.Store
 }
 
 // TracerProvider returns the trace.TracerProvider used to mint span tracers.

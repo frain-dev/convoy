@@ -1,0 +1,183 @@
+<!-- Only a read that found replicas, or one that failed, puts anything on the
+     page. Everything else is a deployment with no plane to describe, and a
+     panel describing nothing reads as a plane that is idle.
+
+     That covers three cases. 'hidden' is the server saying it wires no data
+     plane monitoring. 'empty' is the read succeeding with no replicas, which a
+     deployment running no plane that publishes cannot be told apart from; the
+     panel stays out rather than becoming a permanent "no replica is reporting"
+     box, and polling continues so a plane that starts later appears without a
+     reload. 'loading' is the first paint, before any read has landed: showing a
+     header and a spinner there would flash a panel onto every instance that
+     turns out to have no plane at all, which is every instance today. -->
+@if (state === 'ready' || state === 'unknown') {
+  <div class="mb-24px">
+    <div class="flex items-start justify-between gap-16px mb-16px">
+      <div class="flex flex-col gap-4px">
+        <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Data plane</h3>
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">What each replica is holding right now, and how much accepted work is still outstanding in the database.</p>
+      </div>
+      <button
+        type="button"
+        class="shrink-0 px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+        (click)="load()"
+        >
+        Refresh
+      </button>
+    </div>
+
+    <!-- A failed read drops the rows with it. Leaving the previous numbers up
+         would let a stale depth answer for the present, which is the one thing
+         this panel exists to catch. -->
+    @if (state === 'unknown') {
+      <div class="bg-white-100 border border-new.border rounded-12px p-20px flex flex-col gap-8px">
+        <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Data plane status unknown</p>
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">The last read failed, so what the replicas are holding is unknown rather than empty.</p>
+      </div>
+    }
+
+    @if (state === 'ready') {
+      <div class="flex flex-col gap-16px">
+        @for (replica of replicas; track replica.replica) {
+          <div class="bg-white-100 border border-new.border rounded-12px overflow-hidden">
+            <div class="flex items-center justify-between gap-12px flex-wrap px-20px py-16px border-b border-new.border">
+              <div class="flex items-center gap-8px flex-wrap">
+                <span class="font-menlo text-[13px] text-new.text-primary" [title]="replica.replica">{{ replica.replica }}</span>
+                @if (replica.mode) {
+                  <convoy-tag color="neutral" size="sm">{{ replica.mode }}</convoy-tag>
+                }
+                @if (!replica.running) {
+                  <convoy-tag color="warning" size="sm">Not accepting</convoy-tag>
+                }
+                @if (replica.stale) {
+                  <convoy-tag color="warning" size="sm">Stale</convoy-tag>
+                }
+              </div>
+              <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary whitespace-nowrap">Sampled {{ ageLabel(replica) }}</span>
+            </div>
+
+            @if (replica.stale) {
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary px-20px py-12px border-b border-new.border">This replica stopped publishing. The numbers below describe {{ ageLabel(replica) }} and are not current.</p>
+            }
+
+            <!-- Outstanding first: this is the durable backlog, the number that
+                 compares against a queue depth. Channel depth caps out and
+                 cannot represent it. -->
+            @if (replica.outstanding.length) {
+              <div class="px-20px py-16px border-b border-new.border">
+                <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-12px">Outstanding</p>
+                <div class="flex flex-wrap gap-x-32px gap-y-12px">
+                  <!-- Tracked positionally, not by name: the plane chooses these
+                       names and two sharing one would be a duplicate key, which
+                       throws and takes the panel down. The list is replaced
+                       whole on every read, so position is the stable identity. -->
+                  @for (backlog of replica.outstanding; track $index) {
+                    <div class="flex flex-col gap-2px">
+                      <span class="font-body font-medium text-[12px] leading-normal text-new.text-secondary uppercase">{{ backlog.name }}</span>
+                      <span
+                        class="font-body font-normal text-[16px] leading-[24px]"
+                        [class]="backlog.known ? 'text-new.text-primary' : 'text-new.text-secondary italic'"
+                        [title]="backlog.known ? 'Read at ' + backlog.as_of : 'This count could not be read, so it is unknown and not zero'"
+                        >
+                        {{ backlogLabel(backlog) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (replica.stages.length) {
+              <div class="w-full overflow-x-auto border-b border-new.border">
+                <table class="w-full min-w-[640px] border-collapse">
+                  <thead>
+                    <tr class="bg-new.surface-subtle border-b border-new.border">
+                      <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Stage</th>
+                      <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Queued</th>
+                      <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Fullest lane</th>
+                      <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Lanes</th>
+                      <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Waiting</th>
+                      <th class="text-right px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Workers</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (stage of replica.stages; track $index) {
+                      <tr class="border-b border-new.border last:border-b-0">
+                        <td class="px-20px h-44px font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ stage.name }}</td>
+                        <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-primary">{{ stage.queued }}</td>
+                        <!-- Queued alone cannot say whether one tenant is
+                             blocking everyone else, which is what the fullest
+                             lane against its capacity answers. -->
+                        <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ stage.deepest_partition }} / {{ stage.partition_capacity }}</td>
+                        <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ stage.partitions }}</td>
+                        <!-- Blocked senders are the saturation signal that tells
+                             backpressure apart from an idle stage. -->
+                        <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal" [class]="stage.waiting ? 'text-error-9' : 'text-new.text-secondary'">{{ stage.waiting }}</td>
+                        <td class="px-20px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ workersLabel(stage) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            @if (replica.writers.length) {
+              <div class="w-full overflow-x-auto border-b border-new.border">
+                <table class="w-full min-w-[480px] border-collapse">
+                  <thead>
+                    <tr class="bg-new.surface-subtle border-b border-new.border">
+                      <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Writer</th>
+                      <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Pending</th>
+                      <th class="text-right px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Failed batches</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (writer of replica.writers; track $index) {
+                      <tr class="border-b border-new.border last:border-b-0">
+                        <td class="px-20px h-44px font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ writer.name }}</td>
+                        <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-primary">{{ writer.pending }}</td>
+                        <td class="px-20px h-44px text-right font-body font-normal text-[14px] leading-normal" [class]="writer.failures ? 'text-error-9' : 'text-new.text-secondary'">{{ writer.failures }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            @if (replica.gauges.length) {
+              <div class="px-20px py-16px border-b border-new.border">
+                <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-12px">Current</p>
+                <div class="flex flex-wrap gap-x-32px gap-y-12px">
+                  @for (gauge of replica.gauges; track $index) {
+                    <div class="flex flex-col gap-2px">
+                      <span class="font-body font-medium text-[12px] leading-normal text-new.text-secondary uppercase">{{ gauge.name }}</span>
+                      <span class="font-body font-normal text-[14px] leading-normal text-new.text-primary">{{ gauge.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Totals for the life of this process, so they do not drop to zero
+                 on a quiet minute and do reset when the replica restarts. -->
+            @if (replica.counters.length) {
+              <div class="px-20px py-16px">
+                <p class="font-heading font-medium text-[14px] leading-[20px] text-new.text-primary mb-12px">Since this replica started</p>
+                <div class="flex flex-wrap gap-x-32px gap-y-12px">
+                  @for (counter of replica.counters; track $index) {
+                    <div class="flex flex-col gap-2px">
+                      <span class="font-body font-medium text-[12px] leading-normal text-new.text-secondary uppercase">{{ counter.name }}</span>
+                      <span class="font-body font-normal text-[14px] leading-normal text-new.text-primary">{{ counter.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="h-[1px] w-full bg-new.border mt-24px"></div>
+  </div>
+}
