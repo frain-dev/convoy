@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/dataplanestats"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/indexes"
@@ -159,6 +160,10 @@ func StartConvoyServer(a *cli.App) error {
 		Cfg:                        cfg,
 		TracerBackend:              a.TracerBackend,
 		ConfigRepo:                 configRepo,
+
+		// The control plane runs no data plane of its own, so it has no
+		// reporter. It reads what the replicas published.
+		DataPlaneMonitor: dataplanestats.StoreFrom(a.DB),
 	}
 	a.Broker.ApplyToAPIOptions(apiOpts)
 

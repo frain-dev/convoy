@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
@@ -16,44 +17,61 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	log "github.com/frain-dev/convoy/pkg/logger"
 )
 
-func getConfig() config.Configuration {
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
-	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
-	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+// fromTestEnv copies a TEST_* value onto the CONVOY_* name the configuration
+// reads. An unset or empty source is left alone rather than exported empty,
+// because envconfig treats a set-but-empty variable as a value and would
+// overwrite the compiled default with it, turning "I did not configure this" into
+// an empty DSN.
+func fromTestEnv(convoyKey, testKey string) {
+	if v := os.Getenv(testKey); v != "" {
+		_ = os.Setenv(convoyKey, v)
+	}
+}
 
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
-	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
-	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
-	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
-	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+func getConfig() config.Configuration {
+	fromTestEnv("CONVOY_REDIS_HOST", "TEST_REDIS_HOST")
+	fromTestEnv("CONVOY_REDIS_SCHEME", "TEST_REDIS_SCHEME")
+	fromTestEnv("CONVOY_REDIS_PORT", "TEST_REDIS_PORT")
+
+	fromTestEnv("CONVOY_DB_HOST", "TEST_DB_HOST")
+	fromTestEnv("CONVOY_DB_SCHEME", "TEST_DB_SCHEME")
+	fromTestEnv("CONVOY_DB_USERNAME", "TEST_DB_USERNAME")
+	fromTestEnv("CONVOY_DB_PASSWORD", "TEST_DB_PASSWORD")
+	fromTestEnv("CONVOY_DB_DATABASE", "TEST_DB_DATABASE")
+	fromTestEnv("CONVOY_DB_PORT", "TEST_DB_PORT")
 
 	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
 
-	err := config.LoadConfig("")
+	// The CONVOY_* variables above only reach the configuration through
+	// envconfig, the same way cmd/hooks loads it. Without this override
+	// LoadConfig returns the compiled defaults and every TEST_DB_* value is
+	// silently ignored, which happens to work only when the local database
+	// matches CI's postgres:postgres@localhost:5432/convoy.
+	err := config.LoadConfig("", func(c *config.Configuration) error {
+		return envconfig.Process("convoy", c)
+	})
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	km, err := keys.NewLocalKeyManager("test")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	if km.IsSet() {
 		if _, err = km.GetCurrentKeyFromCache(); err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	}
 	if err = keys.Set(km); err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	return cfg
