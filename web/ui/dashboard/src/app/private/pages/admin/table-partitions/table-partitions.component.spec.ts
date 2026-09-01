@@ -185,3 +185,80 @@ describe('TablePartitionsComponent', () => {
 		expect(component.conversionRuns.length).toBe(0);
 	});
 });
+
+// Separate fixture: the suite above seeds the licence so it can reach the form,
+// which is the one thing these tests must not do. Here the licence read is held
+// open on purpose, because the flash happens in exactly that window.
+describe('TablePartitionsComponent license gate', () => {
+	const UNLICENSED_COPY = 'Partitioning requires a license key';
+
+	let fixture: ComponentFixture<TablePartitionsComponent>;
+	let licensed: boolean;
+	let answerLicense!: () => void;
+
+	beforeEach(async () => {
+		licensed = true;
+
+		await TestBed.configureTestingModule({
+			declarations: [TablePartitionsComponent, RunCardComponent],
+			imports: [CommonModule, ReactiveFormsModule, SelectComponent, TagComponent, StatusColorModule, LabelComponent, InputFieldDirective, InputErrorComponent, InputDirective],
+			providers: [
+				{
+					provide: AdminService,
+					useValue: {
+						listPartitionTables: () => new Promise(() => {}),
+						listPartitionRuns: () => new Promise(() => {}),
+						startPartitionRun: () => new Promise(() => {})
+					}
+				},
+				{ provide: GeneralService, useValue: { showNotification: () => {} } },
+				{
+					provide: LicensesService,
+					useValue: {
+						loadAllLicenses: () => new Promise<void>(resolve => (answerLicense = resolve)),
+						hasInstanceLicense: () => licensed
+					}
+				}
+			]
+		}).compileComponents();
+
+		fixture = TestBed.createComponent(TablePartitionsComponent);
+	});
+
+	function rendered(): string {
+		return fixture.nativeElement.textContent as string;
+	}
+
+	// Drains the microtask queue so the awaits inside ngOnInit run to
+	// completion, without a timer or a second fetch getting a turn.
+	async function settle() {
+		for (let i = 0; i < 5; i++) await Promise.resolve();
+	}
+
+	it('does not claim the instance is unlicensed while the license read is in flight', () => {
+		fixture.detectChanges();
+
+		expect(rendered()).not.toContain(UNLICENSED_COPY);
+	});
+
+	it('claims the instance is unlicensed once the license read answers no', async () => {
+		licensed = false;
+		fixture.detectChanges();
+
+		answerLicense();
+		await settle();
+		fixture.changeDetectorRef.detectChanges();
+
+		expect(rendered()).toContain(UNLICENSED_COPY);
+	});
+
+	it('never claims the instance is unlicensed when the license read answers yes', async () => {
+		fixture.detectChanges();
+
+		answerLicense();
+		await settle();
+		fixture.changeDetectorRef.detectChanges();
+
+		expect(rendered()).not.toContain(UNLICENSED_COPY);
+	});
+});

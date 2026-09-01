@@ -46,13 +46,56 @@ type Snapshot struct {
 	Counters []Metric `json:"counters,omitempty"`
 
 	// Gauges are point-in-time values that are not stage or writer depth.
+	//
+	// This list and Counters above are read name by name, so absence applies to a
+	// name and not only to the list holding it. A present list is not a complete
+	// one: a publisher omits a name it has nothing to say about, so a consumer
+	// that defaults a missing name to zero reports a measurement the plane never
+	// made. The list being here says only that the plane published something,
+	// never that it published this.
+	//
+	// Where several names are one compound value, the publisher omits or sends
+	// them together, and a consumer missing any one of them must treat the whole
+	// value as unknown rather than fill the gap. A group every plane shares is
+	// named in this package and documents itself there; for a name belonging to
+	// one plane's own vocabulary the grouping cannot be told from here, and that
+	// publisher documents it.
+	//
+	// A name that is present with a value of 0 is the opposite of an absent one.
+	// It is a real reading of a plane that did none of that work, which is an
+	// answer an operator needs, so it renders as the number rather than as
+	// unknown.
 	Gauges []Metric `json:"gauges,omitempty"`
 
 	// Outstanding are the durable backlogs, which is the number an operator
 	// compares against a queue depth. Each carries its own known flag because
 	// these are the counts most likely to be unavailable.
 	Outstanding []Backlog `json:"outstanding,omitempty"`
+
+	// Throughput has no section of its own. A plane that measures an interval
+	// publishes it through Gauges, under names carrying the concept rather than
+	// its own vocabulary, which is what lets a queue-based plane publish the same
+	// fact. A plane with no previous reading to difference omits those gauges
+	// entirely: absence is the only encoding of "not measured", so there is no
+	// flag beside it that can disagree, and a consumer must render the absence as
+	// unknown rather than as a plane that moved nothing.
+	//
+	// The monotonic totals are Counters, which is what they already were.
 }
+
+// The gauge names a plane publishes its measured interval under. Named for the
+// concept rather than for any plane's own components, so a queue-based plane can
+// publish the same four and be read by the same consumer.
+//
+// A publisher emits all four or none. A consumer that finds only some of them
+// has no rate: a count without the window it covers is not a rate, and a window
+// without its counts is not a measurement.
+const (
+	GaugeThroughputWindowMS  = "throughput_window_ms"
+	GaugeThroughputAccepted  = "throughput_accepted"
+	GaugeThroughputDelivered = "throughput_delivered"
+	GaugeThroughputFailed    = "throughput_failed"
+)
 
 // Stage is one admission point. Queued is work already admitted; Waiting is
 // callers the stage is currently blocking, which is the saturation signal that
@@ -83,7 +126,11 @@ type Writer struct {
 	Failures int64  `json:"failures"`
 }
 
-// Metric is one named number.
+// Metric is one named number. The number carries no unit, so the name has to:
+// a publisher measuring a duration or an interval says so in the name
+// (`..._ms`), because a consumer cannot recover a unit it was never told and a
+// number whose unit is only knowable by reading the producer is how a reader
+// comes to divide milliseconds by seconds.
 type Metric struct {
 	Name  string `json:"name"`
 	Value int64  `json:"value"`
@@ -131,6 +178,13 @@ type Reporter interface {
 // Store keeps the snapshots replicas publish. The publishing process and the
 // process serving the dashboard are not the same one, which is why this crosses
 // the database rather than staying in memory.
+//
+// Deleting a named row is deliberately not here. api/types hands this interface
+// to the dashboard's read path, so a method on it is a method that surface
+// holds: putting the delete here is what would let a read one day remove the
+// evidence of a replica that stopped. A publisher that retracts its own row asks
+// its store for that capability directly, and a store without it is not broken,
+// because expiry removes the row anyway.
 type Store interface {
 	// PublishSnapshot replaces this replica's row.
 	PublishSnapshot(ctx context.Context, s Snapshot) error

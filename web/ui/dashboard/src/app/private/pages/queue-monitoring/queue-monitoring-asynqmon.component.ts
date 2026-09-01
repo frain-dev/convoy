@@ -21,6 +21,19 @@ export class QueueMonitoringAsynqmonComponent implements OnInit {
 	/** Iframe loads here (session cookie path matches this prefix only). */
 	embedMonitoringUrl = '';
 
+	// Whether the license read has been attempted, not that it succeeded:
+	// loadAllLicenses swallows transport errors, so a failed read falls back to
+	// the cache and reads as unlicensed on a cold one. What it buys is that the
+	// "does not include Asynq monitoring" claim waits for the read.
+	licenseKnown = false;
+
+	// True while the reads before the session mint are in flight. sessionStatus
+	// cannot cover that window: it is still 'idle' until mintSessionAndLoad runs,
+	// which leaves the card body empty for the same reads the parent page shows a
+	// loader for. Cleared on the non-admin return too, so a navigation that does
+	// not complete cannot leave a spinner with nothing behind it.
+	isLoadingSession = true;
+
 	sessionStatus: 'idle' | 'minting' | 'ready' | 'error' = 'idle';
 	sessionError: string | null = null;
 	iframeVisible = false;
@@ -38,6 +51,7 @@ export class QueueMonitoringAsynqmonComponent implements OnInit {
 	async ngOnInit(): Promise<void> {
 		const role = await this.rbacService.getUserRole();
 		if (role !== 'INSTANCE_ADMIN') {
+			this.isLoadingSession = false;
 			this.router.navigateByUrl('/');
 			return;
 		}
@@ -47,6 +61,10 @@ export class QueueMonitoringAsynqmonComponent implements OnInit {
 		this.loadFullscreenPreference();
 
 		await this.licenses.loadAllLicenses();
+		this.licenseKnown = true;
+		// mintSessionAndLoad sets sessionStatus before its first await, so the
+		// loader hands over to 'minting' without a pass in between.
+		this.isLoadingSession = false;
 
 		if (this.hasAsynqLicense()) {
 			await this.mintSessionAndLoad();

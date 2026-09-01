@@ -1,32 +1,77 @@
-@if (!licensed) {
+<!-- Three states, exactly one of them painted: this loader while the reads are in
+     flight, the banner below once the read answered unlicensed, the surfaces
+     once it answered licensed. licensed is assigned in the same synchronous
+     block that clears isLoadingLicense, so no change-detection pass can see
+     this branch alongside either of the others. -->
+@if (isLoadingLicense) {
+  <div class="bg-white-100 border border-new.border rounded-12px p-20px flex items-center justify-center">
+    <convoy-loader position="relative"></convoy-loader>
+  </div>
+}
+
+@if (licenseKnown && !licensed) {
   <div class="bg-white-100 border border-new.border rounded-12px p-20px">
     <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Queue monitoring requires a license key. Contact support to enable it on this instance.</p>
   </div>
 }
 
-<!-- Above the queue surfaces: on a deployment whose events bypass the queue,
-     this is the only panel that can show a backlog at all. It renders nothing
-     when no data plane reports.
-
-     Gated on licensed, which is not a re-check of a server-gated field: the
-     status route answers 401 without the monitoring license, and the HTTP
-     interceptor logs the user out on any 401 before it looks at
-     hideNotification. Rendering this panel unlicensed would send an admin to
-     the login page on page load. -->
 @if (licensed) {
-  <convoy-queue-monitoring-dataplane></convoy-queue-monitoring-dataplane>
-}
+  <!-- Only when a plane reports. A queue-only instance sees the tab exactly as
+       it did before, with nothing above the queue view and nothing pushing it
+       down. Both engines are live when a plane runs, so this selects which
+       one is on screen and never which one is running. -->
+  @if (planeReports) {
+    <div class="flex flex-col gap-8px mb-24px min-w-0">
+      <div class="flex items-stretch h-44px w-fit drop-shadow-[0px_2px_1px_rgba(0,0,0,0.04)]">
+        <button
+          type="button"
+          class="px-16px font-body font-medium text-[14px] leading-[16px] border transition-colors rounded-l-8px"
+          [class]="segment === 'dataplane' ? 'bg-new.primary-400 border-new.primary-400 text-white-100 z-[1] relative' : 'bg-white-100 border-new.border text-new.text-primary hover:bg-new.surface-muted'"
+          [attr.aria-pressed]="segment === 'dataplane'"
+          (click)="selectSegment('dataplane')"
+          >
+          Data plane
+        </button>
+        <button
+          type="button"
+          class="px-16px font-body font-medium text-[14px] leading-[16px] border transition-colors rounded-r-8px -ml-[1px]"
+          [class]="segment === 'queue' ? 'bg-new.primary-400 border-new.primary-400 text-white-100 z-[1] relative' : 'bg-white-100 border-new.border text-new.text-primary hover:bg-new.surface-muted'"
+          [attr.aria-pressed]="segment === 'queue'"
+          (click)="selectSegment('queue')"
+          >
+          Queue
+        </button>
+      </div>
 
-@if (licensed && surface === 'loading') {
-  <div class="bg-white-100 border border-new.border rounded-12px p-20px">
-    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Loading queue monitoring.</p>
-  </div>
-}
+      <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary min-w-0 break-words">{{ otherEngineLine }}</p>
+    </div>
+  }
 
-@if (licensed && usePostgresUi) {
-  <convoy-queue-monitoring-broker></convoy-queue-monitoring-broker>
-}
+  <!-- Mounted whether or not it is the segment on screen, because the page reads
+       its report to decide whether the control above exists at all and which
+       segment an operator lands on. A panel that only polled while visible could
+       not answer either question.
 
-@if (licensed && surface === 'redis') {
-  <convoy-queue-monitoring-asynqmon></convoy-queue-monitoring-asynqmon>
+       Gated on licensed, which is not a re-check of a server-gated field: the
+       status route answers 401 without the monitoring license, and the HTTP
+       interceptor logs the user out on any 401 before it looks at
+       hideNotification. Rendering this panel unlicensed would send an admin to
+       the login page on page load. -->
+  <convoy-queue-monitoring-dataplane [active]="segment === 'dataplane'" (reported)="onPlaneReported($event)"></convoy-queue-monitoring-dataplane>
+
+  @if (segment === 'queue') {
+    @if (surface === 'loading') {
+      <div class="bg-white-100 border border-new.border rounded-12px p-20px">
+        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Loading queue monitoring.</p>
+      </div>
+    }
+
+    @if (usePostgresUi) {
+      <convoy-queue-monitoring-broker></convoy-queue-monitoring-broker>
+    }
+
+    @if (surface === 'redis') {
+      <convoy-queue-monitoring-asynqmon></convoy-queue-monitoring-asynqmon>
+    }
+  }
 }

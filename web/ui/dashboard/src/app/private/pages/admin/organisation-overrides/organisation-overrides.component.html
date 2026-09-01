@@ -25,7 +25,7 @@
     <div class="mb-16px">
       <label convoy-label>Overrides for: {{ selectedOrganisation.name }}</label>
     </div>
-    @if (featureFlags.length === 0) {
+    @if (featureFlagsKnown && featureFlags.length === 0) {
       <div class="p-24px bg-new.surface-muted rounded-8px border border-new.border">
         <p class="font-body font-normal text-[14px] text-new.text-secondary">No feature flags available</p>
       </div>

@@ -61,6 +61,11 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 	isStarting = false;
 	isLoadingRuns = false;
 	hasRetentionLicense = false;
+	// Whether the license read has been attempted, not that it succeeded:
+	// loadAllLicenses swallows transport errors, so a failed read falls back to
+	// the cache and reads as unlicensed on a cold one. What it buys is that
+	// "requires a license key" waits for the read, not the initial false.
+	licenseKnown = false;
 
 	private pollInterval: any;
 	private tableChanges: Subscription;
@@ -133,6 +138,7 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		// deployment licenser alone, same as the CLI, and partitioning is an
 		// instance-wide operation like queue monitoring.
 		this.hasRetentionLicense = this.licenseService.hasInstanceLicense('RetentionPolicy');
+		this.licenseKnown = true;
 		if (!this.hasRetentionLicense) return;
 
 		await this.loadTableStates();

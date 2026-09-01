@@ -5,7 +5,7 @@
 
 <div class="h-[1px] w-full bg-new.border mb-20px"></div>
 
-@if (!hasRetentionLicense) {
+@if (licenseKnown && !hasRetentionLicense) {
   <div class="bg-white-100 border border-new.border rounded-12px p-20px">
     <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Partitioning requires a license key. Contact support to enable it on this instance.</p>
   </div>

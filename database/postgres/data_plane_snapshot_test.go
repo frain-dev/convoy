@@ -170,3 +170,63 @@ func TestPublishSnapshotRejectsAnUnnamedReplica(t *testing.T) {
 
 	require.Error(t, store.PublishSnapshot(context.Background(), dataplanestats.Snapshot{Mode: "example"}))
 }
+
+// A replica leaving on purpose takes its own row and nothing else. The sibling
+// here is the case that matters: rows outlive their replica by a long expiry
+// window precisely so a crash stays visible, so a delete that reached one row
+// too far would erase that record and nobody would notice for as long as it
+// would have been on the page.
+func TestDeleteSnapshotRemovesOnlyTheNamedReplica(t *testing.T) {
+	store := snapshotStore(t)
+	ctx := context.Background()
+
+	require.NoError(t, store.PublishSnapshot(ctx, dataplanestats.Snapshot{
+		Replica:   "pod-leaving",
+		Mode:      "example",
+		Running:   true,
+		SampledAt: time.Now(),
+	}))
+	require.NoError(t, store.PublishSnapshot(ctx, dataplanestats.Snapshot{
+		Replica:   "pod-crashed",
+		Mode:      "example",
+		SampledAt: time.Now().Add(-time.Minute),
+	}))
+
+	require.NoError(t, store.DeleteSnapshot(ctx, "pod-leaving"))
+
+	status, err := store.DataPlaneStatus(ctx, time.Minute)
+	require.NoError(t, err)
+	require.Len(t, status.Replicas, 1)
+	require.Equal(t, "pod-crashed", status.Replicas[0].Replica,
+		"the row left behind is the one nothing retracted")
+
+	// Retracting twice is the steady state of a restart loop, and of a stop that
+	// followed a row already swept. It must stay quiet rather than turn a
+	// repeated shutdown into a logged failure.
+	require.NoError(t, store.DeleteSnapshot(ctx, "pod-leaving"))
+
+	status, err = store.DataPlaneStatus(ctx, time.Minute)
+	require.NoError(t, err)
+	require.Len(t, status.Replicas, 1)
+}
+
+// The caller derives the replica from its own identity, so an empty one means it
+// lost that identity rather than that it wants every row gone. Expiry backstops
+// a row this refused; nothing backstops one it should not have taken.
+func TestDeleteSnapshotRejectsAnUnnamedReplica(t *testing.T) {
+	store := snapshotStore(t)
+	ctx := context.Background()
+
+	require.NoError(t, store.PublishSnapshot(ctx, dataplanestats.Snapshot{
+		Replica:   "pod-live",
+		Mode:      "example",
+		Running:   true,
+		SampledAt: time.Now(),
+	}))
+
+	require.Error(t, store.DeleteSnapshot(ctx, ""))
+
+	status, err := store.DataPlaneStatus(ctx, time.Minute)
+	require.NoError(t, err)
+	require.Len(t, status.Replicas, 1)
+}
