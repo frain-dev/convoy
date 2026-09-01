@@ -165,10 +165,22 @@ func noticeHandler(logger log.Logger, sink *noticeSink) pgconn.NoticeHandler {
 	}
 }
 
-func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src ...string) (*Postgres, error) {
+// maxConnIdleTime is how long a pooled connection may sit idle before pgx
+// closes it. It is not tied to any configuration knob: an idle connection still
+// occupies a server slot, so every deployment needs it reaped whether or not it
+// tunes pool sizes. Leaving it unset falls back to the pgx default of 30
+// minutes, long enough for a finished load run to keep a whole max_connections
+// budget locked up.
+//
+// pgx enforces this from its health check rather than on a timer per
+// connection, so a connection is closed within one HealthCheckPeriod (one
+// minute by default) of crossing the threshold, not exactly on it.
+const maxConnIdleTime = 5 * time.Minute
+
+func buildPoolConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src ...string) (*pgxpool.Config, *noticeSink, error) {
 	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
+		return nil, nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
 	}
 
 	// Bound the pool even when unset, so a replica cannot open connections until
@@ -178,15 +190,22 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src
 		pkgLogger.Warn(fmt.Sprintf("[%s]: SetMaxOpenConnections not set or 0, using default: %d. Set CONVOY_DB_MAX_OPEN_CONN to override.", pkgName, maxConns))
 	}
 	pgxCfg.MaxConns = int32(maxConns)
-
-	if dbConfig.SetMaxIdleConnections > 0 {
-		pgxCfg.MaxConnIdleTime = time.Minute * 5
-	}
+	pgxCfg.MaxConnIdleTime = maxConnIdleTime
 
 	pgxCfg.MaxConnLifetime = time.Second * time.Duration(dbConfig.SetConnMaxLifetime)
 	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName())
 	sink := &noticeSink{}
 	pgxCfg.ConnConfig.OnNotice = noticeHandler(logger, sink)
+
+	return pgxCfg, sink, nil
+}
+
+func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src ...string) (*Postgres, error) {
+	pgxCfg, sink, err := buildPoolConfig(dbConfig, logger, src...)
+	if err != nil {
+		return nil, err
+	}
+	maxConns := int(pgxCfg.MaxConns)
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgxCfg)
 	if err != nil {

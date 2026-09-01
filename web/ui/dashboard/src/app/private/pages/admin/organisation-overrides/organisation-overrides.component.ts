@@ -44,6 +44,12 @@ export class OrganisationOverridesComponent implements OnInit {
 	selectedOrganisation: Organisation | null = null;
 	organisationOverrides: Map<string, FeatureFlagOverride> = new Map();
 	isLoadingFeatureFlags = false;
+	// Whether the feature flag read has answered. "No feature flags available" is
+	// a definitive claim about the instance, and the overrides read that reveals
+	// this panel can land first: gating the message on the empty list alone
+	// states it while the flag read is still in flight. Cleared at the start of
+	// every read so a later one cannot be answered by an earlier verdict.
+	featureFlagsKnown = false;
 	isLoadingOrganisations = false;
 	isLoadingOverrides = false;
 	isUpdatingOverride = false;
@@ -67,6 +73,7 @@ export class OrganisationOverridesComponent implements OnInit {
 
 	async loadFeatureFlags() {
 		this.isLoadingFeatureFlags = true;
+		this.featureFlagsKnown = false;
 		try {
 			const response = await this.adminService.getAllFeatureFlags();
 			const allFlags: FeatureFlag[] = response.data || [];
@@ -79,6 +86,10 @@ export class OrganisationOverridesComponent implements OnInit {
 			console.error('Error loading feature flags:', error);
 			this.generalService.showNotification({ style: 'error', message: 'Failed to load feature flags' });
 		} finally {
+			// Set on the failure path too, because this page already answers a
+			// failed read with the empty state. That policy is unchanged here; the
+			// only thing this flag adds is that the answer waits for the read.
+			this.featureFlagsKnown = true;
 			this.isLoadingFeatureFlags = false;
 		}
 	}

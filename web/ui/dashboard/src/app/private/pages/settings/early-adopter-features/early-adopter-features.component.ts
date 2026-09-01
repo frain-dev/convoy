@@ -22,6 +22,13 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 	organisationId!: string;
 	isLoadingFeatures = false;
 	isUpdatingFeatures = false;
+	// Whether the feature read has answered. "No early adopter features
+	// available" is a definitive claim about this organisation, and the loading
+	// flag cannot stand in for it: the role read runs first, so on the first
+	// change detection pass nothing is loading and the list is empty, which
+	// renders the claim for the whole of both round trips. Cleared at the start
+	// of every read so a later one is not answered by an earlier verdict.
+	featuresKnown = false;
 	earlyAdopterFeatures: EarlyAdopterFeature[] = [];
 	private rbacService = inject(RbacService);
 	canManage = false;
@@ -50,6 +57,7 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 	async getEarlyAdopterFeatures() {
 		if (!this.organisationId || this.isLoadingFeatures) return;
 		this.isLoadingFeatures = true;
+		this.featuresKnown = false;
 		try {
 			const response = await this.settingService.getEarlyAdopterFeatures({ org_id: this.organisationId });
 			const allFeatures = response.data || [];
@@ -59,10 +67,16 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 				return this.hasFeatureLicense(feature.key);
 			});
 
+			this.featuresKnown = true;
 			this.isLoadingFeatures = false;
 			this.cdr.markForCheck();
 		} catch (error) {
 			console.error('Error fetching features:', error);
+			this.generalService.showNotification({ style: 'error', message: 'Failed to load early adopter features' });
+			// Set on the failure path too, because this page already answers a
+			// failed read with the empty state. That policy is unchanged here; the
+			// only thing this flag adds is that the answer waits for the read.
+			this.featuresKnown = true;
 			this.isLoadingFeatures = false;
 			this.cdr.markForCheck();
 		}

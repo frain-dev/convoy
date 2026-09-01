@@ -17,6 +17,14 @@ export class TooltipComponent implements OnInit {
 	@Input('type') type: 'primary' | 'white' = 'white';
 	@Input('className') class!: string;
 
+	// The tooltip body only appears on hover and focus, so a value whose whole
+	// explanation lives in there is unreadable to a screen reader and on touch.
+	// Callers whose toggle is not self-explanatory, a bare dash standing in for a
+	// value that could not be read, pass the same text here. Left unset the
+	// button keeps the name the browser computes from its contents, so existing
+	// callers are unchanged.
+	@Input('ariaLabel') ariaLabel = '';
+
 	constructor() {}
 
 	ngOnInit(): void {}
