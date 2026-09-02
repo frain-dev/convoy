@@ -84,11 +84,13 @@ interface FlowNumber {
 	// null exactly when value is not, so the dash and its reason cannot be
 	// rendered apart.
 	absent: Explainer | null;
-	// Facts about the number, each on its own line under it, in the order given.
-	// The interval numbers name the window they were counted over; Outstanding
-	// names how old its oldest waiting retry is and when the next one is due,
-	// which is what turns a level into something an operator can judge.
+	// Facts about this reading, shown on the value. The label tooltip says what
+	// the metric means; this one says what the current number is: the window the
+	// interval was counted over, or Outstanding's retry schedule.
 	notes: string[];
+	// This tab's polls of this number. Null until two known samples and a
+	// non-zero peak, so an unread count is never drawn as an empty graph.
+	chart: SessionChart | null;
 }
 
 // What the plane said about its retry backlog's schedule. Three answers, and the
@@ -123,6 +125,20 @@ interface DataPlaneRow {
 	// numbers and the line in diagnostics both read it, so the card cannot give
 	// two accounts of one absence.
 	absentFlow: Explained | null;
+}
+
+interface ReplicaSample {
+	sampledAt: string;
+	in?: number;
+	out?: number;
+	outstanding?: number;
+}
+
+interface SessionChart {
+	points: string;
+	peakLabel: string;
+	firstLabel: string;
+	lastLabel: string;
 }
 
 // What this panel tells the page around it. The page needs it to decide whether
@@ -258,6 +274,33 @@ const REPLICA_SCOPE: Explained = {
 	detail: 'Work reaches a plane either from a client that sent it to this process or as durable work the plane picks up, and which of those applies is a property of the deployment rather than of this panel. Either way these numbers are a fact about this replica and not about the instance, so a replica can be taking on nothing while the instance is busy.'
 };
 
+const STAGE_COLUMNS = {
+	stage: explainer('Stage', {
+		reason: 'Which step this replica is working through.',
+		detail: 'Names come from the plane. This page lists whatever it published.'
+	}),
+	queued: explainer('Queued', {
+		reason: 'How much work is sitting in this step right now.',
+		detail: 'The total across every project. It does not tell you whether one project is hogging the step; Fullest lane does.'
+	}),
+	fullestLane: explainer('Fullest lane', {
+		reason: "The busiest single project's pile, shown against that project's limit.",
+		detail: 'If the pile is at the limit, that project is held back and others can still move. Unbounded means there is no limit except this replica\'s memory. A 0 in the second number is that mode, not an empty limit.'
+	}),
+	lanes: explainer('Lanes', {
+		reason: 'How many projects currently have work in this step.',
+		detail: 'Each project has its own lane, so one busy project cannot occupy the whole step.'
+	}),
+	waiting: explainer('Waiting', {
+		reason: "How many new items are stuck because a project's pile is full.",
+		detail: 'A number here means that project cannot take more work yet. Unbounded piles never fill, so this stays 0 even when Queued is high.'
+	}),
+	workers: explainer('Workers', {
+		reason: 'How many workers are pulling work out of this step.',
+		detail: 'A number is a fixed pool size. Unbounded means every item gets a worker of its own, not that none are running. The plane reports 0 for that mode.'
+	})
+};
+
 // The gauges a plane publishes its measured interval under, and the only place
 // those names are spelled. A plane reports throughput through the same
 // vocabulary-neutral gauge list as everything else rather than through a section
@@ -306,6 +349,14 @@ const RETRY_BACKLOG = 'deliveries_retry';
 // above the lateness that is ordinary and cannot be produced by it.
 const OVERDUE_NOTE_MS = 60_000;
 
+// About fifteen minutes at the panel's five-second poll. Older points fall off
+// the left; Reload is what starts a new series.
+const HISTORY_CAP = 180;
+
+const CHART_WIDTH = 300;
+const CHART_HEIGHT = 80;
+const CHART_PAD = 4;
+
 // The two lifetime failure totals, which the plane reports separately because
 // they are different events: one delivery was never sent, the other was sent and
 // did not succeed. They are named here rather than left to the problem-word rule
@@ -340,6 +391,16 @@ function sections(replica: any): DataPlaneReplica {
 		counters: replica.counters ?? [],
 		outstanding: replica.outstanding ?? []
 	};
+}
+
+// Live cards first, leftover (stale) last, then by name. The store's fetch
+// order is replica name, and a restarted agent's container id often sorts
+// ahead of the replacement, which is how a ghost ended up as the first card.
+function orderReplicas(replicas: DataPlaneReplica[]): DataPlaneReplica[] {
+	return [...replicas].sort((a, b) => {
+		if (a.stale !== b.stale) return a.stale ? 1 : -1;
+		return a.replica.localeCompare(b.replica);
+	});
 }
 
 // The one reader of the throughput gauges on this panel. The verdict sentence,
@@ -425,6 +486,55 @@ function retryScheduleOf(replica: DataPlaneReplica): RetrySchedule {
 	return { kind: 'reported', oldestAgeMs, nextDueInMs };
 }
 
+// A polyline of this tab's known readings for one number. Unknown values are
+// never passed in: a missing read plotted as zero is exactly the false empty
+// the panel exists to catch.
+function sessionChart(points: Array<{ sampledAt: string; value: number }>): SessionChart | null {
+	if (points.length < 2) return null;
+
+	let peak = 0;
+	for (const point of points) {
+		if (point.value > peak) peak = point.value;
+	}
+	if (peak <= 0) return null;
+
+	const innerWidth = CHART_WIDTH - CHART_PAD * 2;
+	const innerHeight = CHART_HEIGHT - CHART_PAD * 2;
+	const last = points.length - 1;
+	const line = points
+		.map((point, index) => {
+			const x = CHART_PAD + (index / last) * innerWidth;
+			const y = CHART_PAD + innerHeight - (point.value / peak) * innerHeight;
+			return `${x},${y}`;
+		})
+		.join(' ');
+
+	return {
+		points: line,
+		peakLabel: engineCount(peak),
+		firstLabel: sessionTimeLabel(points[0].sampledAt),
+		lastLabel: sessionTimeLabel(points[last].sampledAt)
+	};
+}
+
+function seriesPoints(samples: ReplicaSample[], key: 'in' | 'out' | 'outstanding'): Array<{ sampledAt: string; value: number }> {
+	const points: Array<{ sampledAt: string; value: number }> = [];
+	for (const sample of samples) {
+		const value = sample[key];
+		if (value === undefined) continue;
+		points.push({ sampledAt: sample.sampledAt, value });
+	}
+
+	return points;
+}
+
+function sessionTimeLabel(sampledAt: string): string {
+	const date = new Date(sampledAt);
+	if (Number.isNaN(date.getTime())) return sampledAt;
+
+	return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 // The gauges left for the diagnostics table once the accessor has taken the ones
 // it reads. Rendering them there as well would put the plane's raw gauge names in
 // front of an operator beside the same numbers already named above, which is the
@@ -471,6 +581,11 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 	// answered keeps it, because the plane is still there and the read is what
 	// broke.
 	private everReported = false;
+	// Readings this tab has seen, keyed by replica. The server holds one snapshot
+	// one snapshot per replica, so a series only exists here. A failed read keeps
+	// it so the next good poll continues the line; a 501 or an empty plane drops
+	// it, because those are "no plane" rather than "the last read blipped".
+	private histories = new Map<string, ReplicaSample[]>();
 
 	constructor(private readonly adminService: AdminService) {}
 
@@ -499,6 +614,7 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 	readonly unreadCount = ABSENT_REASONS.unreadCount;
 
 	readonly replicaScope = explainer('Replica scope', REPLICA_SCOPE);
+	readonly stageColumns = STAGE_COLUMNS;
 
 	backlogLabel(backlog: DataPlaneBacklog): string {
 		return backlog.known ? engineCount(backlog.count) : NO_VALUE;
@@ -508,10 +624,48 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 		return `${this.label(backlog.name)}: ${this.unreadCount.reason} ${this.unreadCount.detail}`;
 	}
 
-	// The plane reports 0 workers when a stage runs one goroutine per item. That
-	// is a mode, not an absence, so it must not read as "no workers".
+	// The value tooltip, for a keyboard or screen reader user who never hovers.
+	// Absence and the reading's extra facts share this one target, because the
+	// glyph is already the hover for a dash and must not grow a second one.
+	valueAria(number: FlowNumber): string {
+		if (number.absent) {
+			return number.notes.length ? `${number.absent.aria} ${number.notes.join('. ')}` : number.absent.aria;
+		}
+
+		return number.notes.length ? `${number.label}: ${number.value}. ${number.notes.join('. ')}` : `${number.label}: ${number.value}`;
+	}
+
+	// The plane reports 0 workers when a stage is unbounded: every item gets
+	// a worker of its own. That is a mode, not an absence, so it must not
+	// read as "no workers".
 	workersLabel(stage: DataPlaneStage): string {
-		return stage.workers ? `${stage.workers}` : 'per item';
+		return stage.workers ? `${stage.workers}` : 'unbounded';
+	}
+
+	workersAria(stage: DataPlaneStage): string {
+		if (stage.workers) {
+			return `${this.label(stage.name)} workers: ${stage.workers}`;
+		}
+
+		return `${this.label(stage.name)} workers: unbounded. Every item gets a worker of its own, not a fixed pool.`;
+	}
+
+	// The plane reports 0 capacity when a lane is unbounded: that project can
+	// pile as high as this replica's memory allows. Same convention as workers.
+	laneCapacityLabel(stage: DataPlaneStage): string {
+		return stage.partition_capacity ? `${stage.partition_capacity}` : 'unbounded';
+	}
+
+	fullestLaneLabel(stage: DataPlaneStage): string {
+		return `${stage.deepest_partition} / ${this.laneCapacityLabel(stage)}`;
+	}
+
+	laneCapacityAria(stage: DataPlaneStage): string {
+		if (stage.partition_capacity) {
+			return `${this.label(stage.name)} fullest lane: ${this.fullestLaneLabel(stage)}`;
+		}
+
+		return `${this.label(stage.name)} fullest lane: ${stage.deepest_partition} / unbounded. No limit except this replica's memory.`;
 	}
 
 	ageLabel(replica: DataPlaneReplica): string {
@@ -558,12 +712,17 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 			const response = await this.adminService.getDataPlaneStatus();
 			if (id !== this.fetchId) return;
 
-			const replicas = (response.data?.replicas ?? []).map(sections);
-			this.rows = replicas.map((replica: DataPlaneReplica) => this.row(replica));
+			const replicas = orderReplicas((response.data?.replicas ?? []).map(sections));
 			this.staleAfterSeconds = response.data?.stale_after_seconds ?? 0;
-			this.state = this.rows.length ? 'ready' : 'empty';
-			if (this.state === 'ready') this.everReported = true;
-			else this.everReported = false;
+			this.state = replicas.length ? 'ready' : 'empty';
+			if (this.state === 'ready') {
+				this.everReported = true;
+				this.recordHistory(replicas);
+			} else {
+				this.everReported = false;
+				this.histories.clear();
+			}
+			this.rows = replicas.map((replica: DataPlaneReplica) => this.row(replica));
 		} catch (error: any) {
 			if (id !== this.fetchId) return;
 
@@ -572,6 +731,7 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 			if (error?.response?.status === 501) {
 				this.rows = [];
 				this.everReported = false;
+				this.histories.clear();
 				this.state = 'hidden';
 				this.stop();
 				this.publishReport();
@@ -599,6 +759,41 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 		});
 	}
 
+	// Known values only. An unread count plotted as zero is the false empty this
+	// panel exists to catch, and a Refresh of a snapshot the plane has not
+	// republished must not invent a second point from the same sample.
+	private recordHistory(replicas: DataPlaneReplica[]): void {
+		const seen = new Set<string>();
+
+		for (const replica of replicas) {
+			seen.add(replica.replica);
+
+			const series = this.histories.get(replica.replica) ?? [];
+			const last = series[series.length - 1];
+			if (last && last.sampledAt === replica.sampled_at) continue;
+
+			const sample: ReplicaSample = { sampledAt: replica.sampled_at };
+			const outstanding = this.outstandingTotal(replica);
+			if (outstanding.known) sample.outstanding = outstanding.value;
+
+			const flow = throughputOf(replica);
+			if (flow.measured) {
+				sample.in = flow.measured.in;
+				sample.out = flow.measured.out;
+			}
+
+			if (sample.outstanding === undefined && sample.in === undefined && sample.out === undefined) continue;
+
+			series.push(sample);
+			if (series.length > HISTORY_CAP) series.splice(0, series.length - HISTORY_CAP);
+			this.histories.set(replica.replica, series);
+		}
+
+		this.histories.forEach((_, id) => {
+			if (!seen.has(id)) this.histories.delete(id);
+		});
+	}
+
 	private publishReport(): void {
 		const reports = this.state === 'ready' || (this.state === 'unknown' && this.everReported);
 
@@ -619,6 +814,11 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 	private row(replica: DataPlaneReplica): DataPlaneRow {
 		const outstanding = this.outstandingTotal(replica);
 		const flow = throughputOf(replica);
+		const series = this.histories.get(replica.replica) ?? [];
+		const numbers = this.flowNumbers(replica, flow, outstanding);
+		numbers[0].chart = numbers[0].absent ? null : sessionChart(seriesPoints(series, 'in'));
+		numbers[1].chart = numbers[1].absent ? null : sessionChart(seriesPoints(series, 'out'));
+		numbers[2].chart = numbers[2].absent ? null : sessionChart(seriesPoints(series, 'outstanding'));
 
 		return {
 			replica,
@@ -626,7 +826,7 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 			// is told what to call them rather than naming the count after the
 			// narrower one.
 			verdict: { accepting: replica.running, reporting: !replica.stale, sampledLabel: this.ageLabel(replica), flow, outstanding, failedWord: 'failed or discarded' },
-			numbers: this.flowNumbers(replica, flow, outstanding),
+			numbers,
 			holding: this.holdingLines(replica),
 			failures: this.failureLines(replica, flow),
 			flow,
@@ -679,16 +879,7 @@ export class QueueMonitoringDataplaneComponent implements OnInit, OnDestroy {
 		// than a rule each cell has to remember.
 		const interval: FlowNumber[] = flow.absence
 			? [absentNumber('Events in', METRIC_MEANINGS.in, absenceLines(replica, flow.absence)), absentNumber('Deliveries out', METRIC_MEANINGS.out, absenceLines(replica, flow.absence))]
-			: [
-					// A measured zero on the intake gets a second line saying it was
-					// measured. The dash and the 0 are already different glyphs, but a
-					// reader scanning a card of zeros cannot see which of them the plane
-					// looked for and which it never reported, and on this number that is
-					// the difference between a quiet instance and one whose events are
-					// all reaching Convoy somewhere else.
-					measuredNumber('Events in', METRIC_MEANINGS.in, flow.measured.in, flow.measured.windowMs, 'measured, nothing reached this replica'),
-					measuredNumber('Deliveries out', METRIC_MEANINGS.out, flow.measured.out, flow.measured.windowMs)
-				];
+			: [measuredNumber('Events in', METRIC_MEANINGS.in, flow.measured.in, flow.measured.windowMs), measuredNumber('Deliveries out', METRIC_MEANINGS.out, flow.measured.out, flow.measured.windowMs)];
 
 		// The snapshot's own age, from the server that read sampled_at, carries the
 		// schedule forward to now without the browser's clock entering into it.
@@ -812,20 +1003,11 @@ function absenceLines(replica: DataPlaneReplica, absence: EngineFlowAbsence): Ex
 // A dash and the reason for it. The reason is decided above rather than by the
 // cell, so a cell cannot invent an explanation the wire did not give.
 function absentNumber(label: string, about: Explained, lines: Explained): FlowNumber {
-	return { label, value: null, about: explainer(label, about), absent: explainer(label, lines), notes: [] };
+	return { label, value: null, about: explainer(label, about), absent: explainer(label, lines), notes: [], chart: null };
 }
 
-// The window is named on the number rather than assumed, and marked approximate
-// by intervalWindowLabel, because the plane reports the elapsed time it actually
-// measured rather than the period it was configured with.
-// zeroNote is for a number whose zero is worth reading as a reading. It is only
-// added when the plane measured the interval, so it can never appear beside a
-// dash and can never be mistaken for an explanation of an absent value.
-function measuredNumber(label: string, about: Explained, value: number, windowMs: number, zeroNote?: string): FlowNumber {
-	const notes = [`last ${intervalWindowLabel(windowMs)}`];
-	if (value === 0 && zeroNote) notes.push(zeroNote);
-
-	return { label, value: engineCount(value), about: explainer(label, about), absent: null, notes };
+function measuredNumber(label: string, about: Explained, value: number, windowMs: number): FlowNumber {
+	return { label, value: engineCount(value), about: explainer(label, about), absent: null, notes: [`last ${intervalWindowLabel(windowMs)}`], chart: null };
 }
 
 // The backlog as a level, with the schedule of its retries under it. The level
@@ -837,7 +1019,7 @@ function measuredNumber(label: string, about: Explained, value: number, windowMs
 // Two minutes old with something due in thirty seconds is a backlog draining on
 // time. An hour old with nothing due for a long time is the shape of one nothing
 // is draining. That is the distinction "Where it is stuck" claimed to make and
-// could not, and it lives here, beside the number it is about.
+// could not, and it lives here, on the number it is about.
 function outstandingNumber(outstanding: EngineCount, schedule: RetrySchedule, snapshotAgeMs: number): FlowNumber {
 	const about = explainer('Outstanding', METRIC_MEANINGS.outstanding);
 	// The schedule lines survive a total that could not be read, unlike the
@@ -848,9 +1030,9 @@ function outstandingNumber(outstanding: EngineCount, schedule: RetrySchedule, sn
 	// that was read would throw away the most useful thing on the card over an
 	// unread count somewhere else.
 	const notes = scheduleNotes(schedule, snapshotAgeMs);
-	if (!outstanding.known) return { label: 'Outstanding', value: null, about, absent: explainer('Outstanding', ABSENT_REASONS.unread), notes };
+	if (!outstanding.known) return { label: 'Outstanding', value: null, about, absent: explainer('Outstanding', ABSENT_REASONS.unread), notes, chart: null };
 
-	return { label: 'Outstanding', value: engineCount(outstanding.value), about, absent: null, notes };
+	return { label: 'Outstanding', value: engineCount(outstanding.value), about, absent: null, notes, chart: null };
 }
 
 // The schedule as two plain readings, and a third line only when one sample can

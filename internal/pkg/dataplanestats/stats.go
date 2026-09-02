@@ -10,6 +10,8 @@ package dataplanestats
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -105,14 +107,15 @@ type Stage struct {
 	Queued  int    `json:"queued"`
 	Waiting int    `json:"waiting"`
 
-	// Workers is 0 when the stage runs one goroutine per item rather than a
-	// fixed pool, which is a mode and not an absence.
+	// Workers is 0 when the stage is unbounded (one goroutine per item) rather
+	// than a fixed pool, which is a mode and not an absence.
 	Workers int `json:"workers"`
 
-	// Partitions is how many independent lanes the queued work is spread over,
-	// Capacity is what one lane holds before its senders block, and Deepest is
-	// the fullest single lane. Queued alone cannot say whether one tenant is
-	// blocking, which is what these three answer.
+	// Partitions is how many independent lanes the queued work is spread over.
+	// Capacity is what one lane holds before its senders block; zero is
+	// unbounded (Send never blocks on fullness, and memory is the cap).
+	// Deepest is the fullest single lane. Queued alone cannot say whether one
+	// tenant is blocking, which is what these three answer.
 	Partitions int `json:"partitions"`
 	Capacity   int `json:"partition_capacity"`
 	Deepest    int `json:"deepest_partition"`
@@ -166,6 +169,22 @@ type Replica struct {
 type Status struct {
 	Replicas          []Replica `json:"replicas"`
 	StaleAfterSeconds float64   `json:"stale_after_seconds"`
+}
+
+// OrderReplicas puts reporting replicas first and stale ones last, then by
+// name so peers do not reshuffle. Name-only order is what put a restarted
+// replica's leftover row above the live one: container ids are lexical, not
+// health, and a ghost that sorts first is the card the page opens on.
+func OrderReplicas(replicas []Replica) {
+	slices.SortStableFunc(replicas, func(a, b Replica) int {
+		if a.Stale != b.Stale {
+			if a.Stale {
+				return 1
+			}
+			return -1
+		}
+		return strings.Compare(a.Replica, b.Replica)
+	})
 }
 
 // Reporter is a plane running in this process that can describe itself. Nil

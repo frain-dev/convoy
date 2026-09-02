@@ -167,6 +167,19 @@ describe('QueueMonitoringDataplaneComponent', () => {
 		return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('convoy-tooltip button')).map(button => button.getAttribute('aria-label') ?? '');
 	}
 
+	// Visible copy between a flow number and its sparkline. Notes belong in the
+	// value tooltip, not as captions that stretch the column under the graph.
+	function captionsUnderNumbers(): string[] {
+		return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flow-chart]'))
+			.map(chart => {
+				const prev = chart.previousElementSibling as HTMLElement | null;
+				if (!prev) return '';
+				if (prev.hasAttribute('data-flow-value') || prev.querySelector('[data-flow-value]')) return '';
+				return (prev.textContent ?? '').trim();
+			})
+			.filter(text => text.length > 0);
+	}
+
 	// A plane on its first sample: no interval to report yet. Both causes of an
 	// absent interval are benign and both are knowable from the sample, so the
 	// panel names the cause rather than reporting an unexplained absence, and it
@@ -177,7 +190,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('Measuring. No earlier sample from this engine to compare against, so there is no interval yet. Next sample carries one. 84,088 outstanding.');
+			expect(text()).toContain('Measuring. 84,088 outstanding.');
 			expect(text()).not.toContain('not reported');
 			expect(text()).not.toContain('Idle');
 			expect(text()).not.toContain('Nothing taken in');
@@ -319,11 +332,18 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('Running and idle. It measured the last ~5s and took in nothing, nothing outstanding.');
+			expect(text()).toContain('Idle. Nothing in the last ~5s, nothing outstanding.');
 			expect(absentValues().filter(value => value.glyph === '-').length).toBe(0);
 
 			const values = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flow-value]')).map(node => (node.textContent ?? '').trim());
 			expect(values).toEqual(['0', '0', '0']);
+			// Window and retry schedule live on the value tooltip, not as captions
+			// under the sparkline. The verdict still names the window in prose.
+			expect(component.rows[0].numbers[0].notes).toEqual(['last ~5s']);
+			expect(component.rows[0].numbers[1].notes).toEqual(['last ~5s']);
+			expect(tooltipLabels()).toContain(jasmine.stringMatching(/^Events in: 0\. last /));
+			expect(tooltipLabels()).toContain(jasmine.stringMatching(/^Deliveries out: 0\. last /));
+			expect(captionsUnderNumbers()).toEqual([]);
 		});
 
 		// The staging state: a plane that is up, measured an interval and took
@@ -331,7 +351,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 		// A card of zeros cannot be told from a quiet plane, so the zero on the
 		// intake says it was measured, and the identity says why this replica
 		// might be the only thing that is quiet.
-		it('says a measured zero intake was a reading rather than a gap', async () => {
+		it('keeps replica scope on the identity rather than on the zeros', async () => {
 			reads.push(() =>
 				Promise.resolve(
 					status([
@@ -345,8 +365,8 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('measured, nothing reached this replica');
-			expect(text()).toContain('If work is arriving on this instance, it is not coming through this engine.');
+			expect(text()).not.toContain('measured, nothing reached this replica');
+			expect(text()).not.toContain('If work is arriving on this instance');
 
 			const scope = tooltipLabels().find(label => label.includes('Replica scope'));
 			expect(scope).toContain('This replica only counts work it took on itself.');
@@ -414,7 +434,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 			await render();
 
 			expect(text()).toContain('40 taken in and nothing completed in the last ~5s, 583 outstanding.');
-			expect(text()).toContain('Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.');
+			expect(text()).not.toContain('Work waiting on a schedule is outstanding too');
 
 			// And the schedule says which it is: an oldest retry a minute and a
 			// half old with the next one due shortly is a backlog draining on
@@ -455,7 +475,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('Measuring again. The engine restarted, so the interval spanning the restart was discarded. Next sample carries one. 84,088 outstanding.');
+			expect(text()).toContain('Measuring again. 84,088 outstanding.');
 			expect(text()).not.toContain('No earlier sample');
 
 			const dot = (fixture.nativeElement as HTMLElement).querySelector('convoy-engine-verdict span');
@@ -484,7 +504,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 		await render();
 
 		expect(text()).not.toContain('deliveries failed in the last');
-		expect(text()).toContain('Throughput reported incompletely, so whether work is draining is unknown.');
+		expect(text()).toContain('Throughput incomplete.');
 		expect(absentValues().filter(value => value.glyph === '-').length).toBe(2);
 	});
 
@@ -521,6 +541,8 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			const values = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flow-value]')).map(node => (node.textContent ?? '').trim());
 			expect(values).toEqual(['4', '4', '0']);
+			expect(tooltipLabels()).toContain(jasmine.stringMatching(/^Outstanding: 0\. no retries waiting/));
+			expect(captionsUnderNumbers()).toEqual([]);
 		});
 
 		// The count could not be read, so neither could its schedule. The dash on
@@ -702,7 +724,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 			expect(sitting).toContain('512 queued');
 			expect(sitting).not.toContain('1,176');
 			expect(failures).toContain('Delivery failures: 1,176');
-			expect(text()).toContain('not attributed to the work outstanding above');
+			expect(text()).not.toContain('not attributed to the work outstanding above');
 		});
 
 		// Failures and recovery errors are the only counters that always mean
@@ -757,7 +779,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			expect(text()).toContain('1,176 deliveries discarded before any attempt');
 			expect(text()).toContain('12 deliveries failed after an attempt');
-			expect(text()).toContain('Discarded means the plane never sent it, so it never joined that backlog');
+			expect(text()).not.toContain('Discarded means the plane never sent it, so it never joined that backlog');
 
 			// And the word rule that promoted the failed total on its name must
 			// not print it a second time under its raw label.
@@ -1052,7 +1074,24 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 		expect(text()).toContain('Stale');
 		expect(text()).toContain('Not reporting. Last sample 4m ago.');
-		expect(text()).toContain('is not current');
+		expect(text()).not.toContain('is not current');
+	});
+
+	// Name order is the store's fetch order. A leftover row whose id sorts
+	// first still has to sit below the replica that is still reporting.
+	it('lists a stale replica below the ones still reporting', async () => {
+		reads.push(() =>
+			Promise.resolve(
+				status([
+					replica({ replica: 'aaa-stale', stale: true, age_seconds: 240 }),
+					replica({ replica: 'zzz-live', stale: false, age_seconds: 2 })
+				])
+			)
+		);
+
+		await render();
+
+		expect(component.rows.map(row => row.replica.replica)).toEqual(['zzz-live', 'aaa-stale']);
 	});
 
 	// A stale sample's numbers describe a moment that has passed, so the verdict
@@ -1099,7 +1138,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 		expect(text()).toContain('Not accepting');
 		// A plane that is not running reads as that, in words, and never as the
 		// running plane that measured an interval and found nothing in it.
-		expect(text()).toContain('Not running. This engine is not accepting work, so nothing new is entering it.');
+		expect(text()).toContain('Not accepting work.');
 		expect(text()).not.toContain('It measured the last');
 		expect(text()).not.toContain('9999');
 		expect(text()).not.toContain('5,000');
@@ -1160,11 +1199,44 @@ describe('QueueMonitoringDataplaneComponent', () => {
 		expect(text()).toContain('780');
 	});
 
-	it('reads zero workers as a mode, not as an absence', () => {
+	it('reads zero workers as unbounded, not as an absence', async () => {
 		const stage = { name: 'deliver', queued: 0, waiting: 0, partitions: 1, partition_capacity: 1, deepest_partition: 0 };
 
-		expect(component.workersLabel({ ...stage, workers: 0 } as any)).toBe('per item');
+		expect(component.workersLabel({ ...stage, workers: 0 } as any)).toBe('unbounded');
 		expect(component.workersLabel({ ...stage, workers: 8 } as any)).toBe('8');
+		expect(component.workersAria({ ...stage, workers: 0 } as any)).toContain('unbounded');
+
+		reads.push(() =>
+			Promise.resolve(
+				status([
+					replica({
+						stages: [{ name: 'deliver', queued: 0, waiting: 0, workers: 0, partitions: 1, partition_capacity: 1, deepest_partition: 0 }]
+					})
+				])
+			)
+		);
+
+		await render();
+		openDiagnostics();
+
+		expect((fixture.nativeElement as HTMLElement).querySelector('[data-workers-value]')?.textContent).toContain('unbounded');
+	});
+
+	it('reads zero lane capacity as unbounded, not as an empty cap', async () => {
+		const stage = { name: 'deliver', queued: 5, waiting: 0, workers: 0, partitions: 1, partition_capacity: 0, deepest_partition: 5 };
+
+		expect(component.laneCapacityLabel(stage as any)).toBe('unbounded');
+		expect(component.fullestLaneLabel(stage as any)).toBe('5 / unbounded');
+		expect(component.laneCapacityAria(stage as any)).toContain('unbounded');
+
+		reads.push(() => Promise.resolve(status([replica({ stages: [stage] })])));
+
+		await render();
+		openDiagnostics();
+
+		expect((fixture.nativeElement as HTMLElement).querySelector('[data-fullest-lane]')?.textContent).toContain('5 / unbounded');
+		expect((fixture.nativeElement as HTMLElement).querySelector('[aria-label^="Queued:"]')?.getAttribute('aria-label')).toContain('How much work is sitting in this step');
+		expect((fixture.nativeElement as HTMLElement).querySelector('[aria-label^="Fullest lane:"]')?.getAttribute('aria-label')).toContain('busiest single project');
 	});
 
 	// The panel polls, so a slow read can land after a later one. Without the
@@ -1266,6 +1338,197 @@ describe('QueueMonitoringDataplaneComponent', () => {
 		});
 	});
 
+	describe('flow over this tab', () => {
+		function chart(label: string): HTMLElement | null {
+			return (fixture.nativeElement as HTMLElement).querySelector(`[data-flow-chart="${label}"]`);
+		}
+
+		function chartPoints(label: string): string[] {
+			const polyline = chart(label)?.querySelector('polyline');
+			return (polyline?.getAttribute('points') ?? '').trim().split(/\s+/).filter(Boolean);
+		}
+
+		function knownOutstanding(count: number, sampledAt: string) {
+			return replica({
+				sampled_at: sampledAt,
+				outstanding: [{ name: 'events_pending', count, known: true, as_of: sampledAt }]
+			});
+		}
+
+		function measuredFlow(sampledAt: string, accepted: number, delivered: number, outstanding = 0) {
+			return replica({
+				sampled_at: sampledAt,
+				gauges: measured({ accepted, delivered }),
+				outstanding: [{ name: 'events_pending', count: outstanding, known: true, as_of: sampledAt }]
+			});
+		}
+
+		it('does not draw a chart from a single sample', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(28832, '2026-09-01T08:00:00Z')])));
+
+			await render();
+
+			expect(chart('Outstanding')).toBeNull();
+			expect(chart('Events in')).toBeNull();
+			expect(chart('Deliveries out')).toBeNull();
+			expect(text()).toContain('28,832');
+		});
+
+		it('draws outstanding across two known samples', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(28832, '2026-09-01T08:00:00Z')])));
+			reads.push(() => Promise.resolve(status([knownOutstanding(2, '2026-09-01T08:00:05Z')])));
+
+			await render();
+			await render();
+
+			expect(chart('Outstanding')).not.toBeNull();
+			expect(chartPoints('Outstanding').length).toBe(2);
+			expect(chart('Outstanding')?.getAttribute('aria-label')).toContain('peak 28,832');
+			expect(text()).not.toContain('This tab since you opened it');
+		});
+
+		it('draws events in across two measured samples', async () => {
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:00Z', 120, 0)])));
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:05Z', 40, 0)])));
+
+			await render();
+			await render();
+
+			expect(chart('Events in')).not.toBeNull();
+			expect(chartPoints('Events in').length).toBe(2);
+			expect(chart('Events in')?.getAttribute('aria-label')).toContain('peak 120');
+			expect(chart('Deliveries out')).toBeNull();
+			expect(chart('Outstanding')).toBeNull();
+		});
+
+		it('draws deliveries out across two measured samples', async () => {
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:00Z', 0, 90)])));
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:05Z', 0, 20)])));
+
+			await render();
+			await render();
+
+			expect(chart('Deliveries out')).not.toBeNull();
+			expect(chartPoints('Deliveries out').length).toBe(2);
+			expect(chart('Deliveries out')?.getAttribute('aria-label')).toContain('peak 90');
+			expect(chart('Events in')).toBeNull();
+			expect(chart('Outstanding')).toBeNull();
+		});
+
+		it('hides the sparkline while the current reading is a dash', async () => {
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:00Z', 120, 0)])));
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:05Z', 40, 0)])));
+			reads.push(() => Promise.resolve(status([replica({ sampled_at: '2026-09-01T08:00:10Z', gauges: restarted() })])));
+
+			await render();
+			await render();
+			await render();
+
+			expect(chart('Events in')).toBeNull();
+			expect(chart('Deliveries out')).toBeNull();
+		});
+
+		it('does not plot an unmeasured interval as zero events in', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(100, '2026-09-01T08:00:00Z')])));
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:05Z', 50, 10, 80)])));
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:10Z', 40, 8, 70)])));
+
+			await render();
+			await render();
+			await render();
+
+			expect(chartPoints('Events in').length).toBe(2);
+			expect(chart('Events in')?.getAttribute('aria-label')).toContain('peak 50');
+			expect(chartPoints('Outstanding').length).toBe(3);
+		});
+
+		it('does not invent a second point from a Refresh of the same sample', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(28832, '2026-09-01T08:00:00Z')])));
+			reads.push(() => Promise.resolve(status([knownOutstanding(28832, '2026-09-01T08:00:00Z')])));
+
+			await render();
+			await render();
+
+			expect(chart('Outstanding')).toBeNull();
+		});
+
+		it('does not plot an unread outstanding as zero', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(100, '2026-09-01T08:00:00Z')])));
+			reads.push(() =>
+				Promise.resolve(
+					status([
+						replica({
+							sampled_at: '2026-09-01T08:00:05Z',
+							outstanding: [{ name: 'events_pending', count: 0, known: false, as_of: '2026-09-01T08:00:05Z' }]
+						})
+					])
+				)
+			);
+			reads.push(() => Promise.resolve(status([knownOutstanding(50, '2026-09-01T08:00:10Z')])));
+
+			await render();
+			await render();
+			expect(chart('Outstanding')).toBeNull();
+
+			await render();
+			expect(chartPoints('Outstanding').length).toBe(2);
+		});
+
+		it('does not draw a chart of an idle zero series', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(0, '2026-09-01T08:00:00Z')])));
+			reads.push(() => Promise.resolve(status([knownOutstanding(0, '2026-09-01T08:00:05Z')])));
+
+			await render();
+			await render();
+
+			expect(chart('Outstanding')).toBeNull();
+			expect(chart('Events in')).toBeNull();
+			expect(chart('Deliveries out')).toBeNull();
+		});
+
+		it('hides idle zero in and out sparklines while outstanding still draws', async () => {
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:00Z', 0, 0, 28832)])));
+			reads.push(() => Promise.resolve(status([measuredFlow('2026-09-01T08:00:05Z', 0, 0, 2)])));
+
+			await render();
+			await render();
+
+			expect(chart('Events in')).toBeNull();
+			expect(chart('Deliveries out')).toBeNull();
+			expect(chart('Outstanding')).not.toBeNull();
+			expect(chartPoints('Outstanding').length).toBe(2);
+		});
+
+		it('keeps the series across a failed read', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(100, '2026-09-01T08:00:00Z')])));
+			reads.push(() => Promise.resolve(status([knownOutstanding(50, '2026-09-01T08:00:05Z')])));
+			reads.push(() => Promise.reject(httpError(500)));
+			reads.push(() => Promise.resolve(status([knownOutstanding(10, '2026-09-01T08:00:10Z')])));
+
+			await render();
+			await render();
+			await render();
+			expect(chart('Outstanding')).toBeNull();
+
+			await render();
+			expect(chartPoints('Outstanding').length).toBe(3);
+		});
+
+		it('drops the series when the plane leaves', async () => {
+			reads.push(() => Promise.resolve(status([knownOutstanding(100, '2026-09-01T08:00:00Z')])));
+			reads.push(() => Promise.resolve(status([knownOutstanding(50, '2026-09-01T08:00:05Z')])));
+			reads.push(() => Promise.resolve(status([])));
+			reads.push(() => Promise.resolve(status([knownOutstanding(40, '2026-09-01T08:00:15Z')])));
+
+			await render();
+			await render();
+			await render();
+			await render();
+
+			expect(chart('Outstanding')).toBeNull();
+		});
+	});
+
 	// Karma loads src/styles.scss, so Tailwind is really applied and the browser
 	// really lays out. The panel is given a 375px frame, the narrowest phone
 	// width the dashboard is expected to survive, and asked whether anything
@@ -1287,6 +1550,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 							// single unbreakable word, which is the shape that pushed
 							// the old panel off the side of the page.
 							replica: 'convoydataplaneagentdeploymentreplicasixfourceninebseven',
+							sampled_at: '2026-09-01T08:00:00Z',
 							stages: [{ name: 'http_ingest_partitioned_fair_queue_admission', queued: 1234567, waiting: 890123, workers: 0, partitions: 4096, partition_capacity: 1000000, deepest_partition: 999999 }],
 							writers: [{ name: 'event_deliveries_bulk_writer', pending: 1234567, failures: 89012 }],
 							counters: [
@@ -1302,7 +1566,27 @@ describe('QueueMonitoringDataplaneComponent', () => {
 					])
 				)
 			);
+			reads.push(() =>
+				Promise.resolve(
+					status([
+						replica({
+							replica: 'convoydataplaneagentdeploymentreplicasixfourceninebseven',
+							sampled_at: '2026-09-01T08:00:05Z',
+							stages: [{ name: 'http_ingest_partitioned_fair_queue_admission', queued: 1234567, waiting: 890123, workers: 0, partitions: 4096, partition_capacity: 1000000, deepest_partition: 999999 }],
+							writers: [{ name: 'event_deliveries_bulk_writer', pending: 1234567, failures: 89012 }],
+							counters: [
+								{ name: 'handoffrecoveryerrorstotalfromacustomplanewithnoseparators', value: 1234567890 },
+								{ name: 'deliveries_discarded', value: 1234567890 },
+								{ name: 'deliveries_failed', value: 1234567890 }
+							],
+							gauges: [{ name: 'subscription_cache_entries', value: 1234567 }, ...measured({ accepted: 1234567, delivered: 1234567 }), ...retrySchedule(359_999_000, -720_000)],
+							outstanding: [{ name: 'eventdeliveriespendingretrywithnoseparatorsatall', count: 12, known: true, as_of: '2026-09-01T08:00:05Z' }, ...retries(12)]
+						})
+					])
+				)
+			);
 
+			await render();
 			await render();
 			openDiagnostics();
 

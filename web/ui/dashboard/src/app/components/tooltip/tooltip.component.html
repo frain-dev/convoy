@@ -1,4 +1,4 @@
-<button type="button" class="relative flex flex-col items-stretch w-full group" [attr.aria-label]="ariaLabel || null">
+<button type="button" class="relative inline-flex flex-col items-stretch w-full max-w-full group" [attr.aria-label]="ariaLabel || null">
   @if (withIcon) {
     <div>
       @if (img) {
@@ -14,25 +14,7 @@
   <div class="empty:hidden">
     <ng-content select="[tooltipToggle]"></ng-content>
   </div>
-  <div
-    data-tooltip-body
-		class="
-			absolute
-			opacity-0
-			group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto
-			pointer-events-none
-			transition-all
-			z-50
-			rounded-8px
-			p-14px
-			text-12 text-left
-			after:content-['']
-			after:absolute
-			font-light
-			after:border-[10px]
-		"
-    [class]="classes"
-    >
+  <div data-tooltip-body [class]="classes">
     @if (tooltipContent) {
       <span>{{ tooltipContent }}</span>
     }

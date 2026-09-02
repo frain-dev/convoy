@@ -13,19 +13,16 @@
      turns out to have no plane at all, which is every instance today. -->
 @if (active && (state === 'ready' || state === 'unknown')) {
   <div class="mb-24px min-w-0">
-    <div class="flex items-start justify-between gap-16px mb-16px min-w-0">
-      <div class="flex flex-col gap-4px min-w-0">
+      <div class="flex items-start justify-between gap-16px mb-16px min-w-0">
         <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Data plane</h3>
-        <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Whether work the plane has taken on is draining, and where it is sitting if it is not.</p>
+        <button
+          type="button"
+          class="shrink-0 px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
+          (click)="load()"
+          >
+          Refresh
+        </button>
       </div>
-      <button
-        type="button"
-        class="shrink-0 px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
-        (click)="load()"
-        >
-        Refresh
-      </button>
-    </div>
 
     <!-- A failed read drops the rows with it. Leaving the previous numbers up
          would let a stale depth answer for the present, which is the one thing
@@ -40,11 +37,12 @@
     @if (state === 'ready') {
       <div class="flex flex-col gap-16px min-w-0">
         @for (row of rows; track row.replica.replica) {
-          <!-- No overflow on the card. The wide tables inside carry their own
-               overflow-x-auto wrapper, which is the only thing that has to
-               scroll, and clipping the whole card would cut off the tooltips on
-               the absent values: a clip is not a stacking question, so no
-               z-index can lift a tooltip out of a clipping ancestor. Same
+          <!-- No overflow on the card. Clipping the whole card would cut off
+               the tooltips: a clip is not a stacking question, so no z-index
+               can lift a tooltip out of a clipping ancestor. The stages table
+               also has no overflow wrapper, so the column-term tooltips can
+               open above the header instead of into the rows. Writers still
+               wrap in overflow-x-auto; that table has no tooltips. Same
                structure as the endpoints table card. -->
           <div class="bg-white-100 border border-new.border rounded-12px min-w-0">
             <div class="flex items-center justify-between gap-12px flex-wrap px-20px py-16px border-b border-new.border min-w-0">
@@ -82,17 +80,13 @@
                  readable without knowing the architecture. -->
             <div class="px-20px py-16px border-b border-new.border min-w-0">
               <convoy-engine-verdict [verdict]="row.verdict"></convoy-engine-verdict>
-
-              @if (row.replica.stale) {
-                <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-8px">This replica stopped publishing. Everything below describes {{ ageLabel(row.replica) }} and is not current.</p>
-              }
             </div>
 
             <!-- In, Out, Outstanding. Nothing else at this level. -->
             <div class="px-20px py-16px border-b border-new.border min-w-0">
               <div class="flex flex-wrap gap-x-48px gap-y-16px">
                 @for (number of row.numbers; track number.label) {
-                  <div class="flex flex-col gap-2px min-w-0">
+                  <div class="flex flex-col gap-2px min-w-[140px]">
                     <!-- Two explanations, two hover targets, never stacked on
                          one: the label says what the metric means and is there
                          whatever the value, the value below says why it is
@@ -108,7 +102,16 @@
                       </convoy-tooltip>
                     </div>
                     @if (number.absent === null) {
-                      <span data-flow-value class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">{{ number.value }}</span>
+                      @if (number.notes.length) {
+                        <convoy-tooltip [withIcon]="false" position="bottom" class="inline-block w-fit" className="!min-w-[240px] !left-0 !translate-x-0" [ariaLabel]="valueAria(number)">
+                          @for (note of number.notes; track $index) {
+                            <p [class]="$index ? 'mt-6px text-new.text-secondary' : ''">{{ note }}</p>
+                          }
+                          <span tooltipToggle data-flow-value class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">{{ number.value }}</span>
+                        </convoy-tooltip>
+                      } @else {
+                        <span data-flow-value class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">{{ number.value }}</span>
+                      }
                     } @else {
                       <!-- A dash, the same glyph the dashboard's other no-data
                            cells use, with the reason in the tooltip. The word
@@ -118,17 +121,27 @@
                            left edge of its own trigger rather than centred on
                            it, so a 240px body opening from the first number in
                            the row is not cut off at a phone width. -->
-                      <convoy-tooltip [withIcon]="false" position="bottom" className="!min-w-[240px] !left-0 !translate-x-0" [ariaLabel]="number.absent.aria">
+                      <convoy-tooltip [withIcon]="false" position="bottom" class="inline-block w-fit" className="!min-w-[240px] !left-0 !translate-x-0" [ariaLabel]="valueAria(number)">
                         <p>{{ number.absent.reason }}</p>
                         <p class="mt-6px text-new.text-secondary">{{ number.absent.detail }}</p>
+                        @for (note of number.notes; track $index) {
+                          <p class="mt-6px text-new.text-secondary">{{ note }}</p>
+                        }
                         <span tooltipToggle data-flow-value class="font-heading font-medium text-[20px] leading-[28px] text-new.text-secondary">-</span>
                       </convoy-tooltip>
                     }
-                    <!-- One line per fact about the number. The interval numbers
-                         name their window here; Outstanding names how old its
-                         oldest waiting retry is and when the next one is due. -->
-                    @for (note of number.notes; track $index) {
-                      <span class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary">{{ note }}</span>
+                    @if (number.absent === null && number.chart) {
+                      <svg
+                        class="w-full max-w-[140px] h-[36px] text-new.primary-400 mt-4px"
+                        viewBox="0 0 300 80"
+                        preserveAspectRatio="none"
+                        role="img"
+                        [attr.data-flow-chart]="number.label"
+                        [attr.title]="'peak ' + number.chart.peakLabel"
+                        [attr.aria-label]="number.label + ' from ' + number.chart.firstLabel + ' to ' + number.chart.lastLabel + ', peak ' + number.chart.peakLabel"
+                        >
+                        <polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" [attr.points]="number.chart.points" />
+                      </svg>
                     }
                   </div>
                 }
@@ -167,9 +180,6 @@
                     <li class="font-body font-normal text-[14px] leading-normal text-new.text-primary break-words">{{ line }}</li>
                   }
                 </ul>
-                <p class="font-body font-normal text-[12px] leading-[16px] text-new.text-secondary mt-8px">
-                  Counted across everything this plane serves, and not attributed to the work outstanding above. Discarded means the plane never sent it, so it never joined that backlog; failed means it was sent and did not succeed.
-                </p>
               </div>
             }
 
@@ -217,16 +227,64 @@
               }
 
               @if (row.replica.stages.length) {
-                <div class="w-full overflow-x-auto border-t border-new.border">
+                <div class="w-full border-t border-new.border">
                   <table class="w-full min-w-[640px] border-collapse">
                     <thead>
                       <tr class="bg-new.surface-subtle border-b border-new.border">
-                        <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Stage</th>
-                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Queued</th>
-                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Fullest lane</th>
-                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Lanes</th>
-                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Waiting</th>
-                        <th class="text-right px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">Workers</th>
+                        <th class="text-left px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">
+                          <span class="inline-flex items-center gap-4px">
+                            Stage
+                            <convoy-tooltip size="sm" position="top-left" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="stageColumns.stage.aria">
+                              <p>{{ stageColumns.stage.reason }}</p>
+                              <p class="mt-6px text-new.text-secondary">{{ stageColumns.stage.detail }}</p>
+                            </convoy-tooltip>
+                          </span>
+                        </th>
+                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">
+                          <span class="inline-flex items-center justify-end gap-4px">
+                            Queued
+                            <convoy-tooltip size="sm" position="top-left" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="stageColumns.queued.aria">
+                              <p>{{ stageColumns.queued.reason }}</p>
+                              <p class="mt-6px text-new.text-secondary">{{ stageColumns.queued.detail }}</p>
+                            </convoy-tooltip>
+                          </span>
+                        </th>
+                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">
+                          <span class="inline-flex items-center justify-end gap-4px">
+                            Fullest lane
+                            <convoy-tooltip size="sm" position="top-left" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="stageColumns.fullestLane.aria">
+                              <p>{{ stageColumns.fullestLane.reason }}</p>
+                              <p class="mt-6px text-new.text-secondary">{{ stageColumns.fullestLane.detail }}</p>
+                            </convoy-tooltip>
+                          </span>
+                        </th>
+                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">
+                          <span class="inline-flex items-center justify-end gap-4px">
+                            Lanes
+                            <convoy-tooltip size="sm" position="top-left" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="stageColumns.lanes.aria">
+                              <p>{{ stageColumns.lanes.reason }}</p>
+                              <p class="mt-6px text-new.text-secondary">{{ stageColumns.lanes.detail }}</p>
+                            </convoy-tooltip>
+                          </span>
+                        </th>
+                        <th class="text-right px-12px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">
+                          <span class="inline-flex items-center justify-end gap-4px">
+                            Waiting
+                            <convoy-tooltip size="sm" position="top-left" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="stageColumns.waiting.aria">
+                              <p>{{ stageColumns.waiting.reason }}</p>
+                              <p class="mt-6px text-new.text-secondary">{{ stageColumns.waiting.detail }}</p>
+                            </convoy-tooltip>
+                          </span>
+                        </th>
+                        <th class="text-right px-20px h-36px font-heading font-medium text-[14px] leading-[20px] text-new.text-primary">
+                          <span class="inline-flex items-center justify-end gap-4px">
+                            Workers
+                            <convoy-tooltip size="sm" position="top-left" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="stageColumns.workers.aria">
+                              <p>{{ stageColumns.workers.reason }}</p>
+                              <p class="mt-6px text-new.text-secondary">{{ stageColumns.workers.detail }}</p>
+                            </convoy-tooltip>
+                          </span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -234,15 +292,34 @@
                         <tr class="border-b border-new.border last:border-b-0">
                           <td class="px-20px h-44px font-body font-medium text-[14px] leading-normal text-new.text-primary">{{ label(stage.name) }}</td>
                           <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-primary">{{ stage.queued }}</td>
-                          <!-- Queued alone cannot say whether one tenant is
-                               blocking everyone else, which is what the fullest
-                               lane against its capacity answers. -->
-                          <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ stage.deepest_partition }} / {{ stage.partition_capacity }}</td>
+                          <!-- Queued is a total. Fullest lane is the busiest
+                               single project against that project's limit. -->
+                          <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap" data-fullest-lane>
+                            @if (!stage.partition_capacity) {
+                              <convoy-tooltip [withIcon]="false" position="top" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="laneCapacityAria(stage)">
+                                <p>Unbounded: this project can pile as high as this replica's memory allows.</p>
+                                <p class="mt-6px text-new.text-secondary">This is a mode, not an empty limit. The plane reports 0 for it.</p>
+                                <span tooltipToggle>{{ fullestLaneLabel(stage) }}</span>
+                              </convoy-tooltip>
+                            } @else {
+                              {{ fullestLaneLabel(stage) }}
+                            }
+                          </td>
                           <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary">{{ stage.partitions }}</td>
-                          <!-- Blocked senders are the saturation signal that tells
-                               backpressure apart from an idle stage. -->
+                          <!-- Waiting is new work stuck because a project's
+                               pile is full. Unbounded piles stay at 0. -->
                           <td class="px-12px h-44px text-right font-body font-normal text-[14px] leading-normal" [class]="stage.waiting ? 'text-error-9' : 'text-new.text-secondary'">{{ stage.waiting }}</td>
-                          <td class="px-20px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap">{{ workersLabel(stage) }}</td>
+                          <td class="px-20px h-44px text-right font-body font-normal text-[14px] leading-normal text-new.text-secondary whitespace-nowrap" data-workers-value>
+                            @if (!stage.workers) {
+                              <convoy-tooltip [withIcon]="false" position="top" class="inline-block w-fit" className="!min-w-[240px]" [ariaLabel]="workersAria(stage)">
+                                <p>Unbounded: every item gets a worker of its own.</p>
+                                <p class="mt-6px text-new.text-secondary">This is a mode, not an empty pool. The plane reports 0 for it.</p>
+                                <span tooltipToggle>{{ workersLabel(stage) }}</span>
+                              </convoy-tooltip>
+                            } @else {
+                              {{ workersLabel(stage) }}
+                            }
+                          </td>
                         </tr>
                       }
                     </tbody>

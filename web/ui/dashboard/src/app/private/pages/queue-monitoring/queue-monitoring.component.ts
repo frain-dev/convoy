@@ -107,15 +107,15 @@ export class QueueMonitoringComponent implements OnInit {
 	// that the answer might be on the other side.
 	get otherEngineLine(): string {
 		if (this.segment === 'dataplane') {
-			return 'The queue still carries broadcast and dynamic events, broker sources, replays and batch retries, meta events, emails, retention and backups.';
+			return 'The queue still carries non-HTTP work.';
 		}
 
-		const tail = 'Events on their projects do not pass through this queue.';
-		if (!this.planeCountsKnown) return `A data plane is reporting on this instance, and its last read failed, so how many replicas are up is unknown. ${tail}`;
+		const tail = 'HTTP events on their projects do not use this queue.';
+		if (!this.planeCountsKnown) return `Data plane last read failed. ${tail}`;
 
-		const replicas = `${this.planeReplicas} data plane ${this.planeReplicas === 1 ? 'replica' : 'replicas'} reporting`;
+		const replicas = `${this.planeReplicas} data plane ${this.planeReplicas === 1 ? 'replica' : 'replicas'}`;
 
-		return `${replicas}, ${this.planeAccepting} accepting work. ${tail}`;
+		return `${replicas}, ${this.planeAccepting} accepting. ${tail}`;
 	}
 
 	// The default segment is whichever engine owns HTTP events on this instance,

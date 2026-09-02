@@ -37,7 +37,8 @@ const (
 	DELETE FROM convoy.data_plane_snapshots
 	WHERE replica = $1`
 
-	// Ordered by replica so a page of replicas does not reshuffle between reads.
+	// Fetch order is by replica so the scan itself is stable. Presentation
+	// order (live then stale) is applied after staleness is computed.
 	loadDataPlaneSnapshotsSQL = `
 	SELECT snapshot FROM convoy.data_plane_snapshots ORDER BY replica`
 )
@@ -145,5 +146,6 @@ func (p *Postgres) DataPlaneStatus(ctx context.Context, staleAfter time.Duration
 		return status, fmt.Errorf("data plane snapshot: read: %w", err)
 	}
 
+	dataplanestats.OrderReplicas(status.Replicas)
 	return status, nil
 }

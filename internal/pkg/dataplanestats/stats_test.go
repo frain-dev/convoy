@@ -77,3 +77,25 @@ func TestIdleIntervalIsPublishedAsZero(t *testing.T) {
 		t.Fatalf("idle interval decoded as flow: %+v", decoded.Gauges)
 	}
 }
+
+// A leftover row from a restarted replica is stale, and its name is often a
+// container id that sorts ahead of the live replacement. The page has to open
+// on the replica that is still reporting.
+func TestOrderReplicasPutsStaleLast(t *testing.T) {
+	replicas := []Replica{
+		{Snapshot: Snapshot{Replica: "aaa"}, Stale: true},
+		{Snapshot: Snapshot{Replica: "zzz"}, Stale: false},
+		{Snapshot: Snapshot{Replica: "mmm"}, Stale: false},
+	}
+
+	OrderReplicas(replicas)
+
+	got := make([]string, len(replicas))
+	for i, replica := range replicas {
+		got[i] = replica.Replica
+	}
+	want := []string{"mmm", "zzz", "aaa"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("live then stale, then by name: got %v want %v", got, want)
+	}
+}

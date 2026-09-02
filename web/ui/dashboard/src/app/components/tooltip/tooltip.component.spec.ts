@@ -21,4 +21,14 @@ describe('TooltipComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('keeps the body out of layout as an overlay', () => {
+    const body = fixture.nativeElement.querySelector('[data-tooltip-body]') as HTMLElement;
+    expect(body.className.split(/\s+/)).toContain('absolute');
+  });
+
+  it('lets full-width toggles fill their host', () => {
+    const root = fixture.nativeElement.querySelector('button') as HTMLElement;
+    expect(root.className.split(/\s+/)).toContain('w-full');
+  });
 });
