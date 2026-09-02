@@ -221,8 +221,8 @@ const ABSENT_REASONS: Record<EngineFlowAbsence, Explained> & { stopped: Explaine
 // reads that surplus as impossible or a deficit as a backlog forming.
 const METRIC_MEANINGS = {
 	in: {
-		reason: 'Events accepted in the last measured interval.',
-		detail: 'Counted once the plane has taken responsibility for the event, and counted as events. Not comparable with Deliveries out: one event fans out to a delivery per matching subscription, so the two are the ends of the plane rather than two sides of a sum. A count for the interval, not a rate.'
+		reason: 'Events taken in during the last measured interval.',
+		detail: 'Counted once the plane has taken responsibility for the event, and counted as events. That includes work a client sent to this process and work the plane picked up because it was already durable, because both are events it is now answerable for. Not comparable with Deliveries out: one event fans out to a delivery per matching subscription, so the two are the ends of the plane rather than two sides of a sum. A count for the interval, not a rate.'
 	},
 	out: {
 		reason: 'Deliveries completed in the last measured interval.',
@@ -236,26 +236,26 @@ const METRIC_MEANINGS = {
 	// says what the number counts and points at the schedule lines, which are
 	// where a reader can tell a backlog draining on time from one that is not.
 	outstanding: {
-		reason: 'Work accepted and not yet done.',
+		reason: 'Work taken on and not yet done.',
 		detail: 'The durable backlog, so it survives a restart. It counts deliveries waiting on a retry schedule as well as work waiting to be attempted, and a scheduled retry is future work with a due time rather than work held up. A steady arrival rate against a retry schedule holds a roughly constant number here, so a count that rises and then settles is what a working plane looks like. The lines under it say how old the oldest waiting retry is and when the next one is due, which is what separates a backlog draining on schedule from one that is not.'
 	}
 };
 
 // Said where someone staring at a row of zeros will read it, on the identity
-// those zeros belong to. Which process accepted the work is the whole
-// difference between a plane that is broken and a plane nothing is being sent
-// to, and nothing else in the product would tell an operator that an agent
-// running a plane only takes what was posted to its own port.
+// those zeros belong to. A replica's numbers are its own, and the difference
+// between a plane that is broken and a plane that is simply not the one carrying
+// the work is a distinction nothing else in the product would draw for an
+// operator.
 //
-// Worded for the contract rather than for one plane: any plane can publish this
-// shape, so the note says what is true of a replica and then names the
-// agent-port case, instead of asserting an agent port on a plane that may not
-// have one.
-// What the queue carries instead is on the segment caveat above, not repeated
-// here.
+// Worded for the contract rather than for one plane, because any plane can
+// publish this shape. In particular it does not say how work reaches a plane:
+// that is the deployment's, a replica may be handed work by a client or pick up
+// work that is already durable, and a note asserting one of those would be read
+// as ruling out the other. Saying only what a replica's numbers cover stays true
+// of every arrangement, which is what a caveat has to be.
 const REPLICA_SCOPE: Explained = {
-	reason: 'This replica only counts work its own process accepted.',
-	detail: 'On an agent running a data plane that is work posted to the agent HTTP port. Work that reaches the instance any other way is carried by the queue instead, so this replica can be accepting nothing while the instance itself is busy. The numbers below are a fact about this replica, not about the instance.'
+	reason: 'This replica only counts work it took on itself.',
+	detail: 'Work reaches a plane either from a client that sent it to this process or as durable work the plane picks up, and which of those applies is a property of the deployment rather than of this panel. Either way these numbers are a fact about this replica and not about the instance, so a replica can be taking on nothing while the instance is busy.'
 };
 
 // The gauges a plane publishes its measured interval under, and the only place

@@ -91,7 +91,7 @@ describe('EngineVerdictComponent', () => {
 			const text = render(verdict({ outstanding: { known: true, value: 0 } }));
 
 			expect(component.state).toBe('idle');
-			expect(text).toBe('Running and idle. It measured the last ~5s and accepted nothing, nothing outstanding. If work is arriving on this instance, it is not coming through this engine.');
+			expect(text).toBe('Running and idle. It measured the last ~5s and took in nothing, nothing outstanding. If work is arriving on this instance, it is not coming through this engine.');
 			// A measured zero is not a fault and must not be dressed as one.
 			expect(component.tone).toBe('ok');
 		});
@@ -112,7 +112,7 @@ describe('EngineVerdictComponent', () => {
 			const text = render(verdict({ outstanding: { known: false, value: 0 } }));
 
 			expect(component.state).toBe('holding');
-			expect(text).toContain('Nothing accepted and nothing completed in the last ~5s, outstanding could not be read.');
+			expect(text).toContain('Nothing taken in and nothing completed in the last ~5s, outstanding could not be read.');
 			expect(text).not.toContain('Idle');
 		});
 	});
@@ -131,12 +131,12 @@ describe('EngineVerdictComponent', () => {
 		);
 
 		expect(component.state).toBe('draining');
-		expect(text).toBe('Draining. 1,240 accepted and 1,190 completed in the last ~5s, 50 outstanding.');
+		expect(text).toBe('Draining. 1,240 taken in and 1,190 completed in the last ~5s, 50 outstanding.');
 	});
 
 	// Fanout makes out legitimately larger than in, which a netting sentence
 	// would have to report as an impossible surplus.
-	it('reports more completed than accepted without calling it a deficit', () => {
+	it('reports more completed than taken in without calling it a deficit', () => {
 		const text = render(
 			verdict({
 				flow: measured({ in: 3, out: 12 }),
@@ -145,7 +145,7 @@ describe('EngineVerdictComponent', () => {
 		);
 
 		expect(component.state).toBe('draining');
-		expect(text).toBe('Draining. 3 accepted and 12 completed in the last ~5s, 4 outstanding.');
+		expect(text).toBe('Draining. 3 taken in and 12 completed in the last ~5s, 4 outstanding.');
 		expect(text).not.toContain('more');
 	});
 
@@ -159,7 +159,7 @@ describe('EngineVerdictComponent', () => {
 
 		// The three window counts stay together and the level stays apart, so the
 		// failures do not read as an explanation of the backlog beside them.
-		expect(text).toBe('Draining. 288 accepted, 287 completed and 30 failed in the last ~5s, 583 outstanding.');
+		expect(text).toBe('Draining. 288 taken in, 287 completed and 30 failed in the last ~5s, 583 outstanding.');
 	});
 
 	// An engine may count more than one way of not completing in that number. The
@@ -176,7 +176,7 @@ describe('EngineVerdictComponent', () => {
 			})
 		);
 
-		expect(text).toBe('Draining. 288 accepted, 287 completed and 30 failed or discarded in the last ~5s, 583 outstanding.');
+		expect(text).toBe('Draining. 288 taken in, 287 completed and 30 failed or discarded in the last ~5s, 583 outstanding.');
 	});
 
 	// Completed nothing over the window against a backlog that is really there.
@@ -194,7 +194,7 @@ describe('EngineVerdictComponent', () => {
 		);
 
 		expect(component.state).toBe('holding');
-		expect(text).toBe('20 accepted and nothing completed in the last ~5s, 1,200 outstanding. Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.');
+		expect(text).toBe('20 taken in and nothing completed in the last ~5s, 1,200 outstanding. Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.');
 		expect(text).not.toContain('Not draining');
 		expect(text).not.toContain('stuck');
 	});
