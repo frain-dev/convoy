@@ -55,7 +55,7 @@ describe('EngineVerdictComponent', () => {
 			const text = render(verdict({ flow: { absence: 'starting' }, outstanding: { known: true, value: 84088 } }));
 
 			expect(component.state).toBe('starting');
-			expect(text).toBe('Measuring. No earlier sample from this engine to compare against, so there is no interval yet. Next sample carries one. 84,088 outstanding.');
+			expect(text).toBe('Measuring. 84,088 outstanding.');
 			expect(text).not.toContain('Idle');
 			expect(text).not.toContain('not reported');
 		});
@@ -64,7 +64,7 @@ describe('EngineVerdictComponent', () => {
 			const text = render(verdict({ flow: { absence: 'restarted' }, outstanding: { known: true, value: 84088 } }));
 
 			expect(component.state).toBe('restarted');
-			expect(text).toBe('Measuring again. The engine restarted, so the interval spanning the restart was discarded. Next sample carries one. 84,088 outstanding.');
+			expect(text).toBe('Measuring again. 84,088 outstanding.');
 			expect(text).not.toContain('No earlier sample');
 		});
 
@@ -74,7 +74,7 @@ describe('EngineVerdictComponent', () => {
 			const text = render(verdict({ flow: { absence: 'incomplete' }, outstanding: { known: false, value: 0 } }));
 
 			expect(component.state).toBe('incomplete');
-			expect(text).toBe('Throughput reported incompletely, so whether work is draining is unknown. Outstanding could not be read.');
+			expect(text).toBe('Throughput incomplete. Outstanding could not be read.');
 			expect(text).not.toContain('Idle');
 			expect(text).not.toContain('nothing outstanding');
 		});
@@ -91,7 +91,7 @@ describe('EngineVerdictComponent', () => {
 			const text = render(verdict({ outstanding: { known: true, value: 0 } }));
 
 			expect(component.state).toBe('idle');
-			expect(text).toBe('Running and idle. It measured the last ~5s and took in nothing, nothing outstanding. If work is arriving on this instance, it is not coming through this engine.');
+			expect(text).toBe('Idle. Nothing in the last ~5s, nothing outstanding.');
 			// A measured zero is not a fault and must not be dressed as one.
 			expect(component.tone).toBe('ok');
 		});
@@ -102,7 +102,7 @@ describe('EngineVerdictComponent', () => {
 		it('does not assert that traffic is going elsewhere', () => {
 			const text = render(verdict({ outstanding: { known: true, value: 0 } }));
 
-			expect(text).toContain('If work is arriving');
+			expect(text).not.toContain('If work is arriving');
 			expect(text).not.toContain('bypass');
 		});
 
@@ -194,7 +194,7 @@ describe('EngineVerdictComponent', () => {
 		);
 
 		expect(component.state).toBe('holding');
-		expect(text).toBe('20 taken in and nothing completed in the last ~5s, 1,200 outstanding. Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.');
+		expect(text).toBe('20 taken in and nothing completed in the last ~5s, 1,200 outstanding.');
 		expect(text).not.toContain('Not draining');
 		expect(text).not.toContain('stuck');
 	});
@@ -214,7 +214,7 @@ describe('EngineVerdictComponent', () => {
 		expect(component.state).toBe('stopped');
 		// Distinct in words from the engine that is running and measured a zero,
 		// which is the pair an operator most needs told apart.
-		expect(text).toBe('Not running. This engine is not accepting work, so nothing new is entering it.');
+		expect(text).toBe('Not accepting work.');
 		expect(text).not.toContain('It measured the last');
 		// The numbers beside a stopped engine describe a stop, so none of them
 		// may reach the sentence.

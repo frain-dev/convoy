@@ -167,34 +167,19 @@ export class EngineVerdictComponent {
 			// finding nothing to do. Rendering any two of them the same way is how
 			// a misconfiguration hides.
 			case 'stopped':
-				return 'Not running. This engine is not accepting work, so nothing new is entering it.';
+				return 'Not accepting work.';
 			case 'silent':
 				return `Not reporting. Last sample ${verdict.sampledLabel}.`;
-			// Both absences say what happened and what it means for the reader,
-			// and neither reads as a fault: an interval is coming, and until it
-			// arrives the engine may well be draining perfectly.
 			case 'starting':
-				return `Measuring. No earlier sample from this engine to compare against, so there is no interval yet. Next sample carries one. ${sentenceStart(this.outstandingClause())}.`;
+				return `Measuring. ${sentenceStart(this.outstandingClause())}.`;
 			case 'restarted':
-				return `Measuring again. The engine restarted, so the interval spanning the restart was discarded. Next sample carries one. ${sentenceStart(this.outstandingClause())}.`;
-			// The one absence with no benign explanation, kept apart from the two
-			// that have one rather than being softened into them.
+				return `Measuring again. ${sentenceStart(this.outstandingClause())}.`;
 			case 'incomplete':
-				return `Throughput reported incompletely, so whether work is draining is unknown. ${sentenceStart(this.outstandingClause())}.`;
-			// A measured zero is a reading, not a gap, and the difference is the
-			// whole point: an engine that sampled an interval and found nothing is
-			// telling the operator that work is reaching Convoy some other way, or
-			// not at all. The last clause is conditional because this panel cannot
-			// see the instance's ingest rate and so cannot make the comparison
-			// itself.
+				return `Throughput incomplete. ${sentenceStart(this.outstandingClause())}.`;
 			case 'idle':
-				return `Running and idle. It measured the last ${this.window()} and took in nothing, nothing outstanding. If work is arriving on this instance, it is not coming through this engine.`;
-			// The observation, then the reason it is not a conclusion. Reading
-			// this as a stall cost an operator twenty minutes on a plane that was
-			// working exactly as designed, so the sentence says outright what it
-			// cannot tell rather than leaving the reader to assume the worst.
+				return `Idle. Nothing in the last ${this.window()}, nothing outstanding.`;
 			case 'holding':
-				return `${window?.in ? `${engineCount(window.in)} taken in` : 'Nothing taken in'} and nothing completed in the last ${this.window()}${window?.failed ? `, ${engineCount(window.failed)} ${this.failedWord()}` : ''}, ${this.outstandingClause()}. Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.`;
+				return `${window?.in ? `${engineCount(window.in)} taken in` : 'Nothing taken in'} and nothing completed in the last ${this.window()}${window?.failed ? `, ${engineCount(window.failed)} ${this.failedWord()}` : ''}, ${this.outstandingClause()}.`;
 			default:
 				return `Draining. ${engineCount(window?.in ?? 0)} taken in${window?.failed ? `, ` : ' and '}${engineCount(window?.out ?? 0)} completed${window?.failed ? ` and ${engineCount(window.failed)} ${this.failedWord()}` : ''} in the last ${this.window()}, ${this.outstandingClause()}.`;
 		}

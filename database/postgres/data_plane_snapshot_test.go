@@ -125,6 +125,35 @@ func TestDataPlaneStatusMarksReplicasStale(t *testing.T) {
 	require.Greater(t, replicaByName(t, status, "pod-old").AgeSeconds, float64(100))
 }
 
+// Container ids are lexical. A leftover row whose id sorts first must still
+// sit below the replica that is still reporting, or a restart opens the page
+// on the ghost.
+func TestDataPlaneStatusListsLiveReplicasBeforeStale(t *testing.T) {
+	store := snapshotStore(t)
+	ctx := context.Background()
+
+	require.NoError(t, store.PublishSnapshot(ctx, dataplanestats.Snapshot{
+		Replica:   "aaa-stale",
+		Mode:      "example",
+		Running:   true,
+		SampledAt: time.Now().Add(-2 * time.Minute),
+	}))
+	require.NoError(t, store.PublishSnapshot(ctx, dataplanestats.Snapshot{
+		Replica:   "zzz-live",
+		Mode:      "example",
+		Running:   true,
+		SampledAt: time.Now(),
+	}))
+
+	status, err := store.DataPlaneStatus(ctx, 30*time.Second)
+	require.NoError(t, err)
+	require.Len(t, status.Replicas, 2)
+	require.Equal(t, "zzz-live", status.Replicas[0].Replica)
+	require.False(t, status.Replicas[0].Stale)
+	require.Equal(t, "aaa-stale", status.Replicas[1].Replica)
+	require.True(t, status.Replicas[1].Stale)
+}
+
 // A replica that was scaled away has to leave the page rather than keep claiming
 // depth it no longer holds, and expiry must not take the live one with it.
 func TestExpireSnapshotsRemovesOnlyDeadReplicas(t *testing.T) {

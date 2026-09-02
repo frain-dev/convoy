@@ -42,6 +42,9 @@ export class TooltipComponent implements OnInit {
 			'top-right': `-right-[160px] after:right-[157px] bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`,
 			'top-left': `-right-[16px] after:right-[15px] bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`
 		};
-		return `${positions[this.position]} ${colors[this.color]}  min-w-[192px] ${this.class}`;
+		// Overlay classes live on the same [class] binding as position/color.
+		// A static class= plus [class] string overwrites the static list, which
+		// dropped `absolute` and let min-w-[192px] bodies sit in layout.
+		return `absolute opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto pointer-events-none transition-all z-50 rounded-8px p-14px text-12 text-left after:content-[''] after:absolute font-light after:border-[10px] ${positions[this.position]} ${colors[this.color]} min-w-[192px] ${this.class}`;
 	}
 }

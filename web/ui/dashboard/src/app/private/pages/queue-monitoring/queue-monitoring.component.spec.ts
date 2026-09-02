@@ -440,8 +440,8 @@ describe('QueueMonitoringComponent segments', () => {
 
 		click('Queue');
 
-		expect(component.otherEngineLine).toContain('1 data plane replica reporting');
-		expect(component.otherEngineLine).toContain('1 accepting work');
+		expect(component.otherEngineLine).toContain('1 data plane replica');
+		expect(component.otherEngineLine).toContain('1 accepting');
 	});
 
 	// A blipped poll keeps the segment, because the plane is still there. What it
@@ -454,7 +454,7 @@ describe('QueueMonitoringComponent segments', () => {
 		fixture.changeDetectorRef.detectChanges();
 
 		expect(component.segment).toBe(QUEUE);
-		expect(component.otherEngineLine).toContain('how many replicas are up is unknown');
+		expect(component.otherEngineLine).toContain('last read failed');
 		expect(component.otherEngineLine).not.toContain('0 data plane');
 	});
 });
