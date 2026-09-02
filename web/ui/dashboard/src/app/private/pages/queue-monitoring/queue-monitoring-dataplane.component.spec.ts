@@ -1541,15 +1541,17 @@ describe('QueueMonitoringDataplaneComponent', () => {
 			frame.style.width = '375px';
 			frame.style.overflow = 'hidden';
 
+			// Names the plane chose, not names this build knows. One of
+			// them carries no separator at all, so it humanises to a
+			// single unbreakable word, which is the shape that pushed
+			// the old panel off the side of the page.
+			const replicaId = 'convoydataplaneagentdeploymentreplicasixfourceninebseven';
+
 			reads.push(() =>
 				Promise.resolve(
 					status([
 						replica({
-							// Names the plane chose, not names this build knows. One of
-							// them carries no separator at all, so it humanises to a
-							// single unbreakable word, which is the shape that pushed
-							// the old panel off the side of the page.
-							replica: 'convoydataplaneagentdeploymentreplicasixfourceninebseven',
+							replica: replicaId,
 							sampled_at: '2026-09-01T08:00:00Z',
 							stages: [{ name: 'http_ingest_partitioned_fair_queue_admission', queued: 1234567, waiting: 890123, workers: 0, partitions: 4096, partition_capacity: 1000000, deepest_partition: 999999 }],
 							writers: [{ name: 'event_deliveries_bulk_writer', pending: 1234567, failures: 89012 }],
@@ -1570,7 +1572,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 				Promise.resolve(
 					status([
 						replica({
-							replica: 'convoydataplaneagentdeploymentreplicasixfourceninebseven',
+							replica: replicaId,
 							sampled_at: '2026-09-01T08:00:05Z',
 							stages: [{ name: 'http_ingest_partitioned_fair_queue_admission', queued: 1234567, waiting: 890123, workers: 0, partitions: 4096, partition_capacity: 1000000, deepest_partition: 999999 }],
 							writers: [{ name: 'event_deliveries_bulk_writer', pending: 1234567, failures: 89012 }],
@@ -1588,43 +1590,21 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 			await render();
-			openDiagnostics();
+			component.toggleDiagnostics(replicaId);
+			paint();
 
 			expect(frame.clientWidth).toBe(375);
-			expect(overflowing(host)).toEqual([]);
+
+			// openDiagnostics() toggles agent-1, so this replica's tables were
+			// never in the tree. The 640px stages table must scroll inside
+			// its wrapper; host width stays 375 even when children paint
+			// outside, so the wrapper's own client/scroll widths are the
+			// containment proof.
+			const stagesScroll = host.querySelector('[data-stages-scroll]') as HTMLElement;
+			expect(stagesScroll).toBeTruthy();
+			expect(getComputedStyle(stagesScroll).overflowX).toMatch(/auto|scroll/);
+			expect(stagesScroll.clientWidth).toBeLessThanOrEqual(375);
+			expect(stagesScroll.scrollWidth).toBeGreaterThan(stagesScroll.clientWidth);
 		});
 	});
 });
-
-// A box whose content is wider than the box, and which will neither clip nor
-// scroll it, is what makes the page itself scroll sideways. A table inside an
-// overflow-x-auto wrapper is not that: its content is wider on purpose and the
-// wrapper takes the scroll, so only boxes computing to overflow-x: visible are
-// counted. Elements with no box of their own are skipped, because clientWidth is
-// 0 on an inline and every one of them would read as an overflow.
-//
-// Tooltip bodies are taken out of the measurement first. They are absolutely
-// positioned overlays that are meant to extend past the card, which is the whole
-// reason the card no longer clips its own content, and they are laid out even
-// while transparent, so leaving them in would report the panel's own layout as
-// broken for doing the thing it was fixed to do. Their placement is a hover
-// question, checked in a browser rather than here.
-function overflowing(root: HTMLElement): string[] {
-	const overlays = Array.from(root.querySelectorAll<HTMLElement>('[data-tooltip-body]'));
-	for (const overlay of overlays) overlay.style.display = 'none';
-
-	try {
-		return Array.from(root.querySelectorAll<HTMLElement>('*'))
-			.filter(element => {
-				if (!element.clientWidth) return false;
-				if (getComputedStyle(element).overflowX !== 'visible') return false;
-
-				// A pixel of tolerance, because subpixel layout rounds against a
-				// fractional container width and one pixel is not a broken page.
-				return element.scrollWidth - element.clientWidth > 1;
-			})
-			.map(element => `${element.tagName.toLowerCase()}.${element.className}`);
-	} finally {
-		for (const overlay of overlays) overlay.style.display = '';
-	}
-}

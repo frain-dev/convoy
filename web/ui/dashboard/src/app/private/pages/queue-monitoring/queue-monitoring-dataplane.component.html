@@ -39,11 +39,11 @@
         @for (row of rows; track row.replica.replica) {
           <!-- No overflow on the card. Clipping the whole card would cut off
                the tooltips: a clip is not a stacking question, so no z-index
-               can lift a tooltip out of a clipping ancestor. The stages table
-               also has no overflow wrapper, so the column-term tooltips can
-               open above the header instead of into the rows. Writers still
-               wrap in overflow-x-auto; that table has no tooltips. Same
-               structure as the endpoints table card. -->
+               can lift a tooltip out of a clipping ancestor. Wide tables wrap
+               in overflow-x-auto so a 640px min-width cannot stretch the page;
+               column-term tooltips then open inside that scrollport. Writers
+               use the same wrapper and have no tooltips. Same structure as
+               the endpoints table card. -->
           <div class="bg-white-100 border border-new.border rounded-12px min-w-0">
             <div class="flex items-center justify-between gap-12px flex-wrap px-20px py-16px border-b border-new.border min-w-0">
               <div class="flex items-center gap-8px flex-wrap min-w-0">
@@ -227,7 +227,11 @@
               }
 
               @if (row.replica.stages.length) {
-                <div class="w-full border-t border-new.border">
+                <!-- overflow-x-auto is the 375px rule: the table may scroll,
+                     the page may not. Removing it let min-w-[640px] stretch
+                     the card and the viewport. Header tooltips clip at this
+                     box; that is the cost of containing the table. -->
+                <div class="w-full max-w-full overflow-x-auto border-t border-new.border" data-stages-scroll>
                   <table class="w-full min-w-[640px] border-collapse">
                     <thead>
                       <tr class="bg-new.surface-subtle border-b border-new.border">
