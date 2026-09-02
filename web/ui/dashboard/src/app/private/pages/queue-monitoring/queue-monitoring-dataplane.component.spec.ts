@@ -180,7 +180,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 			expect(text()).toContain('Measuring. No earlier sample from this engine to compare against, so there is no interval yet. Next sample carries one. 84,088 outstanding.');
 			expect(text()).not.toContain('not reported');
 			expect(text()).not.toContain('Idle');
-			expect(text()).not.toContain('Nothing accepted');
+			expect(text()).not.toContain('Nothing taken in');
 		});
 
 		// A dash an operator cannot account for reads as a broken panel, so the
@@ -290,7 +290,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('Draining. 288 accepted, 287 completed and 30 failed or discarded in the last ~5s, 583 outstanding.');
+			expect(text()).toContain('Draining. 288 taken in, 287 completed and 30 failed or discarded in the last ~5s, 583 outstanding.');
 			expect(text()).toContain('288');
 			expect(text()).toContain('287');
 			expect(text()).not.toContain('not reported');
@@ -319,7 +319,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('Running and idle. It measured the last ~5s and accepted nothing, nothing outstanding.');
+			expect(text()).toContain('Running and idle. It measured the last ~5s and took in nothing, nothing outstanding.');
 			expect(absentValues().filter(value => value.glyph === '-').length).toBe(0);
 
 			const values = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[data-flow-value]')).map(node => (node.textContent ?? '').trim());
@@ -349,9 +349,14 @@ describe('QueueMonitoringDataplaneComponent', () => {
 			expect(text()).toContain('If work is arriving on this instance, it is not coming through this engine.');
 
 			const scope = tooltipLabels().find(label => label.includes('Replica scope'));
-			expect(scope).toContain('This replica only counts work its own process accepted.');
-			expect(scope).toContain('agent HTTP port');
-			expect(scope).toContain('carried by the queue instead');
+			expect(scope).toContain('This replica only counts work it took on itself.');
+			// Both routes named, and neither asserted as the only one. A note that
+			// said work arrives on this process's port would read as ruling out
+			// durable work a plane picks up, and a deployment may well take in
+			// everything that way.
+			expect(scope).toContain('a client that sent it to this process');
+			expect(scope).toContain('durable work the plane picks up');
+			expect(scope).toContain('not about the instance');
 		});
 
 		// The note is a reading, so it may only appear where there was one. Beside
@@ -381,7 +386,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('Draining. 3 accepted and 12 completed in the last ~5s, 4 outstanding.');
+			expect(text()).toContain('Draining. 3 taken in and 12 completed in the last ~5s, 4 outstanding.');
 			expect(text()).toContain('Events in');
 			expect(text()).toContain('Deliveries out');
 			expect(text()).not.toContain('more out than in');
@@ -408,7 +413,7 @@ describe('QueueMonitoringDataplaneComponent', () => {
 
 			await render();
 
-			expect(text()).toContain('40 accepted and nothing completed in the last ~5s, 583 outstanding.');
+			expect(text()).toContain('40 taken in and nothing completed in the last ~5s, 583 outstanding.');
 			expect(text()).toContain('Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.');
 
 			// And the schedule says which it is: an oldest retry a minute and a

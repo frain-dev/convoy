@@ -19,6 +19,13 @@ export interface EngineWindow {
 	// it. The sentence names the window from this rather than assuming a minute.
 	windowMs: number;
 
+	// in is work the engine took on, by whichever route work reaches it. An
+	// engine may be handed work by a client it serves, or take on work that was
+	// already durable somewhere it can read, and both are work it is now
+	// answerable for. The sentences say "taken in" rather than "accepted" for
+	// that reason: an engine placed where no client can reach it does all its
+	// work through the second route, and a number labelled "accepted" would be
+	// read as a broken ingest on a deployment that was never going to have one.
 	in: number;
 	out: number;
 
@@ -181,15 +188,15 @@ export class EngineVerdictComponent {
 			// see the instance's ingest rate and so cannot make the comparison
 			// itself.
 			case 'idle':
-				return `Running and idle. It measured the last ${this.window()} and accepted nothing, nothing outstanding. If work is arriving on this instance, it is not coming through this engine.`;
+				return `Running and idle. It measured the last ${this.window()} and took in nothing, nothing outstanding. If work is arriving on this instance, it is not coming through this engine.`;
 			// The observation, then the reason it is not a conclusion. Reading
 			// this as a stall cost an operator twenty minutes on a plane that was
 			// working exactly as designed, so the sentence says outright what it
 			// cannot tell rather than leaving the reader to assume the worst.
 			case 'holding':
-				return `${window?.in ? `${engineCount(window.in)} accepted` : 'Nothing accepted'} and nothing completed in the last ${this.window()}${window?.failed ? `, ${engineCount(window.failed)} ${this.failedWord()}` : ''}, ${this.outstandingClause()}. Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.`;
+				return `${window?.in ? `${engineCount(window.in)} taken in` : 'Nothing taken in'} and nothing completed in the last ${this.window()}${window?.failed ? `, ${engineCount(window.failed)} ${this.failedWord()}` : ''}, ${this.outstandingClause()}. Work waiting on a schedule is outstanding too, so read what that number is made of before taking this as held up.`;
 			default:
-				return `Draining. ${engineCount(window?.in ?? 0)} accepted${window?.failed ? `, ` : ' and '}${engineCount(window?.out ?? 0)} completed${window?.failed ? ` and ${engineCount(window.failed)} ${this.failedWord()}` : ''} in the last ${this.window()}, ${this.outstandingClause()}.`;
+				return `Draining. ${engineCount(window?.in ?? 0)} taken in${window?.failed ? `, ` : ' and '}${engineCount(window?.out ?? 0)} completed${window?.failed ? ` and ${engineCount(window.failed)} ${this.failedWord()}` : ''} in the last ${this.window()}, ${this.outstandingClause()}.`;
 		}
 	}
 
