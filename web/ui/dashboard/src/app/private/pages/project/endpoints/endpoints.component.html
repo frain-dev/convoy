@@ -110,8 +110,8 @@
         </button>
       </div>
     } @else {
-      <!-- pb/-mb keeps row action menus inside the scroll clip box without a visible gap before pagination. -->
-      <div class="overflow-x-auto pb-[280px] -mb-[280px]">
+      <!-- pb/-mb matches dropdown max-h-[440px] so tall row menus (up to 8 items) are not clipped. -->
+      <div class="overflow-x-auto pb-[440px] -mb-[440px]">
       <div class="min-w-[940px]">
       <!-- Header row -->
       <div class="grid w-full grid-cols-[minmax(240px,1.8fr)_minmax(200px,2.4fr)_minmax(160px,1.5fr)_120px_150px_56px] bg-new.surface-subtle border-b border-new.border">
