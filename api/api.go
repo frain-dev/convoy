@@ -576,6 +576,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/indexes", handler.ListIndexes)
 			adminRouter.Post("/indexes/rebuild", handler.StartIndexRebuild)
 			adminRouter.Get("/partitions/{runID}", handler.GetPartitionRun)
+			adminRouter.Get("/retention/runs", handler.ListRetentionRuns)
+			adminRouter.Get("/retention/runs/{runID}", handler.GetRetentionRun)
 
 			// Queue monitoring for the dashboard's native page. Both brokers
 			// implement the inspector, so these routes are provider-neutral.

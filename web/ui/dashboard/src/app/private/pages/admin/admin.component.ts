@@ -3,7 +3,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfigurationsComponent } from '../settings/configurations/configurations.component';
 
-export type ADMIN_PAGE = 'configurations' | 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'table indexes';
+export type ADMIN_PAGE = 'configurations' | 'feature flags' | 'circuit breaker config' | 'resend events' | 'queue monitoring' | 'table partitions' | 'retention drops' | 'table indexes';
 
 @Component({
     selector: 'app-admin',
@@ -19,8 +19,9 @@ export class AdminComponent implements OnInit {
 		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
 		{ name: 'resend events', icon: 'retry', svg: 'fill' },
 		{ name: 'queue monitoring', icon: 'logs', svg: 'stroke' },
+		{ name: 'table indexes', icon: 'key', svg: 'fill' },
 		{ name: 'table partitions', icon: 'table-grid', svg: 'fill' },
-		{ name: 'table indexes', icon: 'key', svg: 'fill' }
+		{ name: 'retention drops', icon: 'delete', svg: 'fill' }
 	];
 	// External href for the back control so middle-click / open-in-new-tab keep RootPath.
 	projectsHref = '/projects';
