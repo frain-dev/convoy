@@ -202,21 +202,41 @@ func snapshotManagedPartitions(ctx context.Context, db database.Database) (parti
 	return out, rows.Err()
 }
 
-// snapshotPartitionRowCounts is best-effort: a failed count on one partition
-// must not block nightly Maintain or omit row counts for the rest.
-func snapshotPartitionRowCounts(ctx context.Context, db database.Database, snap partitionSnapshot) map[string]map[string]int64 {
-	out := make(map[string]map[string]int64, len(snap))
-	for table, parts := range snap {
-		for name := range parts {
-			count, err := countQualifiedRelation(ctx, db, name)
-			if err != nil {
-				continue
-			}
-			if out[table] == nil {
-				out[table] = make(map[string]int64)
-			}
-			out[table][name] = count
+// countExpiredPartitionRowCounts counts rows only in partitions partman will
+// drop this run (same filter as gopartman ListExpiredPartitions). Best-effort:
+// a failed count on one partition must not block Maintain.
+func countExpiredPartitionRowCounts(ctx context.Context, db database.Database) map[string]map[string]int64 {
+	rows, err := db.GetDB().QueryxContext(ctx, `
+        SELECT t.table_name, p.name
+        FROM partman.partitions p
+        JOIN partman.parent_tables t ON t.id = p.parent_table_id
+        WHERE t.schema_name = $1 AND t.table_name = ANY($2)
+          AND p.partition_bounds_to <= NOW() - t.retention_period
+          AND p.is_default = false AND p.status = 'active'`,
+		retentionSchema, RetentionTables)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "42P01" {
+			return nil
 		}
+		return nil
+	}
+	defer rows.Close()
+
+	out := make(map[string]map[string]int64, len(RetentionTables))
+	for rows.Next() {
+		var table, name string
+		if err := rows.Scan(&table, &name); err != nil {
+			return out
+		}
+		count, err := countQualifiedRelation(ctx, db, name)
+		if err != nil || count == 0 {
+			continue
+		}
+		if out[table] == nil {
+			out[table] = make(map[string]int64)
+		}
+		out[table][name] = count
 	}
 	return out
 }

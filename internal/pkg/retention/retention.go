@@ -476,23 +476,29 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 		}
 	}
 
-	before, err := snapshotManagedPartitions(ctx, r.db)
-	if err != nil {
-		finish(RunStatusFailed, emptyDetails(), err)
-		return err
+	before, beforeErr := snapshotManagedPartitions(ctx, r.db)
+	if beforeErr != nil {
+		r.logger.Error("snapshotting partitions before retention", "error", beforeErr)
+		before = partitionSnapshot{}
 	}
 
-	beforeCounts := snapshotPartitionRowCounts(ctx, r.db, before)
+	beforeCounts := countExpiredPartitionRowCounts(ctx, r.db)
 
 	maintainErr := r.manager.Maintain(ctx)
 
 	after, afterErr := snapshotManagedPartitions(ctx, r.db)
 	var details RunDetails
-	if afterErr != nil {
+	switch {
+	case beforeErr == nil && afterErr == nil:
+		details = diffPartitionDrops(before, after, beforeCounts)
+	case beforeErr == nil && afterErr != nil:
 		r.logger.Error("snapshotting partitions after retention", "error", afterErr)
 		details = emptyDetails()
-	} else {
-		details = diffPartitionDrops(before, after, beforeCounts)
+	default:
+		if afterErr != nil {
+			r.logger.Error("snapshotting partitions after retention", "error", afterErr)
+		}
+		details = emptyDetails()
 	}
 	if maintainErr != nil {
 		msg := maintainErr.Error()
@@ -510,12 +516,14 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 
 	r.sweepOrphanedEventEndpoints(ctx)
 
-	if afterErr != nil {
-		finish(RunStatusFailed, details, afterErr)
-		return afterErr
+	var recordErr error
+	switch {
+	case beforeErr != nil:
+		recordErr = beforeErr
+	case afterErr != nil:
+		recordErr = afterErr
 	}
-
-	finish(RunStatusCompleted, details, nil)
+	finish(RunStatusCompleted, details, recordErr)
 	return nil
 }
 
