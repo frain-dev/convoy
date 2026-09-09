@@ -18,11 +18,27 @@ CREATE TABLE IF NOT EXISTS convoy.retention_runs (
     CONSTRAINT retention_runs_status_check CHECK (status IN ('running', 'completed', 'failed', 'skipped'))
 );
 
+RESET lock_timeout;
+RESET statement_timeout;
+
+-- +migrate Up notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
 -- The UI lists most recent first. Blocking build is fine here: the table is
 -- new and empty at migrate time, and this is not a partitioned parent (where
 -- CONCURRENTLY is illegal anyway).
-CREATE INDEX IF NOT EXISTS idx_retention_runs_started_at
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_retention_runs_started_at
     ON convoy.retention_runs (started_at DESC);
+
+RESET lock_timeout;
+RESET statement_timeout;
+
+-- +migrate Down notransaction
+SET lock_timeout = '2s';
+SET statement_timeout = '30s';
+
+DROP INDEX CONCURRENTLY IF EXISTS idx_retention_runs_started_at;
 
 RESET lock_timeout;
 RESET statement_timeout;
