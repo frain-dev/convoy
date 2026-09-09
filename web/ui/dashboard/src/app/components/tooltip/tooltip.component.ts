@@ -70,8 +70,12 @@ export class TooltipComponent implements OnInit {
 
 	get hostClasses(): string {
 		const width = this.fillHost ? 'w-full max-w-full' : 'w-fit max-w-full';
-		const align = this.fillHost ? 'items-end' : 'items-stretch';
-		return `relative inline-flex flex-col ${align} ${width} group`;
+		return `relative inline-flex flex-col items-stretch ${width} group`;
+	}
+
+	get toggleClasses(): string {
+		const base = 'inline-flex flex-col w-full border-0 bg-transparent p-0';
+		return this.fillHost ? `${base} items-end text-right` : `${base} items-stretch text-left`;
 	}
 
 }
