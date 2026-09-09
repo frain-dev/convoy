@@ -81,7 +81,8 @@
         }
       </div>
     } @else {
-      <div class="overflow-x-auto">
+      <!-- pb/-mb keeps row action menus inside the scroll clip box without a visible gap before pagination. -->
+      <div class="overflow-x-auto pb-[280px] -mb-[280px]">
       <div class="min-w-[640px]">
       <!-- Header row -->
       <div class="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,1fr)_56px] bg-new.surface-subtle border-b border-new.border">
@@ -128,7 +129,7 @@
                       <button convoy-permission="Team|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="showUpdateMemberModal(team)">Update</button>
                     </li>
                     <li>
-                      <button convoy-permission="Team|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
+                      <button convoy-permission="Team|MANAGE" convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="$event.stopPropagation(); deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
                     </li>
                   </ul>
                 </div>
@@ -160,7 +161,7 @@
                     <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary transition-colors hover:bg-new.surface-muted" (click)="resendInvite(team.uid)">Resend Invite</button>
                   </li>
                   <li>
-                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.error-500 transition-colors hover:bg-new.surface-muted" (click)="$event.stopPropagation(); deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
                   </li>
                 </ul>
               </div>
