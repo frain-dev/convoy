@@ -27,9 +27,11 @@ describe('TooltipComponent', () => {
     expect(body.className.split(/\s+/)).toContain('absolute');
   });
 
-  it('lets full-width toggles fill their host', () => {
+  it('expands the inner wrapper when fillHost is enabled', () => {
     component.fillHost = true;
-    expect(component.hostClasses.split(/\s+/)).toContain('w-full');
+    const classes = component.hostClasses.split(/\s+/);
+    expect(classes).toContain('w-full');
+    expect(classes).toContain('items-end');
   });
 
   it('keeps non-interactive tooltips click-through on hover', () => {

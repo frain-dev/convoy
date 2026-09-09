@@ -5,7 +5,12 @@ import { Component, Input, OnInit } from '@angular/core';
     selector: 'convoy-tooltip',
     imports: [],
     templateUrl: './tooltip.component.html',
-    styleUrls: ['./tooltip.component.scss']
+    styleUrls: ['./tooltip.component.scss'],
+	host: {
+		'[class.block]': 'fillHost',
+		'[class.w-full]': 'fillHost',
+		'[class.min-w-0]': 'fillHost'
+	}
 })
 export class TooltipComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' = 'md';
@@ -65,6 +70,8 @@ export class TooltipComponent implements OnInit {
 
 	get hostClasses(): string {
 		const width = this.fillHost ? 'w-full max-w-full' : 'w-fit max-w-full';
-		return `relative inline-flex flex-col items-stretch ${width} group`;
+		const align = this.fillHost ? 'items-end' : 'items-stretch';
+		return `relative inline-flex flex-col ${align} ${width} group`;
 	}
+
 }
