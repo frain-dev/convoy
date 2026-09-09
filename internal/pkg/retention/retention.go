@@ -460,12 +460,70 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	r.registerParents(ctx)
 	r.registerTenants(ctx)
 
-	if err := r.manager.Maintain(ctx); err != nil {
-		return err
+	store := NewRunStore(r.db)
+	runID, beginErr := store.Begin(ctx, r.retentionPeriod)
+	if beginErr != nil {
+		r.logger.Error("failed to begin retention run record", "error", beginErr)
+		runID = ""
 	}
 
-	r.dropExpiredAdoptedPartitions(ctx)
+	finish := func(status RunStatus, details RunDetails, runErr error) {
+		if runID == "" {
+			return
+		}
+		if err := store.Finish(ctx, runID, status, details, runErr); err != nil {
+			r.logger.Error("failed to finish retention run record", "error", err)
+		}
+	}
+
+	before, beforeErr := snapshotManagedPartitions(ctx, r.db)
+	if beforeErr != nil {
+		r.logger.Error("snapshotting partitions before retention", "error", beforeErr)
+		before = partitionSnapshot{}
+	}
+
+	beforeCounts := countExpiredPartitionRowCounts(ctx, r.db)
+
+	maintainErr := r.manager.Maintain(ctx)
+
+	after, afterErr := snapshotManagedPartitions(ctx, r.db)
+	var details RunDetails
+	switch {
+	case beforeErr == nil && afterErr == nil:
+		details = diffPartitionDrops(before, after, beforeCounts)
+	case beforeErr == nil && afterErr != nil:
+		r.logger.Error("snapshotting partitions after retention", "error", afterErr)
+		details = emptyDetails()
+	default:
+		if afterErr != nil {
+			r.logger.Error("snapshotting partitions after retention", "error", afterErr)
+		}
+		details = emptyDetails()
+	}
+	if maintainErr != nil {
+		msg := maintainErr.Error()
+		for i := range details {
+			details[i].MaintainError = &msg
+		}
+	}
+
+	r.dropExpiredAdoptedPartitions(ctx, details)
+
+	if maintainErr != nil {
+		finish(RunStatusFailed, details, maintainErr)
+		return maintainErr
+	}
+
 	r.sweepOrphanedEventEndpoints(ctx)
+
+	var recordErr error
+	switch {
+	case beforeErr != nil:
+		recordErr = beforeErr
+	case afterErr != nil:
+		recordErr = afterErr
+	}
+	finish(RunStatusCompleted, details, recordErr)
 	return nil
 }
 
@@ -481,15 +539,21 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 //
 // Failures are logged rather than returned. Maintain has already done the work
 // the nightly job exists for, and this runs again tomorrow.
-func (r *PartitionRetentionPolicy) dropExpiredAdoptedPartitions(ctx context.Context) {
+func (r *PartitionRetentionPolicy) dropExpiredAdoptedPartitions(ctx context.Context, details RunDetails) {
+	idx := detailsIndex(details)
 	for _, table := range RetentionTables {
-		dropped, err := r.dropAdoptedPartition(ctx, table)
+		dropped, rows, err := r.dropAdoptedPartition(ctx, table)
 		if err != nil {
 			r.logger.Error(fmt.Sprintf("failed to drop expired history partition for convoy.%s", table), "error", err)
 			continue
 		}
 		if dropped {
-			r.logger.Info(fmt.Sprintf("dropped expired history partition convoy.%s_default", table))
+			if i, ok := idx[table]; ok {
+				details[i].DroppedDefault = true
+				details[i].DroppedDefaultRows = rows
+				details[i].DroppedRows += rows
+			}
+			r.logger.Info(fmt.Sprintf("dropped expired history partition convoy.%s_default", table), "rows", rows)
 		}
 	}
 }
@@ -509,7 +573,7 @@ func (r *PartitionRetentionPolicy) dropExpiredAdoptedPartitions(ctx context.Cont
 // inferred from the constraint, so this cannot be wrong about what it is
 // deleting. The read is cheap despite the table's size: created_at is indexed,
 // so max() is a backwards index scan rather than a scan of the partition.
-func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, table string) (bool, error) {
+func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, table string) (bool, int64, error) {
 	partition := table + "_default"
 
 	var adopted bool
@@ -522,32 +586,40 @@ func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, tab
             WHERE n.nspname = $1 AND c.relname = $2 AND con.conname = $3
         )`, retentionSchema, partition, partition+"_bounds").Scan(&adopted)
 	if err != nil {
-		return false, fmt.Errorf("checking for an adopted history partition: %w", err)
+		return false, 0, fmt.Errorf("checking for an adopted history partition: %w", err)
 	}
 	if !adopted {
-		return false, nil
+		return false, 0, nil
 	}
 
 	var newest *time.Time
 	err = r.db.GetConn().QueryRow(ctx,
 		fmt.Sprintf(`SELECT max(created_at) FROM %s.%s`, retentionSchema, partition)).Scan(&newest)
 	if err != nil {
-		return false, fmt.Errorf("reading the newest row in %s: %w", partition, err)
+		return false, 0, fmt.Errorf("reading the newest row in %s: %w", partition, err)
 	}
 
 	// An empty adopted partition is left alone. It still routes rows below the
 	// conversion's cutoff, and reclaiming nothing is not worth a destructive
 	// statement.
 	if newest == nil {
-		return false, nil
+		return false, 0, nil
 	}
 
 	parent, err := r.storedParent(ctx, table)
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
 	if parent.RetentionPeriod <= 0 || newest.After(time.Now().Add(-parent.RetentionPeriod)) {
-		return false, nil
+		return false, 0, nil
+	}
+
+	var rowCount int64
+	if err = r.db.GetConn().QueryRow(ctx,
+		fmt.Sprintf(`SELECT count(*) FROM %s.%s`, retentionSchema, partition)).Scan(&rowCount); err != nil {
+		r.logger.Warn("counting rows before dropping adopted history partition; proceeding without row count",
+			"partition", partition, "error", err)
+		rowCount = 0
 	}
 
 	// Dropping the table leaves gopartman's row behind if the import adopted it,
@@ -556,22 +628,25 @@ func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, tab
 	// disagree.
 	tx, err := r.db.GetConn().Begin(ctx)
 	if err != nil {
-		return false, err
+		return false, 0, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout = '3s'`); err != nil {
-		return false, err
+		return false, 0, err
 	}
 	if _, err = tx.Exec(ctx, fmt.Sprintf(`DROP TABLE %s.%s`, retentionSchema, partition)); err != nil {
-		return false, fmt.Errorf("dropping %s: %w", partition, err)
+		return false, 0, fmt.Errorf("dropping %s: %w", partition, err)
 	}
 	// gopartman stores the child's name schema qualified, so matching on the bare
 	// name deletes nothing and leaves the row this transaction exists to remove.
 	if _, err = tx.Exec(ctx, `DELETE FROM partman.partitions WHERE name = $1`,
 		retentionSchema+"."+partition); err != nil {
-		return false, fmt.Errorf("clearing partition metadata for %s: %w", partition, err)
+		return false, 0, fmt.Errorf("clearing partition metadata for %s: %w", partition, err)
 	}
 
-	return true, tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return false, 0, err
+	}
+	return true, rowCount, nil
 }

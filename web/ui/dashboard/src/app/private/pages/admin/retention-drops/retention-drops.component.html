@@ -1,0 +1,46 @@
+<div class="flex flex-col gap-4px mb-16px">
+  <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Retention drops</h3>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Nightly retention drops expired partitions from the tables you have partitioned. Each run is recorded here so you can confirm what partman dropped without querying Postgres.</p>
+</div>
+
+<div class="h-[1px] w-full bg-new.border mb-20px"></div>
+
+@if (licenseKnown && !hasRetentionLicense) {
+  <div class="bg-white-100 border border-new.border rounded-12px p-20px">
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Retention history requires a license key. Contact support to enable it on this instance.</p>
+  </div>
+}
+
+@if (hasRetentionLicense) {
+  <div class="flex items-center justify-between mb-12px">
+    <h4 class="font-heading font-medium text-[15px] leading-[22px] text-new.text-primary">Runs</h4>
+    <button
+      type="button"
+      class="font-body text-[13px] leading-[18px] text-new.primary-400 disabled:opacity-50"
+      [disabled]="isLoading"
+      (click)="load()"
+      >
+      Refresh
+    </button>
+  </div>
+
+  @if (runs.length === 0) {
+    <div class="bg-white-100 border border-new.border rounded-12px p-20px">
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+        @if (runsKnown) {
+          No retention drops recorded yet.
+        } @else if (runsFailed) {
+          Retention drop history could not be loaded. Refresh to try again.
+        } @else {
+          Reading retention drop history...
+        }
+      </p>
+    </div>
+  }
+
+  <div class="flex flex-col gap-12px">
+    @for (run of runs; track run.uid) {
+      <app-retention-run-card [run]="run"></app-retention-run-card>
+    }
+  </div>
+}

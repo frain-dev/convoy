@@ -9,7 +9,9 @@ import { CircuitBreakerConfigComponent } from './circuit-breaker-config/circuit-
 import { ResendEventsComponent } from './resend-events/resend-events.component';
 import { TablePartitionsComponent } from './table-partitions/table-partitions.component';
 import { TableIndexesComponent } from './table-indexes/table-indexes.component';
+import { RetentionDropsComponent } from './retention-drops/retention-drops.component';
 import { RunCardComponent } from './runs/run-card.component';
+import { RetentionRunCardComponent } from './runs/retention-run-card.component';
 import { ConfigurationsComponent } from '../settings/configurations/configurations.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
@@ -37,8 +39,10 @@ const routes: Routes = [{ path: '', component: AdminComponent, canDeactivate: [a
 		CircuitBreakerConfigComponent,
 		ResendEventsComponent,
 		TablePartitionsComponent,
+		RetentionDropsComponent,
 		TableIndexesComponent,
-		RunCardComponent
+		RunCardComponent,
+		RetentionRunCardComponent
 	],
 	imports: [
 		CommonModule,

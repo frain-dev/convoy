@@ -12,7 +12,6 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -53,9 +52,6 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 	}
 
 	ctx := context.Background()
-
-	err := config.LoadConfig("")
-	require.NoError(t, err)
 
 	conn, err := testEnv.CloneTestDatabase(t, "convoy")
 	require.NoError(t, err)
@@ -226,7 +222,7 @@ func TestDropsAdoptedHistoryPartitionOnceEveryRowExpired(t *testing.T) {
 	policy := newDropPolicy(t, db, 24*time.Hour)
 	policy.registerParents(ctx)
 
-	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.True(t, dropped, "history partition survived with every row 90 days past a 24 hour retention period")
 	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
@@ -253,7 +249,7 @@ func TestKeepsAdoptedHistoryPartitionWhileItHoldsLiveRows(t *testing.T) {
 	policy := newDropPolicy(t, db, 24*time.Hour)
 	policy.registerParents(ctx)
 
-	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.False(t, dropped, "dropped a history partition holding rows inside the retention period")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
@@ -275,7 +271,7 @@ func TestNeverDropsADefaultThatIsNotAnAdoptedTable(t *testing.T) {
 
 	policy := newDropPolicy(t, db, 24*time.Hour)
 
-	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.False(t, dropped, "dropped a default that carries no conversion bound, which is where misrouted live rows land")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
@@ -303,7 +299,7 @@ func TestDropsAdoptedHistoryPartitionForEveryRetentionTable(t *testing.T) {
 			policy := newDropPolicy(t, db, 24*time.Hour)
 			policy.registerParents(ctx)
 
-			dropped, err := policy.dropAdoptedPartition(ctx, table)
+			dropped, _, err := policy.dropAdoptedPartition(ctx, table)
 			require.NoError(t, err)
 			require.True(t, dropped, "history partition survived with every row 90 days past a 24 hour retention period")
 			require.False(t, relationExists(t, ctx, db, table+"_default"))
@@ -325,7 +321,7 @@ func TestLeavesEmptyAdoptedHistoryPartition(t *testing.T) {
 	require.NoError(t, err)
 	partitionTable(t, ctx, db, "events")
 
-	dropped, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "events")
+	dropped, _, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "events")
 	require.NoError(t, err)
 	require.False(t, dropped, "dropped an empty adopted partition, which still routes rows below the conversion cutoff")
 	require.True(t, relationExists(t, ctx, db, "events_default"))
@@ -349,7 +345,7 @@ func TestKeepsAdoptedHistoryPartitionWhenOldestIsExpiredButNewestIsLive(t *testi
 
 	policy := newDropPolicy(t, db, 24*time.Hour)
 	policy.registerParents(ctx)
-	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.False(t, dropped, "dropped a history partition because it also held expired rows")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
@@ -358,7 +354,7 @@ func TestKeepsAdoptedHistoryPartitionWhenOldestIsExpiredButNewestIsLive(t *testi
 func TestDropAdoptedPartitionNoopsWhenDefaultIsMissing(t *testing.T) {
 	db, ctx := setupTestDB(t)
 
-	dropped, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "events")
+	dropped, _, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "events")
 	require.NoError(t, err)
 	require.False(t, dropped)
 }
@@ -371,11 +367,11 @@ func TestDropAdoptedPartitionIsIdempotent(t *testing.T) {
 	policy := newDropPolicy(t, db, 24*time.Hour)
 	policy.registerParents(ctx)
 
-	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.True(t, dropped)
 
-	dropped, err = policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err = policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.False(t, dropped)
 }
@@ -393,7 +389,7 @@ func TestDropExpiredAdoptedPartitionsDoesNotDropALiveSiblingTable(t *testing.T) 
 
 	policy := newDropPolicy(t, db, 24*time.Hour)
 	policy.registerParents(ctx)
-	policy.dropExpiredAdoptedPartitions(ctx)
+	policy.dropExpiredAdoptedPartitions(ctx, RunDetails{})
 
 	require.False(t, relationExists(t, ctx, db, "events_default"), "expired events history was not dropped")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"), "live deliveries history was dropped because a sibling expired")
@@ -410,7 +406,7 @@ func TestDroppingAdoptedHistoryLeavesDailyPartitions(t *testing.T) {
 
 	policy := newDropPolicy(t, db, 24*time.Hour)
 	policy.registerParents(ctx)
-	dropped, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.True(t, dropped)
 
@@ -431,6 +427,10 @@ func TestLicensedRetentionPolicySkipsWhenTablesAreUnpartitioned(t *testing.T) {
 	policy := NewLicensedRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour)
 	policy.Start(ctx, time.Hour)
 	require.NoError(t, policy.Perform(ctx))
+
+	runs, err := NewRunStore(db).List(ctx, 10)
+	require.NoError(t, err)
+	require.Empty(t, runs, "pre-partition skips are log-only; retention_runs records Maintain only")
 
 	missing, err := UnpartitionedTables(ctx, db)
 	require.NoError(t, err)
@@ -514,13 +514,13 @@ func TestDropAdoptedPartitionUsesStoredRetentionPeriod(t *testing.T) {
 	registered.registerParents(ctx)
 
 	inProcess := newDropPolicy(t, db, 24*time.Hour)
-	dropped, err := inProcess.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err := inProcess.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.False(t, dropped, "dropped on the in-process 24h period instead of the stored 720h window")
 	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
 
 	inProcess.registerParents(ctx)
-	dropped, err = inProcess.dropAdoptedPartition(ctx, "event_deliveries")
+	dropped, _, err = inProcess.dropAdoptedPartition(ctx, "event_deliveries")
 	require.NoError(t, err)
 	require.True(t, dropped, "stored 24h window did not drop a 10-day-old history partition")
 	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
