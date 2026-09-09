@@ -25,6 +25,17 @@ export class TooltipComponent implements OnInit {
 	// callers are unchanged.
 	@Input('ariaLabel') ariaLabel = '';
 
+	// When false, the tooltip body stays pointer-events-none even on hover so
+	// read-only table tooltips do not intercept clicks on nearby row actions.
+	@Input('interactive') interactive = true;
+
+	// Stretch the hover target to the host width so read-only table tooltips stay
+	// open while the pointer is anywhere in the cell, not only on the toggle text.
+	@Input('fillHost') fillHost = false;
+
+	// Sit above dropdown dismiss overlays (z-55) but below open menus (z-60).
+	@Input('stackAboveOverlay') stackAboveOverlay = false;
+
 	constructor() {}
 
 	ngOnInit(): void {}
@@ -45,6 +56,15 @@ export class TooltipComponent implements OnInit {
 		// Overlay classes live on the same [class] binding as position/color.
 		// A static class= plus [class] string overwrites the static list, which
 		// dropped `absolute` and let min-w-[192px] bodies sit in layout.
-		return `absolute opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto pointer-events-none transition-all z-50 rounded-8px p-14px text-12 text-left after:content-[''] after:absolute font-light after:border-[10px] ${positions[this.position]} ${colors[this.color]} min-w-[192px] ${this.class}`;
+		const pointerEvents = this.interactive
+			? 'group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto pointer-events-none'
+			: 'pointer-events-none';
+		const zIndex = this.stackAboveOverlay ? 'z-[56]' : 'z-50';
+		return `absolute opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 ${pointerEvents} transition-all ${zIndex} rounded-8px p-14px text-12 text-left after:content-[''] after:absolute font-light after:border-[10px] ${positions[this.position]} ${colors[this.color]} min-w-[192px] ${this.class}`;
+	}
+
+	get hostClasses(): string {
+		const width = this.fillHost ? 'w-full max-w-full' : 'w-fit max-w-full';
+		return `relative inline-flex flex-col items-stretch ${width} group`;
 	}
 }
