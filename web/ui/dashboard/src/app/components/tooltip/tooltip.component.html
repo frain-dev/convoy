@@ -1,5 +1,5 @@
 <div [class]="hostClasses">
-  <button type="button" class="inline-flex flex-col items-stretch w-full border-0 bg-transparent p-0 text-left" [attr.aria-label]="ariaLabel || null">
+  <button type="button" [class]="toggleClasses" [attr.aria-label]="ariaLabel || null">
     @if (withIcon) {
       <div>
         @if (img) {
