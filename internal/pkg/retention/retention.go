@@ -637,7 +637,7 @@ func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, tab
 		return false, 0, fmt.Errorf("clearing partition metadata for %s: %w", partition, err)
 	}
 
-	if err = tx.Commit(ctx); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return false, 0, err
 	}
 	return true, rowCount, nil
