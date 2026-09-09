@@ -58,6 +58,7 @@ export class EndpointsComponent implements OnInit, OnDestroy {
 	// panel grows to the right; a centered/right-anchored panel overflows this
 	// left-hugging column off the viewport.
 	readonly statusTooltipClass = '!min-w-[280px] !left-0 !translate-x-0 after:!left-[24px] after:!translate-x-0';
+	readonly failureRateTooltipClass = '!min-w-[240px] !right-0 !translate-x-0 after:!right-[12px] after:!translate-x-0';
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
 	isLoadingEndpoints = true;

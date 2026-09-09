@@ -28,7 +28,19 @@ describe('TooltipComponent', () => {
   });
 
   it('lets full-width toggles fill their host', () => {
-    const root = fixture.nativeElement.querySelector('button') as HTMLElement;
-    expect(root.className.split(/\s+/)).toContain('w-full');
+    component.fillHost = true;
+    expect(component.hostClasses.split(/\s+/)).toContain('w-full');
+  });
+
+  it('keeps non-interactive tooltips click-through on hover', () => {
+    component.interactive = false;
+    const classes = component.classes.split(/\s+/);
+    expect(classes).toContain('pointer-events-none');
+    expect(classes).not.toContain('group-hover:pointer-events-auto');
+  });
+
+  it('can stack above dropdown overlays without blocking menus', () => {
+    component.stackAboveOverlay = true;
+    expect(component.classes.split(/\s+/)).toContain('z-[56]');
   });
 });
