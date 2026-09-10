@@ -62,6 +62,11 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 	conn, err := testEnv.CloneTestDatabase(t, "convoy")
 	require.NoError(t, err)
 
+	// List reads the whole table. A leftover row from the clone template (or
+	// another test that wrote the source) makes require.Len(runs, N) flake.
+	_, err = conn.Exec(context.Background(), `TRUNCATE convoy.partition_runs`)
+	require.NoError(t, err)
+
 	return postgres.NewFromConnection(conn), context.Background()
 }
 

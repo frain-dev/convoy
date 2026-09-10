@@ -359,6 +359,24 @@ func TestDropAdoptedPartitionNoopsWhenDefaultIsMissing(t *testing.T) {
 	require.False(t, dropped)
 }
 
+func TestDropAdoptedPartitionStillDropsWhenCountBudgetIsGone(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedExpiredRow(t, db, "event_deliveries", time.Now().AddDate(0, 0, -90))
+	partitionDeliveries(t, ctx, db)
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	// Remaining deadline is under the count cap, so COUNT(*) skips.
+	// DROP still uses this ctx and must succeed.
+	jobCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	dropped, _, err := policy.dropAdoptedPartition(jobCtx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped, "history partition survived because the row count consumed the job deadline")
+	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
 func TestDropAdoptedPartitionIsIdempotent(t *testing.T) {
 	db, ctx := setupTestDB(t)
 
