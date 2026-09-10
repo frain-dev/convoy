@@ -20,6 +20,12 @@ import (
 const (
 	runColumns       = `id, status, retention_period, details, error, started_at, completed_at`
 	retentionHistory = 90 * 24 * time.Hour
+
+	// rowCountTimeout caps the best-effort COUNT(*) pass so a large expired
+	// partition cannot exhaust the nightly job's 30-minute asynq lock before
+	// Maintain and DROP run. That lock cancels the job context at the bound
+	// (worker/task/retention_policies.go).
+	rowCountTimeout = 30 * time.Second
 )
 
 type RunStatus string
@@ -202,10 +208,38 @@ func snapshotManagedPartitions(ctx context.Context, db database.Database) (parti
 	return out, rows.Err()
 }
 
+// rowCountContext bounds observability counts so they cannot cancel or consume
+// the job deadline Maintain and DROP still use.
+//
+// Counts fail open: if the job is already cancelled, or remaining deadline is
+// at or under the cap, skip immediately. Otherwise the child is detached from
+// job cancellation and capped at rowCountTimeout.
+func rowCountContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	detached := context.WithoutCancel(ctx)
+	if ctx.Err() != nil {
+		c, cancel := context.WithCancel(detached)
+		cancel()
+		return c, cancel
+	}
+	if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) <= rowCountTimeout {
+		c, cancel := context.WithCancel(detached)
+		cancel()
+		return c, cancel
+	}
+	return context.WithTimeout(detached, rowCountTimeout)
+}
+
 // countExpiredPartitionRowCounts counts rows only in partitions partman will
 // drop this run (same filter as gopartman ListExpiredPartitions). Best-effort:
-// a failed count on one partition must not block Maintain.
+// a failed or skipped count must not block Maintain. The job context is not
+// used for the scans; a slow COUNT(*) on it would cancel Maintain and DROP.
 func countExpiredPartitionRowCounts(ctx context.Context, db database.Database) map[string]map[string]int64 {
+	ctx, cancel := rowCountContext(ctx)
+	defer cancel()
+	if ctx.Err() != nil {
+		return nil
+	}
+
 	rows, err := db.GetDB().QueryxContext(ctx, `
         SELECT t.table_name, p.name
         FROM partman.partitions p

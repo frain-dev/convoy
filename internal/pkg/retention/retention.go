@@ -615,8 +615,11 @@ func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, tab
 	}
 
 	var rowCount int64
-	if err = r.db.GetConn().QueryRow(ctx,
-		fmt.Sprintf(`SELECT count(*) FROM %s.%s`, retentionSchema, partition)).Scan(&rowCount); err != nil {
+	countCtx, cancelCount := rowCountContext(ctx)
+	err = r.db.GetConn().QueryRow(countCtx,
+		fmt.Sprintf(`SELECT count(*) FROM %s.%s`, retentionSchema, partition)).Scan(&rowCount)
+	cancelCount()
+	if err != nil {
 		r.logger.Warn("counting rows before dropping adopted history partition; proceeding without row count",
 			"partition", partition, "error", err)
 		rowCount = 0

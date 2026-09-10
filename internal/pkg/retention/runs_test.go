@@ -1,11 +1,54 @@
 package retention
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestRowCountContextDetachesFromJobCancel(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+	countCtx, stop := rowCountContext(ctx)
+	defer stop()
+
+	parentDL, ok := ctx.Deadline()
+	require.True(t, ok)
+	countDL, ok := countCtx.Deadline()
+	require.True(t, ok)
+	require.True(t, countDL.Before(parentDL), "count deadline must be earlier than the job so a slow COUNT cannot consume Maintain")
+
+	cancel()
+	require.NoError(t, countCtx.Err(), "count ctx inherited job cancellation")
+}
+
+func TestRowCountContextSkipsWhenJobHasNoBudget(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	countCtx, stop := rowCountContext(ctx)
+	defer stop()
+	require.Error(t, countCtx.Err(), "counts must skip when remaining deadline is at or under the cap")
+}
+
+func TestRowCountContextSkipsWhenJobAlreadyCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	countCtx, stop := rowCountContext(ctx)
+	defer stop()
+	require.Error(t, countCtx.Err())
+}
+
+func TestCountExpiredPartitionRowCountsSkipsCancelledJob(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	// A cancelled job must not open a query. Passing a nil db would panic if
+	// the scan still used the job context.
+	require.Nil(t, countExpiredPartitionRowCounts(ctx, nil))
+}
 
 func TestRunDetailsValue(t *testing.T) {
 	d := RunDetails{{
