@@ -398,6 +398,8 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		if ret != nil {
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, configRepo, ret, lo))
 		}
+	}
+	if opts.Licenser.WebhookArchiving() {
 		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo))
 		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo))
 	}

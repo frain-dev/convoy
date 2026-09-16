@@ -605,6 +605,10 @@ func (l *Licenser) StaticIP() bool {
 }
 
 func (l *Licenser) RetentionPolicy() bool {
+	return l.hasFeature("retention_policy")
+}
+
+func (l *Licenser) WebhookArchiving() bool {
 	return l.hasFeature("webhook_archiving")
 }
 

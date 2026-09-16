@@ -19,7 +19,7 @@ func (h *Handler) ListRetentionRuns(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !h.A.Licenser.RetentionPolicy() {
-		_ = render.Render(w, r, util.NewErrorResponse("retention history is only available with a license key", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("retention history requires the retention policy entitlement", http.StatusForbidden))
 		return
 	}
 
@@ -41,7 +41,7 @@ func (h *Handler) GetRetentionRun(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !h.A.Licenser.RetentionPolicy() {
-		_ = render.Render(w, r, util.NewErrorResponse("retention history is only available with a license key", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse("retention history requires the retention policy entitlement", http.StatusForbidden))
 		return
 	}
 
