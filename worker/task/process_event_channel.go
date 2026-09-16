@@ -86,13 +86,15 @@ func matchTaskRetryCount(ctx context.Context, t *asynq.Task) int {
 }
 
 // eventForMatch returns the event row MatchSubscriptions should use.
-// Failure policy: first attempt trusts the create/match payload snapshot; retries
-// reload from DB so status and idempotency reflect partial match work.
+// First attempts use the payload snapshot except when dynamic routing metadata
+// is absent: Event.Metadata is intentionally excluded from queue serialization.
+// Retries reload from DB so status and idempotency reflect partial match work.
 func eventForMatch(ctx context.Context, repo datastore.EventRepository, metadata EventChannelMetadata, taskRetryCount int) (*datastore.Event, error) {
 	if metadata.Event == nil || util.IsStringEmpty(metadata.Event.UID) {
 		return nil, fmt.Errorf("missing event in match metadata")
 	}
-	if taskRetryCount == 0 {
+	needsDynamicMetadata := metadata.Config != nil && metadata.Config.Channel == "dynamic" && metadata.Event.Metadata == ""
+	if taskRetryCount == 0 && !needsDynamicMetadata {
 		return metadata.Event, nil
 	}
 	return repo.FindEventByID(ctx, metadata.Event.ProjectID, metadata.Event.UID)
