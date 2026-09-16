@@ -65,7 +65,7 @@ cmd_infra_up() {
         -p 9000:9000 -p 9001:9001 \
         -e MINIO_ROOT_USER=minioadmin \
         -e MINIO_ROOT_PASSWORD=minioadmin \
-        minio/minio:RELEASE.2024-01-16T16-07-38Z server /data --console-address ":9001" \
+        quay.io/minio/minio:RELEASE.2024-01-16T16-07-38Z server /data --console-address ":9001" \
         2>/dev/null || warn "MinIO container already exists"
 
     log "Waiting for MinIO to be ready..."

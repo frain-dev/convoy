@@ -29,7 +29,7 @@ type MinIOClientFunc func(t *testing.T) (*minio.Client, string, error)
 // for creating MinIO clients in tests.
 func NewTestMinIO(ctx context.Context) (*tcminio.MinioContainer, MinIOClientFunc, error) {
 	container, err := tcminio.Run(ctx,
-		"minio/minio:"+minioDockerTag,
+		"quay.io/minio/minio:"+minioDockerTag,
 		tcminio.WithUsername(minioUsername),
 		tcminio.WithPassword(minioPassword),
 		testcontainers.WithLogger(log.New("minio", log.LevelDebug)),

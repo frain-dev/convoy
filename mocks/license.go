@@ -559,3 +559,17 @@ func (mr *MockLicenserMockRecorder) WebhookAnalytics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookAnalytics", reflect.TypeOf((*MockLicenser)(nil).WebhookAnalytics))
 }
+
+// WebhookArchiving mocks base method.
+func (m *MockLicenser) WebhookArchiving() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WebhookArchiving")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WebhookArchiving indicates an expected call of WebhookArchiving.
+func (mr *MockLicenserMockRecorder) WebhookArchiving() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookArchiving", reflect.TypeOf((*MockLicenser)(nil).WebhookArchiving))
+}

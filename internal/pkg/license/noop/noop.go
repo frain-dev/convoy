@@ -62,6 +62,10 @@ func (Licenser) AsynqMonitoring() bool {
 	return true
 }
 
+func (Licenser) WebhookArchiving() bool {
+	return true
+}
+
 func (Licenser) RetentionPolicy() bool {
 	return true
 }
