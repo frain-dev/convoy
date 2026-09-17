@@ -436,7 +436,7 @@ describe('QueueMonitoringComponent segments', () => {
 	it('names the other engine on each side', async () => {
 		await start();
 
-		expect(component.otherEngineLine).toContain('The queue still carries');
+		expect(component.otherEngineLine).toContain('operational jobs');
 
 		click('Queue');
 
