@@ -837,6 +837,26 @@ describe('QueueMonitoringDataplaneComponent', () => {
 	});
 
 	describe('diagnostics', () => {
+		it('shows ordinary event work before meta metrics without changing the response', async () => {
+			const input = replica({
+				outstanding: ['meta_events_pending', 'deliveries_retry', 'events_pending', 'deliveries_scheduled', 'future_backlog'].map(name => ({ name, count: 0, known: true })),
+				counters: [{ name: 'meta_attempts_failed', value: 0 }, { name: 'deliveries_delivered', value: 2 }, { name: 'future_counter', value: 1 }],
+				gauges: [{ name: 'meta_workers', value: 16 }, { name: 'fanout_chunk_size', value: 250 }, { name: 'reference_projects', value: 1 }]
+			});
+			reads.push(() => Promise.resolve(status([input])));
+			await render();
+			openDiagnostics();
+			const row = component.rows[0];
+			expect(row.replica.outstanding.map(v => v.name)).toEqual(['events_pending', 'deliveries_scheduled', 'deliveries_retry', 'future_backlog', 'meta_events_pending']);
+			expect(row.replica.counters.map(v => v.name)).toEqual(['deliveries_delivered', 'future_counter', 'meta_attempts_failed']);
+			expect(row.gauges.map(v => v.name)).toEqual(['fanout_chunk_size', 'reference_projects', 'meta_workers']);
+			expect(input.outstanding[0].name).toBe('meta_events_pending');
+			expect(input.counters[0].name).toBe('meta_attempts_failed');
+			const content = text();
+			expect(content.indexOf('Events pending')).toBeLessThan(content.indexOf('Meta events pending'));
+			expect(content.indexOf('Fanout chunk size')).toBeLessThan(content.indexOf('Meta workers'));
+		});
+
 		it('is collapsed by default and holds the tables that used to be on top', async () => {
 			reads.push(() => Promise.resolve(status([replica()])));
 

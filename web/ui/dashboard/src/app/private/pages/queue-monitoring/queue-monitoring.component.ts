@@ -107,7 +107,7 @@ export class QueueMonitoringComponent implements OnInit {
 	// that the answer might be on the other side.
 	get otherEngineLine(): string {
 		if (this.segment === 'dataplane') {
-			return 'The queue still carries non-HTTP work.';
+			return 'The queue handles operational jobs and event processing for projects outside the pipeline.';
 		}
 
 		const tail = 'HTTP events on their projects do not use this queue.';

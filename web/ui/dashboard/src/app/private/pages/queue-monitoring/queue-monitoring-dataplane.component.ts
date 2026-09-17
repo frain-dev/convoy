@@ -370,6 +370,17 @@ const FAILURE_COUNTERS = {
 // not a vocabulary list: it does not need to know what any plane calls anything.
 const ACRONYMS = new Set(['lsn', 'id', 'ids', 'db', 'sql', 'http', 'url', 'tls', 'cdc', 'api', 'ttl']);
 
+// Keep the ordinary event path ahead of supplementary meta diagnostics.
+// Unknown metrics retain their relative order and are never hidden.
+function eventFirst<T extends { name: string }>(values: T[], preferred: readonly string[] = []): T[] {
+	const rank = (name: string): number => {
+		const index = preferred.indexOf(name);
+		if (index >= 0) return index;
+		return name.startsWith('meta_') ? preferred.length + 1 : preferred.length;
+	};
+	return [...values].sort((a, b) => rank(a.name) - rank(b.name));
+}
+
 // An omitted section becomes an empty list once, here, so each list keeps one
 // identity for as long as the reply it came from is on screen.
 //
@@ -387,9 +398,9 @@ function sections(replica: any): DataPlaneReplica {
 		...replica,
 		stages: running ? replica.stages ?? [] : [],
 		writers: running ? replica.writers ?? [] : [],
-		gauges: running ? replica.gauges ?? [] : [],
-		counters: replica.counters ?? [],
-		outstanding: replica.outstanding ?? []
+		gauges: running ? eventFirst(replica.gauges ?? []) : [],
+		counters: eventFirst(replica.counters ?? []),
+		outstanding: eventFirst(replica.outstanding ?? [], ['events_pending', 'deliveries_scheduled', 'deliveries_retry'])
 	};
 }
 
