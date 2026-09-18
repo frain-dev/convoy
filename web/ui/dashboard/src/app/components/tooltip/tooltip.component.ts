@@ -62,15 +62,15 @@ export class TooltipComponent implements OnInit {
 		// A static class= plus [class] string overwrites the static list, which
 		// dropped `absolute` and let min-w-[192px] bodies sit in layout.
 		const pointerEvents = this.interactive
-			? 'group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto pointer-events-none'
+			? 'group-hover/tooltip:pointer-events-auto group-focus-within/tooltip:pointer-events-auto group-focus/tooltip:pointer-events-auto pointer-events-none'
 			: 'pointer-events-none';
 		const zIndex = this.stackAboveOverlay ? 'z-[56]' : 'z-50';
-		return `absolute opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 ${pointerEvents} transition-all ${zIndex} rounded-8px p-14px text-12 text-left after:content-[''] after:absolute font-light after:border-[10px] ${positions[this.position]} ${colors[this.color]} min-w-[192px] ${this.class}`;
+		return `absolute opacity-0 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 group-focus/tooltip:opacity-100 ${pointerEvents} transition-all ${zIndex} rounded-8px p-14px text-12 text-left after:content-[''] after:absolute font-light after:border-[10px] ${positions[this.position]} ${colors[this.color]} min-w-[192px] ${this.class}`;
 	}
 
 	get hostClasses(): string {
 		const width = this.fillHost ? 'w-full max-w-full' : 'w-fit max-w-full';
-		return `relative inline-flex flex-col items-stretch ${width} group`;
+		return `relative inline-flex flex-col items-stretch ${width} group/tooltip`;
 	}
 
 	get toggleClasses(): string {
