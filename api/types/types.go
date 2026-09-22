@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/queue/inventory"
 )
 
 type ResendClaimStore interface {
@@ -49,6 +50,7 @@ type APIOptions struct {
 	CircuitBreakerStore        circuit_breaker.CircuitBreakerStore
 	Queue                      queue.Queuer
 	QueueMonitor               queue.Monitor
+	QueueInventory             *inventory.Inventory
 	QueueInspector             queue.Inspector
 	Logger                     logger.Logger
 	Cache                      cache.Cache

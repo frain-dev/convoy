@@ -1,0 +1,38 @@
+@if (loadError && previous.length === 0) {
+  <p role="status" class="mb-16px text-[14px] text-new.text-secondary">Could not check for previous queues. Retrying shortly.</p>
+}
+@for (store of previous; track store.id) {
+  <section class="bg-white-100 border border-new.border rounded-12px p-20px mb-24px" aria-label="Previous queue">
+    <div class="flex items-center justify-between gap-16px mb-12px">
+      <h2 class="font-medium text-[16px]">Previous {{ providerLabel(store) }} queue</h2>
+      <button type="button" class="text-primary-100 text-[14px]" [disabled]="loading" (click)="refresh()">Refresh</button>
+    </div>
+    @if (store.connection === 'unknown') {
+      <p role="status" class="text-[14px] mb-12px">This queue could not be inspected. {{ store.snapshot ? 'The counts below are from the last successful check.' : 'Its remaining work is unknown.' }}</p>
+    } @else {
+      <p class="text-[14px] mb-12px">This queue has remaining or unresolved work. Viewing it does not start processing.</p>
+    }
+    @if (store.snapshot; as snapshot) {
+      <p class="text-[12px] text-new.text-secondary mb-12px">{{ store.connection === 'unknown' ? 'Stale observation' : 'Last checked' }}: {{ snapshot.observed_at | date:'medium' }}</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-[13px]">
+          <thead><tr><th class="p-8px">Queue</th><th class="p-8px">Due</th><th class="p-8px">Processing</th><th class="p-8px">Waiting</th><th class="p-8px">Aggregating</th><th class="p-8px">Archived</th><th class="p-8px">Unknown</th></tr></thead>
+          <tbody>
+            @for (queue of snapshot.queues; track queue.name) {
+              <tr class="border-t border-new.border">
+                <td class="p-8px">{{ queue.name }} @if (queue.paused) { <span>(paused)</span> }</td>
+                <td class="p-8px">{{ queue.pending | number }}</td>
+                <td class="p-8px">{{ queue.processing | number }}</td>
+                <td class="p-8px">{{ queue.scheduled + queue.retry + queue.future | number }}</td>
+                <td class="p-8px">{{ queue.aggregating | number }}</td>
+                <td class="p-8px">{{ queue.archived | number }}</td>
+                <td class="p-8px">{{ queue.unknown | number }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="text-[12px] text-new.text-secondary mt-12px">Waiting includes scheduled jobs and retries. These counts alone do not establish that a queue is safe to retire.</p>
+    }
+  </section>
+}

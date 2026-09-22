@@ -750,6 +750,10 @@ const (
 )
 
 type Configuration struct {
+	// PreviousQueueProvider opts into inspecting the other configured queue store.
+	PreviousQueueProvider QueueProvider `json:"previous_queue_provider,omitempty" envconfig:"CONVOY_PREVIOUS_QUEUE_PROVIDER"`
+	QueueStoreScope       string        `json:"queue_store_scope,omitempty" envconfig:"CONVOY_QUEUE_STORE_SCOPE"`
+
 	InstanceId         string                        `json:"instance_id"`
 	APIVersion         string                        `json:"api_version" envconfig:"CONVOY_API_VERSION"`
 	Auth               AuthConfiguration             `json:"auth,omitempty"`
@@ -1175,6 +1179,9 @@ func ensureMaxResponseSize(c *Configuration) {
 }
 
 func validate(c *Configuration) error {
+	if err := c.ValidateQueueInventory(); err != nil {
+		return err
+	}
 	ensureMaxResponseSize(c)
 
 	switch c.QueueProvider {
@@ -1268,5 +1275,30 @@ func ensureRootPath(c *Configuration) error {
 		return errors.New("root path contains invalid characters, only alphanumeric, hyphens, underscores, and slashes are allowed")
 	}
 
+	return nil
+}
+
+// ValidateQueueInventory does not connect to either store. Inspection failure is
+// reported in the admin UI instead of preventing the active provider booting.
+func (c Configuration) ValidateQueueInventory() error {
+	if c.PreviousQueueProvider == "" {
+		return nil
+	}
+	if c.PreviousQueueProvider != RedisQueueProvider && c.PreviousQueueProvider != PostgresQueueProvider {
+		return errors.New("previous_queue_provider must be redis or postgres")
+	}
+	active := c.QueueProvider
+	if active == "" {
+		active = RedisQueueProvider
+	}
+	if c.PreviousQueueProvider == active {
+		return errors.New("previous_queue_provider must differ from queue_provider")
+	}
+	if strings.TrimSpace(c.QueueStoreScope) == "" {
+		return errors.New("queue_store_scope is required when a previous queue is configured")
+	}
+	if c.PreviousQueueProvider == RedisQueueProvider {
+		return ensureQueueConfig(c.Redis)
+	}
 	return nil
 }

@@ -369,6 +369,10 @@ export class AdminService {
 		});
 	}
 
+	getQueueStores(): Promise<HTTP_RESPONSE> {
+		return this.http.request({ url: `/admin/queue/stores`, method: 'get', hideNotification: true });
+	}
+
 	getQueueStats(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

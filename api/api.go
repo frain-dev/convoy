@@ -30,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/queue/inventory"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -193,6 +194,13 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, fmt.Errorf("api options is required")
 	}
 	ensureAPIRepositories(a)
+	if a.QueueInventory == nil && a.DB != nil {
+		var err error
+		a.QueueInventory, err = inventory.Configured(a.Cfg, a.DB.GetDB())
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	appHandler := &ApplicationHandler{A: a}
 
@@ -586,6 +594,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Route("/queue", func(queueRouter chi.Router) {
 				queueRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 				queueRouter.Get("/stats", handler.GetQueueStats)
+				queueRouter.Get("/stores", handler.GetQueueStores)
 				queueRouter.Get("/scheduler", handler.GetQueueSchedulerEntries)
 				queueRouter.Get("/{queueName}/history", handler.GetQueueHistory)
 				queueRouter.Get("/{queueName}/tasks", handler.GetQueueTasks)

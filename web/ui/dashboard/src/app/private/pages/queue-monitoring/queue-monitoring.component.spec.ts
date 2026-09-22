@@ -30,6 +30,7 @@ describe('QueueMonitoringComponent', () => {
 					provide: AdminService,
 					useValue: {
 						getQueueStats: () => new Promise(() => {}),
+						getQueueStores: () => new Promise(() => {}),
 						getDataPlaneStatus: () => new Promise(() => {})
 					}
 				},
