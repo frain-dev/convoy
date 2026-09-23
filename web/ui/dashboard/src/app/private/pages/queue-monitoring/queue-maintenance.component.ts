@@ -8,10 +8,9 @@ import { QueueMonitoringStoresComponent } from './queue-monitoring-stores.compon
  selector: 'convoy-queue-maintenance',
  imports: [CommonModule, QueueMonitoringStoresComponent],
  template: `
-  <h2 class="font-medium text-[18px] mb-12px">Queue maintenance</h2>
-  <p class="text-[14px] text-new.text-secondary mb-24px">Pause processing or finish queued work before maintenance.</p>
-  @if (loading) { <p role="status">Checking access…</p> }
-  @else if (!allowed) { <p role="status">Queue maintenance requires instance administrator access and a queue monitoring license.</p> }
+  <h2 class="font-medium text-[18px] mb-16px">Queue maintenance</h2>
+  @if (loading) { <p role="status" class="text-[14px] text-new.text-secondary">Checking access…</p> }
+  @else if (!allowed) { <p role="status" class="text-[14px] text-new.text-secondary">Queue maintenance requires instance administrator access and a queue monitoring license.</p> }
   @else { <convoy-queue-monitoring-stores [maintenance]="true" /> }
  `
 })

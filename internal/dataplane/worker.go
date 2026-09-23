@@ -284,6 +284,11 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 			endpoint, funcErr := endpointRepo.FindEndpointByID(ctx, endpointId, b.TenantId)
 			if funcErr != nil {
+				// A deleted endpoint cannot be disabled or notified. Its old
+				// failure samples may outlive the row for an observability window.
+				if errors.Is(funcErr, datastore.ErrEndpointNotFound) {
+					return false, nil
+				}
 				return false, funcErr
 			}
 
