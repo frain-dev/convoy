@@ -1,7 +1,13 @@
 @if (maintenance) {
- @if (loading && stores.length === 0) { <p role="status">Loading queue maintenance…</p> }
- @if (loadError) { <p role="alert">Queue maintenance is unavailable. Retrying shortly.</p> }
- @if (!loading && !loadError && actionable.length === 0) { <p role="status">Queue maintenance is not configured for this deployment.</p> }
+ @if (loading && stores.length === 0) { <p role="status" class="text-[14px] text-new.text-secondary">Loading queue maintenance…</p> }
+ @if (loadError) { <p role="alert" class="text-[14px] text-new.text-secondary">Queue maintenance is unavailable. Retrying shortly.</p> }
+ @if (!loading && !loadError && actionable.length === 0) {
+  <section role="status" class="max-w-[640px] rounded-12px border border-new.border bg-new.surface-subtle p-20px">
+   <h3 class="text-[14px] font-medium text-new.text-primary">Queue controls are off</h3>
+   <p class="mt-4px text-[13px] leading-[20px] text-new.text-secondary">Pause and drain aren't enabled for this deployment. You can still view activity in Queue Monitoring.</p>
+  </section>
+ }
+ @if (actionable.length > 0) { <p class="mb-16px text-[13px] text-new.text-secondary">Pause processing or finish queued work before maintenance.</p> }
  @for (store of actionable; track store.id) { <convoy-queue-drain [store]="store" /> }
 } @else {
 @if (loadError && previous.length === 0) {
