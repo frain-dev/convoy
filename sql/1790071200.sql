@@ -37,9 +37,6 @@ CREATE TABLE convoy.queue_operation_receipts (
     admitted_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
     settled_at TIMESTAMPTZ
 );
-CREATE INDEX queue_operation_unsettled ON convoy.queue_operation_receipts (scope, store_id)
-    WHERE settled_at IS NULL;
-
 RESET lock_timeout;
 RESET statement_timeout;
 

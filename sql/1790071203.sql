@@ -8,7 +8,5 @@ CREATE TABLE convoy.queue_execution_ownership (
  updated_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY(scope,task_name,task_id)
 );
-CREATE INDEX queue_execution_unsettled ON convoy.queue_execution_ownership(scope,store_id)
- WHERE state='running';
 -- +migrate Down
 DROP TABLE convoy.queue_execution_ownership;
