@@ -122,6 +122,10 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, project *d
 			return "", innerErr
 		}
 
+		if cfg.Dispatcher.SkipPingValidation {
+			break
+		}
+
 		caCertTLSCfg, innerErr := config.GetCaCert()
 		if innerErr != nil {
 			return "", innerErr
@@ -191,12 +195,8 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, project *d
 			OAuth2TokenGetter: oauth2TokenGetter,
 		})
 		if pingErr != nil {
-			if cfg.Dispatcher.SkipPingValidation {
-				a.Logger.WarnContext(ctx, fmt.Sprintf("failed to ping tls endpoint (validation skipped): %v", pingErr))
-			} else {
-				a.Logger.ErrorContext(ctx, fmt.Sprintf("failed to ping tls endpoint: %v", pingErr))
-				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
-			}
+			a.Logger.ErrorContext(ctx, "failed to ping tls endpoint", "error", pingErr)
+			return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 		}
 	default:
 		return "", ErrInvalidEndpointScheme

@@ -140,9 +140,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:            "endpoint",
@@ -184,9 +182,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(project, nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantErr:    true,
@@ -222,9 +218,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:            "endpoint",
@@ -276,9 +270,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				ProjectID: project.UID,
@@ -333,9 +325,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
@@ -378,9 +368,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					Return(project, nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(false)
 			},
 			wantErr:    true,
@@ -416,9 +404,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
@@ -460,9 +446,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while adding endpoint",
@@ -487,9 +471,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(project, nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "invalid teams webhook url",
