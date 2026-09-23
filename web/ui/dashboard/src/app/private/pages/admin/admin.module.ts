@@ -21,6 +21,7 @@ import { LoaderModule } from '../../components/loader/loader.module';
 import { LabelComponent, InputFieldDirective, InputErrorComponent, InputDirective } from 'src/app/components/input/input.component';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { QueueMaintenanceComponent } from '../queue-monitoring/queue-maintenance.component';
 import { QueueMonitoringComponent } from '../queue-monitoring/queue-monitoring.component';
 import { RadioComponent } from 'src/app/components/radio/radio.component';
 import { ConfigButtonComponent } from '../../components/config-button/config-button.component';
@@ -49,6 +50,7 @@ const routes: Routes = [{ path: '', component: AdminComponent, canDeactivate: [a
 		RouterModule.forChild(routes),
 		ReactiveFormsModule,
 		QueueMonitoringComponent,
+		QueueMaintenanceComponent,
 		CardComponent,
 		SelectComponent,
 		RadioComponent,

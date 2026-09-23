@@ -79,6 +79,15 @@ func (s *RedisQueueIntegrationTestSuite) SetupTest() {
 	s.eventQueue = NewQueue(opts)
 }
 
+func (s *RedisQueueIntegrationTestSuite) TestDeleteMissingDeliveryBeforeReplacement() {
+	q := s.eventQueue.(*RedisQueue)
+	// A completed delivery has no queue task left, and the queue itself may
+	// already be gone. Replacing it must not retain an uncertain drain receipt.
+	s.Require().NoError(q.DeleteEventDeliveriesFromQueue(convoy.EventQueue, []string{"already-completed"}))
+	s.Require().NoError(q.Write(s.T().Context(), convoy.EventProcessor, convoy.EventQueue, &queue.Job{ID: "still-queued", Payload: []byte("qa")}))
+	s.Require().NoError(q.DeleteEventDeliveriesFromQueue(convoy.EventQueue, []string{"already-completed"}))
+}
+
 func (s *RedisQueueIntegrationTestSuite) TestWrite() {
 	tests := []struct {
 		name            string

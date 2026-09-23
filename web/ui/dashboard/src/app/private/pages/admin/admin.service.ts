@@ -369,6 +369,19 @@ export class AdminService {
 		});
 	}
 
+ getQueueDrain(storeId: string): Promise<HTTP_RESPONSE> {
+  return this.http.request({url: `/admin/queue/stores/${encodeURIComponent(storeId)}/operation`, method: 'get', hideNotification: true});
+ }
+ beginQueueDrain(storeId: string, body: {purpose: string; configuration_revision: string; idempotency_key: string; resume_paused: boolean}): Promise<HTTP_RESPONSE> {
+  return this.http.request({url: `/admin/queue/stores/${encodeURIComponent(storeId)}/operations`, method: 'post', body, hideNotification: true});
+ }
+ commandQueueDrain(storeId: string, operationId: string, body: {revision: number; command: string}): Promise<HTTP_RESPONSE> {
+  return this.http.request({url: `/admin/queue/stores/${encodeURIComponent(storeId)}/operations/${encodeURIComponent(operationId)}/commands`, method: 'post', body, hideNotification: true});
+ }
+ getQueueStores(): Promise<HTTP_RESPONSE> {
+		return this.http.request({ url: `/admin/queue/stores`, method: 'get', hideNotification: true });
+	}
+
 	getQueueStats(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

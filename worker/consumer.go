@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
+	"sync"
 
 	"github.com/hibiken/asynq"
 	"go.opentelemetry.io/otel"
@@ -25,10 +28,18 @@ type JobTracker interface {
 }
 
 type Consumer struct {
-	mux        *asynq.ServeMux
-	runner     runner
-	log        log.Logger
-	jobTracker JobTracker // optional, used only in E2E tests
+	supportedQueues []string
+	supportedTasks  []string
+	mux             *asynq.ServeMux
+	runner          runner
+	log             log.Logger
+	jobTracker      JobTracker // optional, used only in E2E tests
+	lifecycleMu     sync.Mutex
+	newRunner       func() (runner, error)
+	ctx             context.Context
+	running         bool
+	closed          bool
+	executionGate   func(context.Context, *asynq.Task, func(context.Context) error) error
 }
 
 // ConsumerBackend constructs the provider-specific runner behind Consumer.
@@ -40,6 +51,7 @@ type ConsumerBackend interface {
 type runner interface {
 	Start() error
 	Stop()
+	Suspend()
 }
 
 type redisConsumerBackend struct {
@@ -47,12 +59,14 @@ type redisConsumerBackend struct {
 }
 
 type asynqRunner struct {
-	srv *asynq.Server
-	mux *asynq.ServeMux
+	srv      *asynq.Server
+	mux      *asynq.ServeMux
+	handlers *settlingHandler
 }
 
 func (r *asynqRunner) Start() error {
-	if err := r.srv.Start(r.mux); err != nil {
+	r.handlers = &settlingHandler{next: r.mux}
+	if err := r.srv.Start(r.handlers); err != nil {
 		return fmt.Errorf("error starting worker: %w", err)
 	}
 	return nil
@@ -61,6 +75,47 @@ func (r *asynqRunner) Start() error {
 func (r *asynqRunner) Stop() {
 	r.srv.Stop()
 	r.srv.Shutdown()
+}
+
+func (r *asynqRunner) Suspend() {
+	r.srv.Stop()
+	if r.handlers != nil {
+		// Asynq's ordinary Shutdown abandons handlers after its timeout.
+		// That is appropriate for process exit, but resuming another pool in
+		// the same process while an abandoned handler still writes is unsafe.
+		r.handlers.closeAndWait()
+	}
+	r.srv.Shutdown()
+}
+
+// The closed gate belongs to one runner generation and is never reopened.
+// A task claimed just before Stop but not yet handed to us remains with Asynq
+// until shutdown returns it to pending. It must not enter application code.
+type settlingHandler struct {
+	next   asynq.Handler
+	mu     sync.Mutex
+	closed bool
+	active sync.WaitGroup
+}
+
+func (h *settlingHandler) ProcessTask(ctx context.Context, t *asynq.Task) error {
+	h.mu.Lock()
+	if h.closed {
+		h.mu.Unlock()
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	h.active.Add(1)
+	h.mu.Unlock()
+	defer h.active.Done()
+	return h.next.ProcessTask(ctx, t)
+}
+
+func (h *settlingHandler) closeAndWait() {
+	h.mu.Lock()
+	h.closed = true
+	h.mu.Unlock()
+	h.active.Wait()
 }
 
 func NewRedisConsumerBackend(opts queue.QueueOptions) ConsumerBackend {
@@ -78,14 +133,23 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, queueNames map[strin
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
 	mux := asynq.NewServeMux()
-	r, err := backend.newRunner(ctx, consumerPoolSize, queueNames, mux, lo, level)
+	// Recreating a stopped runner must use the original queue selection. A
+	// caller mutating its map later must not retarget a resumed consumer.
+	names := maps.Clone(queueNames)
+	makeRunner := func() (runner, error) {
+		return backend.newRunner(ctx, consumerPoolSize, maps.Clone(names), mux, lo, level)
+	}
+	r, err := makeRunner()
 	if err != nil {
 		return nil, err
 	}
 	c := &Consumer{
-		log:    lo,
-		mux:    mux,
-		runner: r,
+		supportedQueues: slices.Sorted(maps.Keys(names)),
+		log:             lo,
+		mux:             mux,
+		runner:          r,
+		newRunner:       makeRunner,
+		ctx:             ctx,
 	}
 
 	return c, nil
@@ -107,38 +171,105 @@ func (b *redisConsumerBackend) newRunner(ctx context.Context, consumerPoolSize i
 		return nil, errors.New("redis consumer connection is required")
 	}
 
-	srv := asynq.NewServer(
-		opts,
-		asynq.Config{
-			Concurrency: consumerPoolSize,
-			BaseContext: func() context.Context {
-				return ctx
-			},
-			Queues:         queueNames,
-			IsFailure:      isCountedFailure,
-			RetryDelayFunc: task.GetRetryDelay,
-			Logger:         lo,
-			LogLevel:       getLogLevel(level),
+	serverConfig := asynq.Config{
+		Concurrency: consumerPoolSize,
+		BaseContext: func() context.Context {
+			return ctx
 		},
-	)
+		Queues:         queueNames,
+		IsFailure:      isCountedFailure,
+		RetryDelayFunc: task.GetRetryDelay,
+		Logger:         lo,
+		LogLevel:       getLogLevel(level),
+	}
+	var srv *asynq.Server
+	if queueOpts.RedisFailoverOpt == nil && len(queueOpts.RedisAddress) == 1 && queueOpts.RedisClient != nil {
+		// The broker owns this pool. Suspending one consumer must not close
+		// the producer, inspector or another consumer sharing the connection.
+		srv = asynq.NewServerFromRedisClient(queueOpts.RedisClient.Client(), serverConfig)
+	} else {
+		srv = asynq.NewServer(opts, serverConfig)
+	}
 	return &asynqRunner{srv: srv, mux: mux}, nil
 }
 
 func (c *Consumer) Start() error {
-	return c.runner.Start()
+	c.lifecycleMu.Lock()
+	defer c.lifecycleMu.Unlock()
+	if c.closed {
+		return errors.New("consumer is closed")
+	}
+	if err := c.ctx.Err(); err != nil {
+		return err
+	}
+	if c.running {
+		return nil
+	}
+	if c.runner == nil {
+		var err error
+		c.runner, err = c.newRunner()
+		if err != nil {
+			return err
+		}
+	}
+	if err := c.runner.Start(); err != nil {
+		c.stopRunner()
+		return err
+	}
+	c.running = true
+	return nil
 }
 
 func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(context.Context, *asynq.Task) error) {
+	c.supportedTasks = append(c.supportedTasks, string(taskName))
 	c.mux.HandleFunc(string(taskName), c.loggingMiddleware(asynq.HandlerFunc(handlerFn)).ProcessTask)
 }
 
 func (c *Consumer) Stop() {
-	c.runner.Stop()
+	c.lifecycleMu.Lock()
+	defer c.lifecycleMu.Unlock()
+	if c.closed {
+		return
+	}
+	c.closed = true
+	c.stopRunner()
+}
+
+// Suspend stops new claims and waits for the runner's existing shutdown path
+// to settle its handlers. Start resumes with a fresh runner and the same mux;
+// it never re-registers handlers or creates an additional consumer pool.
+// This is process-local control, not a deployment-wide drain certificate.
+func (c *Consumer) Suspend() error {
+	c.lifecycleMu.Lock()
+	defer c.lifecycleMu.Unlock()
+	if c.closed {
+		return errors.New("consumer is closed")
+	}
+	if c.runner != nil {
+		c.runner.Suspend()
+		c.runner = nil
+	}
+	c.running = false
+	return nil
+}
+
+func (c *Consumer) stopRunner() {
+	if c.runner != nil {
+		c.runner.Stop()
+		c.runner = nil
+	}
+	c.running = false
 }
 
 // SetJobTracker sets an optional job tracker for E2E tests
 func (c *Consumer) SetJobTracker(tracker JobTracker) {
 	c.jobTracker = tracker
+}
+
+// SetExecutionGate must be called before Start. The gate wraps the complete
+// handler so descendants retain its admitted store and operation context.
+func (c *Consumer) SetExecutionGate(gate func(context.Context, *asynq.Task, func(context.Context) error) error) {
+	c.executionGate = gate
 }
 
 func (c *Consumer) loggingMiddleware(h asynq.Handler) asynq.Handler {
@@ -182,7 +313,12 @@ func (c *Consumer) runWithSpan(ctx context.Context, h asynq.Handler, t *asynq.Ta
 	span.SetStatus(codes.Ok, "OK")
 	defer span.End()
 
-	err := h.ProcessTask(newCtx, t)
+	var err error
+	if c.executionGate != nil {
+		err = c.executionGate(newCtx, t, func(accepted context.Context) error { return h.ProcessTask(accepted, t) })
+	} else {
+		err = h.ProcessTask(newCtx, t)
+	}
 	if err != nil {
 		c.log.Error("job failed", "error", err, "job", t.Type())
 		tracer.RecordError(span, err)
@@ -237,4 +373,8 @@ func getLogLevel(lvl log.Level) asynq.LogLevel {
 	default:
 		return asynq.InfoLevel
 	}
+}
+
+func (c *Consumer) Capabilities() ([]string, []string) {
+	return slices.Clone(c.supportedQueues), slices.Clone(c.supportedTasks)
 }

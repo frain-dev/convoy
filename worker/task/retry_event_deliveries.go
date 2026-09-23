@@ -27,6 +27,12 @@ func RetryEventDeliveries(logger log.Logger, db database.Database, eventQueue qu
 }
 
 func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, eventQueue queue.Queuer, projectID string, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker batch_tracker.Tracker) {
+	RetryEventDeliveriesWithTrackerContext(context.Background(), logger, db, eventQueue, projectID, statuses, lookBackDuration, eventId, batchID, tracker)
+}
+
+// RetryEventDeliveriesWithTrackerContext keeps the entire background batch
+// inside its admission receipt, including status writes and queue replacement.
+func RetryEventDeliveriesWithTrackerContext(ctx context.Context, logger log.Logger, db database.Database, eventQueue queue.Queuer, projectID string, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId, batchID string, tracker batch_tracker.Tracker) {
 	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -42,8 +48,6 @@ func RetryEventDeliveriesWithTracker(logger log.Logger, db database.Database, ev
 	}
 	now := time.Now()
 	then := now.Add(-d)
-
-	ctx := context.Background()
 
 	// LoadEventDeliveriesPaged requires a real project_id (equality, not the
 	// old empty-string wildcard) so the dashboard list can range-scan.
@@ -201,7 +205,7 @@ func processEventDeliveryBatch(ctx context.Context, projectID string, s datastor
 		}
 
 		// remove these event deliveries queue
-		err := removeQueuedJobs(q, convoy.EventQueue, batchIDs)
+		err := removeQueuedJobs(ctx, q, convoy.EventQueue, batchIDs)
 		if err != nil {
 			l.Error(fmt.Sprintf("batch %d: failed to delete event deliveries from zset", batchCount), "error", err, "ids", batchIDs)
 		}

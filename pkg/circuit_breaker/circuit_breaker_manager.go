@@ -80,13 +80,14 @@ type PollResult struct {
 }
 
 type CircuitBreakerManager struct {
-	logger         log.Logger
-	clock          clock.Clock
-	store          CircuitBreakerStore
-	notificationFn func(NotificationType, CircuitBreakerConfig, *CircuitBreaker) (bool, error)
-	configProvider func(projectID string) *CircuitBreakerConfig
-	masterConfig   CircuitBreakerConfig
-	skipSleep      bool
+	logger           log.Logger
+	clock            clock.Clock
+	store            CircuitBreakerStore
+	notificationFn   func(context.Context, NotificationType, CircuitBreakerConfig, *CircuitBreaker) (bool, error)
+	samplerAdmission func(context.Context, func(context.Context) error) error
+	configProvider   func(projectID string) *CircuitBreakerConfig
+	masterConfig     CircuitBreakerConfig
+	skipSleep        bool
 	// enabledFunc gates each sampling tick. The manager is always constructed and
 	// started; this lets enablement (instance flag + per-org overrides, env folded
 	// into the base) be honored live without restarting the worker. Nil means always on.
@@ -176,7 +177,9 @@ func NotificationFunctionOption(fn func(NotificationType, CircuitBreakerConfig, 
 			return ErrNotificationFunctionMustNotBeNil
 		}
 
-		cb.notificationFn = fn
+		cb.notificationFn = func(_ context.Context, n NotificationType, c CircuitBreakerConfig, b *CircuitBreaker) (bool, error) {
+			return fn(n, c, b)
+		}
 		return nil
 	}
 }
@@ -287,7 +290,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		// tick that declined to alert does not spend the window's one alert.
 		if cb.notificationFn != nil && breaker.State != StateOpen {
 			if breaker.ConsecutiveFailures >= projectConfig.ConsecutiveFailureThreshold {
-				sent, innerErr := cb.notificationFn(TypeDisableResource, projectConfig, &breaker)
+				sent, innerErr := cb.notificationFn(ctx, TypeDisableResource, projectConfig, &breaker)
 				switch {
 				case innerErr != nil:
 					cb.logger.Errorf("[circuit breaker] failed to execute disable resource notification function"+": %v", innerErr)
@@ -550,6 +553,22 @@ func (cb *CircuitBreakerManager) GetMasterConfig() CircuitBreakerConfig {
 	}
 }
 
+// SamplerAdmissionOption lets a deployment fence and account for sampling side effects.
+func SamplerAdmissionOption(admit func(context.Context, func(context.Context) error) error) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error { cb.samplerAdmission = admit; return nil }
+}
+
+// ContextNotificationFunctionOption preserves the admitted sampling context for descendants.
+func ContextNotificationFunctionOption(fn func(context.Context, NotificationType, CircuitBreakerConfig, *CircuitBreaker) (bool, error)) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error {
+		if fn == nil {
+			return ErrNotificationFunctionMustNotBeNil
+		}
+		cb.notificationFn = fn
+		return nil
+	}
+}
+
 func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 	masterConfig := cb.GetMasterConfig()
 	ticker := time.NewTicker(time.Duration(masterConfig.SampleRate) * time.Second)
@@ -560,7 +579,12 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
+			sample := func(accepted context.Context) error { return cb.sampleAndUpdate(accepted, pollFunc) }
+			run := sample
+			if cb.samplerAdmission != nil {
+				run = func(ctx context.Context) error { return cb.samplerAdmission(ctx, sample) }
+			}
+			if err := run(ctx); err != nil {
 				cb.logger.Debug("[circuit breaker] failed to sample and update circuit breakers", "error", err)
 			}
 		}

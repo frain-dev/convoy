@@ -87,8 +87,7 @@ func (f listFilter) appendWhere(b *strings.Builder, args []any) []any {
 		if f.TypePrefix != "" {
 			args = append(args, f.TypePrefix)
 			n := len(args)
-			parts = append(parts, fmt.Sprintf(`ed.event_type ILIKE $%d ESCAPE '\'`, n))
-			parts = append(parts, eventMetadataTypeExistsSQL(fmt.Sprintf(`ILIKE $%d ESCAPE '\'`, n)))
+			parts = append(parts, fmt.Sprintf(`ed.event_type ILIKE $%d ESCAPE '\'`, n), eventMetadataTypeExistsSQL(fmt.Sprintf(`ILIKE $%d ESCAPE '\'`, n)))
 		}
 		if len(f.SearchEndpoints) > 0 {
 			args = append(args, f.SearchEndpoints)

@@ -214,6 +214,20 @@ func (dc DatabaseConfiguration) EffectiveMaxOpenConnections() int {
 
 type QueueConfiguration struct {
 	Postgres PostgresQueueConfiguration `json:"postgres"`
+	Drain    QueueDrainConfiguration    `json:"drain"`
+}
+
+// QueueDrainConfiguration separates the credentials whose admission may be
+// revoked from the executor and controller. Enabling operations is explicit;
+// merely registering a previous store still performs read-only inspection.
+type QueueDrainConfiguration struct {
+	Enabled                  bool   `json:"enabled" envconfig:"CONVOY_QUEUE_DRAIN_ENABLED"`
+	PostgresExecutorUsername string `json:"postgres_executor_username" envconfig:"CONVOY_QUEUE_DRAIN_POSTGRES_EXECUTOR_USERNAME"`
+	PostgresExecutorPassword string `json:"postgres_executor_password" envconfig:"CONVOY_QUEUE_DRAIN_POSTGRES_EXECUTOR_PASSWORD"`
+	RedisExecutorUsername    string `json:"redis_executor_username" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_EXECUTOR_USERNAME"`
+	RedisExecutorPassword    string `json:"redis_executor_password" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_EXECUTOR_PASSWORD"`
+	RedisControllerUsername  string `json:"redis_controller_username" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_CONTROLLER_USERNAME"`
+	RedisControllerPassword  string `json:"redis_controller_password" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_CONTROLLER_PASSWORD"`
 }
 
 // PostgresQueueConfiguration tunes the Postgres queue provider's write path.
@@ -750,6 +764,10 @@ const (
 )
 
 type Configuration struct {
+	// PreviousQueueProvider opts into inspecting the other configured queue store.
+	PreviousQueueProvider QueueProvider `json:"previous_queue_provider,omitempty" envconfig:"CONVOY_PREVIOUS_QUEUE_PROVIDER"`
+	QueueStoreScope       string        `json:"queue_store_scope,omitempty" envconfig:"CONVOY_QUEUE_STORE_SCOPE"`
+
 	InstanceId         string                        `json:"instance_id"`
 	APIVersion         string                        `json:"api_version" envconfig:"CONVOY_API_VERSION"`
 	Auth               AuthConfiguration             `json:"auth,omitempty"`
@@ -1176,6 +1194,12 @@ func ensureMaxResponseSize(c *Configuration) {
 }
 
 func validate(c *Configuration) error {
+	if err := c.ValidateQueueInventory(); err != nil {
+		return err
+	}
+	if err := c.ValidateQueueDrain(); err != nil {
+		return err
+	}
 	ensureMaxResponseSize(c)
 
 	switch c.QueueProvider {
@@ -1227,6 +1251,45 @@ func validate(c *Configuration) error {
 	return nil
 }
 
+func (c Configuration) ValidateQueueDrain() error {
+	d := c.Queue.Drain
+	if !d.Enabled {
+		return nil
+	}
+	if strings.TrimSpace(c.QueueStoreScope) == "" || len(c.QueueStoreScope) > 200 {
+		return errors.New("queue drain requires a deployment scope of at most 200 characters")
+	}
+	stores := 1
+	if c.PreviousQueueProvider != "" {
+		stores++
+	}
+	// Each executor retains one session for worker authority and one per
+	// in-flight task for shared exclusion. Leave another connection per
+	// handler plus headroom for admission, controllers and HTTP requests.
+	minimumPool := stores*(2*c.ConsumerPoolSize+1) + 8
+	if c.Database.EffectiveMaxOpenConnections() < minimumPool {
+		return fmt.Errorf("queue drain requires database.max_open_conn >= %d for the configured consumer pools", minimumPool)
+	}
+	active := c.QueueProvider
+	if active == "" {
+		active = RedisQueueProvider
+	}
+	if active == PostgresQueueProvider || c.PreviousQueueProvider == PostgresQueueProvider {
+		if d.PostgresExecutorUsername == "" {
+			return errors.New("queue drain requires a dedicated PostgreSQL executor role")
+		}
+	}
+	if active == RedisQueueProvider || c.PreviousQueueProvider == RedisQueueProvider {
+		if c.Redis.IsSentinel() || len(c.Redis.BuildDsn()) != 1 || (c.Redis.Database != "" && c.Redis.Database != "0") {
+			return errors.New("queue drain requires a dedicated standalone Redis instance using database zero")
+		}
+		if d.RedisExecutorUsername == "" || d.RedisControllerUsername == "" || d.RedisExecutorUsername == d.RedisControllerUsername || d.RedisExecutorPassword == "" || d.RedisControllerPassword == "" {
+			return errors.New("queue drain requires separate authenticated Redis executor and controller users")
+		}
+	}
+	return nil
+}
+
 func ensureJwtConfig(jwt *JwtRealmOptions) error {
 	if !jwt.Enabled {
 		return nil
@@ -1269,5 +1332,30 @@ func ensureRootPath(c *Configuration) error {
 		return errors.New("root path contains invalid characters, only alphanumeric, hyphens, underscores, and slashes are allowed")
 	}
 
+	return nil
+}
+
+// ValidateQueueInventory does not connect to either store. Inspection failure is
+// reported in the admin UI instead of preventing the active provider booting.
+func (c Configuration) ValidateQueueInventory() error {
+	if c.PreviousQueueProvider == "" {
+		return nil
+	}
+	if c.PreviousQueueProvider != RedisQueueProvider && c.PreviousQueueProvider != PostgresQueueProvider {
+		return errors.New("previous_queue_provider must be redis or postgres")
+	}
+	active := c.QueueProvider
+	if active == "" {
+		active = RedisQueueProvider
+	}
+	if c.PreviousQueueProvider == active {
+		return errors.New("previous_queue_provider must differ from queue_provider")
+	}
+	if strings.TrimSpace(c.QueueStoreScope) == "" {
+		return errors.New("queue_store_scope is required when a previous queue is configured")
+	}
+	if c.PreviousQueueProvider == RedisQueueProvider {
+		return ensureQueueConfig(c.Redis)
+	}
 	return nil
 }
