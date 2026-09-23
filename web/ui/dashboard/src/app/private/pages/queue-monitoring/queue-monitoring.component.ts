@@ -7,6 +7,7 @@ import { AdminService } from 'src/app/private/pages/admin/admin.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 
+import { QueueMonitoringStoresComponent } from './queue-monitoring-stores.component';
 import { QueueMonitoringAsynqmonComponent } from './queue-monitoring-asynqmon.component';
 import { QueueMonitoringBrokerComponent } from './queue-monitoring-broker.component';
 import { DataPlaneReport, QueueMonitoringDataplaneComponent } from './queue-monitoring-dataplane.component';
@@ -23,7 +24,7 @@ const SEGMENT_PARAM = 'engine';
 
 @Component({
 	selector: 'convoy-queue-monitoring',
-	imports: [CommonModule, LoaderModule, QueueMonitoringAsynqmonComponent, QueueMonitoringBrokerComponent, QueueMonitoringDataplaneComponent],
+	imports: [CommonModule, LoaderModule, QueueMonitoringStoresComponent, QueueMonitoringAsynqmonComponent, QueueMonitoringBrokerComponent, QueueMonitoringDataplaneComponent],
 	templateUrl: './queue-monitoring.component.html'
 })
 export class QueueMonitoringComponent implements OnInit {

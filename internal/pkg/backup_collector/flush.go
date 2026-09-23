@@ -140,13 +140,16 @@ func (c *BackupCollector) flushTable(ctx context.Context, tableName string, entr
 	// but Upload blocks on pr — so we must read both.
 	// Upload returns when pw is closed (by goroutine).
 	uploadErr := c.store.Upload(ctx, blobKey, pr)
+	// An uploader can return before consuming the stream. Release the encoder
+	// before waiting for it, otherwise maintenance can hang on a failed upload.
+	_ = pr.CloseWithError(uploadErr)
 	encodeErr := <-errCh
 
-	if encodeErr != nil {
-		return fmt.Errorf("encode: %w", encodeErr)
-	}
 	if uploadErr != nil {
 		return fmt.Errorf("upload: %w", uploadErr)
+	}
+	if encodeErr != nil {
+		return fmt.Errorf("encode: %w", encodeErr)
 	}
 
 	c.logger.Info(fmt.Sprintf("uploaded %d records to %s", len(entries), blobKey))

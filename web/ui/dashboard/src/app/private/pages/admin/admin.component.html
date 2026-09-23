@@ -59,6 +59,10 @@
         <convoy-queue-monitoring></convoy-queue-monitoring>
       }
 
+      @if (activePage === 'queue maintenance') {
+        <convoy-queue-maintenance />
+      }
+
       @if (activePage === 'table partitions') {
         <app-table-partitions></app-table-partitions>
       }

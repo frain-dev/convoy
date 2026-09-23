@@ -1,11 +1,13 @@
 package task
 
 import (
+	"errors"
 	"time"
 
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/queue"
 )
 
 type DeliveryError struct {
@@ -46,6 +48,9 @@ func (e *RateLimitError) RateLimit() {
 }
 
 func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
+	if errors.Is(err, queue.ErrAdmissionClosed) {
+		return time.Second
+	}
 	if endpointError, ok := err.(*EndpointError); ok {
 		return endpointError.Delay()
 	}

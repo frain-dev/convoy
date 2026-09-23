@@ -28,7 +28,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 			return arr
 		}()
 
-		err = removeQueuedJobs(q, convoy.EventQueue, ids)
+		err = removeQueuedJobs(ctx, q, convoy.EventQueue, ids)
 		if err != nil {
 			logger.ErrorContext(ctx, "an error occurred removing task with id from the queue", "error", err)
 		}
