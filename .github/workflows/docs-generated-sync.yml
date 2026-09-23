@@ -172,6 +172,13 @@ jobs:
 
           base=$(echo "$pr_json" | jq -r .baseRefName)
           head_sha=$(echo "$pr_json" | jq -r .headRefOid)
+          # GitHub may return the old PR head briefly after the bot pushes.
+          # Wait only for this run's exact commit; a newer head still fails closed.
+          for _ in {1..10}; do
+            [ "$head_sha" = "$PUSHED_SHA" ] && break
+            sleep 2
+            head_sha=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" --json headRefOid --jq .headRefOid)
+          done
 
           if [ "$base" != "main" ]; then
             deny "convoy-docs-reviewer: not auto-approving; base is \`$base\`, not \`main\`. Left for human review."
@@ -227,13 +234,22 @@ jobs:
             echo "Reviewer already approved commit $head_sha; proceeding to merge."
           fi
 
+          # GitHub accepts an App review even when branch protection does not
+          # count that App as an eligible reviewer. Do not report a merge then.
+          decision=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" --json reviewDecision --jq .reviewDecision)
+          if [ "$decision" != "APPROVED" ]; then
+            deny "convoy-docs-reviewer: approval was submitted but branch protection reports $decision. Grant the reviewer App eligible repository access or obtain a human review. Left for human review."
+          fi
+
           final_sha=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" --json headRefOid --jq '.headRefOid')
           if [ "$final_sha" != "$PUSHED_SHA" ]; then
             deny "convoy-docs-reviewer: not merging; PR head moved to \`$final_sha\` after approval of \`$PUSHED_SHA\`. Left for human review."
           fi
 
-          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --delete-branch
-          echo "Approved and merged convoy PR #$pr" >> "$GITHUB_STEP_SUMMARY"
+          # gh queues the PR when main requires a merge queue. --delete-branch
+          # is rejected in that mode; branch cleanup is handled by GitHub.
+          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --match-head-commit "$PUSHED_SHA"
+          echo "Approved and submitted convoy PR #$pr for merge" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Mint convoy-docs-bot token (website)
         id: bot-website
@@ -357,6 +373,11 @@ jobs:
 
           base=$(echo "$pr_json" | jq -r .baseRefName)
           head_sha=$(echo "$pr_json" | jq -r .headRefOid)
+          for _ in {1..10}; do
+            [ "$head_sha" = "$PUSHED_SHA" ] && break
+            sleep 2
+            head_sha=$(GH_TOKEN="$APP_TOKEN" gh pr view "$pr" --repo "$GH_REPO" --json headRefOid --jq .headRefOid)
+          done
 
           if [ "$base" != "main" ]; then
             deny "convoy-docs-reviewer: not auto-approving; base is \`$base\`, not \`main\`. Left for human review."
@@ -417,5 +438,5 @@ jobs:
             deny "convoy-docs-reviewer: not merging; PR head moved to \`$final_sha\` after approval of \`$PUSHED_SHA\`. Left for human review."
           fi
 
-          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --delete-branch
-          echo "Approved and merged website PR #$pr" >> "$GITHUB_STEP_SUMMARY"
+          GH_TOKEN="$MERGE_TOKEN" gh pr merge "$pr" --repo "$GH_REPO" --squash --match-head-commit "$PUSHED_SHA"
+          echo "Approved and submitted website PR #$pr for merge" >> "$GITHUB_STEP_SUMMARY"
