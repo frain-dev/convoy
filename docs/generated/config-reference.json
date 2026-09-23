@@ -566,6 +566,12 @@
       "default": "8"
     },
     {
+      "json_path": "previous_queue_provider",
+      "env_var": "CONVOY_PREVIOUS_QUEUE_PROVIDER",
+      "go_type": "config.QueueProvider",
+      "default": ""
+    },
+    {
       "json_path": "prometheus.dsn",
       "env_var": "CONVOY_PROM_DSN",
       "go_type": "string",
@@ -596,10 +602,58 @@
       "default": ""
     },
     {
+      "json_path": "queue.drain.enabled",
+      "env_var": "CONVOY_QUEUE_DRAIN_ENABLED",
+      "go_type": "bool",
+      "default": "false"
+    },
+    {
+      "json_path": "queue.drain.postgres_executor_password",
+      "env_var": "CONVOY_QUEUE_DRAIN_POSTGRES_EXECUTOR_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "queue.drain.postgres_executor_username",
+      "env_var": "CONVOY_QUEUE_DRAIN_POSTGRES_EXECUTOR_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "queue.drain.redis_controller_password",
+      "env_var": "CONVOY_QUEUE_DRAIN_REDIS_CONTROLLER_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "queue.drain.redis_controller_username",
+      "env_var": "CONVOY_QUEUE_DRAIN_REDIS_CONTROLLER_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "queue.drain.redis_executor_password",
+      "env_var": "CONVOY_QUEUE_DRAIN_REDIS_EXECUTOR_PASSWORD",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "queue.drain.redis_executor_username",
+      "env_var": "CONVOY_QUEUE_DRAIN_REDIS_EXECUTOR_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
       "json_path": "queue_provider",
       "env_var": "CONVOY_QUEUE_PROVIDER",
       "go_type": "config.QueueProvider",
       "default": "redis"
+    },
+    {
+      "json_path": "queue_store_scope",
+      "env_var": "CONVOY_QUEUE_STORE_SCOPE",
+      "go_type": "string",
+      "default": ""
     },
     {
       "json_path": "redis.addresses",
