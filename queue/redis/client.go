@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -86,6 +87,9 @@ func (q *RedisQueue) Write(ctx context.Context, taskName convoy.TaskName, queueN
 	// If enqueue failed due to duplicate task ID, delete and retry
 	// Check if it's a duplicate task error (Asynq returns this when task ID exists)
 	if err == asynq.ErrDuplicateTask || err == asynq.ErrTaskIDConflict {
+		if job.PreserveExisting {
+			return nil
+		}
 		// Delete the existing task and retry
 		deleteErr := q.inspector.DeleteTask(s, job.ID)
 		if deleteErr != nil {
@@ -122,6 +126,9 @@ func (q *RedisQueue) WriteWithoutTimeout(ctx context.Context, taskName convoy.Ta
 	// If enqueue failed due to duplicate task ID, delete and retry
 	// Check if it's a duplicate task error (Asynq returns this when task ID exists)
 	if err == asynq.ErrDuplicateTask || err == asynq.ErrTaskIDConflict {
+		if job.PreserveExisting {
+			return nil
+		}
 		// Delete the existing task and retry
 		deleteErr := q.inspector.DeleteTask(s, job.ID)
 		if deleteErr != nil {
@@ -200,16 +207,22 @@ func (q *RedisQueue) DeleteArchived(_ context.Context) error {
 func (q *RedisQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueName, ids []string) error {
 	for _, id := range ids {
 		taskInfo, err := q.inspector.GetTaskInfo(string(queueName), id)
+		if errors.Is(err, asynq.ErrTaskNotFound) || errors.Is(err, asynq.ErrQueueNotFound) {
+			continue // An already completed job needs no removal before replacement.
+		}
 		if err != nil {
 			return err
 		}
 		if taskInfo.State == asynq.TaskStateActive {
 			err = q.inspector.CancelProcessing(id)
-			if err != nil {
+			if err != nil && !errors.Is(err, asynq.ErrTaskNotFound) && !errors.Is(err, asynq.ErrQueueNotFound) {
 				return err
 			}
 		}
 		err = q.inspector.DeleteTask(string(queueName), id)
+		if errors.Is(err, asynq.ErrTaskNotFound) || errors.Is(err, asynq.ErrQueueNotFound) {
+			continue
+		}
 		if err != nil {
 			return err
 		}

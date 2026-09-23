@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/queue/drain"
 	"github.com/frain-dev/convoy/worker/task"
 )
 
@@ -49,6 +51,17 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 			}
 
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}
+			if a.Broker != nil && a.Broker.Admission != nil {
+				err := a.Broker.Admission.Run(cmd.Context(), drain.Producer, func(ctx context.Context) error {
+					task.RetryEventDeliveriesWithTrackerContext(ctx, a.Logger, a.DB, a.Queue, projectID, statuses, timeInterval, eventId, "", nil)
+					return nil
+				})
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error retrying deliveries: %v\n", err)
+					os.Exit(1)
+				}
+				return
+			}
 			task.RetryEventDeliveries(a.Logger, a.DB, a.Queue, projectID, statuses, timeInterval, eventId)
 		},
 	}

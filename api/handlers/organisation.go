@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/projects"
+	"github.com/frain-dev/convoy/queue/drain"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -1055,12 +1057,36 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	tracker := h.A.BatchTracker
 	batchID := tracker.GenerateBatchID()
 
-	// Run retry in background goroutine - don't block the response.
-	// Empty projectID is intentional: this endpoint is instance-admin gated and
-	// requeues across the whole instance.
-	go func() {
-		task.RetryEventDeliveriesWithTracker(h.A.Logger, h.A.DB, h.A.Queue, "", statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
-	}()
+	// Empty projectID is intentional: this instance-admin operation requeues
+	// across the whole instance. Admit the detached writer before responding so
+	// a drain cannot certify while it is still changing delivery status or jobs.
+	run := func(ctx context.Context) {
+		task.RetryEventDeliveriesWithTrackerContext(ctx, h.A.Logger, h.A.DB, h.A.Queue, "", statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
+	}
+	if gate := h.A.QueueAdmission; gate != nil {
+		ready := make(chan error, 1)
+		go func() {
+			started := false
+			err := gate.Run(context.Background(), drain.Producer, func(ctx context.Context) error {
+				started = true
+				ready <- nil
+				run(ctx)
+				return nil
+			})
+			if !started {
+				ready <- err
+			}
+			if err != nil {
+				h.A.Logger.Error("batch retry did not settle", "error", err)
+			}
+		}()
+		if err := <-ready; err != nil {
+			h.failQueueDrain(w, r, err)
+			return
+		}
+	} else {
+		go run(context.Background())
+	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries retry initiated successfully", map[string]interface{}{
 		"batch_id": batchID,

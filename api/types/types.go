@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/queue/drain"
 	"github.com/frain-dev/convoy/queue/inventory"
 )
 
@@ -50,6 +51,9 @@ type APIOptions struct {
 	CircuitBreakerStore        circuit_breaker.CircuitBreakerStore
 	Queue                      queue.Queuer
 	QueueMonitor               queue.Monitor
+	QueueDrain                 *drain.Controller
+	PreviousQueueDrain         *drain.Controller
+	QueueAdmission             *drain.Gate
 	QueueInventory             *inventory.Inventory
 	QueueInspector             queue.Inspector
 	Logger                     logger.Logger

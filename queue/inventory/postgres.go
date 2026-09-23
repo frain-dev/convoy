@@ -15,6 +15,7 @@ type Postgres struct{ DB *sqlx.DB }
 const postgresSnapshotSQL = `
 WITH counts AS (
  SELECT queue_name AS name,
+ MIN(run_at) FILTER (WHERE status = 'pending' AND run_at > NOW()) AS next_due_at,
  COUNT(*) FILTER (WHERE status = 'pending' AND run_at <= NOW()) AS pending,
  COUNT(*) FILTER (WHERE status = 'pending' AND run_at > NOW()) AS future,
  COUNT(*) FILTER (WHERE status = 'processing') AS processing,
@@ -29,7 +30,7 @@ WITH counts AS (
 SELECT n.name, COALESCE(c.pending,0) AS pending, COALESCE(c.future,0) AS future,
  COALESCE(c.processing,0) AS processing, COALESCE(c.archived,0) AS archived,
  COALESCE(c.completed,0) AS completed, COALESCE(c.unknown,0) AS unknown,
- COALESCE(c.oldest_due_age_ms,0) AS oldest_due_age_ms,
+ c.next_due_at, COALESCE(c.oldest_due_age_ms,0) AS oldest_due_age_ms,
  (s.paused_at IS NOT NULL) AS paused
 FROM names n LEFT JOIN counts c ON c.name=n.name
 LEFT JOIN convoy.queue_state s ON s.queue_name=n.name ORDER BY n.name`

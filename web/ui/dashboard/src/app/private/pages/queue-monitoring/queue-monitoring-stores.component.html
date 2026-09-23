@@ -1,3 +1,9 @@
+@if (maintenance) {
+ @if (loading && stores.length === 0) { <p role="status">Loading queue maintenance…</p> }
+ @if (loadError) { <p role="alert">Queue maintenance is unavailable. Retrying shortly.</p> }
+ @if (!loading && !loadError && actionable.length === 0) { <p role="status">Queue maintenance is not configured for this deployment.</p> }
+ @for (store of actionable; track store.id) { <convoy-queue-drain [store]="store" /> }
+} @else {
 @if (loadError && previous.length === 0) {
   <p role="status" class="mb-16px text-[14px] text-new.text-secondary">Could not check for previous queues. Retrying shortly.</p>
 }
@@ -7,6 +13,9 @@
       <h2 class="font-medium text-[16px]">Previous {{ providerLabel(store) }} queue</h2>
       <button type="button" class="text-primary-100 text-[14px]" [disabled]="loading" (click)="refresh()">Refresh</button>
     </div>
+    @if (completed(store)) {
+      <p role="status" class="text-[14px]">Drain verified. This store remains closed to new traffic. Review its operation in Queue maintenance.</p>
+    } @else {
     @if (store.connection === 'unknown') {
       <p role="status" class="text-[14px] mb-12px">This queue could not be inspected. {{ store.snapshot ? 'The counts below are from the last successful check.' : 'Its remaining work is unknown.' }}</p>
     } @else {
@@ -34,5 +43,8 @@
       </div>
       <p class="text-[12px] text-new.text-secondary mt-12px">Waiting includes scheduled jobs and retries. These counts alone do not establish that a queue is safe to retire.</p>
     }
+    }
   </section>
+}
+
 }

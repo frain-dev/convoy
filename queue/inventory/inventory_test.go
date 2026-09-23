@@ -92,12 +92,20 @@ func (f *fakeRedisInspector) GetQueueInfo(string) (*asynq.QueueInfo, error) {
 	return f.info, f.err
 }
 
+func (f *fakeRedisInspector) ListScheduledTasks(string, ...asynq.ListOption) ([]*asynq.TaskInfo, error) {
+	return []*asynq.TaskInfo{{NextProcessAt: time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC)}}, nil
+}
+func (f *fakeRedisInspector) ListRetryTasks(string, ...asynq.ListOption) ([]*asynq.TaskInfo, error) {
+	return []*asynq.TaskInfo{{NextProcessAt: time.Date(2026, 9, 22, 11, 0, 0, 0, time.UTC)}}, nil
+}
+
 func TestRedisIncludesAuxiliaryWorkAndPreservesPausedState(t *testing.T) {
 	fake := &fakeRedisInspector{names: []string{"unconfigured-queue"}, info: &asynq.QueueInfo{Pending: 1, Active: 2, Scheduled: 3, Retry: 4, Aggregating: 5, Archived: 6, Completed: 7, Paused: true}}
 	snapshot, err := (Redis{Inspector: fake}).Inspect(t.Context())
 	require.NoError(t, err)
 	require.Equal(t, Counts{Pending: 1, Processing: 2, Scheduled: 3, Retry: 4, Aggregating: 5, Archived: 6, Completed: 7}, snapshot.Queues[0].Counts)
 	require.True(t, snapshot.Queues[0].Paused)
+	require.Equal(t, time.Date(2026, 9, 22, 11, 0, 0, 0, time.UTC), *snapshot.Queues[0].NextDueAt)
 	fake.err = asynq.ErrQueueNotFound
 	snapshot, err = (Redis{Inspector: fake}).Inspect(t.Context())
 	require.Error(t, err)

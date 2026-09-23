@@ -1,12 +1,14 @@
 package broker
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strconv"
 
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -25,6 +27,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/clock"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/queue/drain"
+	"github.com/frain-dev/convoy/queue/inventory"
 	pgqueue "github.com/frain-dev/convoy/queue/postgres"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/services"
@@ -33,7 +37,13 @@ import (
 )
 
 type Dependencies struct {
-	Queue queue.Queuer
+	Source       *Dependencies
+	Drain        *drain.Controller
+	Queue        queue.Queuer
+	WorkerQueue  queue.Queuer
+	MetricsQueue queue.Queuer
+	Admission    *drain.Gate
+	Fence        drain.Fence
 	// QueueMonitor is asynqmon, which only the redis broker has. The postgres
 	// broker leaves it nil: its monitoring surface is QueueInspector, which
 	// both brokers implement and the dashboard renders natively.
@@ -88,7 +98,45 @@ func New(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dependencie
 			return nil, fflag.ErrPostgresQueueNotEnabled
 		}
 	}
-	return build(cfg, db, logger)
+	if err := cfg.ValidateQueueDrain(); err != nil {
+		return nil, err
+	}
+	active, err := build(cfg, db, logger)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.Queue.Drain.Enabled && cfg.PreviousQueueProvider != "" {
+		sourceCfg := cfg
+		sourceCfg.QueueProvider = cfg.PreviousQueueProvider
+		sourceCfg.PreviousQueueProvider = ""
+		sourceBuild, exists := constructors[sourceCfg.QueueProvider]
+		if !exists {
+			_ = active.Close()
+			return nil, fmt.Errorf("unsupported previous queue provider")
+		}
+		source, buildErr := sourceBuild(sourceCfg, db, logger)
+		if buildErr != nil {
+			_ = active.Close()
+			return nil, buildErr
+		}
+		source.Drain.Previous = true
+		source.Admission.Previous = true
+		source.Drain.Target.ConfigurationRevision = drain.ConfigurationRevision(cfg)
+		active.Source = source
+		active.Drain.Participants = append(active.Drain.Participants, source.Drain.Participants...)
+		active.closers = append(active.closers, source)
+		active.Drain.Target.OtherStoreID = source.Drain.Target.StoreID
+		active.Drain.Fence = drain.StoreGroup{Active: active.Fence, Previous: source.Fence}
+		active.Drain.Reader = drain.StoreReaders{Active: active.Drain.Reader, Previous: source.Drain.Reader}
+	}
+	if active.Drain != nil {
+		executors := map[string]queue.Queuer{active.Drain.Target.StoreID: active.WorkerQueue}
+		if active.Source != nil {
+			executors[active.Source.Drain.Target.StoreID] = active.Source.WorkerQueue
+		}
+		active.Queue = drain.RouteDescendants(active.Queue, cfg.QueueStoreScope, executors)
+	}
+	return active, nil
 }
 
 // AllowPostgresQueue is the license half of the postgres provider gate.
@@ -118,6 +166,33 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 	if err != nil {
 		return nil, err
 	}
+	workerQueue := q
+	var gate *drain.Gate
+	var fence drain.Fence
+	var executorDB *sqlx.DB
+	if cfg.Queue.Drain.Enabled {
+		executorDB, err = drain.PostgresExecutorDB(cfg)
+		if err != nil {
+			_ = q.Close()
+			return nil, err
+		}
+		executorOpts := opts
+		executorOpts.DB = executorDB
+		workerQueue, err = pgqueue.NewQueue(executorOpts)
+		if err != nil {
+			_ = q.Close()
+			_ = executorDB.Close()
+			return nil, err
+		}
+		gate = &drain.Gate{Repository: drain.NewRepository(db), Scope: cfg.QueueStoreScope, StoreID: inventory.StoreID(cfg, "postgres")}
+		fence = drain.PostgresFence{DB: db, Scope: gate.Scope, StoreID: gate.StoreID, ExecutorRole: cfg.Queue.Drain.PostgresExecutorUsername}
+		if err = fence.Bind(context.Background()); err != nil {
+			_ = q.Close()
+			_ = workerQueue.Close()
+			_ = executorDB.Close()
+			return nil, err
+		}
+	}
 	c := pgcache.NewWithLocalReads(db, cfg.Cache.Postgres.LocalReadTTL(), cfg.Cache.Postgres.LocalReadSize)
 
 	lockDB, err := openJobLockDB(cfg.Database)
@@ -125,26 +200,36 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 		return nil, err
 	}
 
-	return &Dependencies{
+	dependencies := &Dependencies{
 		Queue:               q,
-		QueueInspector:      q,
+		MetricsQueue:        workerQueue,
+		QueueInspector:      workerQueue,
 		Cache:               c,
 		RateLimiter:         pglimiter.New(db),
 		CircuitBreakerStore: circuit_breaker.NewPostgresStore(db),
 		JobLocker:           newPostgresJobLockerWithLimit(lockDB, logger, jobLockMaxConns),
 		Acker:               dynamiceventack.NewCacheAcker(c),
 		TrialEvents:         license.NewPostgresTrialEventLimiter(db, logger),
-		ConsumerBackend:     worker.NewPostgresConsumerBackend(q),
+		ConsumerBackend:     worker.NewPostgresConsumerBackend(workerQueue),
 		Scheduler:           worker.NewPostgresScheduler(q, logger),
 		TaskErrors:          q,
 		ResendClaims:        services.NewPostgresResendClaimStore(db),
 		BatchTracker:        batch_tracker.NewPostgresTracker(db),
 		// q first: its batchers must stop before the lock pool goes.
 		closers: []io.Closer{q, lockDB},
-	}, nil
+	}
+	if gate != nil {
+		dependencies.Admission, dependencies.Fence = gate, fence
+		dependencies.Drain = &drain.Controller{Repository: gate.Repository, Target: drain.Target{Scope: gate.Scope, StoreID: gate.StoreID, Provider: string(cfg.QueueProvider), ConfigurationRevision: drain.ConfigurationRevision(cfg)}, Fence: fence, Reader: inventory.Postgres{DB: db}}
+		dependencies.Drain.Participants = []drain.Participant{{StoreID: gate.StoreID, Reader: dependencies.Drain.Reader, Inspector: dependencies.QueueInspector}}
+		dependencies.Queue = gate.GuardQueue(q)
+		dependencies.WorkerQueue = gate.GuardQueue(workerQueue)
+		dependencies.closers = append(dependencies.closers, workerQueue, executorDB)
+	}
+	return dependencies, nil
 }
 
-func newRedis(cfg config.Configuration, _ *sqlx.DB, logger log.Logger) (*Dependencies, error) {
+func newRedis(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dependencies, error) {
 	rd, err := newRedisClient(cfg.Redis)
 	if err != nil {
 		return nil, fmt.Errorf("connect redis broker: %w", err)
@@ -175,30 +260,103 @@ func newRedis(cfg config.Configuration, _ *sqlx.DB, logger log.Logger) (*Depende
 		}
 	}
 	q := redisqueue.NewQueue(opts)
-	c := rcache.NewRedisCacheFromClient(rd.Client())
-	rateLimiter := rlimiter.NewLimiterFromRedisClient(rd.Client())
+	runtimeRD := rd
+	runtimeOpts := opts
+	workerQueue := q
+	var gate *drain.Gate
+	var fence drain.Fence
+	var controller *rdb.Redis
+	if cfg.Queue.Drain.Enabled {
+		if db == nil {
+			_ = rd.Client().Close()
+			return nil, fmt.Errorf("queue drain requires a database")
+		}
+		executorCfg, credentialErr := drain.RedisCredentials(cfg.Redis, cfg.Queue.Drain.RedisExecutorUsername, cfg.Queue.Drain.RedisExecutorPassword)
+		if credentialErr != nil {
+			_ = rd.Client().Close()
+			return nil, credentialErr
+		}
+		runtimeRD, err = newRedisClient(executorCfg)
+		if err != nil {
+			_ = rd.Client().Close()
+			return nil, fmt.Errorf("connect queue executor: %w", err)
+		}
+		runtimeOpts.RedisClient = runtimeRD
+		runtimeOpts.RedisAddress = executorCfg.BuildDsn()
+		workerQueue = redisqueue.NewQueue(runtimeOpts)
+		controllerCfg, credentialErr := drain.RedisCredentials(cfg.Redis, cfg.Queue.Drain.RedisControllerUsername, cfg.Queue.Drain.RedisControllerPassword)
+		if credentialErr != nil {
+			_ = rd.Client().Close()
+			_ = runtimeRD.Client().Close()
+			return nil, credentialErr
+		}
+		controller, err = newRedisClient(controllerCfg)
+		if err != nil {
+			_ = rd.Client().Close()
+			_ = runtimeRD.Client().Close()
+			return nil, fmt.Errorf("connect queue controller: %w", err)
+		}
+		admin, ok := controller.Client().(*redis.Client)
+		if !ok {
+			_ = rd.Client().Close()
+			_ = runtimeRD.Client().Close()
+			_ = controller.Client().Close()
+			return nil, fmt.Errorf("queue fence requires standalone Redis")
+		}
+		producer, parseErr := redis.ParseURL(cfg.Redis.BuildDsn()[0])
+		if parseErr != nil {
+			_ = rd.Client().Close()
+			_ = runtimeRD.Client().Close()
+			_ = controller.Client().Close()
+			return nil, fmt.Errorf("invalid queue producer endpoint")
+		}
+		if producer.Username == "" {
+			producer.Username = "default"
+		}
+		gate = &drain.Gate{Repository: drain.NewRepository(db), Scope: cfg.QueueStoreScope, StoreID: inventory.StoreID(cfg, "redis")}
+		fence = drain.RedisFence{Repository: gate.Repository, Admin: admin, Scope: gate.Scope, StoreID: gate.StoreID, ProducerUser: producer.Username, ExecutorUser: cfg.Queue.Drain.RedisExecutorUsername, ControllerUser: cfg.Queue.Drain.RedisControllerUsername}
+		if err = fence.Bind(context.Background()); err != nil {
+			_ = rd.Client().Close()
+			_ = runtimeRD.Client().Close()
+			_ = controller.Client().Close()
+			return nil, err
+		}
+	}
+	c := rcache.NewRedisCacheFromClient(runtimeRD.Client())
+	rateLimiter := rlimiter.NewLimiterFromRedisClient(runtimeRD.Client())
 	scheduler, err := worker.NewRedisScheduler(opts, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Dependencies{
+	dependencies := &Dependencies{
 		Queue:               q,
-		QueueMonitor:        q,
-		QueueInspector:      q,
+		MetricsQueue:        workerQueue,
+		QueueMonitor:        workerQueue,
+		QueueInspector:      workerQueue,
 		Cache:               c,
 		RateLimiter:         rateLimiter,
-		CircuitBreakerStore: circuit_breaker.NewRedisStore(rd.Client(), clock.NewRealClock()),
-		JobLocker:           newRedisJobLocker(rd.Client(), logger),
-		Acker:               dynamiceventack.NewRedisAcker(rd.Client()),
-		TrialEvents:         license.NewTrialEventLimiter(rd.Client(), logger),
-		ConsumerBackend:     worker.NewRedisConsumerBackend(opts),
+		CircuitBreakerStore: circuit_breaker.NewRedisStore(runtimeRD.Client(), clock.NewRealClock()),
+		JobLocker:           newRedisJobLocker(runtimeRD.Client(), logger),
+		Acker:               dynamiceventack.NewRedisAcker(runtimeRD.Client()),
+		TrialEvents:         license.NewTrialEventLimiter(runtimeRD.Client(), logger),
+		ConsumerBackend:     worker.NewRedisConsumerBackend(runtimeOpts),
 		Scheduler:           scheduler,
-		TaskErrors:          q,
-		ResendClaims:        services.NewRedisResendClaimStore(rd.Client()),
-		BatchTracker:        batch_tracker.NewBatchTracker(rd.Client()),
-		closers:             []io.Closer{rd.Client()},
-	}, nil
+		TaskErrors:          workerQueue,
+		ResendClaims:        services.NewRedisResendClaimStore(runtimeRD.Client()),
+		BatchTracker:        batch_tracker.NewBatchTracker(runtimeRD.Client()),
+		closers:             []io.Closer{runtimeRD.Client()},
+	}
+	if gate != nil {
+		dependencies.Admission, dependencies.Fence = gate, fence
+		readerCfg, _ := drain.RedisCredentials(cfg.Redis, cfg.Queue.Drain.RedisExecutorUsername, cfg.Queue.Drain.RedisExecutorPassword)
+		dependencies.Drain = &drain.Controller{Repository: gate.Repository, Target: drain.Target{Scope: gate.Scope, StoreID: gate.StoreID, Provider: string(cfg.QueueProvider), ConfigurationRevision: drain.ConfigurationRevision(cfg)}, Fence: fence, Reader: inventory.RedisReader(readerCfg)}
+		dependencies.Drain.Participants = []drain.Participant{{StoreID: gate.StoreID, Reader: dependencies.Drain.Reader, Inspector: dependencies.QueueInspector}}
+		dependencies.Queue = gate.GuardQueue(q)
+		dependencies.WorkerQueue = gate.GuardQueue(workerQueue)
+		dependencies.closers = append(dependencies.closers, rd.Client(), controller.Client())
+	}
+	return dependencies, nil
 }
 
 func QueueNames(mode config.ExecutionMode) (map[string]int, error) {

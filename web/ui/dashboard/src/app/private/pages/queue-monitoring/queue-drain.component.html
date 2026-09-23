@@ -1,0 +1,78 @@
+<section class="bg-white-100 border border-new.border rounded-12px p-20px mb-24px text-new.text-primary" aria-label="Queue operation review">
+  <div class="flex flex-wrap items-start justify-between gap-12px mb-20px">
+    <div>
+      <h3 class="font-medium text-[16px]">{{ store.role === 'previous' ? 'Previous queue' : 'Current queue' }}</h3>
+      <p class="text-[13px] text-new.text-secondary mt-4px">{{ store.role === 'previous' ? 'Work left in the old queue store' : 'Processing and delivery status' }}</p>
+    </div>
+    @if (status?.operation; as operation) {
+      <span class="inline-flex items-center gap-8px rounded-full px-12px py-6px text-[13px] font-medium"
+        [class]="operation.state === 'resumed' ? 'bg-green-50 text-green-800' : operation.state === 'drained' ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-800'">
+        <span class="w-7px h-7px rounded-full bg-current" aria-hidden="true"></span>{{ stateLabel(operation.state) }}
+      </span>
+    } @else if (status) {
+      <span class="rounded-full bg-new.surface-muted px-12px py-6px text-[13px]">No operation started</span>
+    }
+  </div>
+
+  @if (stale) { <p role="alert" class="rounded-8px bg-amber-50 p-12px mb-16px">The latest status is unavailable. The details below are stale, so actions are disabled.</p> }
+  @if (!status && !stale) { <p role="status">Checking the queue…</p> }
+  @if (status; as current) {
+    @if (current.operation; as operation) {
+      @if (operation.state === 'resumed') { <p class="mb-16px">Traffic is running normally.</p> }
+      @if (operation.state === 'quiesced') { <p class="mb-16px">Processing is paused. Queued work is safe in the store. Resume traffic when maintenance is done.</p> }
+      @if (operation.state === 'draining') { <p class="mb-16px">The queue is finishing accepted work. Scheduled jobs and retries will run at their usual times.</p> }
+      @if (operation.state === 'drained') { <p class="mb-16px">All work is complete. Traffic stays paused until you resume it.</p> }
+      @if (operation.state === 'stopped') { <p class="mb-16px">The previous queue is stopped. Its remaining work is preserved.</p> }
+      @if (operation.state === 'fencing') { <p class="mb-16px">Stopping new work and waiting for workers to finish.</p> }
+    }
+
+    @if (current.unsettled > 0) { <p role="status" class="rounded-8px bg-amber-50 p-12px mb-16px">{{ current.unsettled | number }} accepted {{ current.unsettled === 1 ? 'job has' : 'jobs have' }} an unknown outcome. The queue cannot be marked drained yet.</p> }
+    @if (blockedCount > 0) { <p role="status" class="rounded-8px bg-amber-50 p-12px mb-16px">{{ blockedCount | number }} archived or unknown {{ blockedCount === 1 ? 'job needs' : 'jobs need' }} review before the drain can finish.</p> }
+    @if (current.operation?.state === 'draining' && waitingCount > 0) { <p role="status" class="mb-16px text-[13px] text-new.text-secondary">Waiting for {{ waitingCount | number }} scheduled {{ waitingCount === 1 ? 'job' : 'jobs' }} or retries. Their timing has not changed.</p> }
+    @for (blocker of current.blockers; track $index) { <p role="status" class="mb-12px text-[13px] text-amber-800">{{ blocker }}</p> }
+
+    <div class="flex flex-wrap gap-12px mb-20px">@for (action of current.actions; track action) {
+      <button type="button" class="border border-new.border rounded-8px px-14px py-9px text-[14px] font-medium hover:bg-new.surface-muted disabled:opacity-50" [disabled]="stale || busy" (click)="select(action)">{{ label(action) }}</button>
+    }</div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-12px mb-20px" aria-label="Queue totals">
+      <div class="rounded-8px bg-new.surface-muted p-12px"><p class="text-[12px] text-new.text-secondary">Ready</p><p class="font-medium text-[20px]">{{ pendingCount | number }}</p></div>
+      <div class="rounded-8px bg-new.surface-muted p-12px"><p class="text-[12px] text-new.text-secondary">In progress</p><p class="font-medium text-[20px]">{{ processingCount | number }}</p></div>
+      <div class="rounded-8px bg-new.surface-muted p-12px"><p class="text-[12px] text-new.text-secondary">Scheduled</p><p class="font-medium text-[20px]">{{ waitingCount | number }}</p></div>
+      <div class="rounded-8px bg-new.surface-muted p-12px"><p class="text-[12px] text-new.text-secondary">Needs review</p><p class="font-medium text-[20px]">{{ needsReviewCount | number }}</p></div>
+    </div>
+
+    @if (selected) {
+      <div class="rounded-8px border border-new.border bg-new.surface-muted mt-20px p-16px" aria-label="Confirm queue action">
+        <h4 class="font-medium mb-8px">{{ label(selected) }}</h4>
+        @if (selected === 'quiesce') { <p class="text-[14px] mb-12px">New work will pause while workers finish what they have started. Queued work stays in place.</p> }
+        @if (selected === 'drain') { <p class="text-[14px] mb-12px">New work will pause while the queue finishes. Scheduled jobs and retries keep their original timing. You will need to resume traffic afterward.</p> }
+        @if (selected === 'drain_previous') { <p class="text-[14px] mb-12px">Finish work in this previous queue. Traffic on the current queue will continue. Jobs will stay in this store.</p> }
+        @if (selected === 'resume_traffic') { <p class="text-[14px] mb-12px">Restart workers and accept new work.</p> }
+        @if (selected === 'stop') { <p class="text-[14px] mb-12px">Stop taking work from this queue. Remaining jobs stay in place.</p> }
+        @if (selected === 'resume_drain') { <p class="text-[14px] mb-12px">Continue finishing the work left in this queue.</p> }
+        @if ((selected === 'drain' || selected === 'drain_previous') && current.paused_queues?.length) {
+          <label class="flex gap-8px mb-12px text-[14px]"><input type="checkbox" style="width: 18px; height: 18px; flex: 0 0 18px; appearance: auto; margin-top: 3px" [checked]="resumePaused" (change)="resumePaused = $any($event.target).checked" /> Include currently paused queues. They will be paused again when this operation ends.</label>
+        }
+        <div class="flex flex-wrap gap-12px"><button type="button" class="bg-primary-100 text-white-100 rounded-8px px-14px py-9px text-[14px]" [disabled]="busy || stale || !current.actions.includes(selected) || ((selected === 'drain' || selected === 'drain_previous') && !!current.paused_queues?.length && !resumePaused)" (click)="confirm()">{{ busy ? 'Starting…' : 'Confirm ' + label(selected).toLowerCase() }}</button><button type="button" class="px-12px py-9px text-[14px]" [disabled]="busy" (click)="cancel()">Cancel</button></div>
+      </div>
+    }
+
+    <details class="border-t border-new.border mt-20px pt-16px">
+      <summary class="cursor-pointer text-[14px] font-medium">Queue and worker details</summary>
+      <p class="text-[12px] text-new.text-secondary mt-12px mb-12px">{{ current.workers.length }} registered workers · Last checked {{ current.snapshot?.observed_at | date:'medium' }}</p>
+      @if (current.snapshot; as snapshot) {
+        <div class="overflow-x-auto"><table class="w-full text-left text-[13px] min-w-[620px]">
+          <thead><tr><th class="p-8px">Queue</th><th class="p-8px">Ready</th><th class="p-8px">In progress</th><th class="p-8px">Scheduled</th><th class="p-8px">Next run</th><th class="p-8px">Archived / unknown</th></tr></thead>
+          <tbody>@for (q of snapshot.queues; track q.name) { <tr class="border-t border-new.border"><td class="p-8px">{{ q.name }} {{ q.paused ? '(paused)' : '' }}</td><td class="p-8px">{{ q.pending | number }}</td><td class="p-8px">{{ q.processing | number }}</td><td class="p-8px">{{ q.scheduled + q.retry + q.future + q.aggregating | number }}</td><td class="p-8px">{{ q.next_due_at ? (q.next_due_at | date:'medium') : '—' }}</td><td class="p-8px">{{ q.archived | number }} / {{ q.unknown | number }}</td></tr> }</tbody>
+        </table></div>
+      }
+      <details class="mt-12px"><summary class="cursor-pointer text-[13px]">Worker acknowledgements</summary>
+        <ul class="text-[13px] mt-8px">@for (worker of current.workers; track worker.id) {
+          <li class="mb-8px">{{ worker.store_id === store.id ? 'This store' : 'Other store' }} · {{ worker.state }} · {{ worker.operation_id === current.operation?.id && worker.revision === current.operation?.revision ? 'Current operation acknowledged' : 'Awaiting current operation acknowledgement' }} · {{ worker.observed_at | date:'mediumTime' }}</li>
+        }</ul>
+      </details>
+    </details>
+  }
+  @if (error) { <p role="alert" class="mt-12px">{{ error }}</p> }
+</section>

@@ -106,6 +106,8 @@ func TestDockerInventoryBothProviderDirections(t *testing.T) {
 					}
 					require.NotNil(t, found)
 					require.True(t, found.Paused)
+					require.NotNil(t, found.NextDueAt)
+					require.True(t, found.NextDueAt.After(time.Now().Add(50*time.Minute)))
 					require.Equal(t, int64(1), found.Pending)
 					require.Equal(t, int64(1), found.Archived)
 					if store.Provider == "redis" {

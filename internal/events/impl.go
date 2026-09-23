@@ -523,52 +523,6 @@ func (s *Service) loadEventsPagedExistsRows(ctx context.Context, base existsPage
 	return out, nil
 }
 
-// loadEventsPagedSearch handles CTE path pagination (with search query)
-func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, filter *datastore.Filter, startDate, endDate time.Time) ([]datastore.Event, error) {
-	cursor := filter.Pageable.Cursor()
-	direction := "next"
-	if filter.Pageable.Direction == datastore.Prev {
-		direction = "prev"
-	}
-	sortOrder := filter.Pageable.SortOrder()
-
-	params := repo.LoadEventsPagedSearchParams{
-		ProjectID:          common.StringToPgTextNullable(projectID),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
-		IdempotencyKey:     common.StringToPgTextNullable(filter.IdempotencyKey),
-		StartDate:          common.TimeToPgTimestamptz(startDate),
-		EndDate:            common.TimeToPgTimestamptz(endDate),
-		HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
-		SourceIds:          filter.SourceIDs,
-		HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
-		EndpointIds:        filter.EndpointIDs,
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
-		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
-		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
-		Query:              common.StringToPgTextNullable(filter.Query),
-		Cursor:             common.StringToPgText(cursor),
-		Direction:          common.StringToPgText(direction),
-		SortOrder:          common.StringToPgText(sortOrder),
-		PageLimit:          pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
-	}
-
-	rows, err := s.repo.LoadEventsPagedSearch(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	events := make([]datastore.Event, 0, len(rows))
-	for _, row := range rows {
-		event, err := rowToEvent(row)
-		if err != nil {
-			return nil, err
-		}
-		events = append(events, *event)
-	}
-
-	return events, nil
-}
-
 // countPrevEvents checks if there are events before cursor (for HasPrevPage)
 // "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter *datastore.Filter, cursor string, startDate, endDate time.Time) (datastore.PrevRowCount, error) {

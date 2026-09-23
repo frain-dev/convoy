@@ -19,6 +19,26 @@ describe('QueueMonitoringStoresComponent', () => {
 	});
 	afterEach(() => fixture.destroy());
 
+	it('shows a compact completed notice only while the drained store is freshly known empty', async () => {
+		const empty = {...previous(), visibility_reasons: ['operation_drained']};
+		empty.snapshot = {...empty.snapshot!, queues: []};
+		getQueueStores.and.resolveTo({data: [empty]});
+		fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+		expect(fixture.nativeElement.textContent).toContain('Drain verified');
+		expect(fixture.nativeElement.querySelector('table')).toBeNull();
+		getQueueStores.and.resolveTo({data: [{...empty, connection: 'unknown', visibility_reasons: ['inspection_failed']}]});
+		await fixture.componentInstance.refresh(); fixture.detectChanges();
+		expect(fixture.nativeElement.textContent).not.toContain('Drain verified');
+		expect(fixture.nativeElement.textContent).toContain('Stale observation');
+	});
+
+	it('does not certify a completed operation when its fresh inventory contains work', async () => {
+		getQueueStores.and.resolveTo({data: [{...previous(), visibility_reasons: ['operation_drained']}]});
+		fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+		expect(fixture.nativeElement.textContent).not.toContain('Drain verified');
+		expect(fixture.nativeElement.querySelector('table')).not.toBeNull();
+	});
+
 	it('hides previous queues while initially loading', () => {
 		fixture.detectChanges();
 		expect(fixture.nativeElement.querySelector('section')).toBeNull();

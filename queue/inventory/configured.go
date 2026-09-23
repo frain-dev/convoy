@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -38,14 +39,7 @@ func Configured(cfg config.Configuration, db *sqlx.DB) (*Inventory, error) {
 		}
 		return configuredRedis{cfg: cfg.Redis}
 	}
-	scope := cfg.QueueStoreScope
-	if scope == "" {
-		scope = "current"
-	}
-	id := func(provider string) string {
-		digest := sha256.Sum256([]byte(scope + "/" + provider + "/" + configuredLocation(cfg, provider)))
-		return hex.EncodeToString(digest[:16])
-	}
+	id := func(provider string) string { return StoreID(cfg, provider) }
 	registrations := []Registration{{ID: id(active), Provider: active, Role: "active", Reader: reader(active)}}
 	if cfg.PreviousQueueProvider != "" {
 		previous := string(cfg.PreviousQueueProvider)
@@ -54,15 +48,28 @@ func Configured(cfg config.Configuration, db *sqlx.DB) (*Inventory, error) {
 	return New(registrations)
 }
 
+// StoreID identifies a configured namespace independently of its credentials.
+func StoreID(cfg config.Configuration, provider string) string {
+	scope := cfg.QueueStoreScope
+	if scope == "" {
+		scope = "current"
+	}
+	digest := sha256.Sum256([]byte(scope + "/" + provider + "/" + configuredLocation(cfg, provider)))
+	return hex.EncodeToString(digest[:16])
+}
+
+// RedisReader inspects through the supplied authentication without creating a writer.
+func RedisReader(cfg config.RedisConfiguration) Reader { return configuredRedis{cfg: cfg} }
+
 type configuredRedis struct{ cfg config.RedisConfiguration }
 
-func (r configuredRedis) Inspect(ctx context.Context) (Snapshot, error) {
+func (r configuredRedis) withInspector(ctx context.Context, inspect func(*asynq.Inspector) error) error {
 	if err := ctx.Err(); err != nil {
-		return Snapshot{}, err
+		return err
 	}
 	client, err := rdb.NewClientFromRedisConfig(r.cfg)
 	if err != nil {
-		return Snapshot{}, err
+		return err
 	}
 	// Asynq inspectors use background contexts internally. Give this request
 	// its own client with context deadlines enabled and attach the request
@@ -81,14 +88,24 @@ func (r configuredRedis) Inspect(ctx context.Context) (Snapshot, error) {
 		bounded = redis.NewClusterClient(&opts)
 	default:
 		_ = client.Client().Close()
-		return Snapshot{}, errors.New("unsupported inspection connection")
+		return errors.New("unsupported inspection connection")
 	}
 	defer client.Client().Close()
 	defer bounded.Close()
 	bounded.AddHook(inspectionContext{ctx: ctx})
 	// NewInspectorFromRedisClient neither enqueues nor registers any worker.
 	inspector := asynq.NewInspectorFromRedisClient(bounded)
-	return (Redis{Inspector: inspector}).Inspect(ctx)
+	return inspect(inspector)
+}
+
+func (r configuredRedis) Inspect(ctx context.Context) (Snapshot, error) {
+	var result Snapshot
+	err := r.withInspector(ctx, func(inspector *asynq.Inspector) error {
+		var err error
+		result, err = (Redis{Inspector: inspector}).Inspect(ctx)
+		return err
+	})
+	return result, err
 }
 
 const inspectionTimeout = 5 * time.Second
@@ -112,7 +129,13 @@ func configuredLocation(cfg config.Configuration, provider string) string {
 		addresses = strings.Split(cfg.Redis.Addresses, ",")
 	}
 	for i := range addresses {
-		addresses[i] = strings.ToLower(strings.TrimSpace(addresses[i]))
+		address := strings.TrimSpace(addresses[i])
+		if parsed, err := url.Parse(address); err == nil && parsed.Host != "" {
+			parsed.User = nil
+			parsed.Host = strings.ToLower(parsed.Host)
+			address = parsed.String()
+		}
+		addresses[i] = address
 	}
 	sort.Strings(addresses)
 	database := cfg.Redis.Database

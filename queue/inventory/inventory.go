@@ -27,8 +27,9 @@ func (c Counts) remaining() bool {
 type Queue struct {
 	Name string `json:"name" db:"name"`
 	Counts
-	Paused         bool  `json:"paused" db:"paused"`
-	OldestDueAgeMS int64 `json:"oldest_due_age_ms" db:"oldest_due_age_ms"`
+	NextDueAt      *time.Time `json:"next_due_at,omitempty" db:"next_due_at"`
+	Paused         bool       `json:"paused" db:"paused"`
+	OldestDueAgeMS int64      `json:"oldest_due_age_ms" db:"oldest_due_age_ms"`
 }
 
 type Snapshot struct {
@@ -41,6 +42,7 @@ type Reader interface {
 }
 
 type Store struct {
+	OperationID       string    `json:"operation_id,omitempty"`
 	ID                string    `json:"id"`
 	Provider          string    `json:"provider"`
 	Role              string    `json:"role"`

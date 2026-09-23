@@ -13,6 +13,8 @@ import (
 type RedisInspector interface {
 	Queues() ([]string, error)
 	GetQueueInfo(string) (*asynq.QueueInfo, error)
+	ListScheduledTasks(string, ...asynq.ListOption) ([]*asynq.TaskInfo, error)
+	ListRetryTasks(string, ...asynq.ListOption) ([]*asynq.TaskInfo, error)
 }
 
 type Redis struct{ Inspector RedisInspector }
@@ -43,7 +45,24 @@ func (r Redis) Inspect(ctx context.Context) (Snapshot, error) {
 		if info == nil {
 			return Snapshot{}, errors.New("missing queue information")
 		}
-		snapshot.Queues = append(snapshot.Queues, Queue{Name: name, Paused: info.Paused, OldestDueAgeMS: info.Latency.Milliseconds(), Counts: Counts{
+		var nextDue *time.Time
+		for _, delayed := range []struct {
+			count int
+			list  func(string, ...asynq.ListOption) ([]*asynq.TaskInfo, error)
+		}{{info.Scheduled, r.Inspector.ListScheduledTasks}, {info.Retry, r.Inspector.ListRetryTasks}} {
+			if delayed.count == 0 {
+				continue
+			}
+			tasks, err := delayed.list(name, asynq.PageSize(1))
+			if err != nil {
+				return Snapshot{}, err
+			}
+			if len(tasks) > 0 && !tasks[0].NextProcessAt.IsZero() && (nextDue == nil || tasks[0].NextProcessAt.Before(*nextDue)) {
+				stamp := tasks[0].NextProcessAt.UTC()
+				nextDue = &stamp
+			}
+		}
+		snapshot.Queues = append(snapshot.Queues, Queue{NextDueAt: nextDue, Name: name, Paused: info.Paused, OldestDueAgeMS: info.Latency.Milliseconds(), Counts: Counts{
 			Pending: int64(info.Pending), Processing: int64(info.Active), Scheduled: int64(info.Scheduled), Retry: int64(info.Retry),
 			Aggregating: int64(info.Aggregating), Archived: int64(info.Archived), Completed: int64(info.Completed),
 		}})

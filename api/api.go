@@ -273,6 +273,9 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 	router.Use(chiMiddleware.RequestID)
 	router.Use(chiMiddleware.Recoverer)
 	router.Use(middleware.WriteRequestIDHeader)
+	if a.A.QueueAdmission != nil {
+		router.Use(a.queueAdmission)
+	}
 	router.Use(middleware.WriteVersionHeader(VersionHeader, a.cfg.APIVersion))
 	router.Use(middleware.InstrumentRequests(serverName, router, a.A.TracerProvider()))
 	router.Use(middleware.EnrichSpanFromRoute)
@@ -595,6 +598,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				queueRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 				queueRouter.Get("/stats", handler.GetQueueStats)
 				queueRouter.Get("/stores", handler.GetQueueStores)
+				queueRouter.Get("/stores/{storeID}/operation", handler.GetQueueDrain)
+				queueRouter.Post("/stores/{storeID}/operations", handler.BeginQueueDrain)
+				queueRouter.Post("/stores/{storeID}/operations/{operationID}/commands", handler.CommandQueueDrain)
+				queueRouter.Get("/stores/{storeID}/operations/{operationID}/history", handler.GetQueueDrainHistory)
 				queueRouter.Get("/scheduler", handler.GetQueueSchedulerEntries)
 				queueRouter.Get("/{queueName}/history", handler.GetQueueHistory)
 				queueRouter.Get("/{queueName}/tasks", handler.GetQueueTasks)

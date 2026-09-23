@@ -214,6 +214,20 @@ func (dc DatabaseConfiguration) EffectiveMaxOpenConnections() int {
 
 type QueueConfiguration struct {
 	Postgres PostgresQueueConfiguration `json:"postgres"`
+	Drain    QueueDrainConfiguration    `json:"drain"`
+}
+
+// QueueDrainConfiguration separates the credentials whose admission may be
+// revoked from the executor and controller. Enabling operations is explicit;
+// merely registering a previous store still performs read-only inspection.
+type QueueDrainConfiguration struct {
+	Enabled                  bool   `json:"enabled" envconfig:"CONVOY_QUEUE_DRAIN_ENABLED"`
+	PostgresExecutorUsername string `json:"postgres_executor_username" envconfig:"CONVOY_QUEUE_DRAIN_POSTGRES_EXECUTOR_USERNAME"`
+	PostgresExecutorPassword string `json:"postgres_executor_password" envconfig:"CONVOY_QUEUE_DRAIN_POSTGRES_EXECUTOR_PASSWORD"`
+	RedisExecutorUsername    string `json:"redis_executor_username" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_EXECUTOR_USERNAME"`
+	RedisExecutorPassword    string `json:"redis_executor_password" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_EXECUTOR_PASSWORD"`
+	RedisControllerUsername  string `json:"redis_controller_username" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_CONTROLLER_USERNAME"`
+	RedisControllerPassword  string `json:"redis_controller_password" envconfig:"CONVOY_QUEUE_DRAIN_REDIS_CONTROLLER_PASSWORD"`
 }
 
 // PostgresQueueConfiguration tunes the Postgres queue provider's write path.
@@ -1182,6 +1196,9 @@ func validate(c *Configuration) error {
 	if err := c.ValidateQueueInventory(); err != nil {
 		return err
 	}
+	if err := c.ValidateQueueDrain(); err != nil {
+		return err
+	}
 	ensureMaxResponseSize(c)
 
 	switch c.QueueProvider {
@@ -1230,6 +1247,45 @@ func validate(c *Configuration) error {
 		}
 	}
 
+	return nil
+}
+
+func (c Configuration) ValidateQueueDrain() error {
+	d := c.Queue.Drain
+	if !d.Enabled {
+		return nil
+	}
+	if strings.TrimSpace(c.QueueStoreScope) == "" || len(c.QueueStoreScope) > 200 {
+		return errors.New("queue drain requires a deployment scope of at most 200 characters")
+	}
+	stores := 1
+	if c.PreviousQueueProvider != "" {
+		stores++
+	}
+	// Each executor retains one session for worker authority and one per
+	// in-flight task for shared exclusion. Leave another connection per
+	// handler plus headroom for admission, controllers and HTTP requests.
+	minimumPool := stores*(2*c.ConsumerPoolSize+1) + 8
+	if c.Database.EffectiveMaxOpenConnections() < minimumPool {
+		return fmt.Errorf("queue drain requires database.max_open_conn >= %d for the configured consumer pools", minimumPool)
+	}
+	active := c.QueueProvider
+	if active == "" {
+		active = RedisQueueProvider
+	}
+	if active == PostgresQueueProvider || c.PreviousQueueProvider == PostgresQueueProvider {
+		if d.PostgresExecutorUsername == "" {
+			return errors.New("queue drain requires a dedicated PostgreSQL executor role")
+		}
+	}
+	if active == RedisQueueProvider || c.PreviousQueueProvider == RedisQueueProvider {
+		if c.Redis.IsSentinel() || len(c.Redis.BuildDsn()) != 1 || (c.Redis.Database != "" && c.Redis.Database != "0") {
+			return errors.New("queue drain requires a dedicated standalone Redis instance using database zero")
+		}
+		if d.RedisExecutorUsername == "" || d.RedisControllerUsername == "" || d.RedisExecutorUsername == d.RedisControllerUsername || d.RedisExecutorPassword == "" || d.RedisControllerPassword == "" {
+			return errors.New("queue drain requires separate authenticated Redis executor and controller users")
+		}
+	}
 	return nil
 }
 

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { QueueDrainComponent } from './queue-drain.component';
 import { AdminService } from '../admin/admin.service';
 
 export interface QueueStoreSnapshot {
@@ -17,6 +18,7 @@ export interface QueueStoreSnapshot {
 		unknown: number;
 		paused: boolean;
 		oldest_due_age_ms: number;
+		next_due_at?: string;
 	}>;
 }
 
@@ -29,15 +31,18 @@ export interface QueueStore {
 	visible: boolean;
 	visibility_reasons: string[];
 	actions: string[];
+	operation_id?: string;
 }
 
 @Component({
 	selector: 'convoy-queue-monitoring-stores',
-	imports: [CommonModule],
+	imports: [CommonModule, QueueDrainComponent],
 	templateUrl: './queue-monitoring-stores.component.html'
 })
 export class QueueMonitoringStoresComponent implements OnInit, OnDestroy {
+	@Input() maintenance = false;
 	stores: QueueStore[] = [];
+	get actionable(): QueueStore[] { return this.stores.filter(s => (s.role === "active" || s.visible) && (s.actions.includes("review") || !!s.operation_id)); }
 	loading = false;
 	loadError = false;
 	private destroyed = false;
@@ -56,6 +61,12 @@ export class QueueMonitoringStoresComponent implements OnInit, OnDestroy {
 
 	get previous(): QueueStore[] {
 		return this.stores.filter(store => store.role === 'previous' && store.visible);
+	}
+
+	completed(store: QueueStore): boolean {
+		return store.connection === 'connected' && store.visibility_reasons.includes('operation_drained') &&
+			!store.visibility_reasons.some(reason => ['remaining_work', 'archived_work', 'unknown_work'].includes(reason)) &&
+			!!store.snapshot && store.snapshot.queues.every(q => q.pending + q.processing + q.scheduled + q.retry + q.future + q.aggregating + q.archived + q.unknown === 0);
 	}
 
 	providerLabel(store: QueueStore): string {

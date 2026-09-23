@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -106,6 +107,12 @@ const writeJobSQL = `
 		AND convoy.queue_jobs.status IN ($11, $12)
 	  )`
 
+// Preserve duplicate descendants in place. The event-to-retry handoff is the
+// one allowed replacement: it transfers the current claim to its next queue.
+var writePreservedJobSQL = strings.Replace(writeJobSQL, "WHERE (", `WHERE
+    (convoy.queue_jobs.status = $9 AND convoy.queue_jobs.queue_name = $13 AND EXCLUDED.queue_name = $14)
+    AND (`, 1)
+
 // writeJobsSQL is the batch form of writeJobSQL: one statement for the whole
 // flush window instead of one per job. Conflict handling and the cron guard are
 // identical; RETURNING id reports which rows the guard let through, which is how
@@ -182,14 +189,15 @@ type PostgresQueue struct {
 }
 
 type writeRequest struct {
-	id        string
-	taskName  string
-	queueName string
-	payload   []byte
-	headers   []byte
-	maxRetry  int
-	delay     float64
-	result    chan error
+	preserveExisting bool
+	id               string
+	taskName         string
+	queueName        string
+	payload          []byte
+	headers          []byte
+	maxRetry         int
+	delay            float64
+	result           chan error
 }
 
 type completeRequest struct {
@@ -357,14 +365,15 @@ func (q *PostgresQueue) write(ctx context.Context, taskName convoy.TaskName, que
 	}
 
 	req := writeRequest{
-		id:        job.ID,
-		taskName:  string(taskName),
-		queueName: string(queueName),
-		payload:   payload,
-		headers:   headerBytes,
-		maxRetry:  maxRetry,
-		delay:     delay.Seconds(),
-		result:    make(chan error, 1),
+		preserveExisting: job.PreserveExisting,
+		id:               job.ID,
+		taskName:         string(taskName),
+		queueName:        string(queueName),
+		payload:          payload,
+		headers:          headerBytes,
+		maxRetry:         maxRetry,
+		delay:            delay.Seconds(),
+		result:           make(chan error, 1),
 	}
 	// Refuse before offering. Both cases below can be ready at once after Close
 	// and select would pick either, so without this a write can still land in a
@@ -375,6 +384,15 @@ func (q *PostgresQueue) write(ctx context.Context, taskName convoy.TaskName, que
 	default:
 	}
 
+	if req.preserveExisting {
+		writeCtx, cancel := context.WithTimeout(ctx, postgresBatchTimeout)
+		defer cancel()
+		err := q.execWrite(writeCtx, q.db, req)
+		if err == nil {
+			q.notifyPending()
+		}
+		return err
+	}
 	select {
 	case q.writes <- req:
 	case <-q.quit:
@@ -575,7 +593,11 @@ func fillErrors(results []error, err error) []error {
 
 func (q *PostgresQueue) execWrite(ctx context.Context, db sqlx.ExecerContext, req writeRequest) error {
 	// run_at is PostgreSQL NOW() so Claim's run_at <= NOW() uses one clock.
-	res, err := db.ExecContext(ctx, writeJobSQL,
+	statement := writeJobSQL
+	if req.preserveExisting {
+		statement = writePreservedJobSQL
+	}
+	res, err := db.ExecContext(ctx, statement,
 		req.id, req.taskName, req.queueName, req.payload, req.headers,
 		req.maxRetry, statusPending, req.delay, statusProcessing,
 		cronJobPrefix+"%", statusArchived, statusCompleted,
@@ -589,6 +611,9 @@ func (q *PostgresQueue) execWrite(ctx context.Context, db sqlx.ExecerContext, re
 		return err
 	}
 	if affected == 0 {
+		if req.preserveExisting {
+			return nil
+		}
 		// Failure policy: an in-flight task is not replaced or reported as
 		// re-enqueued. The caller must retry after the active claim resolves.
 		return skippedWriteResult(req.id)
