@@ -62,7 +62,7 @@ func TestExponentialBackoffRetryStrategy_NextDuration_NearZeroDelays(t *testing.
 
 	for i := 0; i < 10; i++ {
 		d := r.NextDuration(uint64(i))
-		assert.GreaterOrEqual(t, d, 1*time.Second)
+		assert.GreaterOrEqual(t, d, time.Duration(math.Pow(2, float64(i)))*time.Second)
 		assert.LessOrEqual(t, d, time.Duration(m.MaxRetrySeconds)*time.Second)
 	}
 }
@@ -89,7 +89,7 @@ func TestExponentialBackoffRetryStrategy_NextDuration_ExponentialGrowth(t *testi
 	m := datastore.Metadata{
 		Strategy:        "exponential",
 		RetryLimit:      20,
-		IntervalSeconds: 1,
+		IntervalSeconds: 5,
 		MaxRetrySeconds: 7200,
 	}
 	r := NewRetryStrategyFromMetadata(m)
@@ -97,10 +97,14 @@ func TestExponentialBackoffRetryStrategy_NextDuration_ExponentialGrowth(t *testi
 	assert.True(t, isExp)
 
 	maxDuration := time.Duration(m.MaxRetrySeconds) * time.Second
+
 	for i := 0; i < 12; i++ {
 		d := r.NextDuration(uint64(i))
+		base := time.Duration(float64(m.IntervalSeconds)*math.Pow(2, float64(i))) * time.Second
 
+		if base < maxDuration {
+			assert.GreaterOrEqual(t, d, base)
+		}
 		assert.LessOrEqual(t, d, maxDuration)
-		assert.Greater(t, d, time.Duration(0))
 	}
 }
