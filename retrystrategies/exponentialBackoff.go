@@ -20,10 +20,15 @@ func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Dur
 	}
 
 	d := time.Duration(retrySeconds) * time.Second
+	maxDuration := time.Duration(r.maxRetrySeconds) * time.Second
 
 	jitter := time.Duration(rand.Uint64() % 10e9)
 
 	d += jitter / 2
+
+	if d > maxDuration {
+		d = maxDuration
+	}
 
 	return d
 }
@@ -31,6 +36,10 @@ func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Dur
 func NewExponential(intervalSeconds, maxRetrySeconds uint64) *ExponentialBackoffRetryStrategy {
 	if maxRetrySeconds == 0 {
 		maxRetrySeconds = 7200
+	}
+
+	if intervalSeconds == 0 {
+		intervalSeconds = 1
 	}
 
 	return &ExponentialBackoffRetryStrategy{
