@@ -587,7 +587,8 @@ type DispatcherConfiguration struct {
 	CACertPath         string   `json:"ca_cert_path" envconfig:"CONVOY_DISPATCHER_CACERT_PATH"`
 	CACertString       string   `json:"ca_cert_string" envconfig:"CONVOY_DISPATCHER_CACERT_STRING"`
 	PingMethods        []string `json:"ping_methods" envconfig:"CONVOY_DISPATCHER_PING_METHODS"`
-	SkipPingValidation bool     `json:"skip_ping_validation" envconfig:"CONVOY_DISPATCHER_SKIP_PING_VALIDATION"`
+	// SkipPingValidation disables the outbound probe on endpoint creation and update.
+	SkipPingValidation bool `json:"skip_ping_validation" envconfig:"CONVOY_DISPATCHER_SKIP_PING_VALIDATION"`
 }
 
 type PyroscopeConfiguration struct {
