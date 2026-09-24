@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	minioUsername  = "minioadmin"
-	minioPassword  = "minioadmin"
-	defaultBucket  = "convoy-test-exports"
-	minioDockerTag = "RELEASE.2024-01-16T16-07-38Z"
+	minioUsername    = "minioadmin"
+	minioPassword    = "minioadmin"
+	defaultBucket    = "convoy-test-exports"
+	minioDockerImage = "ghcr.io/coollabsio/minio@sha256:69b55a1c1c5dc285ce04db96689f5b2102317fc77a50680a1874ca6efd1c87f9"
 )
 
 // MinIOClientFunc is a factory function that creates a MinIO client for tests.
@@ -29,7 +29,7 @@ type MinIOClientFunc func(t *testing.T) (*minio.Client, string, error)
 // for creating MinIO clients in tests.
 func NewTestMinIO(ctx context.Context) (*tcminio.MinioContainer, MinIOClientFunc, error) {
 	container, err := tcminio.Run(ctx,
-		"quay.io/minio/minio:"+minioDockerTag,
+		minioDockerImage,
 		tcminio.WithUsername(minioUsername),
 		tcminio.WithPassword(minioPassword),
 		testcontainers.WithLogger(log.New("minio", log.LevelDebug)),
