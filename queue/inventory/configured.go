@@ -23,8 +23,7 @@ import (
 
 // Configured registers the deployment's existing connections only. A Redis
 // connection used for cache is not a previous queue unless explicitly selected.
-// Logical IDs identify registrations, not proven ownership: inspection enables
-// no drain actions and cannot establish that another executor is fenced out.
+// Logical IDs identify registrations, not proven ownership.
 func Configured(cfg config.Configuration, db *sqlx.DB) (*Inventory, error) {
 	if err := cfg.ValidateQueueInventory(); err != nil {
 		return nil, err
@@ -113,7 +112,7 @@ const inspectionTimeout = 5 * time.Second
 // Include the configured physical location in the registration identity so a
 // changed connection cannot inherit a previous store's cached observation.
 // Credentials are excluded; changing a password is not changing stores. DNS
-// aliases are not proof of physical identity and remain a drain preflight concern.
+// aliases are not proof of physical identity.
 func configuredLocation(cfg config.Configuration, provider string) string {
 	if provider == "postgres" {
 		dc := cfg.Database

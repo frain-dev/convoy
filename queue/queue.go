@@ -76,9 +76,6 @@ type Archiver interface {
 }
 
 var (
-	// ErrAdmissionClosed defers an unstarted handler without consuming its
-	// delivery retry budget. It is distinct from a failed delivery attempt.
-	ErrAdmissionClosed = errors.New("queue admission is fenced")
 	// ErrTaskNotFound means no row carries that task ID. Failure policy: fail
 	// closed. A lookup that errored is returned as itself, never reported as a
 	// missing task.
@@ -119,11 +116,9 @@ var (
 )
 
 type Job struct {
-	// PreserveExisting keeps an already accepted job and its retry schedule on duplicate enqueue.
-	PreserveExisting bool          `json:"-"`
-	ID               string        `json:"id"`
-	Payload          []byte        `json:"payload"`
-	Delay            time.Duration `json:"delay"`
+	ID      string        `json:"id"`
+	Payload []byte        `json:"payload"`
+	Delay   time.Duration `json:"delay"`
 
 	// MaxRetry, when set, caps how many times asynq will retry this task
 	// before archiving it. It is used to sync asynq's per-task retry budget

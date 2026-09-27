@@ -34,7 +34,6 @@ func TestPreviousQueueVisibilityAndFailureRecovery(t *testing.T) {
 				counts = c
 				row := inv.Inspect(t.Context())[1]
 				require.True(t, row.Visible)
-				require.Empty(t, row.Actions, "counts never authorize execution")
 			}
 			failure = errors.New("secret connection string")
 			failed := inv.Inspect(t.Context())[1]

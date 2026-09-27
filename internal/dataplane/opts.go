@@ -12,7 +12,6 @@ import (
 )
 
 type RuntimeOpts struct {
-	SourceDrain   bool
 	DB            database.Database
 	Queue         queue.Queuer
 	Logger        logger.Logger

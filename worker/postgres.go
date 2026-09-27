@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"errors"
 	"maps"
 	"strconv"
 	"sync"
@@ -166,8 +165,6 @@ func (r *postgresRunner) Stop() {
 		r.heartbeatWg.Wait()
 	})
 }
-
-func (r *postgresRunner) Suspend() { r.Stop() }
 
 func (r *postgresRunner) poll() {
 	defer r.pollerWg.Done()
@@ -340,14 +337,8 @@ func (r *postgresRunner) process(job queue.ClaimedJob) {
 	}
 	headers[task.HeaderRetryCount] = strconv.Itoa(job.RetryCount)
 	t := asynq.NewTaskWithHeaders(job.TaskName, job.Payload, headers)
-	err := r.mux.ProcessTask(queue.WithTaskIdentity(r.ctx, job.ID), t)
+	err := r.mux.ProcessTask(r.ctx, t)
 	ctx := context.WithoutCancel(r.ctx)
-	if errors.Is(err, queue.ErrAdmissionClosed) {
-		if releaseErr := r.queue.Release(ctx, []string{job.ID}); releaseErr != nil {
-			r.log.Error("postgres queue release while fenced failed", "error", releaseErr)
-		}
-		return
-	}
 	if err == nil {
 		if completeErr := r.queue.Complete(ctx, job.ID); completeErr != nil {
 			r.log.Error("postgres queue complete failed", "error", completeErr, "job", job.ID)
@@ -383,9 +374,6 @@ func (r *postgresRunner) process(job queue.ClaimedJob) {
 // failed attempt, so they must not consume retries or archive the job. Both
 // backends share this: the redis runner passes it to asynq as IsFailure.
 func isCountedFailure(err error) bool {
-	if errors.Is(err, queue.ErrAdmissionClosed) {
-		return false
-	}
 	if _, ok := err.(*task.RateLimitError); ok {
 		return false
 	}

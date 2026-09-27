@@ -81,14 +81,10 @@ type Retentioner interface {
 // Perform so `convoy utils partition` can activate retention without a worker
 // restart. Until all RetentionTables are partitioned parents it never
 // deletes; each skip logs the actionable error so the asynq job stays healthy.
-// BackgroundAdmission accounts for independent reconciliation before it writes.
-type BackgroundAdmission func(context.Context, func(context.Context) error) error
-
 type LicensedRetentionPolicy struct {
-	backgroundAdmission BackgroundAdmission
-	db                  database.Database
-	logger              log.Logger
-	period              time.Duration
+	db     database.Database
+	logger log.Logger
+	period time.Duration
 
 	mu       sync.Mutex
 	interval time.Duration
@@ -117,25 +113,13 @@ func (l *LicensedRetentionPolicy) SetPeriod(period time.Duration) {
 	}
 }
 
-// SetBackgroundAdmission must be called before Start.
-func (l *LicensedRetentionPolicy) SetBackgroundAdmission(admit BackgroundAdmission) {
-	l.backgroundAdmission = admit
-}
-
-func (l *LicensedRetentionPolicy) reconcile(ctx context.Context) error {
-	if l.backgroundAdmission != nil {
-		return l.backgroundAdmission(ctx, l.ensureActive)
-	}
-	return l.ensureActive(ctx)
-}
-
 func (l *LicensedRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 	l.mu.Lock()
 	l.interval = sampleRate
 	l.lifeCtx = ctx
 	l.mu.Unlock()
 
-	if err := l.reconcile(ctx); err != nil {
+	if err := l.ensureActive(ctx); err != nil {
 		l.logger.Error("failed to activate partition retention", "error", err)
 	}
 
@@ -158,7 +142,7 @@ func (l *LicensedRetentionPolicy) Start(ctx context.Context, sampleRate time.Dur
 					// inner.Start owns parent/tenant reconciliation.
 					return
 				}
-				if err := l.reconcile(ctx); err != nil {
+				if err := l.ensureActive(ctx); err != nil {
 					l.logger.Error("failed to activate partition retention", "error", err)
 				}
 			}
@@ -217,7 +201,6 @@ func (l *LicensedRetentionPolicy) ensureActive(ctx context.Context) error {
 		// caller ctx (e.g. asynq task). Fail closed: refuse activation.
 		return fmt.Errorf("retention Start has not run; cannot bind reconcile goroutine")
 	}
-	inner.backgroundAdmission = l.backgroundAdmission
 	inner.Start(lifeCtx, interval)
 	l.inner = inner
 	l.missing = nil
@@ -240,11 +223,10 @@ func NewTestRetentionPolicy(manager *partman.Manager) *TestRetentionPolicy {
 }
 
 type PartitionRetentionPolicy struct {
-	backgroundAdmission BackgroundAdmission
-	retentionPeriod     time.Duration
-	manager             *partman.Manager
-	logger              log.Logger
-	db                  database.Database
+	retentionPeriod time.Duration
+	manager         *partman.Manager
+	logger          log.Logger
+	db              database.Database
 }
 
 func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period time.Duration) (*PartitionRetentionPolicy, error) {
@@ -450,21 +432,8 @@ func (r *PartitionRetentionPolicy) registerTenants(ctx context.Context) {
 // Perform (the asynq nightly job) calls Maintain.
 func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 	go func(r *PartitionRetentionPolicy) {
-		reconcile := func(ctx context.Context) error {
-			r.registerParents(ctx)
-			r.registerTenants(ctx)
-			return ctx.Err()
-		}
-		run := func() {
-			if r.backgroundAdmission != nil {
-				if err := r.backgroundAdmission(ctx, reconcile); err != nil {
-					r.logger.Debug("retention reconciliation deferred", "error", err)
-				}
-			} else {
-				_ = reconcile(ctx)
-			}
-		}
-		run()
+		r.registerParents(ctx)
+		r.registerTenants(ctx)
 
 		if sampleRate <= 0 {
 			sampleRate = time.Hour
@@ -477,7 +446,9 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				run()
+				bg := context.Background()
+				r.registerParents(bg)
+				r.registerTenants(bg)
 			}
 		}
 	}(r)

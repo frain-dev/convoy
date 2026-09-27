@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hibiken/asynq"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -45,16 +43,12 @@ import (
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/drain"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 )
 
 type Worker struct {
-	drainRuntime    *drain.Runtime
-	drainController *drain.Controller
 	consumer        *worker.Consumer
 	backupCollector *backup_collector.BackupCollector // nil if CDC backup disabled
 	logger          log.Logger
@@ -74,12 +68,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		}
 	}
 
-	if err := func() error {
-		if opts.SourceDrain {
-			return nil
-		}
-		return keys.Set(km)
-	}(); err != nil {
+	if err := keys.Set(km); err != nil {
 		return nil, err
 	}
 
@@ -92,18 +81,13 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	if opts.Broker == nil {
 		return nil, fmt.Errorf("broker dependencies are required")
 	}
-	if opts.Broker.WorkerQueue != nil {
-		opts.Queue = opts.Broker.WorkerQueue
-	}
 	dynamicEventAcker := opts.Broker.Acker
 
 	if !opts.Licenser.AgentExecutionMode() {
 		cfg.WorkerExecutionMode = config.DefaultExecutionMode
 	}
 
-	if !opts.SourceDrain {
-		err = config.Override(&cfg)
-	}
+	err = config.Override(&cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -127,19 +111,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	consumer, err := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, queueNames, opts.Broker.ConsumerBackend, lo, lvl)
 	if err != nil {
 		return nil, err
-	}
-
-	if opts.Broker.Admission != nil {
-		consumer.SetExecutionGate(func(ctx context.Context, task *asynq.Task, run func(context.Context) error) error {
-			gate := opts.Broker.Admission
-			id := queue.TaskIdentity(ctx)
-			if id == "" {
-				id, _ = asynq.GetTaskID(ctx)
-			}
-			return gate.Run(ctx, drain.Claim, func(accepted context.Context) error {
-				return gate.Repository.Execute(accepted, gate.Scope, gate.StoreID, task.Type(), id, run)
-			})
-		})
 	}
 
 	if opts.JobTracker != nil {
@@ -174,11 +145,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	opts.setSubscriptionState(subscriptionsLoader, subscriptionsTable)
 
-	tableName := "subscriptions"
-	if opts.SourceDrain {
-		tableName += "-" + opts.Broker.Drain.Target.StoreID
-	}
-	err = memorystore.DefaultStore.Register(tableName, subscriptionsTable)
+	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
 	if err != nil {
 		return nil, err
 	}
@@ -234,12 +201,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	// takes effect without restarting the worker.
 	circuitBreakerManager, err := cb.NewCircuitBreakerManager(
 		cb.SkipSleepOption(masterDefaults.SkipSleep),
-		cb.SamplerAdmissionOption(func(ctx context.Context, sample func(context.Context) error) error {
-			if opts.Broker.Admission != nil {
-				return opts.Broker.Admission.RunBackgroundClaim(ctx, sample)
-			}
-			return sample(ctx)
-		}),
 		cb.MasterConfigOption(masterDefaults),
 		cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
 			project, err := projectRepo.FetchProjectByID(ctx, projectID)
@@ -268,7 +229,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		// Returns true only when the alert was dispatched, so the manager counts an
 		// alert that this tick actually produced. Every other exit reports false and
 		// leaves the window's one alert unspent.
-		cb.ContextNotificationFunctionOption(func(ctx context.Context, n cb.NotificationType, c cb.CircuitBreakerConfig, b *cb.CircuitBreaker) (bool, error) {
+		cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b *cb.CircuitBreaker) (bool, error) {
 			// This handler only knows how to disable a resource. A type it does
 			// not recognise must not fall through to the disable side effect, so
 			// it is rejected rather than silently deactivating the endpoint.
@@ -365,13 +326,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 			return nil, fmt.Errorf("failed to parse retention period: %w", _err)
 		}
 
-		policyRunner := retention.NewLicensedRetentionPolicy(opts.DB, lo, policy)
-		if opts.Broker.Admission != nil {
-			policyRunner.SetBackgroundAdmission(func(ctx context.Context, work func(context.Context) error) error {
-				return opts.Broker.Admission.Run(ctx, drain.Producer, work)
-			})
-		}
-		ret = policyRunner
+		ret = retention.NewLicensedRetentionPolicy(opts.DB, lo, policy)
 		ret.Start(ctx, time.Minute)
 	}
 
@@ -512,13 +467,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, locker, lo))
 	}
 
-	if !opts.SourceDrain {
-		metricsQueue := opts.Queue
-		if opts.Broker.MetricsQueue != nil {
-			metricsQueue = opts.Broker.MetricsQueue
-		}
-		err = metrics.RegisterQueueMetrics(metricsQueue, opts.DB, circuitBreakerManager)
-	}
+	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}
@@ -530,7 +479,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	var collector *backup_collector.BackupCollector
 	dbArchivingEnabled := loadConfiguration.GetWebhookArchivingConfig().Enabled
 	lo.Info(fmt.Sprintf("CDC backup config: cdc=%v, webhook_archiving_db=%v", cfg.WebhookArchiving.CDCEnabled, dbArchivingEnabled))
-	if cfg.WebhookArchiving.CDCEnabled && !opts.SourceDrain {
+	if cfg.WebhookArchiving.CDCEnabled {
 		usableErr := blobstore.StoragePolicyUsable(loadConfiguration.StoragePolicy)
 		if usableErr != nil {
 			if dbArchivingEnabled {
@@ -571,15 +520,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		}
 	}
 
-	var drainRuntime *drain.Runtime
-	if opts.Broker.Drain != nil {
-		controller := opts.Broker.Drain
-		drainRuntime = &drain.Runtime{Gate: opts.Broker.Admission, Repository: controller.Repository, Scope: controller.Target.Scope, StoreID: controller.Target.StoreID, ConfigurationRevision: controller.Target.ConfigurationRevision, Previous: opts.SourceDrain,
-			Consumer: &maintenanceConsumer{ctx: ctx, consumer: consumer, collector: collector}}
-	}
 	return &Worker{
-		drainRuntime:    drainRuntime,
-		drainController: opts.Broker.Drain,
 		consumer:        consumer,
 		backupCollector: collector,
 		logger:          lo,
@@ -587,37 +528,13 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 }
 
 func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
-	start := w.consumer.Start
-	if w.drainRuntime != nil {
-		start = func() error { return w.drainRuntime.Reconcile(ctx) }
-	}
-	if err := start(); err != nil {
+	if err := w.consumer.Start(); err != nil {
 		return fmt.Errorf("failed to start consumer: %w", err)
 	}
 	w.logger.Printf("Starting Convoy Consumer Pool")
-	if w.drainRuntime != nil {
-		go w.drainRuntime.Run(ctx, func(err error) { w.logger.Error("queue runtime reconciliation failed", "error", err) })
-		go func() {
-			ticker := time.NewTicker(time.Second)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					check, cancel := context.WithTimeout(ctx, 5*time.Second)
-					err := w.drainController.Reconcile(check)
-					cancel()
-					if err != nil && !errors.Is(err, drain.ErrEvidence) && !errors.Is(err, drain.ErrStale) {
-						w.logger.Error("queue operation reconciliation failed", "error", err)
-					}
-				}
-			}
-		}()
-	}
 
 	// Start CDC backup collector if enabled
-	if w.backupCollector != nil && w.drainRuntime == nil {
+	if w.backupCollector != nil {
 		if err := w.backupCollector.Start(ctx); err != nil {
 			w.logger.Error(fmt.Sprintf("failed to start backup collector: %v", err))
 			// Non-fatal — worker can still process events without CDC backup
@@ -631,17 +548,10 @@ func (w *Worker) Run(ctx context.Context, workerReady chan struct{}) error {
 	<-ctx.Done()
 	w.logger.Printf("Context canceled, stopping Convoy Consumer Pool...")
 
-	if w.backupCollector != nil && w.drainRuntime == nil {
+	if w.backupCollector != nil {
 		w.backupCollector.Stop(ctx)
 	}
 
-	if w.drainRuntime != nil {
-		closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-		if err := w.drainRuntime.Close(closeCtx); err != nil {
-			w.logger.Error("queue worker closure was not acknowledged", "error", err)
-		}
-		cancel()
-	}
 	w.consumer.Stop()
 	w.logger.Printf("Convoy Consumer Pool stopped")
 

@@ -95,7 +95,6 @@ func TestDockerInventoryBothProviderDirections(t *testing.T) {
 				require.Len(t, report, 2)
 				for _, store := range report {
 					require.Equal(t, "connected", store.Connection)
-					require.Empty(t, store.Actions)
 					require.True(t, store.Visible)
 					var found *inventory.Queue
 					for _, row := range store.Snapshot.Queues {
@@ -164,7 +163,6 @@ func TestDockerInventoryDisconnectedPreviousStore(t *testing.T) {
 	require.Equal(t, "unknown", rows[1].Connection)
 	require.True(t, rows[1].Visible)
 	require.Nil(t, rows[1].Snapshot)
-	require.Empty(t, rows[1].Actions)
 }
 
 func TestDockerInventoryReadDeadline(t *testing.T) {
