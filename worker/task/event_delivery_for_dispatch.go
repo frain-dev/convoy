@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -25,7 +24,7 @@ func eventDeliveryForDispatch(
 	data EventDelivery,
 	taskRetryCount int,
 ) (*datastore.EventDelivery, error) {
-	if !queue.AuthoritativeReads(ctx) && taskRetryCount == 0 && data.Snapshot != nil &&
+	if taskRetryCount == 0 && data.Snapshot != nil &&
 		data.Snapshot.DeliveryMode == datastore.AtLeastOnceDeliveryMode &&
 		data.Snapshot.UID == data.EventDeliveryID &&
 		data.Snapshot.ProjectID == data.ProjectID &&

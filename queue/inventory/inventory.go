@@ -1,5 +1,6 @@
 // Package inventory inspects queue stores without constructing writers,
-// consumers or schedulers. A snapshot is never a drain certificate.
+// consumers or schedulers. A snapshot alone cannot establish that a store is
+// safe to retire.
 package inventory
 
 import (
@@ -42,7 +43,6 @@ type Reader interface {
 }
 
 type Store struct {
-	OperationID       string    `json:"operation_id,omitempty"`
 	ID                string    `json:"id"`
 	Provider          string    `json:"provider"`
 	Role              string    `json:"role"`
@@ -50,8 +50,6 @@ type Store struct {
 	Snapshot          *Snapshot `json:"snapshot"`
 	Visible           bool      `json:"visible"`
 	VisibilityReasons []string  `json:"visibility_reasons"`
-	// Empty until the source fence, ownership and execution contract exist.
-	Actions []string `json:"actions"`
 }
 
 type Registration struct {
@@ -96,7 +94,7 @@ func New(stores []Registration) (*Inventory, error) {
 func (i *Inventory) Inspect(ctx context.Context) []Store {
 	result := make([]Store, 0, len(i.stores))
 	for _, s := range i.stores {
-		row := Store{ID: s.ID, Provider: s.Provider, Role: s.Role, Connection: "unknown", Actions: []string{}, VisibilityReasons: []string{}}
+		row := Store{ID: s.ID, Provider: s.Provider, Role: s.Role, Connection: "unknown", VisibilityReasons: []string{}}
 		storeCtx, cancel := context.WithTimeout(ctx, inspectionTimeout)
 		snapshot, err := s.Reader.Inspect(storeCtx)
 		if storeCtx.Err() != nil {

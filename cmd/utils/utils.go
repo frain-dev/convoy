@@ -26,6 +26,5 @@ func AddUtilsCommand(app *cli.App) *cobra.Command {
 	utilsCmd.AddCommand(AddCircuitBreakersCommand(app))
 	utilsCmd.AddCommand(AddUpdateOrgFeatureFlagsCommand(app))
 	utilsCmd.AddCommand(AddPromoteInstanceAdminCommand(app))
-	utilsCmd.AddCommand(AddQueueOperationCommand(app))
 	return utilsCmd
 }

@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/queue/drain"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -334,33 +333,5 @@ func (h *Handler) GetQueueStores(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	stores := h.A.QueueInventory.Inspect(r.Context())
-	for _, controller := range []*drain.Controller{h.A.QueueDrain, h.A.PreviousQueueDrain} {
-		if controller == nil {
-			continue
-		}
-		op, err := controller.Repository.Current(r.Context(), controller.Target.Scope)
-		for i := range stores {
-			if stores[i].ID != controller.Target.StoreID {
-				continue
-			}
-			stores[i].Actions = []string{"review"}
-			if err != nil {
-				stores[i].Connection = "unknown"
-				stores[i].Visible = true
-				stores[i].VisibilityReasons = append(stores[i].VisibilityReasons, "operation_unknown")
-				continue
-			}
-			if op != nil && op.State != drain.Resumed && op.StoreID == stores[i].ID {
-				stores[i].OperationID = op.ID
-				stores[i].Visible = true
-				reason := "operation_incomplete"
-				if op.State == drain.Drained {
-					reason = "operation_drained"
-				}
-				stores[i].VisibilityReasons = append(stores[i].VisibilityReasons, reason)
-			}
-		}
-	}
-
 	_ = render.Render(w, r, util.NewServerResponse("queue stores fetched successfully", stores, http.StatusOK))
 }

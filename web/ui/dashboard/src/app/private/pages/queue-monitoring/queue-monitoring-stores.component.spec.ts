@@ -3,7 +3,7 @@ import { AdminService } from '../admin/admin.service';
 import { QueueMonitoringStoresComponent, QueueStore } from './queue-monitoring-stores.component';
 
 function previous(visible = true): QueueStore {
-	return { id: 'old', provider: 'redis', role: 'previous', connection: 'connected', visible, visibility_reasons: visible ? ['remaining_work'] : [], actions: [], snapshot: {
+	return { id: 'old', provider: 'redis', role: 'previous', connection: 'connected', visible, visibility_reasons: visible ? ['remaining_work'] : [], snapshot: {
 		observed_at: '2026-09-22T12:00:00Z',
 		queues: [{ name: 'event', pending: 3, processing: 0, scheduled: 4, retry: 5, future: 0, aggregating: 2, archived: 1, completed: 0, unknown: 0, paused: true, oldest_due_age_ms: 100 }]
 	} };
@@ -18,26 +18,6 @@ describe('QueueMonitoringStoresComponent', () => {
 		fixture = TestBed.createComponent(QueueMonitoringStoresComponent);
 	});
 	afterEach(() => fixture.destroy());
-
-	it('shows a compact completed notice only while the drained store is freshly known empty', async () => {
-		const empty = {...previous(), visibility_reasons: ['operation_drained']};
-		empty.snapshot = {...empty.snapshot!, queues: []};
-		getQueueStores.and.resolveTo({data: [empty]});
-		fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).toContain('Drain verified');
-		expect(fixture.nativeElement.querySelector('table')).toBeNull();
-		getQueueStores.and.resolveTo({data: [{...empty, connection: 'unknown', visibility_reasons: ['inspection_failed']}]});
-		await fixture.componentInstance.refresh(); fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).not.toContain('Drain verified');
-		expect(fixture.nativeElement.textContent).toContain('Stale observation');
-	});
-
-	it('does not certify a completed operation when its fresh inventory contains work', async () => {
-		getQueueStores.and.resolveTo({data: [{...previous(), visibility_reasons: ['operation_drained']}]});
-		fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
-		expect(fixture.nativeElement.textContent).not.toContain('Drain verified');
-		expect(fixture.nativeElement.querySelector('table')).not.toBeNull();
-	});
 
 	it('hides previous queues while initially loading', () => {
 		fixture.detectChanges();
