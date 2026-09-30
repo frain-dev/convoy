@@ -1,5 +1,17 @@
 # Convoy Changes
 
+## 26.8.1
+
+
+### Improvements
+
+- refactor(controlplane): remove direct posthog and mixpanel telemetry (#2843)
+
+### Bug Fixes
+
+- fix(dataplane): unwrap nat64 and 6to4 in notification ssrf guard (#2841)
+- fix(controlplane): block private networks on oauth2 connection test (#2842)
+
 ## 26.7.3
 
 ### Breaking Changes
