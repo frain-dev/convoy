@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	log "github.com/frain-dev/convoy/pkg/logger"
+	"github.com/frain-dev/convoy/util"
 )
 
 type UpdateSourceService struct {
@@ -21,6 +22,10 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	s.Source.Name = *s.SourceUpdate.Name
 	s.Source.Verifier = s.SourceUpdate.Verifier.Transform()
 	s.Source.Type = s.SourceUpdate.Type
+
+	if !util.IsStringEmpty(string(s.SourceUpdate.Provider)) {
+		s.Source.Provider = s.SourceUpdate.Provider
+	}
 
 	if s.SourceUpdate.IsDisabled != nil {
 		s.Source.IsDisabled = *s.SourceUpdate.IsDisabled

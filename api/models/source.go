@@ -206,6 +206,9 @@ type UpdateSource struct {
 	// Source Type.
 	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 
+	// Use this to specify one of our predefined source types.
+	Provider datastore.SourceProvider `json:"provider"`
+
 	// This is used to manually enable/disable the source.
 	IsDisabled *bool `json:"is_disabled"`
 
@@ -243,6 +246,17 @@ type UpdateSource struct {
 }
 
 func (us *UpdateSource) Validate() error {
+	if us.Provider.IsValid() && us.Name != nil && us.Verifier.Type != "" {
+		if err := validateSourceForProvider(&CreateSource{
+			Name:     *us.Name,
+			Type:     us.Type,
+			Provider: us.Provider,
+			Verifier: us.Verifier,
+		}); err != nil {
+			return err
+		}
+	}
+
 	if err := util.Validate(us); err != nil {
 		return err
 	}
@@ -260,7 +274,7 @@ func (us *UpdateSource) Validate() error {
 			return err
 		}
 
-		if err := validateEventTypeLocationVerifierTypeCompatibility(us.Verifier.Type, *us.EventTypeLocation); err != nil {
+		if err := validateEventTypeLocationVerifierCompatibility(us.Provider, us.Verifier.Type, *us.EventTypeLocation); err != nil {
 			return err
 		}
 	}

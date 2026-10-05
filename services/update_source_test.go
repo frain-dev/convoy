@@ -97,6 +97,49 @@ func TestUpdateSourceService_Run(t *testing.T) {
 				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
+		{
+			name: "should_update_source_provider",
+			args: args{
+				ctx: ctx,
+				source: &datastore.Source{
+					UID:      "12345",
+					Provider: datastore.GithubSourceProvider,
+				},
+				update: &models.UpdateSource{
+					Name:     stringPtr("Convoy-Prod"),
+					Type:     datastore.HTTPSource,
+					Provider: datastore.ShopifySourceProvider,
+					Verifier: models.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &models.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				project: &datastore.Project{UID: "12345"},
+			},
+			wantSource: &datastore.Source{
+				Name:     "Convoy-Prod",
+				Type:     datastore.HTTPSource,
+				Provider: datastore.ShopifySourceProvider,
+				Verifier: &datastore.VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &datastore.HMac{
+						Encoding: datastore.Base64Encoding,
+						Header:   "X-Convoy-Header",
+						Hash:     "SHA512",
+						Secret:   "Convoy-Secret",
+					},
+				},
+			},
+			dbFn: func(so *UpdateSourceService) {
+				s, _ := so.SourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
 
 		{
 			name: "should_fail_to_update_source",
@@ -191,6 +234,9 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			require.Equal(t, source.Type, tc.wantSource.Type)
 			require.Equal(t, source.Verifier.Type, tc.wantSource.Verifier.Type)
 			require.Equal(t, source.Verifier.HMac.Header, tc.wantSource.Verifier.HMac.Header)
+			if tc.wantSource.Provider != "" {
+				require.Equal(t, tc.wantSource.Provider, source.Provider)
+			}
 		})
 	}
 }
