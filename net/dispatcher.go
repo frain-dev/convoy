@@ -365,9 +365,11 @@ func newNotificationTransport(base *http.Transport, detailedTrace bool) http.Rou
 
 // blockPrivateNetworks is a net.Dialer.Control hook that rejects connections to
 // loopback, private, link-local, unspecified, or otherwise non-global-unicast
-// addresses. It runs after DNS resolution with the concrete IP the socket is
-// about to dial, so it closes the DNS-rebinding window a write-time URL check
-// cannot. Fail-closed: an address that cannot be parsed is rejected.
+// addresses, including IPv4-mapped, NAT64 (64:ff9b::/96), and 6to4 (2002::/16)
+// encodings of those IPv4 targets. It runs after DNS resolution with the
+// concrete IP the socket is about to dial, so it closes the DNS-rebinding
+// window a write-time URL check cannot. Fail-closed: an address that cannot
+// be parsed is rejected.
 func blockPrivateNetworks(_, address string, _ syscall.RawConn) error {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil {
@@ -379,6 +381,9 @@ func blockPrivateNetworks(_, address string, _ syscall.RawConn) error {
 		return fmt.Errorf("ssrf guard: cannot parse dial ip %q: %w", host, err)
 	}
 	ip = ip.Unmap()
+	if v4, ok := embeddedV4(ip); ok {
+		ip = v4
+	}
 
 	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
 		ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
@@ -448,8 +453,10 @@ func isMetadataOrLinkLocal(ip netip.Addr) bool {
 }
 
 // embeddedV4 extracts the IPv4 address embedded in a NAT64 (64:ff9b::/96) or
-// 6to4 (2002::/16) IPv6 address.
+// 6to4 (2002::/16) IPv6 address. The zone is stripped first: netip.Prefix.Contains
+// is false for any zoned IPv6 address, which would otherwise skip NAT64 unwrap.
 func embeddedV4(ip netip.Addr) (netip.Addr, bool) {
+	ip = ip.WithZone("")
 	b := ip.As16()
 
 	if nat64WellKnown.Contains(ip) {

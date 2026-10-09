@@ -55,5 +55,10 @@ export class PortalComponent implements OnInit {
 		if (authToken) {
 			localStorage.setItem('CONVOY_PORTAL_LINK_AUTH_TOKEN', authToken);
 		}
+		// Do not clear CONVOY_PORTAL_LINK_AUTH_TOKEN when opening a static
+		// ?token= link — localStorage is shared across tabs and wiping it
+		// would break a still-valid auth_token session elsewhere. HttpService
+		// prefers the URL's static token when present, so a leftover JWT
+		// cannot override this page's requests.
 	}
 }

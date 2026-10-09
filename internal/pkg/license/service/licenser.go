@@ -521,6 +521,10 @@ func (l *Licenser) CanExportPrometheusMetrics() bool {
 	return l.hasFeature("export_prometheus_metrics")
 }
 
+func (l *Licenser) PostgresQueue() bool {
+	return l.hasFeature("postgres_queue")
+}
+
 func (l *Licenser) AdvancedEndpointMgmt() bool {
 	return l.hasFeature("advanced_endpoint_mgmt")
 }
@@ -547,6 +551,10 @@ func (l *Licenser) ConsumerPoolTuning() bool {
 
 func (l *Licenser) AdvancedWebhookFiltering() bool {
 	return l.hasFeature("advanced_webhook_filtering")
+}
+
+func (l *Licenser) EventSearch() bool {
+	return l.hasFeature("event_search")
 }
 
 func (l *Licenser) CircuitBreaking() bool {
@@ -597,6 +605,10 @@ func (l *Licenser) StaticIP() bool {
 }
 
 func (l *Licenser) RetentionPolicy() bool {
+	return l.hasFeature("retention_policy")
+}
+
+func (l *Licenser) WebhookArchiving() bool {
 	return l.hasFeature("webhook_archiving")
 }
 
@@ -709,11 +721,13 @@ func (l *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 	featureList["AdvancedSubscriptions"] = l.AdvancedSubscriptions()
 	featureList["WebhookAnalytics"] = l.WebhookAnalytics()
 	featureList["AdvancedWebhookFiltering"] = l.AdvancedWebhookFiltering()
+	featureList["EventSearch"] = l.EventSearch()
 	featureList["AdvancedEndpointMgmt"] = l.AdvancedEndpointMgmt()
 	featureList["CircuitBreaking"] = l.CircuitBreaking()
 	featureList["ConsumerPoolTuning"] = l.ConsumerPoolTuning()
 	featureList["GoogleOAuth"] = l.GoogleOAuth()
 	featureList["CanExportPrometheusMetrics"] = l.CanExportPrometheusMetrics()
+	featureList["PostgresQueue"] = l.PostgresQueue()
 	featureList["ReadReplica"] = l.ReadReplica()
 	featureList["CredentialEncryption"] = l.CredentialEncryption()
 	featureList["IpRules"] = l.IpRules()

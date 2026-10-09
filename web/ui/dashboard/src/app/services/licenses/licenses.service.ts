@@ -6,8 +6,6 @@ import {HTTP_RESPONSE} from 'src/app/models/global.model';
 	providedIn: 'root'
 })
 export class LicensesService {
-	readonly licensedOrgLabel = 'Pro';
-
 	// Two license sets are kept side by side. The instance set is the deployment
 	// license (self-hosted CONVOY_LICENSE_KEY or the cloud operator license); the
 	// org set is the current org's plan entitlements. In cloud both carry real
@@ -80,12 +78,13 @@ export class LicensesService {
 				if (org) query['orgID'] = org;
 			}
 			const queryUndefined = Object.keys(query).length === 0 ? undefined : query;
-			try {
-				const response = await this.http.request({
-					url: `/license/features`,
-					method: 'get',
-					query: queryUndefined
-				});
+		try {
+			const response = await this.http.request({
+				url: `/license/features`,
+				method: 'get',
+				query: queryUndefined,
+				hideNotification: true
+			});
 				return resolve(response);
 			} catch (error) {
 				return reject(error);
@@ -254,30 +253,30 @@ export class LicensesService {
 		return `Limit reached (${current}/${this.formatLimit(limitInfo?.limit)})`;
 	}
 
-	// Compact "current/limit" for tight surfaces (e.g. sidebar pills); pair it with
-	// limitReachedMessage as the tooltip so the full copy is still reachable.
-	limitReachedCompact(limitKey: string): string {
-		const limitInfo = this.getLimitInfo(limitKey);
-		return `${limitInfo?.current ?? 0}/${this.formatLimit(limitInfo?.limit)}`;
-	}
-
-	// Pill text for tight surfaces: compact "current/limit" when the limit is reached,
-	// the upsell label ("Business") unchanged, '' when nothing to show. Pair with
-	// limitMessage as the tooltip so the full copy is still reachable.
-	limitPillText(limitKey: string): string {
+	// Hover copy for disabled limit actions: plain language, no current/limit fraction.
+	limitActionTooltip(limitKey: string, resource: 'organization' | 'project' | 'team member'): string {
 		const message = this.limitMessage(limitKey);
-		if (message && message !== 'Business') {
-			return this.limitReachedCompact(limitKey);
+		if (message === 'Premium') {
+			const actions: Record<typeof resource, string> = {
+				organization: 'add organizations',
+				project: 'create projects',
+				'team member': 'invite team members'
+			};
+			return `Upgrade to Premium to ${actions[resource]}.`;
 		}
-		return message;
+		if (message) {
+			return `You've reached your ${resource} limit on this plan. Upgrade to Premium for more.`;
+		}
+		return '';
 	}
 
 	// Shared project/user limit gating copy: upsell label when the plan does not
 	// include the limit, the reached message when it is included and exhausted.
+	// "Premium" matches getconvoy.io/pricing (Community / Premium / Enterprise).
 	limitMessage(limitKey: string): string {
 		if (!this.hasLicense(limitKey)) {
 			if (!this.isLimitAvailable(limitKey)) {
-				return 'Business';
+				return 'Premium';
 			}
 			if (this.isLimitAvailable(limitKey) && this.isLimitReached(limitKey)) {
 				return this.limitReachedMessage(limitKey);

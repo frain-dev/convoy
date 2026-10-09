@@ -1,71 +1,91 @@
 package hooks
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
-func TestGetQueueOptions(t *testing.T) {
-	t.Run("Standard Redis Configuration", func(t *testing.T) {
-		cfg := &config.Configuration{
-			Redis: config.RedisConfiguration{
-				Scheme: "redis",
-				Host:   "localhost",
-				Port:   6379,
+type migrationConfigurationStore struct {
+	completedID      string
+	managed          bool
+	retentionEnabled bool
+	retentionSeed    bool
+	err              error
+}
+
+func (s *migrationConfigurationStore) CompleteAdminManagedMigration(
+	_ context.Context,
+	id string,
+	retentionEnabled bool,
+) (bool, bool, error) {
+	s.completedID = id
+	s.retentionSeed = retentionEnabled
+	return s.managed, s.retentionEnabled, s.err
+}
+
+func TestCompleteAdminManagedMigration(t *testing.T) {
+	t.Run("marks legacy ownership as env-owned", func(t *testing.T) {
+		updatedAt := time.Date(2026, time.August, 27, 12, 0, 0, 0, time.UTC)
+		instanceConfig := &datastore.Configuration{
+			UID:             "config-1",
+			IsSignupEnabled: false,
+			StoragePolicy: &datastore.StoragePolicyConfiguration{
+				Type: datastore.OnPrem,
 			},
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{Period: "168h"},
+			UpdatedAt:       updatedAt,
 		}
+		envConfig := config.Configuration{}
+		envConfig.Auth.IsSignupEnabled = true
+		envConfig.Retention.Enabled = true
+		configStore := &migrationConfigurationStore{managed: false, retentionEnabled: true}
 
-		var redis *rdb.Redis
-		opts, err := getQueueOptions(cfg, redis)
+		err := completeAdminManagedMigration(
+			context.Background(),
+			envConfig,
+			instanceConfig,
+			configStore,
+		)
 
-		assert.NoError(t, err)
-		assert.Nil(t, opts.RedisFailoverOpt)
-		assert.Equal(t, []string{"redis://localhost:6379"}, opts.RedisAddress)
+		require.NoError(t, err)
+		assert.Equal(t, "config-1", configStore.completedID)
+		assert.False(t, instanceConfig.AdminManaged)
+		assert.True(t, instanceConfig.AdminManagedKnown)
+		assert.False(t, instanceConfig.IsSignupEnabled)
+		assert.Equal(t, datastore.OnPrem, instanceConfig.StoragePolicy.Type)
+		assert.True(t, instanceConfig.RetentionPolicy.Enabled)
+		assert.True(t, instanceConfig.RetentionPolicy.EnabledKnown)
+		assert.True(t, configStore.retentionSeed)
+		assert.True(t, instanceConfig.UpdatedAt.After(updatedAt))
 	})
 
-	t.Run("Redis Sentinel Configuration", func(t *testing.T) {
-		cfg := &config.Configuration{
-			Redis: config.RedisConfiguration{
-				Scheme:           "redis-sentinel",
-				Addresses:        "sentinel1:26379,sentinel2:26379",
-				MasterName:       "mymaster",
-				Username:         "user",
-				Password:         "pass",
-				SentinelPassword: "sentinel_pass",
-				Database:         "0",
-			},
+	t.Run("does not change in-memory ownership when persistence fails", func(t *testing.T) {
+		instanceConfig := &datastore.Configuration{
+			UID:             "config-1",
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{},
+		}
+		configStore := &migrationConfigurationStore{
+			err: errors.New("database unavailable"),
 		}
 
-		var redis *rdb.Redis
-		opts, err := getQueueOptions(cfg, redis)
+		err := completeAdminManagedMigration(
+			context.Background(),
+			config.Configuration{},
+			instanceConfig,
+			configStore,
+		)
 
-		assert.NoError(t, err)
-		assert.NotNil(t, opts.RedisFailoverOpt)
-		assert.Equal(t, "mymaster", opts.RedisFailoverOpt.MasterName)
-		assert.Equal(t, []string{"sentinel1:26379", "sentinel2:26379"}, opts.RedisFailoverOpt.SentinelAddrs)
-		assert.Equal(t, "user", opts.RedisFailoverOpt.Username)
-		assert.Equal(t, "pass", opts.RedisFailoverOpt.Password)
-		assert.Equal(t, "sentinel_pass", opts.RedisFailoverOpt.SentinelPassword)
-		assert.Equal(t, 0, opts.RedisFailoverOpt.DB)
-	})
-
-	t.Run("Redis Sentinel Invalid Database", func(t *testing.T) {
-		cfg := &config.Configuration{
-			Redis: config.RedisConfiguration{
-				Scheme:   "redis-sentinel",
-				Database: "invalid",
-			},
-		}
-
-		var redis *rdb.Redis
-		_, err := getQueueOptions(cfg, redis)
-
-		assert.Error(t, err)
+		require.EqualError(t, err, "database unavailable")
+		assert.False(t, instanceConfig.AdminManaged)
+		assert.False(t, instanceConfig.AdminManagedKnown)
 	})
 }
 

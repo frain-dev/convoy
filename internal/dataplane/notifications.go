@@ -4,90 +4,72 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/oklog/ulid/v2"
-
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/email"
 	notification "github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
 
-// EnqueueCircuitBreakerEmails enqueues notification emails to endpoint support email and project owner.
-// ownerEmail may be empty if unavailable. It is safe to call this with missing emails; those are skipped.
-func EnqueueCircuitBreakerEmails(ctx context.Context, q queue.Queuer, lo log.Logger, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) error {
-	// Endpoint support email
-	if endpoint != nil && endpoint.SupportEmail != "" {
-		emailMsg := &email.Message{
-			Email:        endpoint.SupportEmail,
-			Subject:      "Endpoint Disabled - Circuit Breaker Triggered",
-			TemplateName: email.TemplateEndpointUpdate,
-			Params: map[string]string{
+const breakerFailureMsg = "Circuit breaker threshold exceeded"
+
+// EnqueueCircuitBreakerNotifications tells the endpoint's own channels (support
+// email, Slack webhook and Teams webhook) that the breaker disabled it, and sends
+// the organisation owner a separate email. ownerEmail may be empty when it could
+// not be resolved; missing channels are skipped.
+//
+// Returns true when at least one notification job was written to the queue.
+// Per-channel failures are logged rather than returned.
+func EnqueueCircuitBreakerNotifications(ctx context.Context, q queue.Queuer, lo log.Logger, licenser license.Licenser, project *datastore.Project, endpoint *datastore.Endpoint, ownerEmail string, failureRate float64) bool {
+	var enqueued bool
+
+	if endpoint != nil && licenser.AdvancedEndpointMgmt() {
+		enqueued = notification.DispatchEndpointAlert(ctx, q, lo, notification.EndpointAlert{
+			EmailRecipient:  endpoint.SupportEmail,
+			SlackWebhookURL: endpoint.SlackWebhookURL,
+			TeamsWebhookURL: endpoint.TeamsWebhookURL,
+			EmailSubject:    "Endpoint Disabled - Circuit Breaker Triggered",
+			EmailParams: map[string]string{
 				"name":            endpoint.Name,
 				"logo_url":        project.LogoURL,
 				"target_url":      endpoint.Url,
-				"failure_msg":     "Circuit breaker threshold exceeded",
+				"failure_msg":     breakerFailureMsg,
 				"response_body":   "",
 				"failure_rate":    fmt.Sprintf("%.2f%%", failureRate),
 				"status_code":     "0",
-				"endpoint_status": "inactive",
+				"endpoint_status": string(datastore.InactiveEndpointStatus),
 			},
-		}
-		if err := enqueueEmail(ctx, q, emailMsg); err != nil {
-			lo.Error("Failed to queue circuit breaker notification email", "error", err)
-		}
+			AlertText: fmt.Sprintf("endpoint url (%s) has been disabled, reason for failure is %q with a failure rate of %.2f%%, endpoint status is now %s",
+				endpoint.Url, breakerFailureMsg, failureRate, datastore.InactiveEndpointStatus),
+		}) || enqueued
 	}
 
-	// Owner email
-	if ownerEmail != "" {
-		nameParam := project.Name
-		targetURL := ""
-		failureRateStr := ""
-		if endpoint != nil {
-			nameParam = fmt.Sprintf("%s (%s)", endpoint.Name, project.Name)
-			targetURL = endpoint.Url
-			failureRateStr = fmt.Sprintf("%.2f", failureRate)
-		}
-
-		emailMsg := &email.Message{
-			Email:        ownerEmail,
-			Subject:      "Project Endpoint Disabled - Circuit Breaker Triggered",
-			TemplateName: email.TemplateEndpointUpdate,
-			Params: map[string]string{
-				"name":            nameParam,
-				"logo_url":        project.LogoURL,
-				"target_url":      targetURL,
-				"failure_msg":     "Circuit breaker threshold exceeded",
-				"response_body":   "",
-				"failure_rate":    failureRateStr,
-				"status_code":     "0",
-				"endpoint_status": "inactive",
-			},
-		}
-		if err := enqueueEmail(ctx, q, emailMsg); err != nil {
-			lo.Error("Failed to queue circuit breaker notification email to owner", "error", err)
-		}
-	}
-	return nil
-}
-
-func enqueueEmail(ctx context.Context, q queue.Queuer, emailMsg *email.Message) error {
-	// Wrap email message in notification.Notification struct
-	// ProcessNotifications expects this structure with NotificationType and Payload
-	notif := &notification.Notification{
-		NotificationType: notification.EmailNotificationType,
-		Payload:          emailMsg,
+	if ownerEmail == "" {
+		return enqueued
 	}
 
-	bytes, err := msgpack.EncodeMsgPack(notif)
-	if err != nil {
-		return err
+	nameParam := project.Name
+	targetURL := ""
+	failureRateStr := ""
+	if endpoint != nil {
+		nameParam = fmt.Sprintf("%s (%s)", endpoint.Name, project.Name)
+		targetURL = endpoint.Url
+		failureRateStr = fmt.Sprintf("%.2f", failureRate)
 	}
-	job := &queue.Job{
-		ID:      ulid.Make().String(),
-		Payload: bytes,
-	}
-	return q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
+
+	// The owner is reached by email only; webhook channels are per endpoint.
+	return notification.DispatchEndpointAlert(ctx, q, lo, notification.EndpointAlert{
+		EmailRecipient: ownerEmail,
+		EmailSubject:   "Project Endpoint Disabled - Circuit Breaker Triggered",
+		EmailParams: map[string]string{
+			"name":            nameParam,
+			"logo_url":        project.LogoURL,
+			"target_url":      targetURL,
+			"failure_msg":     breakerFailureMsg,
+			"response_body":   "",
+			"failure_rate":    failureRateStr,
+			"status_code":     "0",
+			"endpoint_status": string(datastore.InactiveEndpointStatus),
+		},
+	}) || enqueued
 }

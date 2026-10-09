@@ -6,6 +6,9 @@ export interface EVENT {
 	created_at: Date;
 	provider_id: string;
 	status?: string;
+	// Set by the server only when an event failed, explaining why it never
+	// reached an endpoint (for example no matching URL template).
+	failure_reason?: string;
 	uid: string;
 	updated_at: string;
 	app_id?: string;
@@ -16,13 +19,6 @@ export interface EVENT {
 	data: any;
 	matched_endpoints: number;
 	endpoint_metadata: ENDPOINT[];
-	metadata?: {
-		interval_seconds: number;
-		next_send_time: Date;
-		num_trials: number;
-		retry_limit: number;
-		strategy: string;
-	};
 	app_metadata: APP;
 	source_metadata: SOURCE;
 }
@@ -60,6 +56,7 @@ export interface EVENT_DELIVERY {
 }
 
 export interface EVENT_DELIVERY_ATTEMPT {
+	url?: string;
 	ip_address: string;
 	http_status: string;
 	api_version: string;
@@ -89,6 +86,7 @@ export interface FILTER_QUERY_PARAM {
 	direction?: 'next' | 'prev';
 	showLoader?: boolean;
 	query?: string;
+	body?: string;
 	name?: string;
 	sort?: string;
 	eventType?: string;

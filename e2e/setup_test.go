@@ -13,25 +13,20 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
-	rcache "github.com/frain-dev/convoy/cache/redis"
 	cmdserver "github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/dataplane"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/queue"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/testenv"
 )
 
@@ -86,12 +81,23 @@ type E2ETestEnv struct {
 	cancelServer context.CancelFunc
 }
 
+// ConfigOption adjusts the configuration a test's server and worker boot with.
+// LoadConfig reads environment variables only when it is given options, so a
+// test that needs a non-default setting (metrics on, postgres queue) has to
+// hand it in here rather than exporting a variable.
+type ConfigOption func(*config.Configuration)
+
 // SetupE2E initializes the complete E2E test environment with server and worker
-func SetupE2E(t *testing.T) *E2ETestEnv {
+func SetupE2E(t *testing.T, opts ...ConfigOption) *E2ETestEnv {
 	t.Helper()
 
 	// Lock to ensure tests run sequentially (prevents resource conflicts)
 	testMutex.Lock()
+	// Registered before anything that can fail: every require below aborts the
+	// goroutine, and an unlock left to the end of setup would hold the lock for
+	// the rest of the package. Cleanups run LIFO, so this still releases after
+	// the teardown registered further down.
+	t.Cleanup(testMutex.Unlock)
 
 	ctx := context.Background()
 
@@ -104,6 +110,10 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 	cfg, err := config.Get()
 	require.NoError(t, err)
+
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 
 	// Clone database for this test
 	conn, err := infra.CloneTestDatabase(t, "convoy")
@@ -138,42 +148,14 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	err = config.LoadCaCert("", "")
 	require.NoError(t, err)
 
-	// Create rdb client for queue
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
-	require.NoError(t, err)
-
 	// Always flush Redis to ensure complete test isolation.
 	// Each test has its own database clone, so we MUST ensure no jobs from
 	// previous tests leak through the shared Redis queue.
 	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
-	err = redis.Client().FlushDB(ctx).Err()
+	err = rd.FlushDB(ctx).Err()
 	require.NoError(t, err)
 
-	// Create cache
-	cache := rcache.NewRedisCacheFromClient(rd)
-
-	// Create queue
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         3,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.StreamQueue):        1,
-		string(convoy.MetaEventQueue):     1,
-	}
-
-	queueOpts := queue.QueueOptions{
-		RedisClient:  redis,
-		Names:        queueNames,
-		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
-	}
-
-	q := redisqueue.NewQueue(queueOpts)
-
-	// Create rate limiter
-	limiter := rlimiter.NewLimiterFromRedisClient(rd)
+	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger, conn, rd)
 
 	// Create licenser
 	licenser := noopLicenser.NewLicenser()
@@ -186,10 +168,11 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		Version:       "test",
 		DB:            pg,
 		Redis:         rd,
-		Queue:         q,
+		Queue:         brokerDeps.Queue,
 		Logger:        logger,
-		Cache:         cache,
-		Rate:          limiter,
+		Cache:         brokerDeps.Cache,
+		Rate:          brokerDeps.RateLimiter,
+		Broker:        brokerDeps,
 		Licenser:      licenser,
 		TracerBackend: tracer.NoOpBackend{},
 		JobTracker:    jobTracker,
@@ -293,8 +276,6 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 		memorystore.DefaultStore.Reset()
 		t.Logf("Memorystore reset complete")
 
-		// Unlock mutex to allow next test to run
-		testMutex.Unlock()
 		t.Logf("Cleanup complete for test: %s", t.Name())
 	})
 
@@ -316,11 +297,16 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 // SetupE2EWithoutWorker initializes E2E test environment with server but WITHOUT worker
 // This is useful for job ID tests where we use a custom test worker instead
-func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
+func SetupE2EWithoutWorker(t *testing.T, opts ...ConfigOption) *E2ETestEnv {
 	t.Helper()
 
 	// Lock to ensure tests run sequentially (prevents resource conflicts)
 	testMutex.Lock()
+	// Registered before anything that can fail: every require below aborts the
+	// goroutine, and an unlock left to the end of setup would hold the lock for
+	// the rest of the package. Cleanups run LIFO, so this still releases after
+	// the teardown registered further down.
+	t.Cleanup(testMutex.Unlock)
 
 	ctx := context.Background()
 
@@ -333,6 +319,10 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 
 	cfg, err := config.Get()
 	require.NoError(t, err)
+
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 
 	// Clone database for this test
 	conn, err := infra.CloneTestDatabase(t, "convoy")
@@ -367,42 +357,14 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 	err = config.LoadCaCert("", "")
 	require.NoError(t, err)
 
-	// Create rdb client for queue
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
-	require.NoError(t, err)
-
 	// Always flush Redis to ensure complete test isolation.
 	// Each test has its own database clone, so we MUST ensure no jobs from
 	// previous tests leak through the shared Redis queue.
 	t.Logf("Flushing Redis to ensure clean state for test %s", t.Name())
-	err = redis.Client().FlushDB(ctx).Err()
+	err = rd.FlushDB(ctx).Err()
 	require.NoError(t, err)
 
-	// Create cache
-	cache := rcache.NewRedisCacheFromClient(rd)
-
-	// Create queue
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         3,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.StreamQueue):        1,
-		string(convoy.MetaEventQueue):     1,
-	}
-
-	queueOpts := queue.QueueOptions{
-		RedisClient:  redis,
-		Names:        queueNames,
-		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
-	}
-
-	q := redisqueue.NewQueue(queueOpts)
-
-	// Create rate limiter
-	limiter := rlimiter.NewLimiterFromRedisClient(rd)
+	brokerDeps := broker.NewTest(t, cfg, pg.GetDB(), logger, conn, rd)
 
 	// Create licenser
 	licenser := noopLicenser.NewLicenser()
@@ -412,10 +374,11 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 		Version:       "test",
 		DB:            pg,
 		Redis:         rd,
-		Queue:         q,
+		Queue:         brokerDeps.Queue,
 		Logger:        logger,
-		Cache:         cache,
-		Rate:          limiter,
+		Cache:         brokerDeps.Cache,
+		Rate:          brokerDeps.RateLimiter,
+		Broker:        brokerDeps,
 		Licenser:      licenser,
 		TracerBackend: tracer.NoOpBackend{},
 	}
@@ -485,8 +448,6 @@ func SetupE2EWithoutWorker(t *testing.T) *E2ETestEnv {
 		// Reset memory store to prevent "table already registered" errors in next test
 		memorystore.DefaultStore.Reset()
 
-		// Unlock mutex to allow next test to run
-		testMutex.Unlock()
 		t.Logf("Cleanup complete for test: %s", t.Name())
 	})
 
@@ -531,13 +492,13 @@ func waitForServer(t *testing.T, url string, timeout time.Duration) {
 func dataplaneOpts(app *cli.App) dataplane.RuntimeOpts {
 	return dataplane.RuntimeOpts{
 		DB:            app.DB,
-		Redis:         app.Redis,
 		Queue:         app.Queue,
 		Logger:        app.Logger,
 		Cache:         app.Cache,
 		Rate:          app.Rate,
 		Licenser:      app.Licenser,
 		TracerBackend: app.TracerBackend,
+		Broker:        app.Broker,
 		JobTracker:    app.JobTracker,
 		SetSubscriptionLoader: func(loader interface{}) {
 			app.SubscriptionLoader = loader

@@ -33,6 +33,11 @@ func TestCommunityFeatureListExposesBuiltInLimits(t *testing.T) {
 	requireLimit(t, features["org_limit"], communityOrgLimit, communityOrgLimit, false, true, true)
 	requireLimit(t, features["user_limit"], communityUserLimit, communityUserLimit, false, true, true)
 	requireLimit(t, features["project_limit"], communityProjectLimit, communityProjectLimit, false, true, true)
+	require.False(t, licenser.PostgresQueue())
+
+	var postgresQueue bool
+	require.NoError(t, json.Unmarshal(features["PostgresQueue"], &postgresQueue))
+	require.False(t, postgresQueue)
 }
 
 func requireLimit(t *testing.T, raw json.RawMessage, expectedLimit, expectedCurrent int64, expectedAllowed, expectedAvailable, expectedReached bool) {
@@ -88,7 +93,10 @@ type communityUserRepo struct {
 
 func (r communityUserRepo) CreateUser(context.Context, *datastore.User) error { return nil }
 func (r communityUserRepo) UpdateUser(context.Context, *datastore.User) error { return nil }
-func (r communityUserRepo) CountUsers(context.Context) (int64, error)         { return r.count, nil }
+func (r communityUserRepo) RotateEmailVerificationToken(context.Context, string, string, time.Time) error {
+	return nil
+}
+func (r communityUserRepo) CountUsers(context.Context) (int64, error) { return r.count, nil }
 func (r communityUserRepo) FindUserByEmail(context.Context, string) (*datastore.User, error) {
 	return nil, nil
 }
@@ -591,4 +599,50 @@ func TestCommunityProjectEnabledRefreshDoesNotClobberConcurrentMutation(t *testi
 	// is added mid-read. The refresh must not drop it.
 	require.True(t, l.ProjectEnabled("b"))
 	require.True(t, l.ProjectEnabled("a"))
+}
+
+func TestRetentionAndArchivingEntitlementsAreIndependent(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		retention bool
+		archiving bool
+	}{
+		{"neither", false, false},
+		{"retention only", true, false},
+		{"archiving only", false, true},
+		{"both", true, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			l, responder := newLicensedLicenserForTest(t)
+			body, err := json.Marshal(map[string]interface{}{
+				"status": true,
+				"data": map[string]interface{}{
+					"valid": true, "status": "active",
+					"entitlements": []map[string]interface{}{
+						{"key": "retention_policy", "value": tt.retention},
+						{"key": "webhook_archiving", "value": tt.archiving},
+					},
+				},
+			})
+			require.NoError(t, err)
+			responder.set(http.StatusOK, string(body))
+			require.NoError(t, l.validateAndCache(context.Background()))
+			require.Equal(t, tt.retention, l.RetentionPolicy())
+			require.Equal(t, tt.archiving, l.WebhookArchiving())
+
+			l.orgRepo = communityOrgRepo{}
+			l.userRepo = communityUserRepo{}
+			l.projectRepo = communityProjectRepo{}
+			raw, err := l.FeatureListJSON(context.Background())
+			require.NoError(t, err)
+			var features map[string]interface{}
+			require.NoError(t, json.Unmarshal(raw, &features))
+			require.Equal(t, tt.retention, features["RetentionPolicy"])
+
+			responder.set(http.StatusOK, `{"status":true,"data":{"valid":true,"status":"suspended"}}`)
+			require.ErrorIs(t, l.validateAndCache(context.Background()), ErrLicenseSuspended)
+			require.False(t, l.RetentionPolicy())
+			require.False(t, l.WebhookArchiving())
+		})
+	}
 }

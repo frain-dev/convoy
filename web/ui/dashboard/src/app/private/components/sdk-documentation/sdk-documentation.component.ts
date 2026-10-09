@@ -2,13 +2,12 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import Markdoc from '@markdoc/markdoc';
 import axios from 'axios';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 
 type STEP = 'Setup Client' | 'Create Endpoint' | 'Send Event';
 
 @Component({
     selector: 'sdk-documentation',
-    imports: [CommonModule, ButtonComponent],
+    imports: [CommonModule],
     templateUrl: './sdk-documentation.component.html',
     styleUrls: ['./sdk-documentation.component.scss']
 })

@@ -19,10 +19,11 @@ import (
 )
 
 type startSelfHostedCheckoutRequest struct {
-	Email    string `json:"email"`
-	PlanID   string `json:"plan_id"`
-	Interval string `json:"interval"`
-	Host     string `json:"host"`
+	Email        string `json:"email"`
+	PlanID       string `json:"plan_id"`
+	Interval     string `json:"interval"`
+	Host         string `json:"host"`
+	ReferralCode string `json:"referral_code"`
 }
 
 type completeSelfHostedCheckoutRequest struct {
@@ -32,8 +33,9 @@ type completeSelfHostedCheckoutRequest struct {
 }
 
 type startSelfHostedTrialRequest struct {
-	Email string `json:"email"`
-	Host  string `json:"host"`
+	Email        string `json:"email"`
+	Host         string `json:"host"`
+	ReferralCode string `json:"referral_code"`
 }
 
 // Self-hosted checkout attempt statuses, persisted on datastore.SelfHostedCheckoutAttempt.
@@ -157,6 +159,7 @@ func (h *BillingHandler) StartSelfHostedCheckout(w http.ResponseWriter, r *http.
 		AttemptID:         attemptID,
 		CheckoutNonceHash: nonceHash,
 		LicenseKey:        resubscribeKey,
+		ReferralCode:      strings.TrimSpace(req.ReferralCode),
 	})
 	if err != nil {
 		renderBillingClientError(w, r, err, http.StatusServiceUnavailable)
@@ -235,6 +238,7 @@ func (h *BillingHandler) StartSelfHostedTrial(w http.ResponseWriter, r *http.Req
 		Host:             host,
 		OrganisationName: h.activeOrganisationName(r.Context(), r),
 		AttemptID:        attemptID,
+		ReferralCode:     strings.TrimSpace(req.ReferralCode),
 	})
 	if err != nil {
 		if billingClientErrorIsDefinitive(err) {

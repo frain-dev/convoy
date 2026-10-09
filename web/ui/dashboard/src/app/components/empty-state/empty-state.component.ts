@@ -1,10 +1,9 @@
 
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
 
 @Component({
     selector: 'convoy-empty-state, [convoy-empty-state]',
-    imports: [ButtonComponent],
+    imports: [],
     templateUrl: './empty-state.component.html'
 })
 export class EmptyStateComponent implements OnInit {

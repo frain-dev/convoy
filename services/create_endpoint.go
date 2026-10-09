@@ -143,6 +143,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		Name:               a.E.Name,
 		SupportEmail:       a.E.SupportEmail,
 		SlackWebhookURL:    a.E.SlackWebhookURL,
+		TeamsWebhookURL:    a.E.TeamsWebhookURL,
 		Url:                a.E.URL,
 		Description:        a.E.Description,
 		RateLimit:          a.E.RateLimit,
@@ -162,14 +163,28 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 		endpoint.SupportEmail = ""
 		endpoint.SlackWebhookURL = ""
+		endpoint.TeamsWebhookURL = ""
 	}
 
 	// Reject a slack_webhook_url that targets loopback/private/reserved
 	// addresses (SSRF). The worker POSTs failure notifications to this URL, so it
 	// must pass the same outbound-URL guard as delivery endpoints.
+	//
+	// The underlying error is dropped rather than wrapped: both webhook URLs are
+	// bearer secrets (a Slack URL's path token, a Teams Workflows URL's `sig`
+	// query parameter), and url.Parse errors quote the URL they failed on, which
+	// would echo the secret back to the caller and into any log that records the
+	// response.
 	if !util.IsStringEmpty(endpoint.SlackWebhookURL) {
 		if _, err := util.ValidateOutboundURL(endpoint.SlackWebhookURL, false); err != nil {
-			return nil, &ServiceError{ErrMsg: "invalid slack webhook url", Err: err}
+			return nil, &ServiceError{ErrMsg: "invalid slack webhook url"}
+		}
+	}
+
+	// Same SSRF guard and same redaction policy for teams_webhook_url.
+	if !util.IsStringEmpty(endpoint.TeamsWebhookURL) {
+		if _, err := util.ValidateOutboundURL(endpoint.TeamsWebhookURL, false); err != nil {
+			return nil, &ServiceError{ErrMsg: "invalid teams webhook url"}
 		}
 	}
 
@@ -302,6 +317,10 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, project *d
 			return "", innerErr
 		}
 
+		if cfg.Dispatcher.SkipPingValidation {
+			break
+		}
+
 		caCertTLSCfg, innerErr := config.GetCaCert()
 		if innerErr != nil {
 			return "", innerErr
@@ -357,12 +376,8 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, project *d
 			OAuth2TokenGetter: oauth2TokenGetter,
 		})
 		if pingErr != nil {
-			if cfg.Dispatcher.SkipPingValidation {
-				a.Logger.WarnContext(ctx, "failed to ping tls endpoint (validation skipped)", "error", pingErr)
-			} else {
-				a.Logger.ErrorContext(ctx, "failed to ping tls endpoint", "error", pingErr)
-				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
-			}
+			a.Logger.ErrorContext(ctx, "failed to ping tls endpoint", "error", pingErr)
+			return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
 		}
 	default:
 		return "", ErrInvalidEndpointScheme

@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -27,6 +28,7 @@ type App struct {
 	Cache    cache.Cache
 	Rate     limiter.RateLimiter
 	Licenser license.Licenser
+	Broker   *broker.Dependencies
 
 	TracerBackend tracer.Backend
 

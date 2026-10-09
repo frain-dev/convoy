@@ -16,12 +16,25 @@ export class GeneralService {
 	constructor(private route: ActivatedRoute, private _location: Location) {}
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
-		this.alertStatus.next({ message: details.message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
+		let message = this.capitalizeMessage(details.message);
+		// A 504/timeout body often has no `message`, so the interceptor used to
+		// toast an empty red bar. Error toasts always need readable copy.
+		if (details.style === 'error' && !message.trim()) {
+			message = 'Something went wrong. Try again.';
+		}
+		this.alertStatus.next({ message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
 		if (details.type === 'modal') return;
 
 		setTimeout(() => {
 			this.dismissNotification();
 		}, 7000);
+	}
+
+	/** Ensure toast/API copy always starts with a capital letter. */
+	private capitalizeMessage(message: string): string {
+		const text = (message ?? '').trim();
+		if (!text) return message ?? '';
+		return text.charAt(0).toUpperCase() + text.slice(1);
 	}
 
 	dismissNotification() {
@@ -121,8 +134,9 @@ export class GeneralService {
 		if (!params?.prev_page_cursor) delete queryParams.prev_page_cursor;
 
 		const cleanedQuery: any = Object.fromEntries(Object.entries(queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
-		const cleanedQueryParams = new URLSearchParams(cleanedQuery).toString();
-		this._location.go(`${location.pathname}?${cleanedQueryParams}`);
+		const parts = Object.entries(cleanedQuery).map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+		const path = this._location.path().split('?')[0];
+		this._location.go(parts.length ? `${path}?${parts.join('&')}` : path);
 
 		return queryParams;
 	}

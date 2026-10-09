@@ -15,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
@@ -124,32 +123,36 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		// Same enablement gate as the primary delivery path: license + live per-org
-		// enablement via the shared resolver. The manager is always constructed now;
-		// the nil-guards are defensive and run first so the licenser and cached
-		// resolver lookups only happen when CB wiring is present.
-		if deps.CircuitBreakerManager != nil && deps.CBEnablement != nil &&
-			deps.Licenser.CircuitBreaking() && deps.CBEnablement.EnabledForOrg(ctx, project.OrganisationID) {
+		// Breaker admission: license + live org enablement; DisableEndpoint is not
+		// required (see circuitBreakingEnabledForOrg in endpoint_disable.go).
+		if deps.CircuitBreakerManager != nil &&
+			circuitBreakingEnabledForOrg(ctx, deps.Licenser, deps.CBEnablement, project.OrganisationID) {
 			breakerErr := deps.CircuitBreakerManager.CanExecute(ctx, endpoint.UID)
 			if breakerErr != nil {
 				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)
 				return &CircuitBreakerError{Err: breakerErr}
 			}
 
-			// check the circuit breaker state so we can disable the endpoint
-			cb, breakerErr := deps.CircuitBreakerManager.GetCircuitBreaker(ctx, endpoint.UID)
-			if breakerErr != nil {
-				tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)
-				return &CircuitBreakerError{Err: breakerErr}
-			}
+			if circuitBreakerOwnsEndpointDisable(ctx, deps.Licenser, deps.CBEnablement, project) {
+				// check the circuit breaker state so we can disable the endpoint
+				cb, breakerErr := deps.CircuitBreakerManager.GetCircuitBreaker(ctx, endpoint.UID)
+				if breakerErr != nil {
+					tracer.AddEvent(ctx, tracer.EventEventRetryDeliveryCircuitBreaker, attributes)
+					return &CircuitBreakerError{Err: breakerErr}
+				}
 
-			if cb != nil {
-				if cb.ConsecutiveFailures > deps.CircuitBreakerManager.GetConfig().ConsecutiveFailureThreshold {
-					endpointStatus := datastore.InactiveEndpointStatus
+				if cb != nil {
+					if cb.ConsecutiveFailures > deps.CircuitBreakerManager.GetConfig().ConsecutiveFailureThreshold {
+						endpointStatus := datastore.InactiveEndpointStatus
 
-					breakerErr = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-					if breakerErr != nil {
-						deps.Logger.ErrorContext(ctx, "failed to deactivate endpoint after failed retry", "error", breakerErr)
+						// Disables the endpoint without announcing it: the sampler owns
+						// the outage alert, because it is the path that knows the
+						// failure rate and counts the alert against the breaker's
+						// window.
+						_, breakerErr = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+						if breakerErr != nil {
+							deps.Logger.ErrorContext(ctx, "failed to deactivate endpoint after failed retry", "error", breakerErr)
+						}
 					}
 				}
 			}
@@ -417,30 +420,24 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
+			if retryLimitOwnsEndpointDisable(ctx, deps.Licenser, deps.CBEnablement, project) {
 				endpointStatus := datastore.InactiveEndpointStatus
 
-				err := deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+				statusChanged, err := deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 				if err != nil {
 					deps.Logger.ErrorContext(ctx, "failed to deactivate endpoint after failed retry", "error", err)
 				}
 
-				if deps.Licenser.AdvancedEndpointMgmt() {
-					failureMsg := ""
-					responseBody := ""
-					statusCode := 0
-					if resp != nil {
-						failureMsg = resp.Error
-						responseBody = string(resp.Body)
-						statusCode = resp.StatusCode
-					}
-
-					// send endpoint deactivation notification
-					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, true, failureMsg, responseBody, statusCode, deps.Logger)
-					if err != nil {
-						deps.Logger.ErrorContext(ctx, "failed to send notification", "error", err)
-					}
+				failureMsg := ""
+				responseBody := ""
+				statusCode := 0
+				if resp != nil {
+					failureMsg = resp.Error
+					responseBody = string(resp.Body)
+					statusCode = resp.StatusCode
 				}
+
+				notifyRetryLimitEndpointDisabled(ctx, statusChanged, deps, endpoint, project, failureMsg, responseBody, statusCode)
 			}
 		}
 

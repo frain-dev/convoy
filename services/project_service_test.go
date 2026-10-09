@@ -102,7 +102,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -181,7 +181,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -244,7 +244,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -255,7 +255,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				LogoURL:        "https://google.com",
 				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
-					SearchPolicy:  "720h",
+					SearchPolicy:  "",
 					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -307,7 +307,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -318,7 +318,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				LogoURL:        "https://google.com",
 				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
-					SearchPolicy:  "720h",
+					SearchPolicy:  "",
 					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -385,7 +385,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(false)
+				licenser.EXPECT().EventSearch().Times(1).Return(false)
 
 				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -448,7 +448,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				ml, _ := gs.Logger.(*mocks.MockLogger)
 				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create project", "error", gomock.Any()).Times(1)
@@ -527,7 +527,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CheckProjectLimit(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				ml, _ := gs.Logger.(*mocks.MockLogger)
 				ml.EXPECT().ErrorContext(gomock.Any(), "failed to create project", "error", gomock.Any()).Times(1)
@@ -599,7 +599,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				// CheckProjectLimit must NOT be called when skipLimitCheck is true
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 				eventTypesRepo := gs.EventTypesRepo.(*mocks.MockEventTypesRepository)
 				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -769,7 +769,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 			},
 			dbFn: func(gs *ProjectService) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
@@ -799,7 +799,7 @@ func TestProjectService_UpdateProject(t *testing.T) {
 			},
 			dbFn: func(gs *ProjectService) {
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+				licenser.EXPECT().EventSearch().Times(1).Return(true)
 
 				a, _ := gs.ProjectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))

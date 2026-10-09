@@ -1,0 +1,9 @@
+<!-- One interpolation of one getter. Every state this component knows about
+     resolves through the same chain of early returns, so the template cannot
+     paint two verdicts at once and cannot paint none: there is no @if here to
+     get the conditions wrong in. min-w-0 lets the sentence wrap instead of
+     widening the card past the viewport. -->
+<div class="flex items-start gap-8px min-w-0">
+  <span class="mt-8px w-8px h-8px rounded-full shrink-0" [class]="dotClass"></span>
+  <p class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary min-w-0 break-words">{{ sentence }}</p>
+</div>

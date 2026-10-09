@@ -2,6 +2,7 @@ package circuit_breaker
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,9 +13,10 @@ import (
 const namespace = "circuit_breaker"
 
 var (
+	metricsMu     sync.Mutex
 	cachedMetrics *Metrics
 	metricsConfig *config.MetricsConfiguration
-	lastRun       = time.Now()
+	lastRun       time.Time
 
 	circuitBreakerState = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "state"),
@@ -81,36 +83,73 @@ func (cb *CircuitBreakerManager) collectMetrics() (*Metrics, error) {
 }
 
 func (cb *CircuitBreakerManager) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(cb, ch)
+	ch <- circuitBreakerState
+	ch <- circuitBreakerRequests
+	ch <- circuitBreakerFailures
+	ch <- circuitBreakerSuccesses
+	ch <- circuitBreakerFailureRate
+	ch <- circuitBreakerSuccessRate
+	ch <- circuitBreakerConsecutiveFailures
+	ch <- circuitBreakerNotificationsSent
+	ch <- circuitBreakerSampleLatency
 }
 
 func (cb *CircuitBreakerManager) Collect(ch chan<- prometheus.Metric) {
-	var metrics *Metrics
-	var err error
-	now := time.Now()
-	cachedMetrics = &Metrics{}
-
-	if metricsConfig == nil {
-		cfg, err := config.Get()
-		if err != nil {
-			return
-		}
-		metricsConfig = &cfg.Metrics
-	}
-
-	if !metricsConfig.IsEnabled {
+	cfg := cb.loadMetricsConfig()
+	if cfg == nil || !cfg.IsEnabled {
 		return
 	}
 
-	if lastRun.Add(time.Duration(metricsConfig.Prometheus.SampleTime) * time.Second).After(now) {
-		metrics = cachedMetrics
-	} else {
-		metrics, err = cb.collectMetrics()
-		if err != nil {
+	sample := time.Duration(cfg.Prometheus.SampleTime) * time.Second
+	now := time.Now()
+
+	metricsMu.Lock()
+	if cachedMetrics != nil && !lastRun.IsZero() && now.Before(lastRun.Add(sample)) {
+		snapshot := cachedMetrics
+		metricsMu.Unlock()
+		cb.emitMetrics(ch, snapshot)
+		return
+	}
+	metricsMu.Unlock()
+
+	metrics, err := cb.collectMetrics()
+	if err != nil {
+		if cb.logger != nil {
 			cb.logger.Errorf("Failed to collect metrics data: %v", err)
-			return
 		}
-		cachedMetrics = metrics
+		metricsMu.Lock()
+		snapshot := cachedMetrics
+		metricsMu.Unlock()
+		if snapshot != nil {
+			cb.emitMetrics(ch, snapshot)
+		}
+		return
+	}
+
+	metricsMu.Lock()
+	cachedMetrics = metrics
+	lastRun = now
+	metricsMu.Unlock()
+	cb.emitMetrics(ch, metrics)
+}
+
+func (cb *CircuitBreakerManager) loadMetricsConfig() *config.MetricsConfiguration {
+	metricsMu.Lock()
+	defer metricsMu.Unlock()
+	if metricsConfig != nil {
+		return metricsConfig
+	}
+	cfg, err := config.Get()
+	if err != nil {
+		return nil
+	}
+	metricsConfig = &cfg.Metrics
+	return metricsConfig
+}
+
+func (cb *CircuitBreakerManager) emitMetrics(ch chan<- prometheus.Metric, metrics *Metrics) {
+	if metrics == nil {
+		return
 	}
 
 	for _, metric := range metrics.circuitBreakers {
@@ -176,6 +215,4 @@ func (cb *CircuitBreakerManager) Collect(ch chan<- prometheus.Metric) {
 			metrics.SampleLatency.Seconds(),
 		)
 	}
-
-	lastRun = now
 }

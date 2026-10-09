@@ -119,6 +119,44 @@ func TestProcessNotifications(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name: "should_fail_for_invalid_teams_payload",
+			payload: `
+				{
+					"notification_type": "teams",
+					"payload": "invalid"
+				}
+			`,
+			clientFn:      nil,
+			expectedError: ErrInvalidTeamsPayload,
+		},
+		{
+			name: "should_pass_for_valid_teams_message",
+			payload: `
+				{
+					"notification_type": "teams",
+					"payload": {
+						"webhook_url": "https://example.logic.azure.com:443/workflows/abc/triggers/manual/paths/invoke?sig=redacted",
+						"text": "endpoint disabled"
+					}
+				}
+			`,
+			nFn: func(client *http.Client) func() {
+				// Teams posts through the same SSRF-guarded notification client
+				// as slack, so httpmock has to patch that client too.
+				httpmock.ActivateNonDefault(client)
+
+				httpmock.RegisterResponder(http.MethodPost,
+					"https://example.logic.azure.com:443/workflows/abc/triggers/manual/paths/invoke",
+					httpmock.NewStringResponder(http.StatusAccepted, ""))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+			clientFn:      nil,
+			expectedError: nil,
+		},
+		{
 			name: "should_pass_when_email_payload_is_valid_but_type_is_missing",
 			payload: `
 				{

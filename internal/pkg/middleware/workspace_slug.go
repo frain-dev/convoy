@@ -5,12 +5,10 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -20,8 +18,11 @@ const (
 )
 
 // WorkspaceSlugProbeRateLimit throttles unauthenticated workspace slug lookups on guest routes.
-// Failure policy: fail closed. Over-limit returns 429; limiter/transport errors return 503
-// (still blocked, never fail-open). Applies only when slug query param is set.
+// Failure policy: fail closed, like the authenticated API mounts and unlike event intake.
+// Blocking this probe destroys nothing the caller cannot retry, while admitting it unmetered
+// hands an anonymous caller free workspace slug enumeration. Over-limit returns 429; a limiter
+// backend failure returns 503, which describes that case more accurately than 429 does.
+// Applies only when slug query param is set.
 func WorkspaceSlugProbeRateLimit(rateLimiter limiter.RateLimiter) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,14 +40,14 @@ func WorkspaceSlugProbeRateLimit(rateLimiter limiter.RateLimiter) func(next http
 				return
 			}
 
-			if rlimiter.GetRawError(err) != rlimiter.ErrRateLimitExceeded {
+			if limiter.GetRawError(err) != limiter.ErrRateLimitExceeded {
 				_ = render.Render(w, r, util.NewErrorResponse("rate limiter unavailable", http.StatusServiceUnavailable))
 				return
 			}
 
 			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", workspaceSlugProbeLimit))
 			w.Header().Set("X-RateLimit-Remaining", "0")
-			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfterSeconds(limiter.GetRetryAfter(err))))
 			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
 		})
 	}

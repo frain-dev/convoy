@@ -1,10 +1,25 @@
 import {Injectable} from '@angular/core';
 import {apiOrigin} from 'src/app/services/api-origin';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import {ActivatedRoute, Router} from '@angular/router';
 import {GeneralService} from '../general/general.service';
 import {ProjectService} from 'src/app/private/pages/project/project.service';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import {rememberInviteRedirect} from 'src/app/public/accept-invite/invite-redirect';
+
+function axiosErrorMessage(error: AxiosError): string {
+	const data = error.response?.data as { message?: unknown } | string | undefined;
+	const fromApi = typeof data === 'object' && data && typeof data.message === 'string' ? data.message.trim() : '';
+	if (fromApi) return fromApi;
+
+	const status = error.response?.status;
+	const timedOut =
+		error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT' || status === 504 || status === 408;
+	if (timedOut) return 'This request took too long. Try again.';
+	if (!error.response) return 'Could not reach the server. Try again.';
+
+	return (error.message || '').trim() || 'An unexpected error occurred';
+}
 
 @Injectable({
 	providedIn: 'root'
@@ -53,21 +68,26 @@ export class HttpService {
 		Object.keys(cleanedQuery).forEach(q => {
 			const queryValue = safeQuery[q];
 			if (queryValue === undefined) return;
+			// Event search terms are opaque user text; never expand query/body via JSON.parse.
+			if (q === 'query' || q === 'body') {
+				parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(queryValue))}`);
+				return;
+			}
 			try {
 				const queryItem = JSON.parse(queryValue);
 				if (Array.isArray(queryItem)) {
-					queryItem.forEach((item: any) => parts.push(`${q}=${item}`));
+					queryItem.forEach((item: any) => parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(item))}`));
 					return;
 				}
 			} catch (error) {}
-			parts.push(`${q}=${queryValue}`);
+			parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(queryValue))}`);
 		});
 
 		// query items that are real arrays (filtered out of cleanedQuery above)
 		Object.keys(safeQuery).forEach((key: any) => {
 			const queryValue = safeQuery[key];
 			if (queryValue !== undefined && queryValue !== null && typeof queryValue === 'object') {
-				queryValue?.forEach?.((item: any) => parts.push(`${key}=${item}`));
+				queryValue?.forEach?.((item: any) => parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(item))}`));
 			}
 		});
 
@@ -186,8 +206,11 @@ export class HttpService {
 			try {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
-				// Use token for authorization if available, otherwise use ownerId or access_token
-				let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId;
+				// Prefer the page's static portal token (or owner_id) over a short-lived
+				// auth_token in localStorage. localStorage is shared across tabs, so an
+				// expired leftover JWT must not override a valid ?token= session, and
+				// opening a static-token link must not clear storage another tab needs.
+				let authToken = this.token || this.ownerId || this.getPortalLinkAuthToken();
 
 				if (authToken !== undefined && authToken !== null) {
 					requestDetails.isPortal = true;
@@ -195,7 +218,7 @@ export class HttpService {
 
 				// not a portal link innit?
 				if (!(this.token || this.ownerId)) {
-					authToken = this.authDetails()?.access_token;
+					authToken = this.authDetails()?.access_token ?? null;
 					requestDetails.isPortal = false;
 				}
 
@@ -222,16 +245,14 @@ export class HttpService {
                 resolve(data);
             } catch (error) {
                 if (axios.isAxiosError(error)) {
-                    const msg = error.response?.data?.message;
-                    if ('project not found' === msg) {
+                    const msg = axiosErrorMessage(error);
+                    if ('project not found' === error.response?.data?.message) {
                         localStorage.removeItem('CONVOY_PROJECT');
                     }
                     if (requestDetails.returnFullError) {
                         return reject(error);
                     } else {
-                        // Return the API error message if available, otherwise fall back to error.message
-                        const errorMessage = msg || error.message || 'An unexpected error occurred';
-                        return reject(errorMessage);
+                        return reject(msg);
                     }
 				} else {
 					console.log('unexpected error: ', error);
@@ -251,9 +272,6 @@ export class HttpService {
 			},
 			error => {
 				if (axios.isAxiosError(error)) {
-					const errorResponse: any = error.response;
-					let errorMessage: any = errorResponse?.data ? errorResponse.data.message : error.message;
-
 					if (error.response?.status == 401 && !this.router.url.split('/')[1].includes('portal')) {
 						this.logUserOut();
 						return Promise.reject(error);
@@ -261,7 +279,7 @@ export class HttpService {
 
 					if (!requestDetails.hideNotification) {
 						this.generalService.showNotification({
-							message: errorMessage,
+							message: axiosErrorMessage(error),
 							style: 'error'
 						});
 					}
@@ -284,6 +302,9 @@ export class HttpService {
 	}
 
 	logUserOut() {
+		// accept-invite 401 must keep the token so login can return; CONVOY_LAST_AUTH_LOCATION is never read
+		rememberInviteRedirect(this.router.url);
+
 		// save previous location before session timeout
 		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 

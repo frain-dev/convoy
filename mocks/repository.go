@@ -568,17 +568,17 @@ func (mr *MockEventRepositoryMockRecorder) UpdateEventEndpoints(arg0, arg1, arg2
 }
 
 // UpdateEventStatus mocks base method.
-func (m *MockEventRepository) UpdateEventStatus(arg0 context.Context, arg1 *datastore.Event, arg2 datastore.EventStatus) error {
+func (m *MockEventRepository) UpdateEventStatus(arg0 context.Context, arg1 *datastore.Event, arg2 datastore.EventStatus, arg3 string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEventStatus", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateEventStatus", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateEventStatus indicates an expected call of UpdateEventStatus.
-func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2 any) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventStatus", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventStatus), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventStatus", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventStatus), arg0, arg1, arg2, arg3)
 }
 
 // MockProjectRepository is a mock of ProjectRepository interface.
@@ -1846,11 +1846,12 @@ func (mr *MockEndpointRepositoryMockRecorder) UpdateEndpoint(ctx, endpoint, proj
 }
 
 // UpdateEndpointStatus mocks base method.
-func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
+func (m *MockEndpointRepository) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateEndpointStatus", ctx, projectID, endpointID, status)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // UpdateEndpointStatus indicates an expected call of UpdateEndpointStatus.
@@ -2698,6 +2699,20 @@ func (m *MockUserRepository) FindUserByToken(arg0 context.Context, arg1 string) 
 func (mr *MockUserRepositoryMockRecorder) FindUserByToken(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByToken", reflect.TypeOf((*MockUserRepository)(nil).FindUserByToken), arg0, arg1)
+}
+
+// RotateEmailVerificationToken mocks base method.
+func (m *MockUserRepository) RotateEmailVerificationToken(ctx context.Context, userID, token string, expiresAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RotateEmailVerificationToken", ctx, userID, token, expiresAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RotateEmailVerificationToken indicates an expected call of RotateEmailVerificationToken.
+func (mr *MockUserRepositoryMockRecorder) RotateEmailVerificationToken(ctx, userID, token, expiresAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RotateEmailVerificationToken", reflect.TypeOf((*MockUserRepository)(nil).RotateEmailVerificationToken), ctx, userID, token, expiresAt)
 }
 
 // UpdateUser mocks base method.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -28,7 +29,11 @@ type ProcessInviteService struct {
 	Token    string
 	Accepted bool
 	NewUser  *models.User // TODO: Login Invite with SSO
-	Logger   log.Logger
+	// Actor is the signed-in dashboard user, if any. Accepting for an existing
+	// invitee requires Actor.Email to match the invitee. New-user signup and
+	// decline do not.
+	Actor  *datastore.User
+	Logger log.Logger
 }
 
 func NewProcessInviteService(
@@ -59,6 +64,7 @@ func NewProcessInviteService(
 
 var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
 var ErrUserAlreadyExist = errors.New("user already exist")
+var ErrInviteeLoginRequired = errors.New("sign in as the invited user to accept this invite")
 
 func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	ok, err := pis.Licenser.CheckUserLimit(ctx)
@@ -108,6 +114,8 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 			pis.Logger.ErrorContext(ctx, errMsg, "error", err)
 			return &ServiceError{ErrMsg: errMsg, Err: err}
 		}
+	} else if !inviteEmailsMatch(actorEmail(pis.Actor), iv.InviteeEmail) {
+		return &ServiceError{ErrMsg: ErrInviteeLoginRequired.Error(), Err: ErrInviteeLoginRequired}
 	}
 
 	org, err := pis.OrgRepo.FetchOrganisationByID(ctx, iv.OrganisationID)
@@ -185,4 +193,17 @@ func (pis *ProcessInviteService) createNewUser(ctx context.Context, newUser *mod
 	}
 
 	return user, nil
+}
+
+func actorEmail(actor *datastore.User) string {
+	if actor == nil {
+		return ""
+	}
+	return actor.Email
+}
+
+func inviteEmailsMatch(a, b string) bool {
+	left := strings.TrimSpace(a)
+	right := strings.TrimSpace(b)
+	return left != "" && strings.EqualFold(left, right)
 }

@@ -5,6 +5,7 @@ import { SamlService } from './saml.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PrivateService } from 'src/app/private/private.service';
 import { GeneralService } from 'src/app/services/general/general.service';
+import { consumeInviteRedirect } from '../accept-invite/invite-redirect';
 
 @Component({
     selector: 'convoy-saml',
@@ -38,15 +39,16 @@ export class SamlComponent implements OnInit {
 				style: 'success'
 			});
 
+			const dest = consumeInviteRedirect() || '/';
 			if (typeof window !== 'undefined' && window.opener) {
 				const pathname = window.location.pathname;
 				const appRoot = pathname.replace(/\/(sso\/callback|saml)$/i, '').replace(/\/$/, '') || '';
-				const projectsUrl = window.location.origin + (appRoot ? appRoot + '/projects' : '/projects');
-				window.opener.location.href = projectsUrl;
+				const next = dest === '/' ? '/projects' : dest;
+				window.opener.location.href = window.location.origin + (appRoot ? appRoot + next : next);
 				window.close();
 				return;
 			}
-			this.router.navigateByUrl('/');
+			this.router.navigateByUrl(dest);
 		} catch (err: any) {
 			const errorMessage = typeof err === 'string' ? err : (err?.message || 'SSO login failed');
 			this.generalService.showNotification({

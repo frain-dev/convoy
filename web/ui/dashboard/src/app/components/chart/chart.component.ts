@@ -1,13 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CHARTDATA } from 'src/app/models/global.model';
-import { ButtonComponent } from '../button/button.component';
 interface PAGE_DATA extends CHARTDATA {
 	size: string;
 }
 @Component({
     selector: 'convoy-chart',
-    imports: [CommonModule, ButtonComponent],
+    imports: [CommonModule],
     templateUrl: './chart.component.html',
     styleUrls: ['./chart.component.scss']
 })

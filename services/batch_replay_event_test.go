@@ -146,3 +146,62 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 		})
 	}
 }
+
+func TestBatchReplayEventService_OwnedEndpointIDs(t *testing.T) {
+	ctx := context.Background()
+	filter := &datastore.Filter{
+		Project:     &datastore.Project{UID: "1234"},
+		EndpointIDs: []string{"ep-a"},
+	}
+
+	t.Run("replays_multi_endpoint_event_when_all_targets_are_owned", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		br := provideBatchReplayEventService(ctrl, filter)
+		br.OwnedEndpointIDs = []string{"ep-a", "ep-b"}
+
+		e, _ := br.EventRepo.(*mocks.MockEventRepository)
+		e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+			[]datastore.Event{
+				{UID: "event1", ProjectID: "proj0", Endpoints: []string{"ep-a", "ep-b"}},
+			},
+			datastore.PaginationData{},
+			nil,
+		)
+
+		q, _ := br.Queue.(*mocks.MockQueuer)
+		q.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
+
+		successes, failures, err := br.Run(ctx)
+		require.Nil(t, err)
+		require.Equal(t, 1, successes)
+		require.Equal(t, 0, failures)
+	})
+
+	t.Run("skips_multi_endpoint_event_when_ownership_is_only_the_filter", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		br := provideBatchReplayEventService(ctrl, filter)
+		// Regression: OwnedEndpointIDs must be the portal allowlist, not the narrowed filter.
+		br.OwnedEndpointIDs = []string{"ep-a"}
+
+		e, _ := br.EventRepo.(*mocks.MockEventRepository)
+		e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+			[]datastore.Event{
+				{UID: "event1", ProjectID: "proj0", Endpoints: []string{"ep-a", "ep-b"}},
+			},
+			datastore.PaginationData{},
+			nil,
+		)
+
+		ml, _ := br.Logger.(*mocks.MockLogger)
+		ml.EXPECT().WarnContext(gomock.Any(), "batch replay skipped event not fully owned by caller", "event_id", "event1").Times(1)
+
+		successes, failures, err := br.Run(ctx)
+		require.Nil(t, err)
+		require.Equal(t, 0, successes)
+		require.Equal(t, 1, failures)
+	})
+}

@@ -13,13 +13,12 @@ import {
 import {ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule} from '@angular/forms';
 import {fromEvent} from 'rxjs';
 import {debounceTime, distinctUntilChanged, map, startWith} from 'rxjs/operators';
-import {ButtonComponent} from '../button/button.component';
 import {DropdownComponent, DropdownOptionDirective} from '../dropdown/dropdown.component';
 import {InputDirective, LabelComponent} from '../input/input.component';
 
 @Component({
     selector: 'convoy-select',
-    imports: [CommonModule, ReactiveFormsModule, DropdownComponent, ButtonComponent, DropdownOptionDirective, LabelComponent, InputDirective],
+    imports: [CommonModule, ReactiveFormsModule, DropdownComponent, DropdownOptionDirective, LabelComponent, InputDirective],
     templateUrl: './select.component.html',
     styleUrls: ['./select.component.scss'],
     providers: [

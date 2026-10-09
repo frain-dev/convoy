@@ -1,8 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CardComponent } from 'src/app/components/card/card.component';
 import { ControlContainer, FormBuilder, FormGroup, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { MonacoComponent } from '../../private/components/monaco/monaco.component';
 import { PrismModule } from '../../private/components/prism/prism.module';
 import { CreateSubscriptionService } from '../../private/components/create-subscription/create-subscription.service';
@@ -13,7 +11,7 @@ import { EVENT_TYPE } from '../../models/event.model';
 
 @Component({
     selector: 'convoy-create-portal-transform-function',
-    imports: [CommonModule, CardComponent, ReactiveFormsModule, ButtonComponent, MonacoComponent, PrismModule, SelectComponent],
+    imports: [CommonModule, ReactiveFormsModule, MonacoComponent, PrismModule, SelectComponent],
     providers: [{ provide: ControlContainer, useExisting: FormGroupDirective }],
     templateUrl: './create-portal-transform-function.component.html',
     styleUrls: ['./create-portal-transform-function.component.scss']
@@ -24,7 +22,7 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	@Input('transformFunction') transformFunction: any;
 	@Input('options') options: EVENT_TYPE[] = [];
 	@Input('defaultOption') defaultOption: any;
-	@Input() titleClass: string = 'font-semibold text-14 capitalize';
+	@Input() titleClass: string = 'font-heading font-medium text-[14px] leading-[20px] text-new.text-primary capitalize';
 	@Input() showTitle: boolean = true;
 
 	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();

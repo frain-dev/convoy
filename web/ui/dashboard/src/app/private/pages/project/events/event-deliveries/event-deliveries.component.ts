@@ -1,12 +1,15 @@
-import { Component, ElementRef, EventEmitter, OnInit, OnDestroy, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, OnDestroy, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
+import { format } from 'date-fns';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
-import { CURSOR, PAGINATION } from 'src/app/models/global.model';
+import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { ProjectService } from '../../project.service';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
 
 @Component({
     selector: 'app-event-deliveries',
@@ -16,26 +19,90 @@ import { ProjectService } from '../../project.service';
 })
 export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
+	// When set by a parent (portal / project events), overrides the list API's
+	// implicit 7-day window so the table matches the page's chart/stat range.
+	@Input() dateRange?: { startDate: string; endDate: string };
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
-	eventDelTableHead: string[] = ['Status', 'Event type', this.projectService.activeProjectDetails?.type == 'incoming' ? 'Subscription' : 'Endpoint', 'Attempts', 'Next Attempt', 'Queued At', '', ''];
 	fetchingCount = false;
 	showBatchRetryModal = false;
 	isloadingEventDeliveries = false;
 	isRetrying = false;
+	loadError = false;
 	batchRetryCount!: number;
-	displayedEventDeliveries!: { date: string; content: any[] }[];
-	eventDeliveries!: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
+	displayedEventDeliveries: { date: string; content: EVENT_DELIVERY[] }[] = [];
+	eventDeliveries?: { pagination: PAGINATION; content: EVENT_DELIVERY[] };
 	@ViewChild('batchRetryDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	portalToken = this.route.snapshot.queryParams?.token;
-	queryParams?: FILTER_QUERY_PARAM;
+	queryParams: FILTER_QUERY_PARAM = {};
 	getEventDeliveriesInterval: any;
 
-	constructor(private generalService: GeneralService, private eventsService: EventsService, public route: ActivatedRoute, public projectService: ProjectService, public privateService: PrivateService) {}
+	// Filter/toolbar state (2026 UI refresh; the old shared filter bar was replaced
+	// with the inline filter group from the redesign).
+	statusDraft: string[] = [];
+	statusFilter: string[] = [];
+	selectedEndpointData?: ENDPOINT;
+	filterEndpoints: ENDPOINT[] = [];
+	loadingFilterEndpoints = false;
+	endpointSearchString = '';
+	private endpointSearchTimeout: any;
+	private tableSearchTimeout: any;
+	catalogEventTypes: string[] = [];
+	observedEventTypes: string[] = [];
+	private eventTypesFetchId = 0;
+	sortOrder: 'asc' | 'desc' | string = 'desc';
+	searchString = '';
+	enableTailMode = false;
 
-	ngOnInit() {}
+	// Client-side page tracking for the "1-10 of 50" pagination label; the API is
+	// cursor-based so the absolute position is derived from prev/next navigation.
+	currentPage = 1;
+	totalCount?: number;
+	private totalCountFetchId = 0;
+	selectedDeliveries = new Set<string>();
+	batchRetryParams?: FILTER_QUERY_PARAM;
+	batchRetryDate = '';
+
+	constructor(
+		private generalService: GeneralService,
+		private eventsService: EventsService,
+		public route: ActivatedRoute,
+		public projectService: ProjectService,
+		public privateService: PrivateService,
+		private _location: Location
+	) {}
+
+	ngOnInit() {
+		this.getFiltersFromURL();
+		if (this.dateRange?.startDate && this.dateRange?.endDate && !this.queryParams.startDate) {
+			this.queryParams = { ...this.queryParams, ...this.dateRange };
+		}
+		this.refreshDeliveries(false);
+		if (this.checkIfTailModeIsEnabled()) this.getEventDeliveriesAtInterval();
+		this.getEventTypesForFilter();
+		if (!this.portalToken) this.getEndpointsForFilter();
+		if (this.queryParams.endpointId) this.getSelectedEndpointData();
+	}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventDeliveriesInterval);
+		clearTimeout(this.endpointSearchTimeout);
+		clearTimeout(this.tableSearchTimeout);
+	}
+
+	get isOutgoingProject(): boolean {
+		return this.projectService.activeProjectDetails?.type === 'outgoing';
+	}
+
+	get showEventTypeColumn(): boolean {
+		return this.isOutgoingProject || !!this.portalToken;
+	}
+
+	getFiltersFromURL() {
+		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
+		this.statusFilter = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
+		this.statusDraft = [...this.statusFilter];
+		this.sortOrder = this.queryParams?.sort || 'desc';
+		this.searchString = this.queryParams.query || '';
 	}
 
 	formatPreciseTimestamp(value?: string): string {
@@ -47,107 +114,290 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		return date.toISOString();
 	}
 
-	fetchEventDeliveries(requestDetails?: FILTER_QUERY_PARAM) {
-		const data = requestDetails;
-		this.queryParams = data;
-		this.getEventDeliveries({ ...data, showLoader: true });
+	// ------- filters -------
+
+	toggleStatusDraft(status: string) {
+		this.statusDraft.includes(status) ? (this.statusDraft = this.statusDraft.filter(s => s !== status)) : this.statusDraft.push(status);
 	}
+
+	applyStatusFilter() {
+		this.statusFilter = [...this.statusDraft];
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, status: this.statusFilter.length ? JSON.stringify(this.statusFilter) : '' });
+		if (!this.statusFilter.length) delete this.queryParams.status;
+		this.refreshDeliveries();
+	}
+
+	clearStatusFilter() {
+		this.statusDraft = [];
+		this.applyStatusFilter();
+	}
+
+	async getEndpointsForFilter(search = '') {
+		this.loadingFilterEndpoints = true;
+		try {
+			const response = await this.privateService.getEndpoints({ q: search });
+			this.filterEndpoints = response.data.content || [];
+		} catch (error) {
+			this.filterEndpoints = [];
+		}
+		this.loadingFilterEndpoints = false;
+	}
+
+	onEndpointSearch() {
+		clearTimeout(this.endpointSearchTimeout);
+		this.endpointSearchTimeout = setTimeout(() => this.getEndpointsForFilter(this.endpointSearchString.trim()), 400);
+	}
+
+	updateEndpointFilter(endpoint: ENDPOINT) {
+		this.selectedEndpointData = endpoint;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: endpoint.uid });
+		this.getEventTypesForFilter();
+		this.refreshDeliveries();
+	}
+
+	clearEndpointFilter() {
+		this.selectedEndpointData = undefined;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' });
+		delete this.queryParams.endpointId;
+		this.getEventTypesForFilter();
+		this.refreshDeliveries();
+	}
+
+	setEventType(eventType?: string) {
+		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType });
+		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: '' });
+			delete this.queryParams.eventType;
+		}
+		this.refreshDeliveries();
+	}
+
+	setSortOrder(order: 'asc' | 'desc') {
+		this.sortOrder = order;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: order });
+		this.refreshDeliveries();
+	}
+
+	// Called by the parent page when the summary date range changes; the range
+	// scopes the delivery table too.
+	applyDateFilter(dateRange?: { startDate: string; endDate: string }) {
+		if (dateRange) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
+		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' });
+			delete this.queryParams.startDate;
+			delete this.queryParams.endDate;
+		}
+		this.getEventTypesForFilter();
+		this.refreshDeliveries();
+	}
+
+	clearAllFilters() {
+		this.statusFilter = [];
+		this.statusDraft = [];
+		this.selectedEndpointData = undefined;
+		this.searchString = '';
+		this.endpointSearchString = '';
+
+		const sort = this.queryParams?.sort;
+		this.queryParams = sort ? { sort } : {};
+		this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);
+		this.getEventTypesForFilter();
+		this.refreshDeliveries();
+	}
+
+	get hasActiveFilters(): boolean {
+		const keys = Object.keys(this.queryParams || {}).filter(k => !['sort', 'token', 'next_page_cursor', 'prev_page_cursor', 'direction', 'showLoader'].includes(k));
+		return keys.length > 0 || !!this.searchString.trim();
+	}
+
+	onSearch() {
+		clearTimeout(this.tableSearchTimeout);
+		this.tableSearchTimeout = setTimeout(() => {
+			const query = this.searchString.trim();
+			if (query) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query });
+			else {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' });
+				delete this.queryParams.query;
+			}
+			this.refreshDeliveries();
+		}, 300);
+	}
+
+	// ------- tail mode -------
 
 	checkIfTailModeIsEnabled() {
 		const tailModeConfig = localStorage.getItem('EVENTS_TAIL_MODE');
+		this.enableTailMode = tailModeConfig ? JSON.parse(tailModeConfig) : false;
 
-		return tailModeConfig ? JSON.parse(tailModeConfig) : false;
+		return this.enableTailMode;
 	}
 
-	handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
-		this.queryParams = tailDetails.data;
+	toggleTailMode(e?: any, status?: 'on' | 'off') {
+		let tailModeConfig: boolean;
+		if (status) tailModeConfig = status === 'on';
+		else tailModeConfig = e.target.checked;
+
+		this.enableTailMode = tailModeConfig;
+		localStorage.setItem('EVENTS_TAIL_MODE', JSON.stringify(tailModeConfig));
 
 		clearInterval(this.getEventDeliveriesInterval);
-		if (tailDetails.tailModeConfig) this.getEventDeliveriesAtInterval(tailDetails.data);
+		if (tailModeConfig) this.getEventDeliveriesAtInterval();
 	}
 
-	getEventDeliveriesAtInterval(data: FILTER_QUERY_PARAM) {
+	getEventDeliveriesAtInterval() {
 		this.getEventDeliveriesInterval = setInterval(() => {
-			this.getEventDeliveries(data);
+			this.getEventDeliveries(this.queryParams);
 		}, 5000);
+	}
+
+	// ------- data -------
+
+	refreshDeliveries(resetPage = true) {
+		if (resetPage) {
+			this.currentPage = 1;
+			delete this.queryParams.next_page_cursor;
+			delete this.queryParams.prev_page_cursor;
+			delete this.queryParams.direction;
+		}
+
+		this.getEventDeliveries({ ...this.queryParams, showLoader: true });
+		this.refreshTotalCount();
 	}
 
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
 		if (requestDetails?.showLoader) this.isloadingEventDeliveries = true;
 
 		try {
-			const eventDeliveriesResponse = await this.eventDeliveriesRequest(requestDetails);
+			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries(requestDetails);
 			this.eventDeliveries = eventDeliveriesResponse.data;
-
 			this.displayedEventDeliveries = this.setEventDeliveriesContent(eventDeliveriesResponse.data.content);
 
+			this.loadError = false;
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
 		} catch (error: any) {
+			this.loadError = true;
 			this.isloadingEventDeliveries = false;
 			return error;
 		}
 	}
 
-	setEventDeliveriesContent(eventDeliveriesData: any[]) {
-		const eventIds: any = [];
-		const finalEventDels: any = [];
-		let filteredEventDeliveries: any = [];
-
-		const filteredEventDeliveriesByDate = this.generalService.setContentDisplayed(eventDeliveriesData, this.queryParams?.sort || 'desc');
-
-		eventDeliveriesData.forEach((item: any) => {
-			eventIds.push(item.event_id);
-		});
-		const uniqueEventIds = [...new Set(eventIds)];
-
-		filteredEventDeliveriesByDate.forEach((eventDelivery: any) => {
-			uniqueEventIds.forEach(eventId => {
-				const filteredDeliveriesByEventId = eventDelivery.content.filter((item: any) => item.event_id === eventId);
-				filteredEventDeliveries.push({ date: eventDelivery.date, event_id: eventId, eventDeliveries: filteredDeliveriesByEventId });
-			});
-
-			filteredEventDeliveries = filteredEventDeliveries.filter((item: any) => item.eventDeliveries.length !== 0);
-			const uniqueEventDels = filteredEventDeliveries.filter((eventDels: any) => eventDelivery.date === eventDels.date);
-			finalEventDels.push({ date: eventDelivery.date, content: uniqueEventDels });
-		});
-
-		return finalEventDels;
+	// The shared grouping service emits labels like "28 July, 2026"; the design uses "28 July 2026".
+	groupDateLabel(date: string): string {
+		return date.replace(',', '');
 	}
 
-	async eventDeliveriesRequest(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
-		try {
-			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries(requestDetails);
-			return eventDeliveriesResponse;
-		} catch (error: any) {
-			return error;
+	setEventDeliveriesContent(eventDeliveriesData: EVENT_DELIVERY[]): { date: string; content: EVENT_DELIVERY[] }[] {
+		return this.generalService.setContentDisplayed(eventDeliveriesData as any, this.queryParams?.sort || 'desc');
+	}
+
+	async refreshTotalCount() {
+		const countParams = this.queryParamsForCount(this.queryParams);
+		const fetchId = ++this.totalCountFetchId;
+
+		if (!rollupCanServeDisplayCount(countParams)) {
+			if (fetchId === this.totalCountFetchId) this.totalCount = undefined;
+			return;
 		}
+
+		const totals = await this.eventsService.getStatusTotals({
+			startDate: countParams.startDate,
+			endDate: countParams.endDate,
+			endpointId: countParams.endpointId
+		});
+
+		if (fetchId !== this.totalCountFetchId) return;
+		this.totalCount = totals ? sumRollupDisplayCount(totals, this.statusFilter) : undefined;
 	}
 
-	async fetchRetryCount(data: FILTER_QUERY_PARAM) {
-		this.queryParams = data;
+	async getEventTypesForFilter() {
+		if (!this.isOutgoingProject) return;
+		const fetchId = ++this.eventTypesFetchId;
+		const types = await this.eventsService.getFilterEventTypes({
+			startDate: this.queryParams.startDate,
+			endDate: this.queryParams.endDate,
+			endpointId: this.queryParams.endpointId
+		});
+		if (fetchId !== this.eventTypesFetchId || !types) return;
+		this.catalogEventTypes = types.catalog;
+		this.observedEventTypes = types.observed;
+	}
 
-		if (!data) return;
-
-		this.fetchingCount = true;
+	async getSelectedEndpointData() {
 		try {
-			const response = await this.eventsService.getRetryCount(data);
-
-			this.batchRetryCount = response.data.num;
-			this.fetchingCount = false;
-			this.dialog.nativeElement.showModal();
-		} catch (error) {
-			this.fetchingCount = false;
-		}
+			const response = await this.privateService.getEndpoints();
+			this.selectedEndpointData = response.data.content.find((item: ENDPOINT) => item.uid === this.queryParams.endpointId);
+		} catch (error) {}
 	}
 
-	paginateEvents(event: CURSOR) {
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...event });
-		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
+	// ------- pagination -------
+
+	paginateEvents(direction: 'next' | 'prev') {
+		const pagination = this.eventDeliveries?.pagination;
+		if (!pagination) return;
+
+		const cursor =
+			direction === 'next' ? { next_page_cursor: pagination.next_page_cursor, prev_page_cursor: '', direction: 'next' as const } : { prev_page_cursor: pagination.prev_page_cursor, next_page_cursor: '', direction: 'prev' as const };
+
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...cursor });
+		this.currentPage = Math.max(1, this.currentPage + (direction === 'next' ? 1 : -1));
 		this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}
 
-	async retryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+	get pageRangeLabel(): string {
+		const contentLength = this.eventDeliveries?.content?.length || 0;
+		if (!contentLength) return '0 events';
+
+		const perPage = this.eventDeliveries?.pagination?.per_page || contentLength;
+		const start = (this.currentPage - 1) * perPage + 1;
+		const end = start + contentLength - 1;
+
+		return this.totalCount !== undefined ? `${start}-${end} of ${this.totalCount}` : `${start}-${end}`;
+	}
+
+	// ------- selection -------
+
+	isSelected(uid: string): boolean {
+		return this.selectedDeliveries.has(uid);
+	}
+
+	toggleSelection(uid: string) {
+		this.selectedDeliveries.has(uid) ? this.selectedDeliveries.delete(uid) : this.selectedDeliveries.add(uid);
+	}
+
+	get allPageSelected(): boolean {
+		const content = this.eventDeliveries?.content || [];
+		return content.length > 0 && content.every(delivery => this.selectedDeliveries.has(delivery.uid));
+	}
+
+	toggleSelectAll() {
+		const content = this.eventDeliveries?.content || [];
+		if (this.allPageSelected) content.forEach(delivery => this.selectedDeliveries.delete(delivery.uid));
+		else content.forEach(delivery => this.selectedDeliveries.add(delivery.uid));
+	}
+
+	// ------- display helpers -------
+
+	statusPillClass(status?: string): string {
+		if (status === 'Success') return 'bg-success-a3 text-success-11';
+		if (status === 'Failure') return 'bg-error-a3 text-error-11';
+		return 'bg-new.surface-muted text-new.text-secondary';
+	}
+
+	canRetry(status?: string): boolean {
+		return status === 'Success' || status === 'Failure' || status === 'Discarded';
+	}
+
+	copyDeliveryId(delivery: EVENT_DELIVERY, event: Event) {
+		event.stopPropagation();
+		navigator.clipboard?.writeText(delivery.uid).then(() => {
+			this.generalService.showNotification({ message: 'Delivery ID copied to clipboard', style: 'info' });
+		});
+	}
+
+	// ------- retries -------
+
+	async retryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 
 		try {
@@ -160,7 +410,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	// force retry successful events
-	async forceRetryEvent(requestDetails: { e: any; index: number; eventDeliveryId: string }) {
+	async forceRetryEvent(requestDetails: { e: any; eventDeliveryId: string }) {
 		requestDetails.e.stopPropagation();
 		const payload = {
 			ids: [requestDetails.eventDeliveryId]
@@ -175,12 +425,35 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		}
 	}
 
+	// "Retry All" for a single date group: batch retry scoped to that calendar day
+	// combined with the currently active filters.
+	async openGroupRetry(groupDate: string, event: Event) {
+		event.stopPropagation();
+
+		const day = new Date(groupDate);
+		if (Number.isNaN(day.getTime())) return;
+
+		const filters = this.queryParamsForCount(this.queryParams);
+		this.batchRetryParams = { ...filters, startDate: `${format(day, 'yyyy-MM-dd')}T00:00:00`, endDate: `${format(day, 'yyyy-MM-dd')}T23:59:59` };
+		this.batchRetryDate = groupDate;
+
+		this.fetchingCount = true;
+		try {
+			const response = await this.eventsService.getRetryCount(this.batchRetryParams);
+			this.batchRetryCount = response.data.num;
+			this.fetchingCount = false;
+			this.dialog.nativeElement.showModal();
+		} catch (error) {
+			this.fetchingCount = false;
+		}
+	}
+
 	async batchRetryEvent() {
-		if (!this.queryParams) return;
+		if (!this.batchRetryParams) return;
 		this.isRetrying = true;
 
 		try {
-			const response = await this.eventsService.batchRetryEvent(this.queryParams);
+			const response = await this.eventsService.batchRetryEvent(this.batchRetryParams);
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.dialog.nativeElement.close();
@@ -191,4 +464,22 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			return error;
 		}
 	}
+
+	// Strip pagination/UI-only keys so count and batch-retry share the same filter surface.
+	private queryParamsForCount(params: FILTER_QUERY_PARAM | undefined): FILTER_QUERY_PARAM {
+		const { next_page_cursor: _next, prev_page_cursor: _prev, direction: _direction, sort: _sort, showLoader: _showLoader, ...filters } = params || {};
+		return filters;
+	}
+}
+
+// Rollup is date + optional endpoint. Search, event id, and event type are
+// live-only filters, so the table omits N rather than showing a wrong total.
+export function rollupCanServeDisplayCount(params: { query?: string; eventId?: string; eventType?: string }): boolean {
+	const present = (value?: string) => typeof value === 'string' && value.trim().length > 0;
+	return !present(params.query) && !present(params.eventId) && !present(params.eventType);
+}
+
+export function sumRollupDisplayCount(totals: Record<string, number>, statuses: string[]): number {
+	const keys = statuses.length > 0 ? statuses : Object.keys(totals);
+	return keys.reduce((n, key) => n + (Number(totals[key]) || 0), 0);
 }

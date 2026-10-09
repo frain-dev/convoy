@@ -252,6 +252,20 @@ func (mr *MockLicenserMockRecorder) CustomCertificateAuthority() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomCertificateAuthority", reflect.TypeOf((*MockLicenser)(nil).CustomCertificateAuthority))
 }
 
+// CustomUserAgent mocks base method.
+func (m *MockLicenser) CustomUserAgent() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomUserAgent")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CustomUserAgent indicates an expected call of CustomUserAgent.
+func (mr *MockLicenserMockRecorder) CustomUserAgent() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomUserAgent", reflect.TypeOf((*MockLicenser)(nil).CustomUserAgent))
+}
+
 // DatadogTracing mocks base method.
 func (m *MockLicenser) DatadogTracing() bool {
 	m.ctrl.T.Helper()
@@ -280,20 +294,6 @@ func (mr *MockLicenserMockRecorder) EndpointURLTemplates() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointURLTemplates", reflect.TypeOf((*MockLicenser)(nil).EndpointURLTemplates))
 }
 
-// CustomUserAgent mocks base method.
-func (m *MockLicenser) CustomUserAgent() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CustomUserAgent")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// CustomUserAgent indicates an expected call of CustomUserAgent.
-func (mr *MockLicenserMockRecorder) CustomUserAgent() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomUserAgent", reflect.TypeOf((*MockLicenser)(nil).CustomUserAgent))
-}
-
 // EnterpriseSSO mocks base method.
 func (m *MockLicenser) EnterpriseSSO() bool {
 	m.ctrl.T.Helper()
@@ -306,6 +306,20 @@ func (m *MockLicenser) EnterpriseSSO() bool {
 func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
+}
+
+// EventSearch mocks base method.
+func (m *MockLicenser) EventSearch() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EventSearch")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// EventSearch indicates an expected call of EventSearch.
+func (mr *MockLicenserMockRecorder) EventSearch() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventSearch", reflect.TypeOf((*MockLicenser)(nil).EventSearch))
 }
 
 // FeatureListJSON mocks base method.
@@ -422,6 +436,20 @@ func (mr *MockLicenserMockRecorder) PortalLinks() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PortalLinks", reflect.TypeOf((*MockLicenser)(nil).PortalLinks))
 }
 
+// PostgresQueue mocks base method.
+func (m *MockLicenser) PostgresQueue() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PostgresQueue")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// PostgresQueue indicates an expected call of PostgresQueue.
+func (mr *MockLicenserMockRecorder) PostgresQueue() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PostgresQueue", reflect.TypeOf((*MockLicenser)(nil).PostgresQueue))
+}
+
 // ProjectEnabled mocks base method.
 func (m *MockLicenser) ProjectEnabled(projectID string) bool {
 	m.ctrl.T.Helper()
@@ -530,4 +558,18 @@ func (m *MockLicenser) WebhookAnalytics() bool {
 func (mr *MockLicenserMockRecorder) WebhookAnalytics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookAnalytics", reflect.TypeOf((*MockLicenser)(nil).WebhookAnalytics))
+}
+
+// WebhookArchiving mocks base method.
+func (m *MockLicenser) WebhookArchiving() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WebhookArchiving")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// WebhookArchiving indicates an expected call of WebhookArchiving.
+func (mr *MockLicenserMockRecorder) WebhookArchiving() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookArchiving", reflect.TypeOf((*MockLicenser)(nil).WebhookArchiving))
 }

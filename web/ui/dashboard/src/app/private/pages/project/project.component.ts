@@ -39,7 +39,7 @@ export class ProjectComponent implements OnInit, AfterViewInit {
 	];
 	secondarySideBarItems = [
 		{
-			name: 'Events Log',
+			name: 'Events log',
 			icon: 'logs',
 			route: '/events-log'
 		},
@@ -100,7 +100,7 @@ export class ProjectComponent implements OnInit, AfterViewInit {
 		try {
 			const projectDetails = await this.privateService.getProjectDetails;
 			this.projectDetails = projectDetails;
-			if (this.projectDetails?.type === 'outgoing') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
+			if (this.projectDetails?.type === 'outgoing') this.sideBarItems.push({ name: 'Portal links', icon: 'portal', route: '/portal-links' });
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
@@ -132,7 +132,7 @@ export class ProjectComponent implements OnInit, AfterViewInit {
 			this.projectDetails = project;
 			localStorage.setItem('CONVOY_PROJECT', JSON.stringify(this.projectDetails));
 
-			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
+			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal links', icon: 'portal', route: '/portal-links' });
 			if (this.projectDetails?.type === 'incoming' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'portal') this.sideBarItems.pop();
 
 			await this.privateService.getProject({ refresh: true, projectId: project.uid });
@@ -159,9 +159,11 @@ export class ProjectComponent implements OnInit, AfterViewInit {
 		return this.licenseService.limitMessage('project_limit');
 	}
 
-	// Compact pill text for the project-switcher dropdown overlay: "2/2" for a reached
-	// limit, the upsell label unchanged. Full message stays available as the tooltip.
-	getProjectLimitPillText(): string {
-		return this.licenseService.limitPillText('project_limit');
+	getProjectLimitTooltip(): string {
+		return this.licenseService.limitActionTooltip('project_limit', 'project');
+	}
+
+	isNewProjectBlocked(): boolean {
+		return !this.licenseService.hasLicense('project_limit') && !!this.getProjectLimitMessage();
 	}
 }

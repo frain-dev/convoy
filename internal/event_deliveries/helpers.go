@@ -184,7 +184,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 			ProjectID: r.ProjectID,
 		}, nil
 
-	case repo.LoadEventDeliveriesPagedRow:
+	case repo.HydrateEventDeliveriesPageRow:
 		d := buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,

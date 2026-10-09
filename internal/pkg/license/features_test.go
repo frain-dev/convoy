@@ -198,3 +198,24 @@ func TestFeatureListFromEntitlements_RoundtripWithCipher(t *testing.T) {
 	ul := data["user_limit"].(map[string]interface{})
 	require.Equal(t, float64(25), ul["limit"])
 }
+
+func TestFeatureListRetentionUsesRetentionEntitlement(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		entitlements map[string]interface{}
+		want         bool
+	}{
+		{"retention only", map[string]interface{}{"retention_policy": true, "webhook_archiving": false}, true},
+		{"archiving only", map[string]interface{}{"retention_policy": false, "webhook_archiving": true}, false},
+		{"retention absent", map[string]interface{}{"webhook_archiving": true}, false},
+		{"both", map[string]interface{}{"retention_policy": true, "webhook_archiving": true}, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			raw, err := FeatureListFromEntitlements(tt.entitlements)
+			require.NoError(t, err)
+			var features map[string]interface{}
+			require.NoError(t, json.Unmarshal(raw, &features))
+			require.Equal(t, tt.want, features["RetentionPolicy"])
+		})
+	}
+}

@@ -30,6 +30,14 @@ export class BillingInvoicesComponent implements OnInit {
     });
   }
 
+  statusClass(status: string): string {
+    const key = (status || '').toLowerCase();
+    if (key.includes('paid') || key.includes('success')) return 'bg-[#C6F5CE] text-[#166534]';
+    if (key.includes('open') || key.includes('pending') || key.includes('due')) return 'bg-[#FEF3C7] text-[#92400E]';
+    if (key.includes('fail') || key.includes('void') || key.includes('uncollect')) return 'bg-[#FEE2E2] text-[#991B1B]';
+    return 'bg-new.surface-muted text-new.text-secondary';
+  }
+
   downloadInvoice(invoiceId: string) {
     // Get organisation ID from localStorage
     const org = localStorage.getItem('CONVOY_ORG');

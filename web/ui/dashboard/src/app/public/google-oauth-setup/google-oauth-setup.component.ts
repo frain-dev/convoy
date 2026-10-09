@@ -2,20 +2,13 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
-import {ButtonComponent} from 'src/app/components/button/button.component';
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from 'src/app/components/input/input.component';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {GoogleOAuthSetupService} from './google-oauth-setup.service';
 import {PrivateService} from 'src/app/private/private.service';
 
 @Component({
     selector: 'app-google-oauth-setup',
-    imports: [ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent],
+    imports: [ReactiveFormsModule],
     templateUrl: './google-oauth-setup.component.html',
     styleUrls: ['./google-oauth-setup.component.scss']
 })

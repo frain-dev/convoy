@@ -1,0 +1,30 @@
+/* Shared styles for the redesigned auth pages (2026 UI refresh).
+   Used by the auth-shell component and the auth page templates (signup, login, etc). */
+
+.auth-label {
+	@apply block font-body font-normal mb-8px;
+	font-size: 14px;
+	line-height: 16px;
+	color: #71717a; /* new.text-secondary */
+}
+
+.auth-input {
+	@apply w-full h-40px px-12px font-body font-normal bg-white-100 rounded-8px outline-none transition-all duration-300 appearance-none disabled:opacity-50;
+	font-size: 14px;
+	color: #09090b; /* new.text-primary */
+	border: 1px solid #e7e7e7; /* new.border */
+	box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.04);
+
+	&::placeholder {
+		color: #a1a1aa; /* new.text-placeholder */
+		font-size: 14px;
+	}
+
+	&:hover {
+		border-color: #b5cbe1; /* new.primary-100 */
+	}
+
+	&:focus {
+		border-color: #2780f1; /* new.primary-400 */
+	}
+}

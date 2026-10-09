@@ -27,12 +27,19 @@ func (jt *JobTracker) RecordJob(task *asynq.Task) {
 		return
 	}
 
+	// Only the asynq runner attaches a ResultWriter. The postgres runner builds
+	// the task from a queue_jobs row and leaves it nil, so reading the task ID
+	// through it panics and takes the worker down with it.
+	writer := task.ResultWriter()
+	if writer == nil {
+		return
+	}
+
 	jt.mu.Lock()
 	defer jt.mu.Unlock()
 
 	// The task ID in Asynq is the job ID we're tracking
-	taskID := task.ResultWriter().TaskID()
-	jt.jobIDs = append(jt.jobIDs, taskID)
+	jt.jobIDs = append(jt.jobIDs, writer.TaskID())
 }
 
 // GetJobIDs returns all recorded job IDs

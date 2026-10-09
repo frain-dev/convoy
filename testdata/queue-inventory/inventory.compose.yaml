@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:15.2-alpine
+    environment:
+      POSTGRES_USER: qa
+      POSTGRES_PASSWORD: qa
+      POSTGRES_DB: queue_inventory
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qa -d queue_inventory"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  qa:
+    image: redis:7-alpine
+    entrypoint: ["/tests/queue-inventory.test"]
+    read_only: true
+    tmpfs: ["/tmp"]
+    environment:
+      QUEUE_INVENTORY_DOCKER_QA: "1"
+    volumes:
+      - ${QUEUE_INVENTORY_TEST_BINARY:?Build the test binary first}:/tests/queue-inventory.test:ro
+      - ../../sql:/sql:ro

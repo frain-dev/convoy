@@ -8,12 +8,6 @@
       "default": "5008"
     },
     {
-      "json_path": "analytics.enabled",
-      "env_var": "CONVOY_ANALYTICS_ENABLED",
-      "go_type": "bool",
-      "default": "true"
-    },
-    {
       "json_path": "auth.file.api_key",
       "env_var": "CONVOY_API_KEY_CONFIG",
       "go_type": "config.APIKeyAuthConfig",
@@ -32,7 +26,7 @@
       "default": "2025-11-24"
     },
     {
-      "json_path": "retention_policy.backup_interval",
+      "json_path": "webhook_archiving.interval",
       "env_var": "CONVOY_BACKUP_INTERVAL",
       "go_type": "string",
       "default": "1h"
@@ -68,7 +62,7 @@
       "default": "postgres"
     },
     {
-      "json_path": "retention_policy.cdc_backup_enabled",
+      "json_path": "webhook_archiving.cdc_enabled",
       "env_var": "CONVOY_CDC_BACKUP_ENABLED",
       "go_type": "bool",
       "default": "false"
@@ -524,6 +518,60 @@
       "default": "true"
     },
     {
+      "json_path": "cache.postgres.local_read_size",
+      "env_var": "CONVOY_POSTGRES_CACHE_LOCAL_READ_SIZE",
+      "go_type": "int",
+      "default": "10000"
+    },
+    {
+      "json_path": "cache.postgres.local_read_ttl_ms",
+      "env_var": "CONVOY_POSTGRES_CACHE_LOCAL_READ_TTL_MS",
+      "go_type": "int",
+      "default": "1000"
+    },
+    {
+      "json_path": "queue.postgres.batch_size",
+      "env_var": "CONVOY_POSTGRES_QUEUE_BATCH_SIZE",
+      "go_type": "int",
+      "default": "64"
+    },
+    {
+      "json_path": "queue.postgres.batch_wait_ms",
+      "env_var": "CONVOY_POSTGRES_QUEUE_BATCH_WAIT_MS",
+      "go_type": "int",
+      "default": "2"
+    },
+    {
+      "json_path": "queue.postgres.claim_batch_size",
+      "env_var": "CONVOY_POSTGRES_QUEUE_CLAIM_BATCH_SIZE",
+      "go_type": "int",
+      "default": "64"
+    },
+    {
+      "json_path": "queue.postgres.lease_timeout_seconds",
+      "env_var": "CONVOY_POSTGRES_QUEUE_LEASE_TIMEOUT_SECONDS",
+      "go_type": "int",
+      "default": "90"
+    },
+    {
+      "json_path": "queue.postgres.poll_idle_ms",
+      "env_var": "CONVOY_POSTGRES_QUEUE_POLL_IDLE_MS",
+      "go_type": "int",
+      "default": "5"
+    },
+    {
+      "json_path": "queue.postgres.write_concurrency",
+      "env_var": "CONVOY_POSTGRES_QUEUE_WRITE_CONCURRENCY",
+      "go_type": "int",
+      "default": "8"
+    },
+    {
+      "json_path": "previous_queue_provider",
+      "env_var": "CONVOY_PREVIOUS_QUEUE_PROVIDER",
+      "go_type": "config.QueueProvider",
+      "default": ""
+    },
+    {
       "json_path": "prometheus.dsn",
       "env_var": "CONVOY_PROM_DSN",
       "go_type": "string",
@@ -550,6 +598,18 @@
     {
       "json_path": "pyroscope.username",
       "env_var": "CONVOY_PYROSCOPE_USERNAME",
+      "go_type": "string",
+      "default": ""
+    },
+    {
+      "json_path": "queue_provider",
+      "env_var": "CONVOY_QUEUE_PROVIDER",
+      "go_type": "config.QueueProvider",
+      "default": "redis"
+    },
+    {
+      "json_path": "queue_store_scope",
+      "env_var": "CONVOY_QUEUE_STORE_SCOPE",
       "go_type": "string",
       "default": ""
     },
@@ -638,22 +698,22 @@
       "default": ""
     },
     {
-      "json_path": "retention_policy.replication_dsn",
+      "json_path": "webhook_archiving.replication_dsn",
       "env_var": "CONVOY_REPLICATION_DSN",
       "go_type": "string",
       "default": ""
     },
     {
-      "json_path": "retention_policy.policy",
-      "env_var": "CONVOY_RETENTION_POLICY",
-      "go_type": "string",
-      "default": "720h"
+      "json_path": "retention.enabled",
+      "env_var": "CONVOY_RETENTION_ENABLED",
+      "go_type": "bool",
+      "default": "true"
     },
     {
-      "json_path": "retention_policy.enabled",
-      "env_var": "CONVOY_RETENTION_POLICY_ENABLED",
-      "go_type": "bool",
-      "default": "false"
+      "json_path": "retention.period",
+      "env_var": "CONVOY_RETENTION_PERIOD",
+      "go_type": "string",
+      "default": "720h"
     },
     {
       "json_path": "root_path",
@@ -890,16 +950,22 @@
       "default": "/var/convoy/export"
     },
     {
-      "json_path": "sync_dynamic_event_ack_timeout",
-      "env_var": "CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT",
-      "go_type": "uint64",
-      "default": "30"
-    },
-    {
       "json_path": "tracer.type",
       "env_var": "CONVOY_TRACER_PROVIDER",
       "go_type": "config.TracerProvider",
       "default": ""
+    },
+    {
+      "json_path": "verify_dynamic_events_timeout",
+      "env_var": "CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT",
+      "go_type": "uint64",
+      "default": "30"
+    },
+    {
+      "json_path": "webhook_archiving.enabled",
+      "env_var": "CONVOY_WEBHOOK_ARCHIVING_ENABLED",
+      "go_type": "bool",
+      "default": "false"
     },
     {
       "json_path": "worker_execution_mode",

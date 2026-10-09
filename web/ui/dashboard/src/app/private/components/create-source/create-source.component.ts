@@ -152,6 +152,26 @@ export class CreateSourceComponent implements OnInit {
 	];
 
 	preConfiguredSources: ['github', 'shopify', 'twitter'] = ['github', 'shopify', 'twitter'];
+	// Presentation data for the redesigned source-type selector cards.
+	incomingSourceTypes = [
+		{ value: 'custom', label: 'Custom', icon: '/assets/img/svg/webhook-gray.svg' },
+		{ value: 'github', label: 'Github', icon: '/assets/img/github.png' },
+		{ value: 'shopify', label: 'Shopify', icon: '/assets/img/shopify.png' },
+		{ value: 'twitter', label: 'X (Twitter)', icon: '/assets/img/twitter.png' }
+	];
+	brokerTypes = [
+		{ value: 'google', label: 'Google Pub/Sub', icon: '/assets/img/google.png' },
+		{ value: 'kafka', label: 'Kafka', icon: '/assets/img/kafka.png' },
+		{ value: 'sqs', label: 'AWS SQS', icon: '/assets/img/sqs.png' },
+		{ value: 'amqp', label: 'AMQP/RabbitMQ', icon: '/assets/img/amqp.png' }
+	];
+	// Verification options offered for custom (non pre-configured) sources.
+	customVerifications = [
+		{ uid: 'noop', name: 'None' },
+		{ uid: 'hmac', name: 'HMAC' },
+		{ uid: 'basic_auth', name: 'Basic Auth' },
+		{ uid: 'api_key', name: 'API Key' }
+	];
 	sourceVerifications = [
 		{ uid: 'noop', name: 'None' },
 		{ uid: 'hmac', name: 'HMAC' },
@@ -335,6 +355,22 @@ export class CreateSourceComponent implements OnInit {
 		const checkForCustomSource = customSources.some(source => sourceValue.includes(source));
 
 		return checkForCustomSource;
+	}
+
+	// Which row of the source-type selector is active: a pre-configured provider or 'custom'.
+	get activeIncomingSourceType(): string {
+		const type = this.sourceForm.value.verifier?.type || '';
+		return this.isCustomSource(type) ? type : 'custom';
+	}
+
+	// Mirrors the patches the pre-configured source buttons used to apply inline.
+	selectIncomingSourceType(value: string) {
+		if (value === 'custom') {
+			if (this.isCustomSource(this.sourceForm.value.verifier?.type || '')) this.sourceForm.get('verifier.type')?.patchValue('hmac');
+			return;
+		}
+		this.sourceForm.get('verifier.type')?.patchValue(value);
+		if (!this.sourceForm.value.name) this.sourceForm.get('name')?.patchValue(value + ' Source');
 	}
 
 	toggleConfigForm(configValue: string, value?: boolean) {

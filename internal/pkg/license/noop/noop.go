@@ -42,6 +42,10 @@ func (Licenser) CanExportPrometheusMetrics() bool {
 	return true
 }
 
+func (Licenser) PostgresQueue() bool {
+	return true
+}
+
 func (Licenser) AdvancedEndpointMgmt() bool {
 	return true
 }
@@ -55,6 +59,10 @@ func (Licenser) Transformations() bool {
 }
 
 func (Licenser) AsynqMonitoring() bool {
+	return true
+}
+
+func (Licenser) WebhookArchiving() bool {
 	return true
 }
 
@@ -99,6 +107,10 @@ func (Licenser) ConsumerPoolTuning() bool {
 }
 
 func (Licenser) AdvancedWebhookFiltering() bool {
+	return true
+}
+
+func (Licenser) EventSearch() bool {
 	return true
 }
 

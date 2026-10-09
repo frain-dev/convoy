@@ -14,7 +14,6 @@ import { TableComponent, TableCellComponent, TableRowComponent, TableHeadCellCom
 import { CardComponent } from 'src/app/components/card/card.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
@@ -48,7 +47,6 @@ import { MonacoComponent } from '../monaco/monaco.component';
         TokenModalComponent,
         PermissionDirective,
         DialogDirective,
-        NotificationComponent,
         ConfigButtonComponent,
         TagComponent,
         EmptyStateComponent,

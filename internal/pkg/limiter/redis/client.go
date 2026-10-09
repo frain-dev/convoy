@@ -2,17 +2,17 @@ package rlimiter
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/go-redis/redis_rate/v10"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
-var ErrRateLimitExceeded = errors.New("rate limit exceeded")
+var _ limiter.RateLimiter = (*RedisLimiter)(nil)
 
 type RedisLimiter struct {
 	limiter *redis_rate.Limiter
@@ -71,10 +71,7 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
 	}
 
 	if result.Remaining == 0 && result.RetryAfter > 0 {
-		return &RedisLimiterError{
-			delay: result.RetryAfter,
-			err:   ErrRateLimitExceeded,
-		}
+		return limiter.NewRateLimitExceeded(result.RetryAfter)
 	}
 
 	return nil
@@ -97,34 +94,8 @@ func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit,
 	}
 
 	if result.Remaining == 0 && result.RetryAfter > 0 {
-		return &RedisLimiterError{
-			delay: result.RetryAfter,
-			err:   ErrRateLimitExceeded,
-		}
+		return limiter.NewRateLimitExceeded(result.RetryAfter)
 	}
 
-	return nil
-}
-
-type RedisLimiterError struct {
-	delay time.Duration
-	err   error
-}
-
-func (e *RedisLimiterError) Error() string {
-	return e.err.Error()
-}
-
-func GetRetryAfter(err error) time.Duration {
-	if rateLimitError, ok := err.(*RedisLimiterError); ok {
-		return rateLimitError.delay
-	}
-	return time.Duration(0)
-}
-
-func GetRawError(err error) error {
-	if rateLimitError, ok := err.(*RedisLimiterError); ok {
-		return rateLimitError.err
-	}
 	return nil
 }

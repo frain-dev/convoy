@@ -151,14 +151,20 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 		MetaEventsSecret:               common.StringToPgTextNullable(me.Secret),
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
 		SslEnforceSecureEndpoints:      common.BoolToPgBool(ssl.EnforceSecureEndpoints),
-		SyncDynamicEventAck:            pgtype.Bool{Bool: config.SyncDynamicEventAck, Valid: true},
-		CbSampleRate:                   pgtype.Int4{Int32: int32(cb.SampleRate), Valid: true},
-		CbErrorTimeout:                 pgtype.Int4{Int32: int32(cb.ErrorTimeout), Valid: true},
-		CbFailureThreshold:             pgtype.Int4{Int32: int32(cb.FailureThreshold), Valid: true},
-		CbSuccessThreshold:             pgtype.Int4{Int32: int32(cb.SuccessThreshold), Valid: true},
-		CbObservabilityWindow:          pgtype.Int4{Int32: int32(cb.ObservabilityWindow), Valid: true},
-		CbMinimumRequestCount:          pgtype.Int4{Int32: int32(cb.MinimumRequestCount), Valid: true},
-		CbConsecutiveFailureThreshold:  pgtype.Int4{Int32: int32(cb.ConsecutiveFailureThreshold), Valid: true},
+		VerifyDynamicEvents:            pgtype.Bool{Bool: config.VerifyDynamicEvents, Valid: true},
+		// Dual-written until a follow-up release drops the column. v26.7.0 pods
+		// still read sync_dynamic_event_ack, so a toggle during a rolling deploy
+		// must reach both or the fleet splits on this setting. VerifyDynamicEvents
+		// stays the only value read back.
+		SyncDynamicEventAck:           pgtype.Bool{Bool: config.VerifyDynamicEvents, Valid: true},
+		AllowUnmatchedDynamicUrls:     pgtype.Bool{Bool: config.AllowUnmatchedDynamicURLs, Valid: true},
+		CbSampleRate:                  pgtype.Int4{Int32: int32(cb.SampleRate), Valid: true},
+		CbErrorTimeout:                pgtype.Int4{Int32: int32(cb.ErrorTimeout), Valid: true},
+		CbFailureThreshold:            pgtype.Int4{Int32: int32(cb.FailureThreshold), Valid: true},
+		CbSuccessThreshold:            pgtype.Int4{Int32: int32(cb.SuccessThreshold), Valid: true},
+		CbObservabilityWindow:         pgtype.Int4{Int32: int32(cb.ObservabilityWindow), Valid: true},
+		CbMinimumRequestCount:         pgtype.Int4{Int32: int32(cb.MinimumRequestCount), Valid: true},
+		CbConsecutiveFailureThreshold: pgtype.Int4{Int32: int32(cb.ConsecutiveFailureThreshold), Valid: true},
 	}
 }
 
@@ -193,14 +199,20 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 		MetaEventsPubSub:               pubSubToJSON(me.PubSub),
 		SearchPolicy:                   common.StringToPgTextNullable(config.SearchPolicy),
 		SslEnforceSecureEndpoints:      common.BoolToPgBool(ssl.EnforceSecureEndpoints),
-		SyncDynamicEventAck:            pgtype.Bool{Bool: config.SyncDynamicEventAck, Valid: true},
-		CbSampleRate:                   pgtype.Int4{Int32: int32(cb.SampleRate), Valid: true},
-		CbErrorTimeout:                 pgtype.Int4{Int32: int32(cb.ErrorTimeout), Valid: true},
-		CbFailureThreshold:             pgtype.Int4{Int32: int32(cb.FailureThreshold), Valid: true},
-		CbSuccessThreshold:             pgtype.Int4{Int32: int32(cb.SuccessThreshold), Valid: true},
-		CbObservabilityWindow:          pgtype.Int4{Int32: int32(cb.ObservabilityWindow), Valid: true},
-		CbMinimumRequestCount:          pgtype.Int4{Int32: int32(cb.MinimumRequestCount), Valid: true},
-		CbConsecutiveFailureThreshold:  pgtype.Int4{Int32: int32(cb.ConsecutiveFailureThreshold), Valid: true},
+		VerifyDynamicEvents:            pgtype.Bool{Bool: config.VerifyDynamicEvents, Valid: true},
+		// Dual-written until a follow-up release drops the column. v26.7.0 pods
+		// still read sync_dynamic_event_ack, so a toggle during a rolling deploy
+		// must reach both or the fleet splits on this setting. VerifyDynamicEvents
+		// stays the only value read back.
+		SyncDynamicEventAck:           pgtype.Bool{Bool: config.VerifyDynamicEvents, Valid: true},
+		AllowUnmatchedDynamicUrls:     pgtype.Bool{Bool: config.AllowUnmatchedDynamicURLs, Valid: true},
+		CbSampleRate:                  pgtype.Int4{Int32: int32(cb.SampleRate), Valid: true},
+		CbErrorTimeout:                pgtype.Int4{Int32: int32(cb.ErrorTimeout), Valid: true},
+		CbFailureThreshold:            pgtype.Int4{Int32: int32(cb.FailureThreshold), Valid: true},
+		CbSuccessThreshold:            pgtype.Int4{Int32: int32(cb.SuccessThreshold), Valid: true},
+		CbObservabilityWindow:         pgtype.Int4{Int32: int32(cb.ObservabilityWindow), Valid: true},
+		CbMinimumRequestCount:         pgtype.Int4{Int32: int32(cb.MinimumRequestCount), Valid: true},
+		CbConsecutiveFailureThreshold: pgtype.Int4{Int32: int32(cb.ConsecutiveFailureThreshold), Valid: true},
 	}
 }
 
@@ -217,7 +229,8 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		signatureVersions                              []byte
 		maxPayloadReadSize                             int32
 		multipleEndpointSubscriptions                  bool
-		syncDynamicEventAck                            bool
+		verifyDynamicEvents                            bool
+		allowUnmatchedDynamicURLs                      bool
 		replayAttacks                                  bool
 		ratelimitCount                                 int32
 		ratelimitDuration                              int32
@@ -248,7 +261,8 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		searchPolicy = r.ConfigSearchPolicy
 		maxPayloadReadSize = r.ConfigMaxPayloadReadSize
 		multipleEndpointSubscriptions = r.ConfigMultipleEndpointSubscriptions
-		syncDynamicEventAck = r.ConfigSyncDynamicEventAck
+		verifyDynamicEvents = r.ConfigVerifyDynamicEvents
+		allowUnmatchedDynamicURLs = r.ConfigAllowUnmatchedDynamicUrls
 		replayAttacks = r.ConfigReplayAttacksPreventionEnabled
 		ratelimitCount = r.ConfigRatelimitCount
 		ratelimitDuration = r.ConfigRatelimitDuration
@@ -282,7 +296,8 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		searchPolicy = r.ConfigSearchPolicy
 		maxPayloadReadSize = r.ConfigMaxPayloadReadSize
 		multipleEndpointSubscriptions = r.ConfigMultipleEndpointSubscriptions
-		syncDynamicEventAck = r.ConfigSyncDynamicEventAck
+		verifyDynamicEvents = r.ConfigVerifyDynamicEvents
+		allowUnmatchedDynamicURLs = r.ConfigAllowUnmatchedDynamicUrls
 		replayAttacks = r.ConfigReplayAttacksPreventionEnabled
 		ratelimitCount = r.ConfigRatelimitCount
 		ratelimitDuration = r.ConfigRatelimitDuration
@@ -330,7 +345,8 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		SearchPolicy:                  searchPolicy.String,
 		MaxIngestSize:                 uint64(maxPayloadReadSize),
 		MultipleEndpointSubscriptions: multipleEndpointSubscriptions,
-		SyncDynamicEventAck:           syncDynamicEventAck,
+		VerifyDynamicEvents:           verifyDynamicEvents,
+		AllowUnmatchedDynamicURLs:     allowUnmatchedDynamicURLs,
 		ReplayAttacks:                 replayAttacks,
 		DisableEndpoint:               disableEndpoint,
 		RateLimit: &datastore.RateLimitConfiguration{
@@ -451,6 +467,26 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 	}
 
 	return projects, nil
+}
+
+// IDsForRetry returns the single project when scoped, or every live project
+// when projectID is empty. Admin retry count and the retry walk must share this.
+func (s *Service) IDsForRetry(ctx context.Context, projectID string) ([]string, error) {
+	if !util.IsStringEmpty(projectID) {
+		return []string{projectID}, nil
+	}
+	listed, err := s.LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(listed))
+	for _, p := range listed {
+		if p == nil || util.IsStringEmpty(p.UID) {
+			continue
+		}
+		ids = append(ids, p.UID)
+	}
+	return ids, nil
 }
 
 // UpdateProject updates an existing project

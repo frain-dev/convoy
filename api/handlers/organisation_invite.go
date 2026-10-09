@@ -123,10 +123,17 @@ func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http
 		newUser,
 		h.A.Logger,
 	)
+	if actor, aerr := h.retrieveUser(r); aerr == nil {
+		prc.Actor = actor
+	}
 
 	err = prc.Run(r.Context())
 	if err != nil {
 		h.A.Logger.Error("failed to process organisation member invite", "error", err)
+		if errors.Is(err, services.ErrInviteeLoginRequired) {
+			_ = render.Render(w, r, util.NewErrorResponse(services.ErrInviteeLoginRequired.Error(), http.StatusUnauthorized))
+			return
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

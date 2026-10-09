@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	convoynet "github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/cachedrepo"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -98,7 +100,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.NewCreateEndpointService(
-		endpointsvc.New(h.A.Logger, h.A.DB),
+		h.endpointWriteRepo(),
 		h.projectRepo(),
 		h.A.Licenser,
 		h.A.FFlag,
@@ -267,19 +269,15 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Display gate routes through the same resolver semantics as the sampler and
-	// enforcement (env folded into the instance base, per-org override wins), so the
-	// failure_rate column never disagrees with whether rates are actually computed.
 	circuitBreakerEnabled := cbenablement.EnabledForOrg(
-		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, project.OrganisationID)
-	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
-		// fetch keys from redis and mutate endpoints slice
+		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, h.A.AdminManaged, project.OrganisationID)
+	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 && h.A.CircuitBreakerStore != nil {
 		keys := make([]string, len(endpoints))
 		for i := 0; i < len(endpoints); i++ {
 			keys[i] = fmt.Sprintf("breaker:%s", endpoints[i].UID)
 		}
 
-		cbs, err := h.A.Redis.MGet(r.Context(), keys...).Result()
+		cbs, err := h.A.CircuitBreakerStore.GetMany(r.Context(), keys...)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
@@ -302,20 +300,6 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	}
-
-	// Period (history) failure rate: independent of the circuit breaker (no license or
-	// flag gate). Computed from event_deliveries over the requested range (default last
-	// 7d), counting terminal deliveries (Success+Failure) plus in-flight Retry
-	// deliveries, which have failed at least once. Attached as transient fields for
-	// the list UI.
-	if len(endpoints) > 0 {
-		searchParams, perr := models.GetSearchParams(r)
-		if perr != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(perr.Error(), http.StatusBadRequest))
-			return
-		}
-		h.enrichEndpointsWithPeriodFailureRate(r.Context(), project.UID, endpoints, searchParams)
 	}
 
 	resp := models.NewListResponse(endpoints, func(endpoint datastore.Endpoint) models.EndpointResponse {
@@ -345,6 +329,113 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	util.WriteResponse(w, r, finalBytes, http.StatusOK)
 }
 
+// Clients that walk every page (portal status filter) must chunk to this cap.
+const maxPeriodFailureRateIDs = 100
+
+// GetEndpointPeriodFailureRates
+//
+//	@Summary		Endpoint period failure rates
+//	@Description	Display-only delivery rates for the given endpoint ids over a date range (default last 7 days). Independent of the list so a slow COUNT cannot delay the table.
+//	@Id				GetEndpointPeriodFailureRates
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string		true	"Project ID"
+//	@Param			endpointId	query		[]string	false	"Endpoint IDs"
+//	@Param			startDate	query		string		false	"Start date"
+//	@Param			endDate		query		string		false	"End date"
+//	@Success		200			{object}	util.ServerResponse{data=[]models.EndpointPeriodFailureRate}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/period-failure-rates [get]
+func (h *Handler) GetEndpointPeriodFailureRates(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	ids := parseEndpointIDs(r.URL.Query()["endpointId"], maxPeriodFailureRateIDs)
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	ownedIDs, isPortal, ok := h.portalLinkOwnedEndpointIDs(w, r, authUser)
+	if !ok {
+		return
+	}
+	if isPortal {
+		ids = intersectIDs(ids, ownedIDs)
+	}
+
+	if len(ids) == 0 {
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint period failure rates fetched successfully",
+			[]models.EndpointPeriodFailureRate{}, http.StatusOK))
+		return
+	}
+
+	searchParams, perr := models.GetSearchParams(r)
+	if perr != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(perr.Error(), http.StatusBadRequest))
+		return
+	}
+
+	endpoints := make([]datastore.Endpoint, len(ids))
+	for i, id := range ids {
+		endpoints[i].UID = id
+	}
+	h.enrichEndpointsWithPeriodFailureRate(r.Context(), project.UID, endpoints, searchParams)
+
+	out := make([]models.EndpointPeriodFailureRate, len(endpoints))
+	for i := range endpoints {
+		out[i] = models.EndpointPeriodFailureRate{
+			UID:               endpoints[i].UID,
+			PeriodFailureRate: endpoints[i].PeriodFailureRate,
+			SuccessCount:      endpoints[i].SuccessCount,
+			FailureCount:      endpoints[i].FailureCount,
+			RetryCount:        endpoints[i].RetryCount,
+		}
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Endpoint period failure rates fetched successfully", out, http.StatusOK))
+}
+
+func parseEndpointIDs(values []string, limit int) []string {
+	out := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		id := strings.TrimSpace(value)
+		if id == "" {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+		if len(out) == limit {
+			break
+		}
+	}
+	return out
+}
+
+func intersectIDs(requested, allowed []string) []string {
+	allow := make(map[string]struct{}, len(allowed))
+	for _, id := range allowed {
+		allow[id] = struct{}{}
+	}
+	out := make([]string, 0, len(requested))
+	for _, id := range requested {
+		if _, ok := allow[id]; ok {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// periodFailureRateTimeout bounds the display-only COUNT on event_deliveries so a
+// slow query cannot sit until WriteTimeout or the ingress idle timeout and 504
+// the rates request. The endpoint list no longer waits on this COUNT.
+const periodFailureRateTimeout = 2 * time.Second
+
 // enrichEndpointsWithPeriodFailureRate attaches the history failure rate
 // ((Failure+Retry)/(Success+Failure+Retry)) and the underlying counts to each endpoint
 // over the given range. Retry deliveries are in-flight but have failed at least once,
@@ -353,9 +444,11 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 // deliveries stay excluded. It mutates the slice in place, mirroring the circuit
 // breaker enrichment.
 //
-// Failure policy: this is a display-only enrichment, so it fails open. A query error is
-// logged and the endpoints keep nil rate/counts (rendered as an em dash), rather than
-// failing the whole list response.
+// Failure policy: this is a display-only enrichment, so it fails open. A query error
+// or a count that exceeds periodFailureRateTimeout is logged and the endpoints keep
+// nil rate/counts (rendered as an em dash), rather than failing the rates response.
+// The timeout must stay well under WriteTimeout and typical ingress idle timeouts
+// so a slow COUNT cannot 504 the request.
 func (h *Handler) enrichEndpointsWithPeriodFailureRate(ctx context.Context, projectID string,
 	endpoints []datastore.Endpoint, params datastore.SearchParams) {
 	endpointIDs := make([]string, len(endpoints))
@@ -364,14 +457,27 @@ func (h *Handler) enrichEndpointsWithPeriodFailureRate(ctx context.Context, proj
 	}
 
 	statuses := []datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.FailureEventStatus, datastore.RetryEventStatus}
-	counts, err := event_deliveries.New(h.A.Logger, h.A.DB).
-		CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params)
+	err := loadPeriodFailureRates(ctx, periodFailureRateTimeout, endpoints, func(ctx context.Context) ([]datastore.EndpointStatusDeliveryCount, error) {
+		return event_deliveries.New(h.A.Logger, h.A.DB).
+			CountDeliveriesByEndpointAndStatus(ctx, projectID, endpointIDs, statuses, params)
+	})
 	if err != nil {
 		h.A.Logger.Error("failed to load period failure rate for endpoints", "error", err)
-		return
+	}
+}
+
+func loadPeriodFailureRates(ctx context.Context, timeout time.Duration, endpoints []datastore.Endpoint,
+	countFn func(context.Context) ([]datastore.EndpointStatusDeliveryCount, error)) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	counts, err := countFn(ctx)
+	if err != nil {
+		return err
 	}
 
 	applyPeriodFailureRates(endpoints, counts)
+	return nil
 }
 
 // applyPeriodFailureRates folds per-status delivery counts into the endpoints'
@@ -485,7 +591,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.NewUpdateEndpointService(
 		h.A.Cache,
-		endpointsvc.New(h.A.Logger, h.A.DB),
+		h.endpointWriteRepo(),
 		h.projectRepo(),
 		h.A.Licenser,
 		h.A.FFlag,
@@ -564,11 +670,20 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = endpointsvc.New(h.A.Logger, h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	// Collected before the delete: the cascade removes the rows these ids live on.
+	sourceKeys := h.subscriptionSourceKeys(r.Context(), project.UID, endpointID)
+
+	err = h.endpointWriteRepo().DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete endpoint", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
 		return
+	}
+
+	// The repository evicts the endpoint-keyed list; these are the source-keyed
+	// lists the same cascade invalidated.
+	if len(sourceKeys) > 0 {
+		cachedrepo.Invalidate(r.Context(), h.A.Cache, h.A.Logger, sourceKeys...)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Endpoint deleted successfully", nil, http.StatusOK))
@@ -619,7 +734,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	xs := services.ExpireSecretService{
 		Queuer:       h.A.Queue,
 		Cache:        h.A.Cache,
-		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
+		EndpointRepo: h.endpointWriteRepo(),
 		ProjectRepo:  h.projectRepo(),
 		S:            e,
 		Endpoint:     endpoint,
@@ -677,7 +792,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
+		EndpointRepo: h.endpointWriteRepo(),
 		ProjectID:    project.UID,
 		EndpointId:   endpointID,
 		Logger:       h.A.Logger,
@@ -751,7 +866,10 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aes := services.ActivateEndpointService{
-		EndpointRepo: endpointsvc.New(h.A.Logger, h.A.DB),
+		EndpointRepo: h.endpointWriteRepo(),
+		Queue:        h.A.Queue,
+		Licenser:     h.A.Licenser,
+		Project:      project,
 		ProjectID:    project.UID,
 		EndpointId:   endpointID,
 		Logger:       h.A.Logger,
@@ -763,22 +881,26 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cbs, err := h.A.Redis.Get(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID)).Result()
-	if err != nil {
-		h.A.Logger.Error("failed to find circuit breaker", "error", err)
-	}
+	if h.A.CircuitBreakerStore != nil {
+		key := fmt.Sprintf("breaker:%s", endpoint.UID)
+		cbs, cbErr := h.A.CircuitBreakerStore.GetOne(r.Context(), key)
+		if cbErr != nil && !errors.Is(cbErr, circuit_breaker.ErrCircuitBreakerNotFound) {
+			h.A.Logger.Error("failed to find circuit breaker", "error", cbErr)
+		}
 
-	if len(cbs) > 0 {
-		c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger)
-		if innerErr != nil {
-			h.A.Logger.Error("failed to decode circuit breaker", "error", innerErr)
-		} else {
-			c.Reset(time.Now())
-			b, msgPackErr := msgpack.EncodeMsgPack(c)
-			if msgPackErr != nil {
-				h.A.Logger.Error("failed to encode circuit breaker", "error", msgPackErr)
+		if len(cbs) > 0 {
+			c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger)
+			if innerErr != nil {
+				h.A.Logger.Error("failed to decode circuit breaker", "error", innerErr)
+			} else {
+				c.Reset(time.Now())
+				b, msgPackErr := msgpack.EncodeMsgPack(c)
+				if msgPackErr != nil {
+					h.A.Logger.Error("failed to encode circuit breaker", "error", msgPackErr)
+				} else if setErr := h.A.CircuitBreakerStore.SetOne(r.Context(), key, b, time.Minute*5); setErr != nil {
+					h.A.Logger.Error("failed to persist circuit breaker", "error", setErr)
+				}
 			}
-			h.A.Redis.Set(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID), b, time.Minute*5)
 		}
 	}
 
@@ -922,6 +1044,11 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("OAuth2 connection test successful", resp, http.StatusOK))
 }
 
+// newOAuth2TokenTestService builds the one-shot OAuth2 probe used by
+// TestOAuth2Connection. That handler returns token material to the caller, so
+// the client is the notification egress path (unconditional private-network
+// block) rather than the webhook dispatcher, which still allows RFC1918 for
+// self-hosted delivery and real endpoint token exchange.
 func (h *Handler) newOAuth2TokenTestService() (*services.OAuth2TokenService, error) {
 	dispatcher, err := convoynet.NewDispatcher(
 		h.A.Licenser,
@@ -938,7 +1065,7 @@ func (h *Handler) newOAuth2TokenTestService() (*services.OAuth2TokenService, err
 	return services.NewOAuth2TokenService(
 		h.A.Cache,
 		h.A.Logger,
-		services.WithOAuth2HTTPClient(dispatcher.HTTPClient()),
+		services.WithOAuth2HTTPClient(dispatcher.NotificationHTTPClient()),
 		services.WithOAuth2Context(dispatcher.ContextWithRules),
 	), nil
 }

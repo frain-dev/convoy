@@ -79,11 +79,21 @@ export interface ENDPOINT {
 	rate_limit_duration: string;
 	http_timeout?: string;
 	support_email: string;
+	slack_webhook_url?: string;
+	teams_webhook_url?: string;
 	content_type?: string;
 	mtls_client_cert?: {
 		client_cert?: string;
 		client_key?: string;
 	};
+}
+
+export interface ENDPOINT_PERIOD_FAILURE_RATE {
+	uid: string;
+	period_failure_rate: number | null;
+	success_count?: number | null;
+	failure_count?: number | null;
+	retry_count?: number | null;
 }
 
 export interface DEVICE {
@@ -106,6 +116,7 @@ export interface PORTAL_LINK {
 	can_manage_endpoint: boolean;
 	name: string;
 	owner_id: string;
+	auth_type?: string;
 	url: string;
 	created_at: string;
 	updated_at: string;

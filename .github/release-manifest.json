@@ -1,9 +1,9 @@
 {
-  "version": "26.3.6",
-  "release_line": "26.3",
-  "target_sha": "c81b454367441f83fc8933b5012d4e6bbae28507",
-  "cutoff_tag": "release-cutoff-2026-03",
-  "next_cutoff_tag": "release-cutoff-2026-04",
-  "previous_stable_tag": "v26.3.5",
-  "generated_at": "2026-04-30T03:02:58Z"
+  "version": "26.7.1",
+  "release_line": "26.7",
+  "target_sha": "a88cd70acbf32abdc01a687b5e6ed4bbb30b2e8d",
+  "cutoff_tag": "",
+  "next_cutoff_tag": "",
+  "previous_stable_tag": "v26.7.0",
+  "generated_at": "2026-08-07T14:22:25Z"
 }

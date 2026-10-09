@@ -496,8 +496,9 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_OrganisationAdmi
 	}()
 
 	body, err := json.Marshal(map[string]string{
-		"email": "buyer@example.com",
-		"host":  "https://customer.example.com",
+		"email":         "buyer@example.com",
+		"host":          "https://customer.example.com",
+		"referral_code": "refcode99",
 	})
 	require.NoError(s.T(), err)
 	req := createRequest(http.MethodPost, "/ui/billing/sh_trial/start", "", bytes.NewBuffer(body))
@@ -510,6 +511,7 @@ func (s *BillingIntegrationTestSuite) Test_StartSelfHostedTrial_OrganisationAdmi
 	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
 	require.Equal(s.T(), 1, client.trialCalls)
 	require.Equal(s.T(), "buyer@example.com", client.lastTrial.Email)
+	require.Equal(s.T(), "refcode99", client.lastTrial.ReferralCode)
 	require.NotEmpty(s.T(), client.lastTrial.AttemptID)
 
 	var resp map[string]interface{}
@@ -1582,6 +1584,9 @@ func (s *BillingIntegrationTestSuite) Test_UpdateOrganisation() {
 }
 
 func (s *BillingIntegrationTestSuite) Test_OnboardSubscription() {
+	s.DefaultUser.EmailVerified = true
+	require.NoError(s.T(), users.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB).UpdateUser(context.Background(), s.DefaultUser))
+
 	onboardData := map[string]interface{}{
 		"plan_id": "plan-uuid-123",
 		"host":    "https://app.getconvoy.io",

@@ -1,12 +1,13 @@
 import { of } from 'rxjs';
 
+import { consumeInviteRedirect } from 'src/app/public/accept-invite/invite-redirect';
 import { HttpService } from './http.service';
 
 // Constructed directly (not via TestBed): buildRequestQuery only needs the
 // ActivatedRoute queryParams subscription from the constructor.
-function createService(): HttpService {
+function createService(router: any = {}): HttpService {
 	const routeStub: any = { queryParams: of({}) };
-	return new HttpService({} as any, {} as any, routeStub, {} as any);
+	return new HttpService(router, {} as any, routeStub, {} as any);
 }
 
 describe('HttpService', () => {
@@ -55,6 +56,51 @@ describe('HttpService', () => {
 		it('appends the portal token when set', () => {
 			service.token = 'ptl123';
 			expect(service.buildRequestQuery({ perPage: 20 })).toBe('perPage=20&token=ptl123');
+		});
+
+		it('percent-encodes search terms with spaces and punctuation', () => {
+			expect(service.buildRequestQuery({ query: 'feat: benchmark commit 552' })).toBe(
+				'query=feat%3A%20benchmark%20commit%20552'
+			);
+		});
+
+		it('percent-encodes json object search strings', () => {
+			expect(service.buildRequestQuery({ query: '{"status":"paid"}' })).toBe('query=%7B%22status%22%3A%22paid%22%7D');
+		});
+
+		it('does not json-expand the query param', () => {
+			expect(service.buildRequestQuery({ query: '["only-one-term"]' })).toBe('query=%5B%22only-one-term%22%5D');
+		});
+	});
+
+	describe('logUserOut', () => {
+		beforeEach(() => {
+			localStorage.clear();
+		});
+
+		afterEach(() => {
+			localStorage.clear();
+		});
+
+		it('keeps the accept-invite token so login can return', () => {
+			const router = {
+				url: '/accept-invite?invite-token=abcDEF12',
+				navigate: jasmine.createSpy('navigate')
+			};
+			const http = createService(router);
+			http.logUserOut();
+			expect(consumeInviteRedirect()).toBe('/accept-invite?invite-token=abcDEF12');
+			expect(router.navigate).toHaveBeenCalledWith(['/login'], { replaceUrl: true });
+		});
+
+		it('does not store a non-invite location as the invite redirect', () => {
+			const router = {
+				url: '/projects',
+				navigate: jasmine.createSpy('navigate')
+			};
+			const http = createService(router);
+			http.logUserOut();
+			expect(consumeInviteRedirect()).toBeNull();
 		});
 	});
 });

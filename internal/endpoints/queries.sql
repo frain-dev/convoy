@@ -12,7 +12,7 @@ INSERT INTO convoy.endpoints (
     mtls_client_cert, mtls_client_cert_cipher,
     oauth2_config, oauth2_config_cipher,
     basic_auth_config, basic_auth_config_cipher,
-    content_type
+    content_type, teams_webhook_url
 )
 VALUES (
     @id, @name, @status,
@@ -31,7 +31,8 @@ VALUES (
     CASE WHEN @is_encrypted::boolean THEN pgp_sym_encrypt(@oauth2_config::TEXT, @encryption_key) END,
     CASE WHEN @is_encrypted::boolean THEN NULL ELSE @basic_auth_config::jsonb END,
     CASE WHEN @is_encrypted::boolean THEN pgp_sym_encrypt(@basic_auth_config::TEXT, @encryption_key) END,
-    CAST(@content_type AS text)::convoy.endpoint_content_types
+    CAST(@content_type AS text)::convoy.endpoint_content_types,
+    @teams_webhook_url
 );
 
 -- name: FindEndpointByID :one
@@ -62,7 +63,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.id = @id AND e.project_id = @project_id;
 
@@ -94,7 +95,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.id = ANY(@ids::text[]) AND e.project_id = @project_id
 ORDER BY e.id;
@@ -127,7 +128,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.app_id = @app_id AND e.project_id = @project_id
 ORDER BY e.id;
@@ -160,7 +161,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.project_id = @project_id AND e.owner_id = @owner_id
 ORDER BY e.id;
@@ -199,7 +200,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL AND e.url = @url AND e.project_id = @project_id;
 
@@ -247,12 +248,20 @@ UPDATE convoy.endpoints SET
     basic_auth_config_cipher = CASE
         WHEN is_encrypted THEN pgp_sym_encrypt(@basic_auth_config_text::TEXT, @encryption_key)
     END,
-    updated_at = NOW(), content_type = CAST(@content_type AS text)::convoy.endpoint_content_types
+    updated_at = NOW(), content_type = CAST(@content_type AS text)::convoy.endpoint_content_types,
+    teams_webhook_url = @teams_webhook_url
 WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
 -- name: UpdateEndpointStatus :execresult
+-- Matches nothing when the endpoint already holds this status, so the rows
+-- affected tell the caller whether the status actually changed. Callers re-apply
+-- a status on a schedule and only alert on the transition.
+--
+-- IS DISTINCT FROM rather than <>: status is NOT NULL today, and this keeps the
+-- predicate correct rather than silently matching nothing if that changes.
 UPDATE convoy.endpoints SET status = @status
-WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
+WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL
+    AND status IS DISTINCT FROM @status;
 
 -- name: UpdateEndpointSecrets :execresult
 UPDATE convoy.endpoints SET
@@ -312,7 +321,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL
     AND e.project_id = @project_id
@@ -352,7 +361,7 @@ SELECT
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.basic_auth_config_cipher::bytea, @encryption_key)::jsonb
         ELSE e.basic_auth_config
     END AS basic_auth_config,
-    e.content_type
+    e.content_type, e.teams_webhook_url
 FROM convoy.endpoints AS e
 WHERE e.deleted_at IS NULL
     AND e.project_id = @project_id

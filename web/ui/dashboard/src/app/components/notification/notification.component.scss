@@ -1,0 +1,94 @@
+
+.convoy-toast {
+	margin: 0 auto;
+	inset: auto 0 32px 0;
+	position: fixed;
+	box-sizing: border-box;
+	display: none;
+	align-items: center;
+	gap: 12px;
+	width: max-content;
+	max-width: min(560px, calc(100vw - 48px));
+	padding: 12px 16px;
+	border-radius: 8px;
+	border: 1px solid #e7e7e7;
+	background: #ffffff;
+	box-shadow: 0 4px 16px rgba(1, 6, 24, 0.1);
+	overflow: visible;
+
+	&.is-visible,
+	&:popover-open {
+		display: flex;
+	}
+
+	&[data-tone='success'] {
+		--toast-icon: #2780f1;
+	}
+
+	&[data-tone='error'] {
+		--toast-icon: #ff4206;
+	}
+
+	&[data-tone='warning'] {
+		--toast-icon: #d97706;
+	}
+
+	&[data-tone='info'],
+	&:not([data-tone]) {
+		--toast-icon: #1d2939; /* new.text-primary — distinct from success blue */
+	}
+}
+
+.convoy-toast__icon {
+	flex-shrink: 0;
+	width: 22px;
+	height: 22px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--toast-icon);
+
+	svg {
+		display: block;
+		width: 22px;
+		height: 22px;
+	}
+}
+
+.convoy-toast__message {
+	flex: 0 1 auto;
+	min-width: 0;
+	margin: 0;
+	font-family: 'Archivo', 'Archivo Variable', sans-serif;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.4;
+	color: #71717a;
+	text-transform: none;
+}
+
+.convoy-toast__dismiss {
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: #a1a1aa;
+	cursor: pointer;
+	transition: opacity 0.15s ease;
+
+	svg {
+		display: block;
+		width: 12px;
+		height: 12px;
+	}
+
+	&:hover {
+		opacity: 0.7;
+	}
+}

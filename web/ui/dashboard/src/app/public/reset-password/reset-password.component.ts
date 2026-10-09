@@ -2,14 +2,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { InputErrorComponent } from 'src/app/components/input/input.component';
+import { AuthShellComponent } from 'src/app/public/components/auth-shell/auth-shell.component';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ResetPasswordService } from './reset-password.service';
 
 @Component({
     selector: 'app-reset-password',
-    imports: [ReactiveFormsModule, ButtonComponent, InputErrorComponent, InputDirective, LabelComponent, InputFieldDirective, RouterModule],
+    imports: [ReactiveFormsModule, InputErrorComponent, RouterModule, AuthShellComponent],
     templateUrl: './reset-password.component.html',
     styleUrls: ['./reset-password.component.scss']
 })

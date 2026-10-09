@@ -33,6 +33,7 @@ import {
     LabelComponent
 } from "../../../../components/input/input.component";
 import {DialogDirective, DialogHeaderComponent} from "../../../../components/dialog/dialog.directive";
+import {CopyButtonComponent} from "../../../../components/copy-button/copy-button.component";
 
 @NgModule({ declarations: [
         BillingPageComponent,
@@ -45,5 +46,5 @@ import {DialogDirective, DialogHeaderComponent} from "../../../../components/dia
         BillingOverviewComponent,
         BillingUsageComponent,
         BillingInvoicesComponent
-    ], imports: [CommonModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, LoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent, StripeElementsComponent, TrialModalComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
+    ], imports: [CommonModule, ReactiveFormsModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, LoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent, StripeElementsComponent, TrialModalComponent, CopyButtonComponent], providers: [CountriesService, provideHttpClient(withInterceptorsFromDi())] })
 export class BillingModule {}

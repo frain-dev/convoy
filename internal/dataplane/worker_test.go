@@ -5,53 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 )
 
-func TestGetQueueOptions(t *testing.T) {
-	t.Run("Standard Redis Configuration", func(t *testing.T) {
-		cfg := &config.Configuration{
-			WorkerExecutionMode: config.DefaultExecutionMode,
-			Redis: config.RedisConfiguration{
-				Scheme: "redis",
-				Host:   "localhost",
-				Port:   6379,
-			},
-		}
-
-		var redis *rdb.Redis
-
-		opts, err := getQueueOptions(cfg, redis)
-		assert.NoError(t, err)
-		assert.Nil(t, opts.RedisFailoverOpt)
-		assert.Equal(t, "redis://localhost:6379", opts.RedisAddress[0])
-	})
-
-	t.Run("Redis Sentinel Configuration", func(t *testing.T) {
-		cfg := &config.Configuration{
-			WorkerExecutionMode: config.DefaultExecutionMode,
-			Redis: config.RedisConfiguration{
-				Scheme:           "redis-sentinel",
-				Addresses:        "sentinel1:26379,sentinel2:26379",
-				MasterName:       "mymaster",
-				Username:         "user",
-				Password:         "pass",
-				SentinelPassword: "sentinel_pass",
-				Database:         "0",
-			},
-		}
-
-		var redis *rdb.Redis
-
-		opts, err := getQueueOptions(cfg, redis)
-		assert.NoError(t, err)
-		assert.NotNil(t, opts.RedisFailoverOpt)
-		assert.Equal(t, "mymaster", opts.RedisFailoverOpt.MasterName)
-		assert.Equal(t, []string{"sentinel1:26379", "sentinel2:26379"}, opts.RedisFailoverOpt.SentinelAddrs)
-		assert.Equal(t, "user", opts.RedisFailoverOpt.Username)
-		assert.Equal(t, "pass", opts.RedisFailoverOpt.Password)
-		assert.Equal(t, "sentinel_pass", opts.RedisFailoverOpt.SentinelPassword)
-		assert.Equal(t, 0, opts.RedisFailoverOpt.DB)
-	})
+func TestWorkerQueueNamesAreProviderNeutral(t *testing.T) {
+	names, err := broker.QueueNames(config.DefaultExecutionMode)
+	assert.NoError(t, err)
+	assert.Contains(t, names, string(convoy.EventQueue))
+	assert.Contains(t, names, string(convoy.RetryEventQueue))
 }

@@ -4,7 +4,7 @@ import {Component, Directive, Input, OnInit} from '@angular/core';
 @Directive({
 	selector: 'convoy-table, [convoy-table]',
 	standalone: true,
-	host: { class: 'w-full h-fit text-neutral-10 font-sans', id: 'table' }
+	host: { class: 'w-full h-fit text-new.text-secondary font-body', id: 'table' }
 })
 export class TableComponent implements OnInit {
 	constructor() {}
@@ -18,7 +18,7 @@ export class TableComponent implements OnInit {
     imports: [],
     host: { class: 'p-0 ' },
     template: `
-		<div [class]="forDate ? 'pt-16px pl-16px pb-8px text-neutral-10' : 'pt-12px pb-12px whitespace-nowrap text-neutral-12'" class="flex flex-row items-center text-12 font-normal font-sans">
+		<div [class]="forDate ? 'pt-16px pl-16px pb-8px text-new.text-secondary' : 'pt-12px pb-12px whitespace-nowrap text-new.text-primary'" class="flex flex-row items-center text-12 font-normal font-body">
 			<ng-content></ng-content>
 		</div>
 	`
@@ -54,7 +54,7 @@ export class TableHeadComponent implements OnInit {
 @Directive({
 	selector: 'convoy-table-head-cell, [convoy-table-head-cell]',
 	standalone: true,
-	host: { class: 'text-left whitespace-nowrap pt-10px pb-10px font-medium text-12 uppercase font-sans', scope: 'col' }
+	host: { class: 'text-left whitespace-nowrap pt-10px pb-10px font-medium text-12 uppercase font-body text-new.text-secondary', scope: 'col' }
 })
 export class TableHeadCellComponent implements OnInit {
 	@Input('className') class!: string;

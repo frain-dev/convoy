@@ -1,8 +1,8 @@
-<button convoy-button size="sm" fill="soft-outline" color="neutral" type="button" class="!px-0 !py-0 rounded-4px" (click)="onClick.emit()">
-	<div class="px-10px whitespace-nowrap">
+<button type="button" class="inline-flex items-center rounded-8px border border-new.border bg-white-100 overflow-hidden transition-all hover:bg-new.surface-subtle" (click)="onClick.emit()">
+	<div class="px-10px py-8px whitespace-nowrap font-body font-medium text-[13px] text-new.text-primary">
 		<ng-content></ng-content>
 	</div>
-	<div class="flex items-center justify-center bg-neutral-a3 ml-4px py-8px px-10px min-h-[26px] min-w-[30px] rounded-br-8px rounded-tr-8px">
-		<img src="assets/img/svg/plus-icon.svg" class="" alt="plus icon" />
+	<div class="flex items-center justify-center bg-new.surface-muted py-8px px-10px min-h-[26px] min-w-[30px]">
+		<img src="assets/img/svg/plus-icon.svg" alt="" />
 	</div>
 </button>

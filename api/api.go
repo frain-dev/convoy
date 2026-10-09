@@ -30,7 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/queue/inventory"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -194,9 +194,12 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, fmt.Errorf("api options is required")
 	}
 	ensureAPIRepositories(a)
-
-	if a.TrialEvents == nil {
-		a.TrialEvents = license.NewTrialEventLimiter(a.Redis, a.Logger)
+	if a.QueueInventory == nil && a.DB != nil {
+		var err error
+		a.QueueInventory, err = inventory.Configured(a.Cfg, a.DB.GetDB())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	appHandler := &ApplicationHandler{A: a}
@@ -304,6 +307,36 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	return router
 }
 
+// mountEventIntakeRoutes registers the event creation routes on the /api/v1
+// router rather than inside the /projects subtree, so they are metered by the
+// ingest bucket alone. Registering them under /projects would also subject them
+// to that router's fail closed API limiter, and a fail open policy on the ingest
+// bucket buys nothing while a sibling limiter on the same path fails closed.
+//
+// Failure policy: fail open. A rejected event is a destroyed customer event, and
+// senders usually cannot replay it, so a limiter backend outage must not become
+// an ingest outage. This mirrors /ingest, which is the same surface.
+func (a *ApplicationHandler) mountEventIntakeRoutes(router chi.Router, handler *handlers.Handler) {
+	router.Group(func(intakeRouter chi.Router) {
+		// Project and org gates run before the shared ingest bucket so callers
+		// cannot burn /ingest capacity with unauthorized project IDs. Matches
+		// the ordering on main's /projects/{projectID}/events write group.
+		// InstrumentPath stays outermost so it keeps counting every request that
+		// reaches intake, rejected ones included.
+		intakeRouter.Use(
+			middleware.InstrumentPath(a.A.Licenser),
+			handler.RequireEnabledProject(),
+			handler.RequireEnabledOrganisation(),
+			middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen),
+		)
+
+		intakeRouter.Post("/projects/{projectID}/events", handler.CreateEndpointEvent)
+		intakeRouter.Post("/projects/{projectID}/events/fanout", handler.CreateEndpointFanoutEvent)
+		intakeRouter.Post("/projects/{projectID}/events/broadcast", handler.CreateBroadcastEvent)
+		intakeRouter.Post("/projects/{projectID}/events/dynamic", handler.CreateDynamicEvent)
+	})
+}
+
 func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
@@ -319,8 +352,11 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	})
 
 	// Ingestion API.
+	// Failure policy: fail open. Event intake is the one surface where a
+	// rejected request destroys a customer event instead of costing a retry, so
+	// a limiter backend outage must not become an ingest outage.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -332,8 +368,14 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth(handler.A.Logger))
 
+			a.mountEventIntakeRoutes(r, handler)
+
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+				// Failure policy: fail closed. Rejecting a project API call
+				// costs the caller a retry, so a limiter backend outage must
+				// not admit unmetered API traffic. Event intake is deliberately
+				// not under this mount; see mountEventIntakeRoutes.
+				projectRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, middleware.FailClosed))
 				projectRouter.Get("/", handler.GetProjects)
 				projectRouter.With(handler.RequireEnabledOrganisation()).Post("/", handler.CreateProject)
 
@@ -345,6 +387,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 						endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateEndpoint)
 						endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+						endpointSubRouter.Get("/period-failure-rates", handler.GetEndpointPeriodFailureRates)
 						endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/oauth2/test", handler.TestOAuth2Connection)
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
@@ -366,20 +409,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
-						// Write routes with shared middleware - using Group to avoid duplication
-						eventRouter.Group(func(r chi.Router) {
-							r.Use(
-								handler.RequireEnabledProject(),
-								handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate),
-							)
-
-							r.Post("/", handler.CreateEndpointEvent)
-							r.Post("/fanout", handler.CreateEndpointFanoutEvent)
-							r.Post("/broadcast", handler.CreateBroadcastEvent)
-							r.Post("/dynamic", handler.CreateDynamicEvent)
-						})
+						// The event creation routes are registered in
+						// mountEventIntakeRoutes, outside this API rate limited
+						// subtree, so they carry the fail open ingest policy.
 
 						// Batch replay route (different middleware - no rate limiting)
 						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).
@@ -490,8 +522,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Post("/users/forgot-password", handler.ForgotPassword)
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
 		uiRouter.Post("/users/verify_email", handler.VerifyEmail)
-		uiRouter.Post("/users/resend_verification_email", handler.ResendVerificationEmail)
-		uiRouter.Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
+		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/users/resend_verification_email", handler.ResendVerificationEmail)
+		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
@@ -546,6 +578,43 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/retry-event-deliveries/batch/{batchID}", handler.GetBatchProgress)
 			adminRouter.Get("/retry-event-deliveries/batches", handler.ListBatchProgress)
 			adminRouter.Delete("/retry-event-deliveries/batch/{batchID}", handler.DeleteBatchProgress)
+			adminRouter.Post("/partitions", handler.StartPartitionRun)
+			adminRouter.Get("/partitions", handler.ListPartitionRuns)
+			adminRouter.Get("/partitions/tables", handler.ListPartitionTables)
+			adminRouter.Get("/indexes", handler.ListIndexes)
+			adminRouter.Post("/indexes/rebuild", handler.StartIndexRebuild)
+			adminRouter.Get("/partitions/{runID}", handler.GetPartitionRun)
+			adminRouter.Get("/retention/runs", handler.ListRetentionRuns)
+			adminRouter.Get("/retention/runs/{runID}", handler.GetRetentionRun)
+
+			// Queue monitoring for the dashboard's native page. Both brokers
+			// implement the inspector, so these routes are provider-neutral.
+			// Instance-admin authorization lives in the handlers, like the
+			// sibling admin routes above.
+			adminRouter.Route("/queue", func(queueRouter chi.Router) {
+				queueRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+				queueRouter.Get("/stats", handler.GetQueueStats)
+				queueRouter.Get("/stores", handler.GetQueueStores)
+				queueRouter.Get("/scheduler", handler.GetQueueSchedulerEntries)
+				queueRouter.Get("/{queueName}/history", handler.GetQueueHistory)
+				queueRouter.Get("/{queueName}/tasks", handler.GetQueueTasks)
+				queueRouter.Post("/{queueName}/tasks/bulk", handler.BulkQueueTaskAction)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/retry", handler.RetryQueueTask)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/run", handler.RunQueueTask)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/archive", handler.ArchiveQueueTask)
+				queueRouter.Post("/{queueName}/tasks/{taskID}/delete", handler.DeleteQueueTask)
+				queueRouter.Post("/{queueName}/pause", handler.PauseQueue)
+				queueRouter.Post("/{queueName}/resume", handler.UnpauseQueue)
+			})
+
+			// Data plane monitoring for the same page. It carries the queue
+			// group's two gates because it answers the same question about the
+			// same instance-wide work, for deployments whose event path does not
+			// run on the queue.
+			adminRouter.Route("/dataplane", func(dataPlaneRouter chi.Router) {
+				dataPlaneRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+				dataPlaneRouter.Get("/status", handler.GetDataPlaneStatus)
+			})
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
@@ -594,6 +663,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/", handler.CreateEndpoint)
 							endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+							endpointSubRouter.Get("/period-failure-rates", handler.GetEndpointPeriodFailureRates)
 							endpointSubRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/oauth2/test", handler.TestOAuth2Connection)
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
@@ -640,6 +710,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
 							eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+							eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+							eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -716,6 +788,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
+			// Instance-admin only: dashboard Admin → Configurations writes the
+			// instance configurations row (retention / archiving / storage).
+			configRouter.With(handler.RequireInstanceAdmin()).Put("/", handler.UpdateConfiguration)
 			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 
@@ -810,6 +885,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+			endpointRouter.Get("/period-failure-rates", handler.GetEndpointPeriodFailureRates)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
 			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
@@ -843,6 +919,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/forceresend", handler.ForceResendEventDeliveries)
 			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+			eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+			eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -883,25 +961,34 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		})
 	})
 
+	// Asynqmon. Redis-only: it reads redis directly, so the postgres broker
+	// leaves QueueMonitor nil and its operators use the dashboard's native
+	// queue page, which is served from /ui/admin/queue for both brokers.
 	router.Route("/queue", func(asynqRouter chi.Router) {
+		monitor := a.A.QueueMonitor
+		if monitor == nil {
+			return
+		}
 		asynqRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 		asynqRouter.Group(func(sessionRouter chi.Router) {
 			sessionRouter.Use(middleware.RequireAuth(handler.A.Logger))
 			sessionRouter.Post("/monitoring/session", handler.CreateQueueMonitoringSession)
 			sessionRouter.Delete("/monitoring/session", handler.RevokeQueueMonitoringSession)
 		})
-
-		rq, ok := a.A.Queue.(*redisqueue.RedisQueue)
-		if !ok {
-			return
-		}
+		// The embed route is reached by a browser navigation, which cannot
+		// carry an Authorization header, so it is gated on the cookie minted
+		// above for instance admins alone.
 		asynqRouter.Group(func(embedRouter chi.Router) {
-			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.Redis, handler.A.Cache)))
-			embedRouter.Handle("/monitoring/embed/*", rq.MonitorWithRootPath("/queue/monitoring/embed"))
+			embedRouter.Use(middleware.RequireQueueSessionCookie(handlers.ValidateQueueSessionCookie(handler.A.QueueSessionStore)))
+			embedRouter.Handle("/monitoring/embed/*", monitor.MonitorWithRootPath("/queue/monitoring/embed"))
 		})
+		// The direct route carries the same instance-admin policy as minting an
+		// embed session, so both entrances to asynqmon agree on who may read
+		// queue contents.
 		asynqRouter.Group(func(monitorRouter chi.Router) {
 			monitorRouter.Use(middleware.RequireAuth(handler.A.Logger))
-			monitorRouter.Handle("/monitoring/*", rq.Monitor())
+			monitorRouter.Use(handler.RequireQueueMonitoringAdmin())
+			monitorRouter.Handle("/monitoring/*", monitor.Monitor())
 		})
 	})
 
@@ -948,8 +1035,9 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 
 	// Ingestion API. Must use the same knob as the control plane's /ingest so
 	// CONVOY_INSTANCE_INGEST_RATE governs every ingest surface.
+	// Failure policy: fail open, same reasoning as the control plane's /ingest.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketIngest, a.cfg.InstanceIngestRate, middleware.FailOpen))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -961,23 +1049,18 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth(handler.A.Logger))
 
+			a.mountEventIntakeRoutes(r, handler)
+
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+				// Failure policy: fail closed, same reasoning as the control
+				// plane's /projects mount. Event intake is deliberately not
+				// under this mount; see mountEventIntakeRoutes.
+				projectRouter.Use(middleware.RateLimiterHandler(a.A, middleware.RateLimitBucketAPI, a.cfg.ApiRateLimit, middleware.FailClosed))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						eventRouter.Group(func(r chi.Router) {
-							r.Use(
-								handler.RequireEnabledProject(),
-								handler.RequireEnabledOrganisation(),
-								middleware.InstrumentPath(a.A.Licenser),
-								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate),
-							)
-
-							r.Post("/", handler.CreateEndpointEvent)
-							r.Post("/fanout", handler.CreateEndpointFanoutEvent)
-							r.Post("/broadcast", handler.CreateBroadcastEvent)
-							r.Post("/dynamic", handler.CreateDynamicEvent)
-						})
+						// The event creation routes are registered in
+						// mountEventIntakeRoutes, outside this API rate limited
+						// subtree, so they carry the fail open ingest policy.
 
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchreplay", handler.BatchReplayEvents)
@@ -1026,6 +1109,15 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
 
+		// This replica's own live snapshot. It carries the same two gates as the
+		// control plane's /ui/admin/dataplane/status, because it answers the same
+		// question about the same instance-wide work; it exists separately so a
+		// reader does not have to wait out a publish interval.
+		uiRouter.Route("/admin/dataplane", func(dataPlaneRouter chi.Router) {
+			dataPlaneRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+			dataPlaneRouter.Get("/snapshot", handler.GetDataPlaneSnapshot)
+		})
+
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
@@ -1048,6 +1140,8 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 							eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
 							eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+							eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+							eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -1091,6 +1185,8 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
 			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+			eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+			eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -1167,6 +1263,7 @@ var guestRoutes = []string{
 	"/users/forgot-password",
 	"/users/reset-password",
 	"/users/verify_email",
+	"/users/resend_verification_email",
 	"/organisations/process_invite",
 	"/ui/configuration/auth",
 	"/ui/license/features",

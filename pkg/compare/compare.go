@@ -78,6 +78,7 @@ func compare(payload, filter map[string]interface{}) (bool, error) {
 			}
 
 			pass = append(pass, chkReduced)
+			continue
 		}
 
 		payloadVal, ok := payload[key]
@@ -88,6 +89,23 @@ func compare(payload, filter map[string]interface{}) (bool, error) {
 					return false, err
 				}
 				pass = append(pass, check)
+			} else if operators, isMap := filterVal.(map[string]interface{}); isMap {
+				if len(operators) == 0 {
+					pass = append(pass, false)
+				}
+				for operator, operand := range operators {
+					if operator != "$exist" {
+						pass = append(pass, false)
+						continue
+					}
+					check, err := exist(payload, map[string]interface{}{key: operand})
+					if err != nil {
+						return false, err
+					}
+					pass = append(pass, check)
+				}
+			} else {
+				pass = append(pass, false)
 			}
 
 			continue
@@ -176,13 +194,13 @@ func gte(payload, filter interface{}) (bool, error) {
 	p, ok := toFloat64(payload)
 	if !ok {
 		fmt.Printf("payload %v is not a valid number\n", payload)
-		return false, nil
+		return false, fmt.Errorf("payload %v is not a valid number", payload)
 	}
 
 	f, ok := toFloat64(filter)
 	if !ok {
 		fmt.Printf("filter %v is not a valid number\n", filter)
-		return false, nil
+		return false, fmt.Errorf("filter %v is not a valid number", filter)
 	}
 
 	return p >= f, nil
@@ -206,12 +224,18 @@ func gt(payload, filter interface{}) (bool, error) {
 
 func lte(payload, filter interface{}) (bool, error) {
 	chk, err := gt(payload, filter)
-	return !chk, err
+	if err != nil {
+		return false, err
+	}
+	return !chk, nil
 }
 
 func lt(payload, filter interface{}) (bool, error) {
 	chk, err := gte(payload, filter)
-	return !chk, err
+	if err != nil {
+		return false, err
+	}
+	return !chk, nil
 }
 
 // in finds if the filter in the payload.
@@ -344,7 +368,11 @@ func exist(payload, filter interface{}) (bool, error) {
 
 	for k, v := range f {
 		key = k
-		want = v.(bool)
+		var valid bool
+		want, valid = v.(bool)
+		if !valid {
+			return false, fmt.Errorf("$exist requires a boolean operand")
+		}
 	}
 
 	b := false

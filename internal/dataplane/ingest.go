@@ -2,13 +2,12 @@ package dataplane
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/organisations"
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/projects"
@@ -47,12 +46,11 @@ func StartIngest(ctx context.Context, opts RuntimeOpts, cfg config.Configuration
 		host = instCfg.UID
 	}
 
-	rateLimiter, err := limiter.NewLimiter(cfg)
-	if err != nil {
-		return err
+	if opts.Broker == nil {
+		return fmt.Errorf("broker dependencies are required")
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, opts.Queue, lo, rateLimiter, opts.Licenser, host, endpointRepo)
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, opts.Queue, lo, opts.Broker.RateLimiter, opts.Licenser, host, endpointRepo)
 	if err != nil {
 		return err
 	}
@@ -60,8 +58,7 @@ func StartIngest(ctx context.Context, opts RuntimeOpts, cfg config.Configuration
 	// Cloud only: broker ingestion honours the same per-org daily trial cap as the
 	// HTTP event surfaces. No-op for self-hosted / when org billing is off.
 	orgRepo := organisations.New(lo, opts.DB)
-	trialEvents := license.NewTrialEventLimiter(opts.Redis, lo)
-	ingest.EnableTrialEventCap(projectRepo, orgRepo, trialEvents, cfg.UsesOrgBilling())
+	ingest.EnableTrialEventCap(projectRepo, orgRepo, opts.Broker.TrialEvents, cfg.UsesOrgBilling())
 
 	go ingest.Run()
 

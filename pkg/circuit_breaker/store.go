@@ -15,14 +15,35 @@ import (
 	"github.com/frain-dev/convoy/pkg/clock"
 )
 
+// Locker is released by Unlock. Redis wraps redsync; Postgres wraps pglock.
+type Locker interface {
+	Unlock(ctx context.Context) error
+}
+
 type CircuitBreakerStore interface {
-	Lock(ctx context.Context, lockKey string, expiry uint64) (*redsync.Mutex, error)
-	Unlock(ctx context.Context, mutex *redsync.Mutex) error
+	Lock(ctx context.Context, lockKey string, expiry uint64) (Locker, error)
+	Unlock(ctx context.Context, mutex Locker) error
 	Keys(context.Context, string) ([]string, error)
 	GetOne(context.Context, string) (string, error)
 	GetMany(context.Context, ...string) ([]interface{}, error)
 	SetOne(context.Context, string, interface{}, time.Duration) error
 	SetMany(context.Context, map[string]CircuitBreaker, time.Duration) error
+	Delete(context.Context, string) error
+}
+
+type redisLocker struct {
+	mu *redsync.Mutex
+}
+
+func (r *redisLocker) Unlock(ctx context.Context) error {
+	ok, err := r.mu.UnlockContext(ctx)
+	if !ok {
+		return fmt.Errorf("failed to release lock: %v", err)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to release lock: %v", err)
+	}
+	return nil
 }
 
 type RedisStore struct {
@@ -37,7 +58,7 @@ func NewRedisStore(redis redis.UniversalClient, clock clock.Clock) *RedisStore {
 	}
 }
 
-func (s *RedisStore) Lock(ctx context.Context, mutexKey string, expiry uint64) (*redsync.Mutex, error) {
+func (s *RedisStore) Lock(ctx context.Context, mutexKey string, expiry uint64) (Locker, error) {
 	pool := goredis.NewPool(s.redis)
 	rs := redsync.New(pool)
 
@@ -50,23 +71,16 @@ func (s *RedisStore) Lock(ctx context.Context, mutexKey string, expiry uint64) (
 		return nil, fmt.Errorf("failed to obtain lock: %v", err)
 	}
 
-	return mutex, nil
+	return &redisLocker{mu: mutex}, nil
 }
 
-func (s *RedisStore) Unlock(ctx context.Context, mutex *redsync.Mutex) error {
+func (s *RedisStore) Unlock(ctx context.Context, mutex Locker) error {
+	if mutex == nil {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
-
-	ok, err := mutex.UnlockContext(ctx)
-	if !ok {
-		return fmt.Errorf("failed to release lock: %v", err)
-	}
-
-	if err != nil {
-		return fmt.Errorf("failed to release lock: %v", err)
-	}
-
-	return nil
+	return mutex.Unlock(ctx)
 }
 
 // Keys returns all the keys used by the circuit breaker store
@@ -118,6 +132,10 @@ func (s *RedisStore) SetMany(ctx context.Context, breakers map[string]CircuitBre
 	return nil
 }
 
+func (s *RedisStore) Delete(ctx context.Context, key string) error {
+	return s.redis.Del(ctx, key).Err()
+}
+
 type TestStore struct {
 	store map[string]CircuitBreaker
 	mu    *sync.RWMutex
@@ -132,11 +150,11 @@ func NewTestStore() *TestStore {
 	}
 }
 
-func (t *TestStore) Lock(_ context.Context, _ string, _ uint64) (*redsync.Mutex, error) {
+func (t *TestStore) Lock(_ context.Context, _ string, _ uint64) (Locker, error) {
 	return nil, nil
 }
 
-func (t *TestStore) Unlock(_ context.Context, _ *redsync.Mutex) error {
+func (t *TestStore) Unlock(_ context.Context, _ Locker) error {
 	return nil
 }
 
@@ -196,5 +214,12 @@ func (t *TestStore) SetMany(ctx context.Context, m map[string]CircuitBreaker, du
 			return err
 		}
 	}
+	return nil
+}
+
+func (t *TestStore) Delete(_ context.Context, key string) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	delete(t.store, key)
 	return nil
 }

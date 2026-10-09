@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -13,20 +14,22 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore/cached"
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/configuration"
+	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/dataplanestats"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/indexes"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker"
 )
 
 func AddServerCommand(a *cli.App) *cobra.Command {
@@ -128,33 +131,43 @@ func StartConvoyServer(a *cli.App) error {
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-	featureFlagFetcher := postgres.NewFeatureFlagFetcher(a.DB)
-	earlyAdopterFeatureFetcher := postgres.NewEarlyAdopterFeatureFetcher(a.DB)
+	featureFlagSvc := feature_flags.New(a.Logger, a.DB)
+	instanceConfig, err := configRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		return err
+	}
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
 	}
 
 	lo := a.Logger
+	if a.Broker == nil {
+		return errors.New("broker dependencies are required")
+	}
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
-	handler, err := api.NewApplicationHandler(
-		&types.APIOptions{
-			FFlag:                      flag,
-			FeatureFlagFetcher:         featureFlagFetcher,
-			EarlyAdopterFeatureFetcher: earlyAdopterFeatureFetcher,
-			DB:                         a.DB,
-			Queue:                      a.Queue,
-			Logger:                     lo,
-			Redis:                      a.Redis,
-			Cache:                      a.Cache,
-			Rate:                       a.Rate,
-			Licenser:                   a.Licenser,
-			Cfg:                        cfg,
-			TracerBackend:              a.TracerBackend,
-			ConfigRepo:                 configRepo,
-		})
+	apiOpts := &types.APIOptions{
+		FFlag:                      flag,
+		AdminManaged:               instanceConfig.AdminManaged,
+		FeatureFlagFetcher:         featureFlagSvc,
+		EarlyAdopterFeatureFetcher: featureFlagSvc,
+		FeatureFlagService:         featureFlagSvc,
+		DB:                         a.DB,
+		Logger:                     lo,
+		Licenser:                   a.Licenser,
+		Cfg:                        cfg,
+		TracerBackend:              a.TracerBackend,
+		ConfigRepo:                 configRepo,
+
+		// The control plane runs no data plane of its own, so it has no
+		// reporter. It reads what the replicas published.
+		DataPlaneMonitor: dataplanestats.StoreFrom(a.DB),
+	}
+	a.Broker.ApplyToAPIOptions(apiOpts)
+
+	handler, err := api.NewApplicationHandler(apiOpts)
 	if err != nil {
 		return err
 	}
@@ -167,29 +180,37 @@ func StartConvoyServer(a *cli.App) error {
 	srv.SetHandler(handler.BuildControlPlaneRoutes())
 
 	// initialize scheduler
-	s := worker.NewScheduler(a.Queue, lo)
+	s := a.Broker.Scheduler
 
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 
-	if a.Licenser.RetentionPolicy() {
-		// Register cron-based backup tasks only when CDC backup is not enabled.
-		// When CDC is active, the BackupCollector in the worker handles exports continuously.
-		if !cfg.RetentionPolicy.CDCBackupEnabled {
-			backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+	if a.Licenser.WebhookArchiving() {
+		// Register cron-based backup tasks when CDC backup is not enabled.
+		// When CDC is active, the BackupCollector in the worker handles exports.
+		// Do not gate registration on cfg.WebhookArchiving.Enabled (env): workers
+		// read DB webhook_archiving.enabled, so a dashboard toggle must not wait
+		// for an env change and server restart.
+		if !cfg.WebhookArchiving.CDCEnabled {
+			backupInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
 			enqueueCron := exporter.DurationToCron(backupInterval)
 			processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
 
 			s.RegisterTask(enqueueCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
 			s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
 		}
+	}
 
-		// Retention always runs at 1am
+	if a.Licenser.RetentionPolicy() {
+		// Same pattern as backup: register when licensed; the job re-reads DB
+		// retention_enabled so a dashboard disable does not wait for restart.
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 
 	// Nightly anonymized usage snapshot for license-validate pings (licensed only).
 	s.RegisterTask("15 2 * * *", convoy.ScheduleQueue, convoy.SnapshotUsage)
+	s.RegisterTask("* * * * *", convoy.ScheduleQueue, convoy.RefreshEventDeliveryDailyCounts)
+	s.RegisterTask("* * * * *", convoy.ScheduleQueue, convoy.RefreshQueueMetricsSnapshot)
 
 	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 	if err != nil {
@@ -200,6 +221,17 @@ func StartConvoyServer(a *cli.App) error {
 	s.Start()
 
 	a.Logger.Infof("Started convoy server in %s", time.Since(start))
+
+	// Fail open: queries seq-scan until owed indexes are valid. Do not block
+	// listen. Orphan invalid indexes are adopted into dropped_indexes first.
+	bootCtx := context.Background()
+	if n, err := indexes.Adopt(bootCtx, a.DB.GetConn()); err != nil {
+		a.Logger.Errorf("invalid index adoption failed: %v", err)
+	} else if n > 0 {
+		a.Logger.Infof("adopted %d invalid index(es) for rebuild", n)
+	}
+	p := partitions.New(a.DB, a.Logger)
+	p.StartQueuedDroppedIndexes(bootCtx)
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
@@ -24,20 +25,26 @@ type ReplayEventService struct {
 }
 
 func (e *ReplayEventService) Run(ctx context.Context) error {
-	jobId := queue.JobId{ProjectID: e.Event.ProjectID, ResourceID: e.Event.UID}.ReplayJobId()
+	if e.Event == nil || util.IsStringEmpty(e.Event.UID) || util.IsStringEmpty(e.Event.ProjectID) {
+		return &ServiceError{ErrMsg: "missing event or project id"}
+	}
+	// A replay is a new delivery lifecycle. Reusing the original event ID makes
+	// the create worker treat the queued replay as an already completed event.
+	replayed := *e.Event
+	replayed.UID = ulid.Make().String()
+	replayed.IdempotencyKey = ""
+	replayed.IsDuplicateEvent = false
+	replayed.FailureReason = ""
+	jobId := queue.JobId{ProjectID: replayed.ProjectID, ResourceID: replayed.UID}.ReplayJobId()
 	createReplayEvent := task.CreateEvent{
 		JobID: jobId,
-		Event: e.Event,
+		Event: &replayed,
 	}
 	createReplayEvent.Event.AcknowledgedAt = null.TimeFrom(time.Now())
 
 	eventByte, err := msgpack.EncodeMsgPack(createReplayEvent)
 	if err != nil {
 		return &ServiceError{ErrMsg: err.Error()}
-	}
-
-	if util.IsStringEmpty(e.Event.UID) || util.IsStringEmpty(e.Event.ProjectID) {
-		return &ServiceError{ErrMsg: "missing event or project id"}
 	}
 
 	job := &queue.Job{

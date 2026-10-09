@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_types"
 	"github.com/frain-dev/convoy/internal/filters"
-	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -55,7 +54,10 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
+	// The uniqueness gate below must read the database directly. The cached
+	// repository serves FindFilterBySubscriptionAndEventType read-through, so a
+	// stale entry would reject a filter this caller is allowed to create.
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 
@@ -113,7 +115,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:      time.Now(),
 	}
 
-	err = filterRepo.CreateFilter(r.Context(), filter)
+	err = h.filterWriteRepo().CreateFilter(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to create filter", http.StatusBadRequest))
 		return
@@ -149,7 +151,7 @@ func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -207,7 +209,7 @@ func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
 
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -296,7 +298,9 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
+	// Reads the database directly, for the same reason as CreateFilter: the
+	// event-type uniqueness gate below must not consult the match-path cache.
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -380,7 +384,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 		filter.EnabledAtSet = true
 	}
 
-	err = filterRepo.UpdateFilter(r.Context(), filter)
+	err = h.filterWriteRepo().UpdateFilter(r.Context(), filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to update filter", http.StatusBadRequest))
 		return
@@ -415,8 +419,8 @@ func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
-	filterRepo := filters.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
+	filterRepo := h.filterWriteRepo()
 
 	// Check if subscription exists
 	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
@@ -488,7 +492,7 @@ func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
 	filterRepo := filters.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -553,8 +557,8 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
-	filterRepo := filters.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
+	filterRepo := h.filterWriteRepo()
 	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists
@@ -686,8 +690,8 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	subRepo := subscriptions.New(h.A.Logger, h.A.DB)
-	filterRepo := filters.New(h.A.Logger, h.A.DB)
+	subRepo := h.subscriptionRepo()
+	filterRepo := h.filterWriteRepo()
 	eventTypeRepo := event_types.New(h.A.Logger, h.A.DB)
 
 	// Check if subscription exists

@@ -15,6 +15,8 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
 )
@@ -75,5 +77,22 @@ func newInfra(t *testing.T) (context.Context, *testInstance) {
 		Redis:    rd,
 		Conn:     conn,
 		Logger:   logger,
+	}
+}
+
+func newCLIApp(t *testing.T, inst *testInstance) *cli.App {
+	t.Helper()
+
+	cfg, err := config.Get()
+	require.NoError(t, err)
+
+	brokerDeps := broker.NewTest(t, cfg, inst.Database.GetDB(), inst.Logger, inst.Conn, inst.Redis)
+
+	return &cli.App{
+		DB:     inst.Database,
+		Redis:  inst.Redis,
+		Logger: inst.Logger,
+		Cache:  brokerDeps.Cache,
+		Broker: brokerDeps,
 	}
 }

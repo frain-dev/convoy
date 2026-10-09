@@ -66,6 +66,10 @@ type SignatureValues struct {
 type EventDelivery struct {
 	EventDeliveryID string
 	ProjectID       string
+	// Snapshot carries the slim delivery row at enqueue time so the first dispatch
+	// attempt can skip FindEventDeliveryByIDSlim. Retries and legacy payloads
+	// without Snapshot still reload from DB.
+	Snapshot *datastore.EventDelivery
 }
 
 type EventDeliveryConfig struct {

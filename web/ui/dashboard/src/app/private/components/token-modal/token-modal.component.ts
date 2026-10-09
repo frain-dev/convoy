@@ -1,11 +1,10 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 
 @Component({
     selector: 'convoy-token-modal',
-    imports: [CopyButtonComponent, ButtonComponent],
+    imports: [CopyButtonComponent],
     templateUrl: './token-modal.component.html',
     styleUrls: ['./token-modal.component.scss']
 })

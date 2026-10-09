@@ -43,8 +43,8 @@ func fetcher(instanceEnabled bool, override *bool, anyOverride bool) *mocks.Mock
 
 func boolPtr(b bool) *bool { return &b }
 
-func newResolver(env bool, f *mocks.MockFeatureFlagFetcher) *Resolver {
-	return NewResolver(envFlag(env), f, clock.NewSimulatedClock(time.Now()), nil)
+func newResolver(env, adminManaged bool, f *mocks.MockFeatureFlagFetcher) *Resolver {
+	return NewResolver(envFlag(env), f, adminManaged, clock.NewSimulatedClock(time.Now()), nil)
 }
 
 func TestResolver_EnabledForOrg(t *testing.T) {
@@ -52,19 +52,22 @@ func TestResolver_EnabledForOrg(t *testing.T) {
 		name     string
 		env      bool
 		instance bool
+		admin    bool
 		override *bool
 		want     bool
 	}{
-		{name: "env on is the base", env: true, instance: false, override: nil, want: true},
-		{name: "env off, instance on", env: false, instance: true, override: nil, want: true},
-		{name: "disabled override wins over env+instance (cloud)", env: true, instance: true, override: boolPtr(false), want: false},
+		{name: "env mode uses env on", env: true, instance: false, want: true},
+		{name: "env mode ignores DB on", env: false, instance: true, want: false},
+		{name: "admin mode uses DB on", env: false, instance: true, admin: true, want: true},
+		{name: "admin mode ignores env on", env: true, instance: false, admin: true, want: false},
+		{name: "disabled override wins", env: true, instance: true, override: boolPtr(false), want: false},
 		{name: "enabled override with env+instance off", env: false, instance: false, override: boolPtr(true), want: true},
 		{name: "all off", env: false, instance: false, override: nil, want: false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := newResolver(tc.env, fetcher(tc.instance, tc.override, false))
+			r := newResolver(tc.env, tc.admin, fetcher(tc.instance, tc.override, false))
 			require.Equal(t, tc.want, r.EnabledForOrg(context.Background(), "org-1"))
 		})
 	}
@@ -78,29 +81,41 @@ func TestResolver_EnabledForOrg_FetcherErrorFailsClosed(t *testing.T) {
 	}
 
 	// env off + DB error => fail closed
-	require.False(t, newResolver(false, f).EnabledForOrg(context.Background(), "org-1"))
+	require.False(t, newResolver(false, false, f).EnabledForOrg(context.Background(), "org-1"))
 	// env on + DB error => env base still honored
-	require.True(t, newResolver(true, f).EnabledForOrg(context.Background(), "org-1"))
+	require.True(t, newResolver(true, false, f).EnabledForOrg(context.Background(), "org-1"))
+	// Admin mode fails closed when its DB source cannot be read.
+	require.False(t, newResolver(true, true, f).EnabledForOrg(context.Background(), "org-1"))
 }
 
 func TestResolver_EnabledAnywhere(t *testing.T) {
 	t.Run("env on short-circuits", func(t *testing.T) {
-		r := newResolver(true, fetcher(false, nil, false))
+		r := newResolver(true, false, fetcher(false, nil, false))
 		require.True(t, r.EnabledAnywhere(context.Background()))
 	})
 
-	t.Run("instance flag on", func(t *testing.T) {
-		r := newResolver(false, fetcher(true, nil, false))
+	t.Run("env mode ignores instance flag", func(t *testing.T) {
+		r := newResolver(false, false, fetcher(true, nil, false))
+		require.False(t, r.EnabledAnywhere(context.Background()))
+	})
+
+	t.Run("admin mode uses instance flag", func(t *testing.T) {
+		r := newResolver(false, true, fetcher(true, nil, false))
 		require.True(t, r.EnabledAnywhere(context.Background()))
+	})
+
+	t.Run("admin mode ignores env flag", func(t *testing.T) {
+		r := newResolver(true, true, fetcher(false, nil, false))
+		require.False(t, r.EnabledAnywhere(context.Background()))
 	})
 
 	t.Run("any enabled override turns sampler on", func(t *testing.T) {
-		r := newResolver(false, fetcher(false, nil, true))
+		r := newResolver(false, false, fetcher(false, nil, true))
 		require.True(t, r.EnabledAnywhere(context.Background()))
 	})
 
 	t.Run("all off", func(t *testing.T) {
-		r := newResolver(false, fetcher(false, nil, false))
+		r := newResolver(false, false, fetcher(false, nil, false))
 		require.False(t, r.EnabledAnywhere(context.Background()))
 	})
 }
@@ -114,7 +129,7 @@ func TestResolver_EnabledAnywhere_OverrideCheckErrorFailsClosed(t *testing.T) {
 			return false, errors.New("db down")
 		},
 	}
-	require.False(t, newResolver(false, f).EnabledAnywhere(context.Background()))
+	require.False(t, newResolver(false, false, f).EnabledAnywhere(context.Background()))
 }
 
 func TestResolver_TTLCaching(t *testing.T) {
@@ -129,7 +144,7 @@ func TestResolver_TTLCaching(t *testing.T) {
 	}
 
 	simClock := clock.NewSimulatedClock(time.Now())
-	r := NewResolver(envFlag(false), f, simClock, nil)
+	r := NewResolver(envFlag(false), f, true, simClock, nil)
 
 	require.False(t, r.EnabledForOrg(context.Background(), "org-1"))
 

@@ -298,27 +298,18 @@ func (s *Service) CountEventDeliveries(ctx context.Context, projectID string, en
 	status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
 	start, end := getCreatedDateFilter(params.CreatedAtStart, params.CreatedAtEnd)
 
-	statuses := make([]string, len(status))
-	for i, st := range status {
-		statuses[i] = string(st)
+	f := listFilter{
+		ProjectID:   projectID,
+		EventID:     eventID,
+		Start:       start,
+		End:         end,
+		EndpointIDs: endpointIDs,
+		Statuses:    statusStrings(status),
 	}
-
-	p := repo.CountEventDeliveriesParams{
-		ProjectID:      common.StringToPgText(projectID),
-		EventID:        common.StringToPgText(eventID),
-		StartDate:      common.TimeToPgTimestamptz(start),
-		EndDate:        common.TimeToPgTimestamptz(end),
-		HasEndpointIds: common.BoolToPgBool(len(endpointIDs) > 0),
-		EndpointIds:    endpointIDs,
-		HasStatus:      common.BoolToPgBool(len(statuses) > 0),
-		Statuses:       statuses,
-	}
-
-	count, err := s.repo.CountEventDeliveries(ctx, p)
-	if err != nil {
+	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return 0, err
 	}
-	return common.PgInt8ToInt64(count), nil
+	return s.queryDeliveryCount(ctx, f)
 }
 
 func (s *Service) CountDeliveriesByEndpointAndStatus(ctx context.Context, projectID string, endpointIDs []string,
@@ -375,40 +366,48 @@ func (s *Service) LoadEventDeliveriesPaged(
 		statuses[i] = string(st)
 	}
 
-	p := repo.LoadEventDeliveriesPagedParams{
-		SortOrder:          common.StringToPgText(sortOrder),
-		ProjectID:          common.StringToPgText(projectID),
-		EventID:            common.StringToPgText(eventID),
-		EventType:          common.StringToPgText(eventType),
-		StartDate:          common.TimeToPgTimestamptz(start),
-		EndDate:            common.TimeToPgTimestamptz(end),
-		HasEndpointIds:     common.BoolToPgBool(len(endpointIDs) > 0),
-		EndpointIds:        endpointIDs,
-		HasStatus:          common.BoolToPgBool(len(statuses) > 0),
-		Statuses:           statuses,
-		HasSubscriptionID:  common.BoolToPgBool(!util.IsStringEmpty(subscriptionID)),
-		SubscriptionID:     common.StringToPgText(subscriptionID),
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(brokerMessageId)),
-		BrokerMessageID:    common.StringToPgText(brokerMessageId),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(idempotencyKey)),
-		IdempotencyKey:     common.StringToPgText(idempotencyKey),
-		Cursor:             common.StringToPgText(cursor),
-		Direction:          common.StringToPgText(direction),
-		PageLimit:          pgtype.Int8{Int64: int64(pageable.Limit()), Valid: true},
+	f := listFilter{
+		ProjectID:       projectID,
+		EventID:         eventID,
+		EventType:       eventType,
+		Start:           start,
+		End:             end,
+		EndpointIDs:     endpointIDs,
+		Statuses:        statuses,
+		SubscriptionID:  subscriptionID,
+		BrokerMessageID: brokerMessageId,
+		IdempotencyKey:  idempotencyKey,
 	}
-
-	rows, err := s.repo.LoadEventDeliveriesPaged(ctx, p)
-	if err != nil {
+	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
 
-	deliveries := make([]datastore.EventDelivery, 0, len(rows))
-	for _, row := range rows {
-		d, err := rowToEventDelivery(row)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
+	keysetAt, keysetID, hasKeyset, err := s.resolveCursor(ctx, projectID, cursor)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	if hasKeyset {
+		f.HasKeyset = true
+		f.KeysetAt = keysetAt
+		f.KeysetID = keysetID
+		if eventDeliveriesPagedInnerDesc(sortOrder, direction) {
+			f.KeysetOp = "<="
+		} else {
+			f.KeysetOp = ">="
 		}
-		deliveries = append(deliveries, *d)
+	}
+
+	ids, err := s.queryDeliveryIDs(ctx, f, pageable.Limit(), eventDeliveriesPagedInnerDesc(sortOrder, direction))
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	if direction == "prev" {
+		reverseStrings(ids)
+	}
+
+	deliveries, err := s.hydrateEventDeliveriesPage(ctx, projectID, ids)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
 	}
 
 	// Calculate PrevRowCount if not first page
@@ -416,20 +415,19 @@ func (s *Service) LoadEventDeliveriesPaged(
 	isFirstPage := util.IsStringEmpty(cursor)
 	if len(deliveries) > 0 && !isFirstPage {
 		first := deliveries[0]
-		rowCount, err = s.countPrevDeliveries(ctx, projectID, eventID, eventType, endpointIDs,
-			statuses, subscriptionID, brokerMessageId, idempotencyKey, first.UID, start, end, sortOrder)
+		rowCount, err = s.countPrevDeliveries(ctx, f, first, sortOrder)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 	}
 
-	ids := make([]string, len(deliveries))
+	pageIDs := make([]string, len(deliveries))
 	for i := range deliveries {
-		ids[i] = deliveries[i].UID
+		pageIDs[i] = deliveries[i].UID
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
-	pagination = pagination.Build(pageable, ids)
+	pagination = pagination.Build(pageable, pageIDs)
 
 	if len(deliveries) > pageable.PerPage {
 		deliveries = deliveries[:len(deliveries)-1]
@@ -438,34 +436,66 @@ func (s *Service) LoadEventDeliveriesPaged(
 	return deliveries, *pagination, nil
 }
 
-func (s *Service) countPrevDeliveries(ctx context.Context, projectID, eventID, eventType string,
-	endpointIDs, statuses []string, subscriptionID, brokerMessageId, idempotencyKey, cursor string,
-	start, end time.Time, sortOrder string) (datastore.PrevRowCount, error) {
-	params := repo.CountPrevEventDeliveriesParams{
-		ProjectID:          common.StringToPgText(projectID),
-		EventID:            common.StringToPgText(eventID),
-		EventType:          common.StringToPgText(eventType),
-		StartDate:          common.TimeToPgTimestamptz(start),
-		EndDate:            common.TimeToPgTimestamptz(end),
-		HasEndpointIds:     common.BoolToPgBool(len(endpointIDs) > 0),
-		EndpointIds:        endpointIDs,
-		HasStatus:          common.BoolToPgBool(len(statuses) > 0),
-		Statuses:           statuses,
-		HasSubscriptionID:  common.BoolToPgBool(!util.IsStringEmpty(subscriptionID)),
-		SubscriptionID:     common.StringToPgText(subscriptionID),
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(brokerMessageId)),
-		BrokerMessageID:    common.StringToPgText(brokerMessageId),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(idempotencyKey)),
-		IdempotencyKey:     common.StringToPgText(idempotencyKey),
-		SortOrder:          common.StringToPgText(sortOrder),
-		Cursor:             common.StringToPgTextNullable(cursor),
-	}
+func eventDeliveriesPagedInnerDesc(sortOrder, direction string) bool {
+	return (sortOrder == "DESC" && direction == "next") || (sortOrder == "ASC" && direction == "prev")
+}
 
-	count, err := s.repo.CountPrevEventDeliveries(ctx, params)
+func (s *Service) hydrateEventDeliveriesPage(ctx context.Context, projectID string, ids []string) ([]datastore.EventDelivery, error) {
+	if len(ids) == 0 {
+		return []datastore.EventDelivery{}, nil
+	}
+	rows, err := s.repo.HydrateEventDeliveriesPage(ctx, repo.HydrateEventDeliveriesPageParams{
+		ProjectID: common.StringToPgText(projectID),
+		Ids:       ids,
+	})
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[string]*datastore.EventDelivery, len(rows))
+	for i := range rows {
+		d, err := rowToEventDelivery(rows[i])
+		if err != nil {
+			return nil, err
+		}
+		byID[d.UID] = d
+	}
+	out := make([]datastore.EventDelivery, 0, len(ids))
+	for _, id := range ids {
+		if d, ok := byID[id]; ok {
+			out = append(out, *d)
+		}
+	}
+	return out, nil
+}
+
+func (s *Service) countPrevDeliveries(ctx context.Context, f listFilter, first datastore.EventDelivery, sortOrder string) (datastore.PrevRowCount, error) {
+	f.HasKeyset = true
+	f.KeysetAt = first.CreatedAt
+	f.KeysetID = first.UID
+	if sortOrder == "ASC" {
+		f.KeysetOp = "<"
+	} else {
+		f.KeysetOp = ">"
+	}
+	ok, err := s.queryDeliveryExists(ctx, f)
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
+	return datastore.PrevRowCount{Exists: ok}, nil
+}
+
+func reverseStrings(ids []string) {
+	for i, j := 0, len(ids)-1; i < j; i, j = i+1, j-1 {
+		ids[i], ids[j] = ids[j], ids[i]
+	}
+}
+
+func statusStrings(status []datastore.EventDeliveryStatus) []string {
+	out := make([]string, len(status))
+	for i, st := range status {
+		out[i] = string(st)
+	}
+	return out
 }
 
 func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, endpointIds []string) ([]datastore.EventInterval, error) {
@@ -473,62 +503,22 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 
 	hasEndpoints := common.BoolToPgBool(len(endpointIds) > 0)
 
-	intervalParams := repo.LoadEventDeliveryIntervalsDailyParams{
-		ProjectID:      common.StringToPgTextNullable(projectID),
-		StartDate:      common.TimeToPgTimestamptz(start),
-		EndDate:        common.TimeToPgTimestamptz(end),
-		HasEndpointIds: hasEndpoints,
-		EndpointIds:    endpointIds,
-	}
-
-	// intervalRow is a common shape for all interval query results.
-	type intervalRow struct {
-		DataIndex     pgtype.Numeric
-		DataTotalTime pgtype.Text
-		Count         pgtype.Int8
+	completed, err := s.dailyCountsBackfillCompleted(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var rawRows []intervalRow
-
-	switch period {
-	case datastore.Daily:
-		rows, err := s.repo.LoadEventDeliveryIntervalsDaily(ctx, intervalParams)
+	if completed {
+		rawRows, err = s.loadEventDeliveriesIntervalsFromRollup(ctx, projectID, start, end, period, endpointIds)
 		if err != nil {
 			return nil, err
 		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	case datastore.Weekly:
-		rows, err := s.repo.LoadEventDeliveryIntervalsWeekly(ctx, repo.LoadEventDeliveryIntervalsWeeklyParams(intervalParams))
+	} else {
+		rawRows, err = s.loadEventDeliveriesIntervalsLive(ctx, projectID, start, end, period, hasEndpoints, endpointIds)
 		if err != nil {
 			return nil, err
 		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	case datastore.Monthly:
-		rows, err := s.repo.LoadEventDeliveryIntervalsMonthly(ctx, repo.LoadEventDeliveryIntervalsMonthlyParams(intervalParams))
-		if err != nil {
-			return nil, err
-		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	case datastore.Yearly:
-		rows, err := s.repo.LoadEventDeliveryIntervalsYearly(ctx, repo.LoadEventDeliveryIntervalsYearlyParams(intervalParams))
-		if err != nil {
-			return nil, err
-		}
-		rawRows = make([]intervalRow, len(rows))
-		for i, r := range rows {
-			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
-		}
-	default:
-		return nil, errors.New("specified data cannot be generated for period")
 	}
 
 	intervals := make([]datastore.EventInterval, 0, len(rawRows))
@@ -564,6 +554,61 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 	return intervals, nil
 }
 
+func (s *Service) loadEventDeliveriesIntervalsLive(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, hasEndpoints pgtype.Bool, endpointIds []string) ([]intervalRow, error) {
+	intervalParams := repo.LoadEventDeliveryIntervalsDailyParams{
+		ProjectID:      common.StringToPgTextNullable(projectID),
+		StartDate:      common.TimeToPgTimestamptz(start),
+		EndDate:        common.TimeToPgTimestamptz(end),
+		HasEndpointIds: hasEndpoints,
+		EndpointIds:    endpointIds,
+	}
+
+	switch period {
+	case datastore.Daily:
+		rows, err := s.repo.LoadEventDeliveryIntervalsDaily(ctx, intervalParams)
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	case datastore.Weekly:
+		rows, err := s.repo.LoadEventDeliveryIntervalsWeekly(ctx, repo.LoadEventDeliveryIntervalsWeeklyParams(intervalParams))
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	case datastore.Monthly:
+		rows, err := s.repo.LoadEventDeliveryIntervalsMonthly(ctx, repo.LoadEventDeliveryIntervalsMonthlyParams(intervalParams))
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	case datastore.Yearly:
+		rows, err := s.repo.LoadEventDeliveryIntervalsYearly(ctx, repo.LoadEventDeliveryIntervalsYearlyParams(intervalParams))
+		if err != nil {
+			return nil, err
+		}
+		rawRows := make([]intervalRow, len(rows))
+		for i, r := range rows {
+			rawRows[i] = intervalRow{r.DataIndex, r.DataTotalTime, r.Count}
+		}
+		return rawRows, nil
+	default:
+		return nil, errors.New("specified data cannot be generated for period")
+	}
+}
+
 // ExportRecords exports event deliveries to a writer as JSONL (one JSON object per line).
 // It uses a REPEATABLE READ transaction for snapshot consistency across batches.
 func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.Writer) (int64, error) {
@@ -573,6 +618,14 @@ func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.
 		return 0, fmt.Errorf("begin snapshot tx: %w", err)
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
+
+	// Per-statement bound inside the snapshot tx (COUNT + each export batch),
+	// not the overall job deadline (backupExportDeadline). Keeps a stuck scan
+	// from holding the pool for the full export window while still allowing
+	// multi-minute batches on large payloads.
+	if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5min'"); err != nil {
+		return 0, fmt.Errorf("set statement_timeout: %w", err)
+	}
 
 	txRepo := repo.New(tx)
 
@@ -623,16 +676,6 @@ func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.
 	}
 
 	return numDocs, nil
-}
-
-func (s *Service) PartitionEventDeliveriesTable(ctx context.Context) error {
-	_, err := s.db.Exec(ctx, partitionEventDeliveriesTableSQL)
-	return err
-}
-
-func (s *Service) UnPartitionEventDeliveriesTable(ctx context.Context) error {
-	_, err := s.db.Exec(ctx, unPartitionEventDeliveriesTableSQL)
-	return err
 }
 
 func deliveryToCreateParams(delivery *datastore.EventDelivery) repo.CreateEventDeliveryParams {
@@ -691,133 +734,13 @@ func numericToInt64(n pgtype.Numeric) int64 {
 	return int64(f.Float64)
 }
 
-// Partition SQL constants
-const partitionEventDeliveriesTableSQL = `
-CREATE OR REPLACE FUNCTION enforce_event_delivery_fk()
-    RETURNS TRIGGER AS $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM convoy.event_deliveries
-        WHERE id = NEW.event_delivery_id
-    ) THEN
-        RAISE EXCEPTION 'Foreign key violation: event_delivery_id % does not exist in event deliveries', NEW.event_delivery_id;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION partition_event_deliveries_table()
-    RETURNS VOID AS $$
-DECLARE
-    r RECORD;
-BEGIN
-    RAISE NOTICE 'Creating partitioned event deliveries table...';
-
-    -- Drop old partitioned table
-    DROP TABLE IF EXISTS convoy.event_deliveries_new;
-
-    -- Create partitioned table
-   create table convoy.event_deliveries_new
-    (
-        id               VARCHAR not null,
-        status           TEXT    not null,
-        description      TEXT    not null,
-        project_id       VARCHAR not null references convoy.projects,
-        endpoint_id      VARCHAR references convoy.endpoints,
-        event_id         VARCHAR not null,
-        device_id        VARCHAR references convoy.devices,
-        subscription_id  VARCHAR not null references convoy.subscriptions,
-        metadata         jsonb   not null,
-        headers          jsonb,
-        attempts         bytea,
-        cli_metadata     jsonb,
-        created_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
-        updated_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
-        deleted_at       TIMESTAMP WITH TIME ZONE,
-        target_url       TEXT,
-        url_query_params VARCHAR,
-        idempotency_key  TEXT,
-        latency          TEXT,
-        event_type       TEXT,
-        acknowledged_at  TIMESTAMP WITH TIME ZONE,
-        latency_seconds  NUMERIC,
-        delivery_mode    convoy.delivery_mode NOT NULL DEFAULT 'at_least_once',
-        event_bytes      BIGINT,
-        PRIMARY KEY (id, created_at, project_id)
-    ) PARTITION BY RANGE (project_id, created_at);
-
-    RAISE NOTICE 'Creating partitions...';
-    FOR r IN
-        WITH dates AS (
-            SELECT project_id, created_at::DATE
-            FROM convoy.event_deliveries
-            GROUP BY created_at::DATE, project_id
-            order by created_at::DATE
-        )
-        SELECT project_id,
-               created_at::TEXT AS start_date,
-               (created_at + 1)::TEXT AS stop_date,
-               'event_deliveries_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
-        FROM dates
-    LOOP
-        EXECUTE FORMAT(
-            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
-            r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
-        );
-    END LOOP;
-
-    RAISE NOTICE 'Migrating data...';
-    INSERT INTO convoy.event_deliveries_new (
-        id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
-        attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-        latency_seconds, delivery_mode, event_bytes
-    )
-    SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
-           attempts, cli_metadata, deleted_at, target_url, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode, event_bytes
-    FROM convoy.event_deliveries;
-
-    -- Manage table renaming
-    ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT IF EXISTS delivery_attempts_event_delivery_id_fkey;
-    ALTER TABLE convoy.event_deliveries RENAME TO event_deliveries_old;
-    ALTER TABLE convoy.event_deliveries_new RENAME TO event_deliveries;
-    DROP TABLE IF EXISTS convoy.event_deliveries_old;
-
-    RAISE NOTICE 'Recreating indexes...';
-    create index event_deliveries_event_type on convoy.event_deliveries (event_type);
-    create index idx_event_deliveries_created_at_key on convoy.event_deliveries (created_at);
-    create index idx_event_deliveries_deleted_at_key on convoy.event_deliveries (deleted_at);
-    create index idx_event_deliveries_device_id_key on convoy.event_deliveries (device_id);
-    create index idx_event_deliveries_endpoint_id_key on convoy.event_deliveries (endpoint_id);
-    create index idx_event_deliveries_event_id_key on convoy.event_deliveries (event_id);
-    create index idx_event_deliveries_project_id_endpoint_id on convoy.event_deliveries (project_id, endpoint_id);
-    create index idx_event_deliveries_project_id_endpoint_id_status on convoy.event_deliveries (project_id, endpoint_id, status);
-    create index idx_event_deliveries_project_id_event_id on convoy.event_deliveries (project_id, event_id);
-    create index idx_event_deliveries_project_id_key on convoy.event_deliveries (project_id);
-    create index idx_event_deliveries_status on convoy.event_deliveries (status);
-    create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
-
-    -- Recreate FK using trigger
-    CREATE OR REPLACE TRIGGER event_delivery_fk_check
-    BEFORE INSERT ON convoy.delivery_attempts
-    FOR EACH ROW EXECUTE FUNCTION enforce_event_delivery_fk();
-
-    RAISE NOTICE 'Migration complete!';
-END;
-$$ LANGUAGE plpgsql;
-select partition_event_deliveries_table();
-`
-
 const unPartitionEventDeliveriesTableSQL = `
 create or replace function convoy.un_partition_event_deliveries_table() returns VOID as $$
 begin
 	RAISE NOTICE 'Starting un-partitioning of event deliveries table...';
 
-	-- Drop old partitioned table
     DROP TABLE IF EXISTS convoy.event_deliveries_new;
 
-    -- Create partitioned table
     CREATE TABLE convoy.event_deliveries_new
     (
         id               VARCHAR not null primary key ,
@@ -857,10 +780,11 @@ begin
            latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode, event_bytes
     FROM convoy.event_deliveries;
 
+    -- Drop the inbound FK so event_deliveries_old can go. Do not add a real
+    -- FK onto delivery_attempts here: that table may already be partitioned.
+    -- Revert runs AfterDetach after this function returns.
     ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT if exists delivery_attempts_event_delivery_id_fkey;
-    ALTER TABLE convoy.delivery_attempts
-        ADD CONSTRAINT delivery_attempts_event_delivery_id_fkey
-            FOREIGN KEY (event_delivery_id) REFERENCES convoy.event_deliveries_new (id);
+    ALTER TABLE IF EXISTS convoy.delivery_attempts_default DROP CONSTRAINT IF EXISTS delivery_attempts_event_delivery_id_fkey;
 
     ALTER TABLE convoy.event_deliveries RENAME TO event_deliveries_old;
     ALTER TABLE convoy.event_deliveries_new RENAME TO event_deliveries;
@@ -880,7 +804,7 @@ begin
     create index idx_event_deliveries_status on convoy.event_deliveries (status);
     create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
 
-	RAISE NOTICE 'Successfully un-partitioned events table...';
+	RAISE NOTICE 'Successfully un-partitioned event_deliveries table...';
 end $$ language plpgsql;
-select convoy.un_partition_event_deliveries_table()
+select convoy.un_partition_event_deliveries_table();
 `

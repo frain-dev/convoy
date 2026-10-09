@@ -2,6 +2,10 @@ import { Injectable } from '@angular/core';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
+// The actions the queue endpoints accept. The server decides per task which of
+// these apply; this only keeps a caller from inventing a fifth one.
+export type QueueTaskAction = 'retry' | 'run' | 'archive' | 'delete';
+
 @Injectable({
 	providedIn: 'root'
 })
@@ -285,6 +289,221 @@ export class AdminService {
 				const response = await this.http.request({
 					url: `/admin/retry-event-deliveries/batch/${batchID}`,
 					method: 'delete'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	startPartitionRun(request: { table: string; operation: 'partition' | 'unpartition' }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions`,
+					method: 'post',
+					body: request
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listPartitionRuns(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listRetentionRuns(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/retention/runs`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listIndexes(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/indexes`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	startIndexRebuild(request: { index: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/indexes/rebuild`,
+					method: 'post',
+					body: request
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+ getQueueStores(): Promise<HTTP_RESPONSE> {
+		return this.http.request({ url: `/admin/queue/stores`, method: 'get', hideNotification: true });
+	}
+
+	getQueueStats(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/stats`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getQueueHistory(queueName: string, days: number): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/history`,
+					method: 'get',
+					query: { days }
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getQueueSchedulerEntries(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/scheduler`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getQueueTasks(queueName: string, status: string, page: number, perPage: number, search: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const query: { [key: string]: any } = { status, page, perPage };
+				if (search) query['search'] = search;
+
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/tasks`,
+					method: 'get',
+					query
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	runQueueTaskAction(queueName: string, taskID: string, action: QueueTaskAction): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/tasks/${encodeURIComponent(taskID)}/${action}`,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	runQueueBulkAction(queueName: string, action: QueueTaskAction, taskIDs: string[]): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/tasks/bulk`,
+					method: 'post',
+					body: { action, task_ids: taskIDs }
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	setQueuePaused(queueName: string, paused: boolean): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/queue/${encodeURIComponent(queueName)}/${paused ? 'pause' : 'resume'}`,
+					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	// The full error is returned rather than a message, because 501 here is the
+	// server saying this deployment runs no reporting data plane, which is a
+	// definitive answer the caller must tell apart from a failed read. Silent
+	// because this is polled: a queue-only instance would otherwise raise a
+	// toast on every refresh.
+	getDataPlaneStatus(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/dataplane/status`,
+					method: 'get',
+					hideNotification: true,
+					returnFullError: true
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listPartitionTables(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/partitions/tables`,
+					method: 'get'
 				});
 				return resolve(response);
 			} catch (error) {

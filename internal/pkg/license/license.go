@@ -17,6 +17,7 @@ type Licenser interface {
 
 	UseForwardProxy() bool
 	CanExportPrometheusMetrics() bool
+	PostgresQueue() bool
 	AdvancedEndpointMgmt() bool
 	AdvancedSubscriptions() bool
 	Transformations() bool
@@ -24,6 +25,7 @@ type Licenser interface {
 	PortalLinks() bool
 	ConsumerPoolTuning() bool
 	AdvancedWebhookFiltering() bool
+	EventSearch() bool
 	CircuitBreaking() bool
 	IngestRate() bool
 	AgentExecutionMode() bool
@@ -37,6 +39,7 @@ type Licenser interface {
 	StaticIP() bool
 
 	RetentionPolicy() bool
+	WebhookArchiving() bool
 	WebhookAnalytics() bool
 	MutualTLS() bool
 	OAuth2EndpointAuth() bool

@@ -7,7 +7,7 @@ import { TooltipComponent } from '../tooltip/tooltip.component';
 	selector: '[convoy-input]',
 	standalone: true,
 	host: {
-		class: 'transition-all duration-[.3s] w-full font-normal text-12 placeholder:text-neutral-6 text-neutral-11 border border-neutral-4 disabled:text-neutral-6 disabled:border-new.primary-25 hover:border-new.primary-100 focus:border-new.primary-300 outline-none rounded-4px placeholder:text-14 bg-white-100 py-12px px-16px appearance-none',
+		class: 'transition-colors duration-[.3s] w-full font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] outline-none focus:border-new.primary-400 disabled:text-new.text-placeholder disabled:bg-new.surface-subtle py-10px px-12px appearance-none',
 		'[class.pointer-events-none]': 'isReadonly',
 		'[class.appearance-none]': "type !== 'password'"
 	}
@@ -58,11 +58,11 @@ export class PasswordInputFieldComponent implements OnInit {
     selector: 'convoy-input-error',
     imports: [],
     template: `
-		<div class="flex items-center text-12 mt-8px">
+		<div class="flex items-center font-body text-[12px] mt-8px">
 			<svg width="16" height="16" class="mr-6px fill-error-9">
 				<use xlink:href="#error-icon"></use>
 			</svg>
-			<span class="text-error-9"><ng-content></ng-content></span>
+			<span class="text-new.error-500"><ng-content></ng-content></span>
 		</div>
 	`
 })
@@ -77,18 +77,18 @@ export class InputErrorComponent implements OnInit {
     selector: 'convoy-label, [convoy-label]',
     imports: [TooltipComponent],
     host: {
-        class: 'w-full text-12 mb-8px flex items-center justify-between'
+        class: 'w-full mb-8px flex items-center'
     },
     template: `
-		<div class="flex items-center text-neutral-9">
+		<div class="flex items-center font-body font-normal text-[14px] leading-normal text-new.text-secondary">
 		  <ng-content></ng-content>
+		  @if (required === 'true') {
+		    <span class="ml-2px">*</span>
+		  }
 		  @if (tooltip) {
 		    <convoy-tooltip class="ml-4px" size="sm">{{ tooltip }}</convoy-tooltip>
 		  }
 		</div>
-		@if (required === 'true') {
-		  <span class="text-10 text-gray-11 px-6px rounded-22px font-medium bg-neutral-a3">required</span>
-		}
 		`,
     styleUrls: ['./input.component.scss']
 })

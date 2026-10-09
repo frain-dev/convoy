@@ -1,5 +1,132 @@
 # Convoy Changes
 
+## 26.7.3
+
+### Breaking Changes
+
+- Boot now drops any index Postgres left invalid and rebuilds it in the background, rather than leaving it until the next `migrate`. An invalid unique index still enforces its key, so dropping one gives up that constraint until the rebuild finishes: plan the upgrade for a window where that is acceptable, and watch `convoy utils indexes` or the admin dashboard until every owed index is valid again. A rebuild that meets duplicate rows is recorded as blocked, with the offending key, and skipped from then on, so it needs the duplicates resolved by hand before a retry can succeed (#2797, #2809, #2812)
+
+### Features
+
+- feat(dataplane): add postgres as a first-class queue provider (#2795)
+- feat(controlplane): rebuild invalid indexes from the admin dashboard (#2799)
+- feat(controlplane): endpoint Teams notifications and transition-gated alerts (#2802)
+- feat(controlplane): add licensed event list search with exact JSON filters (#2803)
+- feat(dataplane): daily delivery counts and queue metrics snapshots (#2808)
+- feat(controlplane): adopt orphan invalid indexes and block duplicate-key rebuilds (#2812)
+
+### Bug Fixes
+
+- fix(dataplane): reject empty endpoint_id on event match (#2788)
+- fix(dashboard): Improve verify-email UX: auth shell layout and clearer modal (#2789)
+- fix(api): invalidate subscription and filter caches on api writes (#2790)
+- fix(controlplane): invalidate endpoint caches on api writes (#2792)
+- fix(dashboard): show delivered URL from attempts on delivery details (#2793)
+- fix(events): use plain inner order by for paged exists scans (#2794)
+- fix(dashboard): show the partition operation the button will run (#2796)
+- fix(controlplane): repair indexes postgres left invalid, rebuild them on demand (#2797)
+- fix(infra): run local installer from published image (#2798)
+- fix(dataplane): sweep orphaned events_endpoints after partition retention (#2800)
+- fix(migrations): reconcile endpoints NOT NULL schema drift (#2801)
+- fix(controlplane): mark event payload jsonb function parallel unsafe (#2804)
+- fix(controlplane): range-scan event deliveries by project and created_at (#2805)
+- fix(dashboard): show event log search progress and load sidebar deliveries (#2806)
+- fix(dataplane): stop prometheus register from scanning event_deliveries (#2807)
+- fix(dataplane): rebuild every owed index at boot (#2809)
+- fix(dataplane): rewrite rollup days that already hold rows (#2810)
+- fix(controlplane): serve delivery status totals from a status-aware rollup (#2811)
+
+### Improvements
+
+- perf(dataplane): cache subscriptions by source id (#2791)
+
+## 26.7.2
+
+### Breaking Changes
+
+- Partition retention now manages the partitions `convoy utils partition` creates, which it previously ignored because their names were folded to lower case. On a licensed instance, history kept only because those partitions were unmanaged is dropped at `CONVOY_RETENTION_POLICY` on the next maintenance run. Confirm that duration before upgrading (#2781)
+
+### Features
+
+- feat(controlplane): partition tables by attaching with an admin UI (#2784)
+
+### Bug Fixes
+
+- fix(dataplane): correct partition naming, retention adoption and event-id enforcement (#2781)
+- fix(controlplane): fit transactional emails to mobile and move the footer inside the card (#2783)
+- fix(controlplane): load endpoint failure rates after the list (#2785)
+- fix(dataplane): drop leftover primary key when attaching after a copy unpartition (#2786)
+- fix(dashboard): keep instance admins on admin after a full reload (#2786)
+- fix(dashboard): start the partition operation the selected table allows (#2786)
+
+## 26.7.1
+
+### Breaking Changes
+
+- The project config field `sync_dynamic_event_ack`, released in 26.7.0, is renamed to `verify_dynamic_events`. `POST /projects` and `PUT /projects/{id}` reject the old key with a 400 naming the new field rather than ignoring it (#2773)
+- `CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT` is renamed to `CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT`. The old variable is no longer read and warns at boot; the same key in a config file falls back to the 30s default silently (#2773)
+
+### Features
+
+- feat(dataplane): allow dynamic urls that match no endpoint template (#2773)
+
+### Bug Fixes
+
+- fix(dashboard): correct subscription event type selection and redesign alert toasts (#2775)
+
+## 26.7.0
+
+### Features
+
+- feat(dataplane): optional sync ack for dynamic event resolve (#2766)
+- feat(dashboard): Redesign Convoy dashboard (#2764)
+
+### Bug Fixes
+
+- fix(dataplane): surface dynamic url template failures without leaking event metadata (#2771)
+
+## 26.6.10
+
+### Features
+
+- feat(dataplane): custom user-agent replaces convoy branding header (#2765)
+
+## 26.6.9
+
+### Improvements
+
+- refactor(dataplane): remove delete-query retention and its feature flag (#2753)
+
+### Bug Fixes
+
+- fix(controlplane): swap transactional email header logo (#2761)
+- fix(build): refactor docker install script (#2711)
+- fix(controlplane): harden ingest verifier fallback, retry scoping, bulk onboard and billing update (#2754)
+
+## 26.6.8
+
+### Improvements
+
+- chore(deps): bump golang.org/x/crypto to v0.52.0 and golang.org/x/net to v0.55.0 (#2757)
+
+### Bug Fixes
+
+- fix(controlplane): scope source lookups by project and canonicalize jwt blacklist keys (#2755)
+- fix(dataplane): block cloud metadata and link-local targets on default webhook egress (#2756)
+- fix(controlplane): scope portal-link and org authorization to close cross-tenant access (#2760)
+
+## 26.6.7
+
+### Bug Fixes
+
+- fix: agent ingest honors instance ingest rate limit (#2744)
+- fix: return empty endpoints_metadata for portal links with no endpoints (#2745)
+- fix: close idempotency dedup race on concurrent event creation (#2747)
+- fix(dataplane): reject events without a delivery target and honor app_id fanout (#2746)
+- fix(controlplane): close jul 20-21 vulnerability audit findings (#2749)
+- fix(dashboard): clarify unverified-email copy for dialog and trial modal (#2751)
+- fix: render current year in email template footers (#2750)
+
 ## 26.6.6
 
 ### Features

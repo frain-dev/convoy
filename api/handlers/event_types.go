@@ -75,6 +75,10 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
+
 	var newEventType models.CreateEventType
 	err = util.ReadJSON(r, &newEventType)
 	if err != nil {
@@ -138,6 +142,10 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
@@ -207,6 +215,10 @@ func (h *Handler) DeprecateEventType(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 

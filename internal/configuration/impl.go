@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -52,6 +53,7 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 		ID:                 common.StringToPgText(cfg.UID),
 		IsAnalyticsEnabled: common.StringToPgText(boolToText(cfg.IsAnalyticsEnabled)),
 		IsSignupEnabled:    pgtype.Bool{Bool: cfg.IsSignupEnabled, Valid: true},
+		AdminManaged:       pgtype.Bool{Bool: cfg.AdminManaged, Valid: true},
 	}
 
 	// Handle storage policy based on type
@@ -60,10 +62,11 @@ func configurationToCreateParams(cfg *datastore.Configuration) repo.CreateConfig
 		setStoragePolicyCreateParams(&params, cfg.StoragePolicy)
 	}
 
-	// Handle retention policy
 	rc := cfg.GetRetentionPolicyConfig()
-	params.RetentionPolicyPolicy = common.StringToPgText(rc.Policy)
-	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
+	wa := cfg.GetWebhookArchivingConfig()
+	params.RetentionPeriod = common.StringToPgText(rc.Period)
+	params.RetentionEnabled = pgtype.Bool{Bool: rc.Enabled, Valid: true}
+	params.WebhookArchivingEnabled = pgtype.Bool{Bool: wa.Enabled, Valid: true}
 
 	return params
 }
@@ -120,6 +123,7 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 		ID:                 common.StringToPgText(cfg.UID),
 		IsAnalyticsEnabled: common.StringToPgText(boolToText(cfg.IsAnalyticsEnabled)),
 		IsSignupEnabled:    pgtype.Bool{Bool: cfg.IsSignupEnabled, Valid: true},
+		AdminManaged:       pgtype.Bool{Bool: cfg.AdminManaged, Valid: true},
 	}
 
 	// Handle storage policy based on type
@@ -128,10 +132,11 @@ func configurationToUpdateParams(cfg *datastore.Configuration) repo.UpdateConfig
 		setStoragePolicyUpdateParams(&params, cfg.StoragePolicy)
 	}
 
-	// Handle retention policy
 	rc := cfg.GetRetentionPolicyConfig()
-	params.RetentionPolicyPolicy = common.StringToPgText(rc.Policy)
-	params.RetentionPolicyEnabled = pgtype.Bool{Bool: rc.IsRetentionPolicyEnabled, Valid: true}
+	wa := cfg.GetWebhookArchivingConfig()
+	params.RetentionPeriod = common.StringToPgText(rc.Period)
+	params.RetentionEnabled = pgtype.Bool{Bool: rc.Enabled, Valid: true}
+	params.WebhookArchivingEnabled = pgtype.Bool{Bool: wa.Enabled, Valid: true}
 
 	return params
 }
@@ -188,6 +193,8 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 		UID:                row.ID,
 		IsAnalyticsEnabled: textToBool(row.IsAnalyticsEnabled),
 		IsSignupEnabled:    row.IsSignupEnabled,
+		AdminManaged:       row.AdminManaged.Bool,
+		AdminManagedKnown:  row.AdminManaged.Valid,
 		CreatedAt:          row.CreatedAt.Time,
 		UpdatedAt:          row.UpdatedAt.Time,
 		DeletedAt:          common.PgTimestamptzToNullTime(row.DeletedAt),
@@ -223,10 +230,13 @@ func rowToConfiguration(row repo.LoadConfigurationRow) *datastore.Configuration 
 		}
 	}
 
-	// Reconstruct retention policy
 	cfg.RetentionPolicy = &datastore.RetentionPolicyConfiguration{
-		Policy:                   row.RetentionPolicyPolicy,
-		IsRetentionPolicyEnabled: row.RetentionPolicyEnabled,
+		Period:       row.RetentionPeriod,
+		Enabled:      row.RetentionEnabled.Valid && row.RetentionEnabled.Bool,
+		EnabledKnown: row.RetentionEnabled.Valid,
+	}
+	cfg.WebhookArchiving = &datastore.WebhookArchivingConfiguration{
+		Enabled: row.WebhookArchivingEnabled,
 	}
 
 	return cfg
@@ -246,6 +256,10 @@ func (s *Service) CreateConfiguration(ctx context.Context, cfg *datastore.Config
 
 	err := s.repo.CreateConfiguration(ctx, params)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return util.NewServiceError(http.StatusConflict, datastore.ErrConfigAlreadyExists)
+		}
 		s.logger.Error("failed to create configuration", "error", err)
 		return util.NewServiceError(http.StatusInternalServerError, err)
 	}
@@ -266,6 +280,40 @@ func (s *Service) LoadConfiguration(ctx context.Context) (*datastore.Configurati
 
 	cfg := rowToConfiguration(row)
 	return cfg, nil
+}
+
+// CompleteAdminManagedMigration preserves legacy settings and returns the
+// ownership and retention values stored after the migration.
+func (s *Service) CompleteAdminManagedMigration(ctx context.Context, id string, retentionEnabled bool) (bool, bool, error) {
+	result, err := s.repo.CompleteAdminManagedMigration(ctx, repo.CompleteAdminManagedMigrationParams{
+		RetentionEnabled: pgtype.Bool{Bool: retentionEnabled, Valid: true},
+		ID:               common.StringToPgText(id),
+	})
+	if err != nil {
+		s.logger.Error("failed to complete admin-managed migration", "error", err)
+		return false, false, util.NewServiceError(http.StatusInternalServerError, err)
+	}
+	if result.RowsAffected() > 1 {
+		return false, false, util.NewServiceError(
+			http.StatusConflict,
+			errors.New("admin-managed migration updated multiple configurations"),
+		)
+	}
+
+	current, err := s.LoadConfiguration(ctx)
+	if err != nil {
+		return false, false, err
+	}
+	if current.UID != id ||
+		!current.AdminManagedKnown ||
+		current.RetentionPolicy == nil ||
+		!current.RetentionPolicy.EnabledKnown {
+		return false, false, util.NewServiceError(
+			http.StatusConflict,
+			errors.New("admin-managed migration did not update configuration"),
+		)
+	}
+	return current.AdminManaged, current.RetentionPolicy.Enabled, nil
 }
 
 // UpdateConfiguration updates an existing configuration

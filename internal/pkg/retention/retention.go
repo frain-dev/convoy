@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	partman "github.com/jirevwe/gopartman"
 
 	"github.com/frain-dev/convoy/database"
@@ -16,15 +18,20 @@ import (
 )
 
 // RetentionTables are the tables the partition retention policy manages.
-// They must be converted to partitioned parents (`convoy partition`) before
+// They must be converted to partitioned parents (`convoy utils partition`) before
 // retention can run.
+//
+// convoy.events_endpoints is deliberately not one of them: it has no created_at
+// and no project_id, so there is no partition key to range on. It is reclaimed
+// by sweepOrphanedEventEndpoints instead, once these have been maintained.
 var RetentionTables = []string{"events", "events_search", "event_deliveries", "delivery_attempts"}
 
 const (
-	retentionSchema      = "convoy"
-	retentionTenantCol   = "project_id"
-	retentionPartitionBy = "created_at"
-	retentionPremake     = 10
+	retentionSchema            = "convoy"
+	retentionTenantCol         = "project_id"
+	retentionPartitionBy       = "created_at"
+	retentionPremake           = 10
+	retentionPartitionInterval = "daily"
 )
 
 // UnpartitionedTables returns the retention-managed tables that are not yet
@@ -71,7 +78,7 @@ type Retentioner interface {
 
 // LicensedRetentionPolicy is installed when the license includes retention.
 // It re-reads partition state on Start, on a reconcile ticker, and on every
-// Perform so `convoy partition` can activate retention without a worker
+// Perform so `convoy utils partition` can activate retention without a worker
 // restart. Until all RetentionTables are partitioned parents it never
 // deletes; each skip logs the actionable error so the asynq job stays healthy.
 type LicensedRetentionPolicy struct {
@@ -91,6 +98,19 @@ type LicensedRetentionPolicy struct {
 
 func NewLicensedRetentionPolicy(db database.Database, logger log.Logger, period time.Duration) *LicensedRetentionPolicy {
 	return &LicensedRetentionPolicy{db: db, logger: logger, period: period}
+}
+
+// SetPeriod updates the keep window from configurations.retention_period.
+// Propagates into an already-activated PartitionRetentionPolicy so the next
+// Perform/reconcile rewrites partman.parent_tables without leaking a second
+// reconcile goroutine.
+func (l *LicensedRetentionPolicy) SetPeriod(period time.Duration) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.period = period
+	if l.inner != nil {
+		l.inner.setRetentionPeriod(period)
+	}
 }
 
 func (l *LicensedRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
@@ -143,7 +163,7 @@ func (l *LicensedRetentionPolicy) Perform(ctx context.Context) error {
 	l.mu.Unlock()
 
 	if inner == nil {
-		l.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy partition`", missing))
+		l.logger.Error(fmt.Sprintf("retention is licensed but skipped: tables are not partitioned: %v. Run `convoy utils partition`", missing))
 		return nil
 	}
 	return inner.Perform(ctx)
@@ -235,6 +255,10 @@ func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period
 	}, nil
 }
 
+func (r *PartitionRetentionPolicy) setRetentionPeriod(period time.Duration) {
+	r.retentionPeriod = period
+}
+
 func applyPartmanMigrations(ctx context.Context, db database.Database) error {
 	pool := db.GetConn()
 	for _, m := range partman.Migrations() {
@@ -267,11 +291,112 @@ func (r *PartitionRetentionPolicy) registerParents(ctx context.Context) {
 			r.logger.Error(fmt.Sprintf("failed to register convoy.%s with gopartman", table), "error", err)
 			continue
 		}
+		if err := r.reconcileParent(ctx, table); err != nil {
+			r.logger.Error(fmt.Sprintf("failed to reconcile convoy.%s parent config", table), "error", err)
+		}
 
 		ref := partman.ParentRef{SchemaName: retentionSchema, TableName: table}
-		if _, err := r.manager.ImportExisting(ctx, ref); err != nil {
+		report, err := r.manager.ImportExisting(ctx, ref)
+		if err != nil {
 			r.logger.Errorf("failed to import existing partitions for convoy.%s: %v", table, err)
+			continue
 		}
+		r.logImportReport(table, report)
+	}
+}
+
+// storedParent reads the partman.parent_tables row Maintain and
+// dropAdoptedPartition both use for the retention window.
+func (r *PartitionRetentionPolicy) storedParent(ctx context.Context, table string) (partman.ParentInfo, error) {
+	parents, err := r.manager.ListParents(ctx)
+	if err != nil {
+		return partman.ParentInfo{}, err
+	}
+	for _, parent := range parents {
+		if parent.SchemaName == retentionSchema && parent.TableName == table {
+			return parent, nil
+		}
+	}
+	return partman.ParentInfo{}, fmt.Errorf("partman has no parent row for convoy.%s", table)
+}
+
+// reconcileParent writes the operator's current parentConfig onto an
+// already-registered partman.parent_tables row. RegisterParent is
+// insert-if-absent (ON CONFLICT DO NOTHING), so a config change plus a
+// restart otherwise leaves retention_period, premake, and
+// partition_interval on the first write. Maintain and dropAdoptedPartition
+// both read that stored window. Config wins on write.
+func (r *PartitionRetentionPolicy) reconcileParent(ctx context.Context, table string) error {
+	stored, err := r.storedParent(ctx, table)
+	if err != nil {
+		return err
+	}
+
+	desired := r.parentConfig(table)
+	if stored.RetentionPeriod == desired.RetentionPeriod &&
+		stored.Premake == desired.Premake &&
+		stored.PartitionInterval == retentionPartitionInterval {
+		return nil
+	}
+
+	_, err = r.db.GetConn().Exec(ctx, `
+        UPDATE partman.parent_tables
+        SET retention_period = $1,
+            premake = $2,
+            partition_interval = $3,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE schema_name = $4 AND table_name = $5`,
+		pgtype.Interval{Microseconds: desired.RetentionPeriod.Microseconds(), Valid: true},
+		desired.Premake,
+		retentionPartitionInterval,
+		retentionSchema,
+		table,
+	)
+	if err != nil {
+		return err
+	}
+
+	r.logger.Info(fmt.Sprintf(
+		"corrected convoy.%s parent config: retention_period %s -> %s, premake %d -> %d, partition_interval %s -> %s",
+		table,
+		stored.RetentionPeriod, desired.RetentionPeriod,
+		stored.Premake, desired.Premake,
+		stored.PartitionInterval, retentionPartitionInterval,
+	))
+	return nil
+}
+
+// logImportReport surfaces the outcome of ImportExisting. gopartman reports
+// drifted and skipped children without returning an error, and only adopted
+// partitions reach partman.partitions, so an unread report means retention can
+// silently manage nothing while the table keeps growing. Logged at error level
+// because every unadopted partition is one the nightly job will never drop.
+// Names are capped: a mismatch is usually systematic and affects every child.
+func (r *PartitionRetentionPolicy) logImportReport(table string, report partman.ReconcileReport) {
+	const maxNamed = 3
+
+	if len(report.Drifted) == 0 && len(report.Skipped) == 0 {
+		r.logger.Info(fmt.Sprintf("imported %d existing partitions for convoy.%s", len(report.Imported), table))
+		return
+	}
+
+	r.logger.Error(fmt.Sprintf(
+		"convoy.%s has partitions retention cannot drop: %d adopted, %d drifted, %d skipped",
+		table, len(report.Imported), len(report.Drifted), len(report.Skipped)))
+
+	for i, d := range report.Drifted {
+		if i == maxNamed {
+			r.logger.Errorf("... and %d more drifted partitions on convoy.%s", len(report.Drifted)-maxNamed, table)
+			break
+		}
+		r.logger.Errorf("drifted partition %s: %s", d.Name, d.Reason)
+	}
+	for i, s := range report.Skipped {
+		if i == maxNamed {
+			r.logger.Errorf("... and %d more skipped partitions on convoy.%s", len(report.Skipped)-maxNamed, table)
+			break
+		}
+		r.logger.Errorf("skipped partition %s: %s", s.Name, s.Reason)
 	}
 }
 
@@ -301,7 +426,9 @@ func (r *PartitionRetentionPolicy) registerTenants(ctx context.Context) {
 // Parent registration is re-attempted on each tick so a transient boot-time
 // RegisterParent/ImportExisting failure does not leave Maintain with no
 // managed tables for the life of the process (ErrParentAlreadyExists is
-// treated as success). It does not start gopartman's internal ticker;
+// treated as success). Already-registered rows are then rewritten from
+// parentConfig so a later retention-period change is not stuck on the
+// first insert. It does not start gopartman's internal ticker;
 // Perform (the asynq nightly job) calls Maintain.
 func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 	go func(r *PartitionRetentionPolicy) {
@@ -332,5 +459,197 @@ func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	// first reconcile tick (or stuck after a transient RegisterParent miss).
 	r.registerParents(ctx)
 	r.registerTenants(ctx)
-	return r.manager.Maintain(ctx)
+
+	store := NewRunStore(r.db)
+	runID, beginErr := store.Begin(ctx, r.retentionPeriod)
+	if beginErr != nil {
+		r.logger.Error("failed to begin retention run record", "error", beginErr)
+		runID = ""
+	}
+
+	finish := func(status RunStatus, details RunDetails, runErr error) {
+		if runID == "" {
+			return
+		}
+		if err := store.Finish(ctx, runID, status, details, runErr); err != nil {
+			r.logger.Error("failed to finish retention run record", "error", err)
+		}
+	}
+
+	before, beforeErr := snapshotManagedPartitions(ctx, r.db)
+	if beforeErr != nil {
+		r.logger.Error("snapshotting partitions before retention", "error", beforeErr)
+		before = partitionSnapshot{}
+	}
+
+	beforeCounts := countExpiredPartitionRowCounts(ctx, r.db)
+
+	maintainErr := r.manager.Maintain(ctx)
+
+	after, afterErr := snapshotManagedPartitions(ctx, r.db)
+	var details RunDetails
+	switch {
+	case beforeErr == nil && afterErr == nil:
+		details = diffPartitionDrops(before, after, beforeCounts)
+	case beforeErr == nil && afterErr != nil:
+		r.logger.Error("snapshotting partitions after retention", "error", afterErr)
+		details = emptyDetails()
+	default:
+		if afterErr != nil {
+			r.logger.Error("snapshotting partitions after retention", "error", afterErr)
+		}
+		details = emptyDetails()
+	}
+	if maintainErr != nil {
+		msg := maintainErr.Error()
+		for i := range details {
+			details[i].MaintainError = &msg
+		}
+	}
+
+	r.dropExpiredAdoptedPartitions(ctx, details)
+
+	if maintainErr != nil {
+		finish(RunStatusFailed, details, maintainErr)
+		return maintainErr
+	}
+
+	r.sweepOrphanedEventEndpoints(ctx)
+
+	var recordErr error
+	switch {
+	case beforeErr != nil:
+		recordErr = beforeErr
+	case afterErr != nil:
+		recordErr = afterErr
+	}
+	finish(RunStatusCompleted, details, recordErr)
+	return nil
+}
+
+// dropExpiredAdoptedPartitions reclaims history that Maintain structurally
+// cannot.
+//
+// Converting a table adopts the pre-conversion heap as the parent's
+// DEFAULT partition rather than copying it into daily children. gopartman
+// selects expired partitions with is_default = false, deliberately, because a
+// default is normally a catch-all that must never be dropped on a schedule. The
+// consequence is that every row written before the conversion becomes exempt
+// from retention forever, which on a large instance is most of the table.
+//
+// Failures are logged rather than returned. Maintain has already done the work
+// the nightly job exists for, and this runs again tomorrow.
+func (r *PartitionRetentionPolicy) dropExpiredAdoptedPartitions(ctx context.Context, details RunDetails) {
+	idx := detailsIndex(details)
+	for _, table := range RetentionTables {
+		dropped, rows, err := r.dropAdoptedPartition(ctx, table)
+		if err != nil {
+			r.logger.Error(fmt.Sprintf("failed to drop expired history partition for convoy.%s", table), "error", err)
+			continue
+		}
+		if dropped {
+			if i, ok := idx[table]; ok {
+				details[i].DroppedDefault = true
+				details[i].DroppedDefaultRows = rows
+				details[i].DroppedRows += rows
+			}
+			r.logger.Info(fmt.Sprintf("dropped expired history partition convoy.%s_default", table), "rows", rows)
+		}
+	}
+}
+
+// dropAdoptedPartition drops <table>_default when every row in it is older than
+// the stored retention period.
+//
+// The window is the partman.parent_tables row Maintain already reads, not
+// the in-process config. reconcileParent writes that row from config first.
+// A zero stored period means retention is off, same as Maintain.
+//
+// Two gates, both necessary. The partition must carry the bounds constraint the
+// attach conversion writes, which is what distinguishes an adopted table from
+// the empty catch-all gopartman provisions under the same name; dropping that
+// one would delete live rows that arrived while a day partition was missing. And
+// the newest row in it must already be expired, read from the data rather than
+// inferred from the constraint, so this cannot be wrong about what it is
+// deleting. The read is cheap despite the table's size: created_at is indexed,
+// so max() is a backwards index scan rather than a scan of the partition.
+func (r *PartitionRetentionPolicy) dropAdoptedPartition(ctx context.Context, table string) (bool, int64, error) {
+	partition := table + "_default"
+
+	var adopted bool
+	err := r.db.GetConn().QueryRow(ctx, `
+        SELECT EXISTS (
+            SELECT 1
+            FROM pg_constraint con
+            JOIN pg_class c ON c.oid = con.conrelid
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = $1 AND c.relname = $2 AND con.conname = $3
+        )`, retentionSchema, partition, partition+"_bounds").Scan(&adopted)
+	if err != nil {
+		return false, 0, fmt.Errorf("checking for an adopted history partition: %w", err)
+	}
+	if !adopted {
+		return false, 0, nil
+	}
+
+	var newest *time.Time
+	err = r.db.GetConn().QueryRow(ctx,
+		fmt.Sprintf(`SELECT max(created_at) FROM %s.%s`, retentionSchema, partition)).Scan(&newest)
+	if err != nil {
+		return false, 0, fmt.Errorf("reading the newest row in %s: %w", partition, err)
+	}
+
+	// An empty adopted partition is left alone. It still routes rows below the
+	// conversion's cutoff, and reclaiming nothing is not worth a destructive
+	// statement.
+	if newest == nil {
+		return false, 0, nil
+	}
+
+	parent, err := r.storedParent(ctx, table)
+	if err != nil {
+		return false, 0, err
+	}
+	if parent.RetentionPeriod <= 0 || newest.After(time.Now().Add(-parent.RetentionPeriod)) {
+		return false, 0, nil
+	}
+
+	var rowCount int64
+	countCtx, cancelCount := rowCountContext(ctx)
+	err = r.db.GetConn().QueryRow(countCtx,
+		fmt.Sprintf(`SELECT count(*) FROM %s.%s`, retentionSchema, partition)).Scan(&rowCount)
+	cancelCount()
+	if err != nil {
+		r.logger.Warn("counting rows before dropping adopted history partition; proceeding without row count",
+			"partition", partition, "error", err)
+		rowCount = 0
+	}
+
+	// Dropping the table leaves gopartman's row behind if the import adopted it,
+	// and that row would then block a later default from being registered. Both
+	// statements are in one transaction so the catalog and the metadata cannot
+	// disagree.
+	tx, err := r.db.GetConn().Begin(ctx)
+	if err != nil {
+		return false, 0, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if _, err = tx.Exec(ctx, `SET LOCAL lock_timeout = '3s'`); err != nil {
+		return false, 0, err
+	}
+	if _, err = tx.Exec(ctx, fmt.Sprintf(`DROP TABLE %s.%s`, retentionSchema, partition)); err != nil {
+		return false, 0, fmt.Errorf("dropping %s: %w", partition, err)
+	}
+	// gopartman stores the child's name schema qualified, so matching on the bare
+	// name deletes nothing and leaves the row this transaction exists to remove.
+	if _, err = tx.Exec(ctx, `DELETE FROM partman.partitions WHERE name = $1`,
+		retentionSchema+"."+partition); err != nil {
+		return false, 0, fmt.Errorf("clearing partition metadata for %s: %w", partition, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return false, 0, err
+	}
+	return true, rowCount, nil
 }

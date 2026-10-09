@@ -2,18 +2,18 @@
   <ul class="flex flex-row w-full mb-20px">
     @for (tab of tabs; track $index) {
       <li class="list-none mr-40px last-of-type:mr-0">
-        <button convoy-button class="rounded-12px flex justify-center items-center !p-10px" fill="soft" [ngClass]="{ '!border-solid !border !border-primary-100': activeTab === tab.id }" (click)="switchTabs(tab.id)">
+        <button type="button" class="rounded-12px flex justify-center items-center p-10px border border-new.border bg-new.surface-muted transition-colors hover:bg-new.surface-subtle" [ngClass]="{ '!border-new.primary-400 ring-1 ring-new.primary-400': activeTab === tab.id }" (click)="switchTabs(tab.id)">
           <img [src]="'/assets/img/' + tab.id + '.png'" class="h-40px w-40px" alt="sdk icon" />
         </button>
       </li>
     }
   </ul>
 
-  <div class="flex flex-row m-auto w-full mt-40px mb-24px border-b border-b-neutral-a3">
+  <div class="flex flex-row m-auto w-full mt-40px mb-24px border-b border-new.border">
     @for (step of steps; track $index) {
       <li class="mr-24px !list-none last-of-type:mr-0">
-        <button class="pb-10px flex items-center" [class]="activeStep === step ? 'active' : ''" (click)="switchStep(step)">
-          <span class="text-14 text-left text-neutral-11 tracking-[0.02em] mobile:min-w-[80px] font-medium">{{ step }}</span>
+        <button type="button" class="pb-10px flex items-center border-b-2 border-transparent transition-colors" [class]="activeStep === step ? '!border-new.primary-400' : ''" (click)="switchStep(step)">
+          <span class="font-body text-[14px] text-left tracking-[0.02em] mobile:min-w-[80px]" [class]="activeStep === step ? 'font-medium text-new.text-primary' : 'font-normal text-new.text-secondary'">{{ step }}</span>
         </button>
       </li>
     }
@@ -22,7 +22,7 @@
   <div class="docs" [innerHTML]="documentation"></div>
 
   <div class="flex justify-end">
-    <button convoy-button size="sm" class="mr-16px" (click)="nextStep()">
+    <button type="button" class="flex items-center px-14px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] text-white-100 transition-all hover:opacity-90 mr-16px" (click)="nextStep()">
       {{ steps[steps.length - 1] === activeStep ? 'Complete Setup' : 'Next' }}
       <svg width="12" height="12" class="ml-8px fill-white-100">
         <use xlink:href="#arrow-right-icon"></use>

@@ -161,7 +161,9 @@ func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datast
 func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer, logger log.Logger) error {
 	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to marshal notification payload", "error", err)
+		if logger != nil {
+			logger.ErrorContext(ctx, "failed to marshal notification payload", "error", err)
+		}
 		return err
 	}
 
@@ -172,7 +174,9 @@ func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer, logger l
 
 	err = q.Write(ctx, convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
-		logger.ErrorContext(ctx, "failed to write new notification to the queue", "error", err)
+		if logger != nil {
+			logger.ErrorContext(ctx, "failed to write new notification to the queue", "error", err)
+		}
 		return err
 	}
 	return nil

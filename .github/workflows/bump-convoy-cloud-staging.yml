@@ -142,6 +142,22 @@ jobs:
             fi
           }
 
+          # Hub tags do not exist on GHCR. A 7-char private SHA can also
+          # resolve to a different public commit on frain-dev/convoy, so
+          # ancestry compare is not a substitute for this image check.
+          image=$(printf '%s\n' "$content" | python3 -c '
+          import re, sys
+          text = sys.stdin.read()
+          m = re.search(r"(?m)^(?!\s*#)\s*image: &image \"([^\"]+)\"\s*$", text)
+          print(m.group(1) if m else "")
+          ')
+          if [ "$image" != "getconvoy/convoy" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Staging image is ${image:-empty}, not getconvoy/convoy; skipping Hub bump."
+            close_this_bump_pr
+            exit 0
+          fi
+
           if [ "$current" = "$IMAGE_TAG" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "Staging already at ${IMAGE_TAG}."

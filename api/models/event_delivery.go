@@ -74,6 +74,9 @@ type QueryListEventDelivery struct {
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
 
+	// Matches delivery id, event id, event type prefix, and endpoint name.
+	Query string `json:"query"`
+
 	SearchParams
 	Pageable
 }
@@ -96,6 +99,7 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EventID:         r.URL.Query().Get("eventId"),
 			EventType:       r.URL.Query().Get("eventType"),
+			Query:           searchParams.Query,
 			Pageable:        m.GetPageableFromContext(r.Context()),
 			Status:          getEventDeliveryStatus(r),
 			SearchParams:    searchParams,

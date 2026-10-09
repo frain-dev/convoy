@@ -355,7 +355,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
@@ -365,9 +365,8 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -403,7 +402,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -457,9 +456,8 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -538,7 +536,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
@@ -548,8 +546,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
@@ -603,7 +600,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				o.EXPECT().
 					FetchProjectByID(gomock.Any(), gomock.Any()).
@@ -643,8 +640,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
@@ -725,7 +721,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
@@ -735,8 +731,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
@@ -817,7 +812,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 
 				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(false, nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
@@ -827,8 +822,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
-				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
 			nFn: func() func() {
@@ -910,7 +904,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 
 				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(true, nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
@@ -924,7 +918,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
@@ -1008,7 +1002,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil).Times(1)
 
 				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Return(nil).Times(1)
+					Return(true, nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
@@ -1022,7 +1016,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
-				l.EXPECT().CircuitBreaking().Times(1).Return(false)
+				l.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				l.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			},
@@ -1136,6 +1130,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 			licenser := mocks.NewMockLicenser(ctrl)
 			licenser.EXPECT().ProjectEnabled(gomock.Any()).Return(true).AnyTimes()
+			licenser.EXPECT().CircuitBreaking().Return(false).AnyTimes()
 			licenser.EXPECT().CustomUserAgent().Return(false).AnyTimes()
 			mt := mocks.NewMockBackend(ctrl)
 

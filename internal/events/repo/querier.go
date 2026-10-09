@@ -44,15 +44,16 @@ type Querier interface {
 	// Group 4: Deletion & Maintenance (2 queries)
 	// ============================================================================
 	HardDeleteTokenizedEvents(ctx context.Context, arg HardDeleteTokenizedEventsParams) error
+	// Same as LoadEventsPagedExistsInnerDesc but inner scan uses ORDER BY id ASC.
+	LoadEventsPagedExistsInnerAsc(ctx context.Context, arg LoadEventsPagedExistsInnerAscParams) ([]LoadEventsPagedExistsInnerAscRow, error)
 	// ============================================================================
 	// Group 3: Complex Pagination (5 queries) ⚠️ MOST CRITICAL
 	// ============================================================================
 	// Fast pagination using EXISTS subquery (no search query)
-	// Uses CTE with direction-based sort for correct backward pagination
+	// Inner scan uses plain ORDER BY id DESC so generic plans keep the events_pkey index.
 	// @direction: 'next' or 'prev' (pagination direction)
-	// @sort_order: 'ASC' or 'DESC' (user-requested sort order)
-	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
-	LoadEventsPagedExists(ctx context.Context, arg LoadEventsPagedExistsParams) ([]LoadEventsPagedExistsRow, error)
+	// @sort_order: 'ASC' or 'DESC' (user-requested sort order for cursor + outer re-sort)
+	LoadEventsPagedExistsInnerDesc(ctx context.Context, arg LoadEventsPagedExistsInnerDescParams) ([]LoadEventsPagedExistsInnerDescRow, error)
 	// Full-text search pagination using CTE + JOIN + GROUP BY
 	// Uses convoy.events_search table for search_token matching
 	// @direction: 'next' or 'prev' (pagination direction)
@@ -60,6 +61,12 @@ type Querier interface {
 	// Outer sort: always the user-requested sort order (re-reverses backward fetches)
 	LoadEventsPagedSearch(ctx context.Context, arg LoadEventsPagedSearchParams) ([]LoadEventsPagedSearchRow, error)
 	UpdateEventEndpoints(ctx context.Context, arg UpdateEventEndpointsParams) error
+	// failure_reason is written on every transition, not only failures, so a later
+	// success or retry clears the reason left behind by an earlier failed attempt.
+	// convoy.events is authoritative here. events_search is not updated in place: it
+	// is rebuilt by copy_rows when a project's search policy changes, so it holds a
+	// point-in-time copy of status and failure_reason together, the same way it has
+	// always held status.
 	UpdateEventStatus(ctx context.Context, arg UpdateEventStatusParams) error
 }
 

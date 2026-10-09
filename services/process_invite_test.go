@@ -95,11 +95,140 @@ func TestProcessInviteService_Run(t *testing.T) {
 					return reflect.DeepEqual(iv, expected)
 				})).Times(1).Return(nil)
 
+				pis.Actor = &datastore.User{Email: "test@email.com"}
+
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:   "user-123",
+						Email: "test@email.com",
 					},
+					nil,
+				)
+
+				o, _ := pis.OrgRepo.(*mocks.MockOrganisationRepository)
+				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").Times(1).Return(
+					&datastore.Organisation{UID: "org-123"},
+					nil,
+				)
+
+				om, _ := pis.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().IsMultiUserMode(gomock.Any()).Times(1).Return(true, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_reject_existing_user_accept_without_actor",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(pis *ProcessInviteService) {
+				oir, _ := pis.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:    auth.RoleProjectAdmin,
+							Project: "ref",
+						},
+					},
+					nil,
+				)
+
+				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{UID: "user-123", Email: "test@email.com"},
+					nil,
+				)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrInviteeLoginRequired.Error(),
+		},
+		{
+			name: "should_reject_existing_user_accept_when_actor_email_differs",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(pis *ProcessInviteService) {
+				pis.Actor = &datastore.User{Email: "inviter@email.com"}
+
+				oir, _ := pis.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:    auth.RoleProjectAdmin,
+							Project: "ref",
+						},
+					},
+					nil,
+				)
+
+				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{UID: "user-123", Email: "test@email.com"},
+					nil,
+				)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CheckUserLimit(gomock.Any()).Times(1).Return(true, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrInviteeLoginRequired.Error(),
+		},
+		{
+			name: "should_accept_existing_user_when_actor_email_differs_only_by_case",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(pis *ProcessInviteService) {
+				pis.Actor = &datastore.User{Email: "Test@Email.com"}
+
+				oir, _ := pis.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:     auth.RoleProjectAdmin,
+							Project:  "ref",
+							Endpoint: "",
+						},
+					},
+					nil,
+				)
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
+				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
+					&datastore.User{UID: "user-123", Email: "test@email.com"},
 					nil,
 				)
 
@@ -560,10 +689,13 @@ func TestProcessInviteService_Run(t *testing.T) {
 					nil,
 				)
 
+				pis.Actor = &datastore.User{Email: "test@email.com"}
+
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:   "user-123",
+						Email: "test@email.com",
 					},
 					nil,
 				)
@@ -673,10 +805,13 @@ func TestProcessInviteService_Run(t *testing.T) {
 					return reflect.DeepEqual(iv, expected)
 				})).Times(1).Return(errors.New("failed"))
 
+				pis.Actor = &datastore.User{Email: "test@email.com"}
+
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
 					&datastore.User{
-						UID: "user-123",
+						UID:   "user-123",
+						Email: "test@email.com",
 					},
 					nil,
 				)
@@ -725,9 +860,11 @@ func TestProcessInviteService_Run(t *testing.T) {
 					nil,
 				)
 
+				pis.Actor = &datastore.User{Email: "test@email.com"}
+
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
-					&datastore.User{UID: "user-123"}, nil,
+					&datastore.User{UID: "user-123", Email: "test@email.com"}, nil,
 				)
 
 				o, _ := pis.OrgRepo.(*mocks.MockOrganisationRepository)
@@ -772,9 +909,11 @@ func TestProcessInviteService_Run(t *testing.T) {
 				)
 				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
+				pis.Actor = &datastore.User{Email: "test@email.com"}
+
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
-					&datastore.User{UID: "user-123"}, nil,
+					&datastore.User{UID: "user-123", Email: "test@email.com"}, nil,
 				)
 
 				o, _ := pis.OrgRepo.(*mocks.MockOrganisationRepository)
@@ -815,4 +954,13 @@ func TestProcessInviteService_Run(t *testing.T) {
 			require.Nil(t, err)
 		})
 	}
+}
+
+func TestInviteEmailsMatch(t *testing.T) {
+	t.Parallel()
+	require.True(t, inviteEmailsMatch("Test@Email.com", "test@email.com"))
+	require.True(t, inviteEmailsMatch("  test@email.com  ", "test@email.com"))
+	require.False(t, inviteEmailsMatch("", "test@email.com"))
+	require.False(t, inviteEmailsMatch("inviter@email.com", "test@email.com"))
+	require.False(t, inviteEmailsMatch("", ""))
 }

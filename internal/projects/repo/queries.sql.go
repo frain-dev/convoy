@@ -61,7 +61,7 @@ INSERT INTO convoy.project_configurations (
     disable_endpoint, meta_events_enabled, meta_events_type,
     meta_events_event_type, meta_events_url, meta_events_secret,
     meta_events_pub_sub, ssl_enforce_secure_endpoints,
-    sync_dynamic_event_ack,
+    verify_dynamic_events, sync_dynamic_event_ack, allow_unmatched_dynamic_urls,
     cb_sample_rate, cb_error_timeout, cb_failure_threshold,
     cb_success_threshold, cb_observability_window,
     cb_minimum_request_count, cb_consecutive_failure_threshold
@@ -74,10 +74,10 @@ VALUES (
     $13, $14, $15,
     $16, $17, $18,
     $19, $20,
-    $21,
-    $22, $23, $24,
-    $25, $26,
-    $27, $28
+    $21, $22, $23,
+    $24, $25, $26,
+    $27, $28,
+    $29, $30
 )
 `
 
@@ -102,7 +102,9 @@ type CreateProjectConfigurationParams struct {
 	MetaEventsSecret               pgtype.Text
 	MetaEventsPubSub               []byte
 	SslEnforceSecureEndpoints      pgtype.Bool
+	VerifyDynamicEvents            pgtype.Bool
 	SyncDynamicEventAck            pgtype.Bool
+	AllowUnmatchedDynamicUrls      pgtype.Bool
 	CbSampleRate                   pgtype.Int4
 	CbErrorTimeout                 pgtype.Int4
 	CbFailureThreshold             pgtype.Int4
@@ -135,7 +137,9 @@ func (q *Queries) CreateProjectConfiguration(ctx context.Context, arg CreateProj
 		arg.MetaEventsSecret,
 		arg.MetaEventsPubSub,
 		arg.SslEnforceSecureEndpoints,
+		arg.VerifyDynamicEvents,
 		arg.SyncDynamicEventAck,
+		arg.AllowUnmatchedDynamicUrls,
 		arg.CbSampleRate,
 		arg.CbErrorTimeout,
 		arg.CbFailureThreshold,
@@ -201,7 +205,8 @@ SELECT
     c.search_policy AS "config_search_policy",
     c.max_payload_read_size AS "config_max_payload_read_size",
     c.multiple_endpoint_subscriptions AS "config_multiple_endpoint_subscriptions",
-    c.sync_dynamic_event_ack AS "config_sync_dynamic_event_ack",
+    c.verify_dynamic_events AS "config_verify_dynamic_events",
+    c.allow_unmatched_dynamic_urls AS "config_allow_unmatched_dynamic_urls",
     c.replay_attacks_prevention_enabled AS "config_replay_attacks_prevention_enabled",
     c.ratelimit_count AS "config_ratelimit_count",
     c.ratelimit_duration AS "config_ratelimit_duration",
@@ -247,7 +252,8 @@ type FetchProjectByIDRow struct {
 	ConfigSearchPolicy                   pgtype.Text
 	ConfigMaxPayloadReadSize             int32
 	ConfigMultipleEndpointSubscriptions  bool
-	ConfigSyncDynamicEventAck            bool
+	ConfigVerifyDynamicEvents            bool
+	ConfigAllowUnmatchedDynamicUrls      bool
 	ConfigReplayAttacksPreventionEnabled bool
 	ConfigRatelimitCount                 int32
 	ConfigRatelimitDuration              int32
@@ -291,7 +297,8 @@ func (q *Queries) FetchProjectByID(ctx context.Context, id pgtype.Text) (FetchPr
 		&i.ConfigSearchPolicy,
 		&i.ConfigMaxPayloadReadSize,
 		&i.ConfigMultipleEndpointSubscriptions,
-		&i.ConfigSyncDynamicEventAck,
+		&i.ConfigVerifyDynamicEvents,
+		&i.ConfigAllowUnmatchedDynamicUrls,
 		&i.ConfigReplayAttacksPreventionEnabled,
 		&i.ConfigRatelimitCount,
 		&i.ConfigRatelimitDuration,
@@ -364,7 +371,8 @@ SELECT
     c.search_policy AS "config_search_policy",
     c.max_payload_read_size AS "config_max_payload_read_size",
     c.multiple_endpoint_subscriptions AS "config_multiple_endpoint_subscriptions",
-    c.sync_dynamic_event_ack AS "config_sync_dynamic_event_ack",
+    c.verify_dynamic_events AS "config_verify_dynamic_events",
+    c.allow_unmatched_dynamic_urls AS "config_allow_unmatched_dynamic_urls",
     c.replay_attacks_prevention_enabled AS "config_replay_attacks_prevention_enabled",
     c.ratelimit_count AS "config_ratelimit_count",
     c.ratelimit_duration AS "config_ratelimit_duration",
@@ -410,7 +418,8 @@ type FetchProjectsRow struct {
 	ConfigSearchPolicy                   pgtype.Text
 	ConfigMaxPayloadReadSize             int32
 	ConfigMultipleEndpointSubscriptions  bool
-	ConfigSyncDynamicEventAck            bool
+	ConfigVerifyDynamicEvents            bool
+	ConfigAllowUnmatchedDynamicUrls      bool
 	ConfigReplayAttacksPreventionEnabled bool
 	ConfigRatelimitCount                 int32
 	ConfigRatelimitDuration              int32
@@ -460,7 +469,8 @@ func (q *Queries) FetchProjects(ctx context.Context, orgID pgtype.Text) ([]Fetch
 			&i.ConfigSearchPolicy,
 			&i.ConfigMaxPayloadReadSize,
 			&i.ConfigMultipleEndpointSubscriptions,
-			&i.ConfigSyncDynamicEventAck,
+			&i.ConfigVerifyDynamicEvents,
+			&i.ConfigAllowUnmatchedDynamicUrls,
 			&i.ConfigReplayAttacksPreventionEnabled,
 			&i.ConfigRatelimitCount,
 			&i.ConfigRatelimitDuration,
@@ -582,16 +592,18 @@ UPDATE convoy.project_configurations SET
     meta_events_pub_sub = $17,
     search_policy = $18,
     ssl_enforce_secure_endpoints = $19,
-    sync_dynamic_event_ack = $20,
-    cb_sample_rate = $21,
-    cb_error_timeout = $22,
-    cb_failure_threshold = $23,
-    cb_success_threshold = $24,
-    cb_observability_window = $25,
-    cb_minimum_request_count = $26,
-    cb_consecutive_failure_threshold = $27,
+    verify_dynamic_events = $20,
+    sync_dynamic_event_ack = $21,
+    allow_unmatched_dynamic_urls = $22,
+    cb_sample_rate = $23,
+    cb_error_timeout = $24,
+    cb_failure_threshold = $25,
+    cb_success_threshold = $26,
+    cb_observability_window = $27,
+    cb_minimum_request_count = $28,
+    cb_consecutive_failure_threshold = $29,
     updated_at = NOW()
-WHERE id = $28 AND deleted_at IS NULL
+WHERE id = $30 AND deleted_at IS NULL
 `
 
 type UpdateProjectConfigurationParams struct {
@@ -614,7 +626,9 @@ type UpdateProjectConfigurationParams struct {
 	MetaEventsPubSub               []byte
 	SearchPolicy                   pgtype.Text
 	SslEnforceSecureEndpoints      pgtype.Bool
+	VerifyDynamicEvents            pgtype.Bool
 	SyncDynamicEventAck            pgtype.Bool
+	AllowUnmatchedDynamicUrls      pgtype.Bool
 	CbSampleRate                   pgtype.Int4
 	CbErrorTimeout                 pgtype.Int4
 	CbFailureThreshold             pgtype.Int4
@@ -646,7 +660,9 @@ func (q *Queries) UpdateProjectConfiguration(ctx context.Context, arg UpdateProj
 		arg.MetaEventsPubSub,
 		arg.SearchPolicy,
 		arg.SslEnforceSecureEndpoints,
+		arg.VerifyDynamicEvents,
 		arg.SyncDynamicEventAck,
+		arg.AllowUnmatchedDynamicUrls,
 		arg.CbSampleRate,
 		arg.CbErrorTimeout,
 		arg.CbFailureThreshold,

@@ -1,11 +1,11 @@
-<div class="flex flex-col items-center justify-center p-30px">
+<div class="flex flex-col items-center justify-center p-32px">
 	<img src="/assets/img/success.gif" class="w-100px" alt="success" />
-	<h2 class="font-semibold mt-16px text-14">{{ title }}</h2>
-	<p class="text-12 text-neutral-11 font-normal text-center mb-24px mt-8px m-auto">{{ description }}</p>
+	<h2 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary mt-16px">{{ title }}</h2>
+	<p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary text-center mb-24px mt-8px m-auto">{{ description }}</p>
 
-	<div class="flex items-center justify-between w-full h-50px border border-neutral-a3 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
-		<span class="text-12 text-neutral-11 font-normal truncate">{{ token }}</span>
+	<div class="flex items-center justify-between gap-8px w-full h-48px border border-new.border bg-new.surface-subtle rounded-8px px-16px mb-24px">
+		<span class="font-body font-normal text-[14px] text-new.text-secondary truncate">{{ token }}</span>
 		<div convoy-copy-button class="ml-8px" [text]="token" [notificationText]="notificationText"></div>
 	</div>
-	<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>
+	<button type="button" class="min-w-[120px] px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="closeModal.emit()">Done</button>
 </div>

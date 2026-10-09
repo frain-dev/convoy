@@ -77,7 +77,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithoutEndpoints() {
 	require.NoError(s.T(), err)
 
 	// Update status to Failure (events without subscriptions get Failure status)
-	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, "no subscription matched this event")
 	require.NoError(s.T(), err)
 
 	// Query without endpoint filter - should return the event
@@ -145,7 +145,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 	require.NoError(s.T(), err)
 
 	// Update status to Failure (events without subscriptions get Failure status)
-	err = eventRepo.UpdateEventStatus(ctx, eventWithoutEndpoint, datastore.FailureStatus)
+	err = eventRepo.UpdateEventStatus(ctx, eventWithoutEndpoint, datastore.FailureStatus, "no subscription matched this event")
 	require.NoError(s.T(), err)
 
 	// Query with endpoint filter - should only return event with matching endpoint
@@ -184,14 +184,14 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_WithEndpointFilter() {
 }
 
 // Test_LoadEventsPaged_SearchWithoutEndpoints tests that events without endpoints
-// are included in search results
+// are included in list search results.
 func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints() {
 	ctx := context.Background()
 	eventRepo := events.New(s.ConvoyApp.A.Logger, s.DB)
 
 	data := json.RawMessage(`{"unique_search_term": "test12345"}`)
 
-	// Create an event with no endpoints but searchable content
+	// Create an event with no endpoints but searchable payload
 	event := &datastore.Event{
 		UID:       ulid.Make().String(),
 		EventType: "test-event-searchable",
@@ -208,16 +208,12 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 	require.NoError(s.T(), err)
 
 	// Update status to Failure (events without subscriptions get Failure status)
-	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus, "no subscription matched this event")
 	require.NoError(s.T(), err)
 
-	// Copy to search table for text search
-	err = eventRepo.CopyRows(ctx, s.DefaultProject.UID, 1)
-	require.NoError(s.T(), err)
-
-	// Search for the event - should find it despite no endpoints
+	// Payload containment on convoy.events; no events_search copy.
 	events, _, err := eventRepo.LoadEventsPaged(ctx, s.DefaultProject.UID, &datastore.Filter{
-		Query: "unique_search_term",
+		Body: data,
 		SearchParams: datastore.SearchParams{
 			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
 			CreatedAtEnd:   time.Now().Add(5 * time.Minute).Unix(),
@@ -232,8 +228,7 @@ func (s *EventsIntegrationTestSuite) Test_LoadEventsPaged_SearchWithoutEndpoints
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 1, len(events))
 	require.Equal(s.T(), event.UID, events[0].UID)
-	// Note: events_search table doesn't have metadata or status columns,
-	// so we don't check status for search results
+	require.Equal(s.T(), "no subscription matched this event", events[0].FailureReason)
 }
 
 func TestEventsIntegrationTestSuite(t *testing.T) {

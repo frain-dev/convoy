@@ -31,6 +31,9 @@ type CircuitBreaker struct {
 	ConsecutiveFailures uint64 `json:"consecutive_failures"`
 	// Number of notifications (maximum of 3) sent in the observability window
 	NotificationsSent uint64 `json:"notifications_sent"`
+	// Set when disable transitions active→inactive this window; cleared on send or Reset.
+	// Retries failed enqueues without re-alerting on window rollover alone.
+	DisableAlertPending bool `json:"disable_alert_pending"`
 
 	logger log.Logger
 }
@@ -82,6 +85,7 @@ func (b *CircuitBreaker) asKeyValue() map[string]interface{} {
 	kv["total_successes"] = b.TotalSuccesses
 	kv["consecutive_failures"] = b.ConsecutiveFailures
 	kv["notifications_sent"] = b.NotificationsSent
+	kv["disable_alert_pending"] = b.DisableAlertPending
 	return kv
 }
 
@@ -107,6 +111,7 @@ func (b *CircuitBreaker) Reset(resetTime time.Time) {
 	b.State = StateClosed
 	b.WillResetAt = resetTime
 	b.NotificationsSent = 0
+	b.DisableAlertPending = false
 	b.ConsecutiveFailures = 0
 	b.FailureRate = 0
 	b.SuccessRate = 0

@@ -315,6 +315,7 @@ func TestClient_StartGuestCheckout_Success(t *testing.T) {
 		assert.Equal(t, "buyer@example.com", req.Email)
 		assert.Equal(t, "Acme", req.OrganisationName)
 		assert.Equal(t, "attempt_123", req.AttemptID)
+		assert.Equal(t, "refcode01", req.ReferralCode)
 		assert.NotEmpty(t, req.CheckoutNonceHash)
 
 		w.Header().Set("Content-Type", "application/json")
@@ -334,9 +335,35 @@ func TestClient_StartGuestCheckout_Success(t *testing.T) {
 		OrganisationName:  "Acme",
 		AttemptID:         "attempt_123",
 		CheckoutNonceHash: "nonce_hash",
+		ReferralCode:      "refcode01",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "checkout_123", resp.Data.CheckoutID)
+}
+
+func TestClient_StartGuestCheckout_OmitsBlankReferralCode(t *testing.T) {
+	client, server := setupTestClientWithHandler(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req StartGuestCheckoutRequest
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		assert.Empty(t, req.ReferralCode)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		require.NoError(t, json.NewEncoder(w).Encode(Response[Checkout]{
+			Status:  true,
+			Message: "ok",
+			Data:    Checkout{CheckoutURL: "https://checkout.example", CheckoutID: "checkout_omit", AttemptID: "attempt_omit"},
+		}))
+	}))
+	defer server.Close()
+
+	_, err := client.StartGuestCheckout(context.Background(), StartGuestCheckoutRequest{
+		Email:             "buyer@example.com",
+		PlanID:            "plan_123",
+		AttemptID:         "attempt_omit",
+		CheckoutNonceHash: "nonce_hash",
+	})
+	require.NoError(t, err)
 }
 
 func TestClient_CompleteGuestCheckout_Success(t *testing.T) {
@@ -495,6 +522,7 @@ func TestClient_StartSelfHostedTrial_SendsEmailAndAttemptID(t *testing.T) {
 		assert.Equal(t, "buyer@example.com", req.Email)
 		assert.Equal(t, "attempt_sh_1", req.AttemptID)
 		assert.Equal(t, "https://customer.example.com", req.Host)
+		assert.Equal(t, "refcode02", req.ReferralCode)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -511,9 +539,10 @@ func TestClient_StartSelfHostedTrial_SendsEmailAndAttemptID(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.StartSelfHostedTrial(context.Background(), StartSelfHostedTrialRequest{
-		Email:     "buyer@example.com",
-		AttemptID: "attempt_sh_1",
-		Host:      "https://customer.example.com",
+		Email:        "buyer@example.com",
+		AttemptID:    "attempt_sh_1",
+		Host:         "https://customer.example.com",
+		ReferralCode: "refcode02",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "trial-license-key", resp.Data.LicenseKey)

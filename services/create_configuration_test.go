@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/util"
 )
 
 func boolPtr(b bool) *bool {
@@ -100,18 +102,58 @@ func TestCreateConfigService_Run(t *testing.T) {
 			name: "should_create_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
 					},
 				}},
 			},
-			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, IsSignupEnabled: true},
+			wantConfig: &datastore.Configuration{IsSignupEnabled: true},
 			dbFn: func(c *CreateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
 				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
+		},
+		{
+			name: "should_reject_when_configuration_exists",
+			args: args{
+				ctx: ctx,
+				newConfig: &models.Configuration{IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &models.OnPremStorage{
+						Path: null.NewString("/tmp/", true),
+					},
+				}},
+			},
+			dbFn: func(c *CreateConfigService) {
+				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{UID: "existing"}, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: datastore.ErrConfigAlreadyExists.Error(),
+		},
+		{
+			name: "should_conflict_when_create_races_unique_index",
+			args: args{
+				ctx: ctx,
+				newConfig: &models.Configuration{IsSignupEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+					Type: datastore.OnPrem,
+					OnPrem: &models.OnPremStorage{
+						Path: null.NewString("/tmp/", true),
+					},
+				}},
+			},
+			dbFn: func(c *CreateConfigService) {
+				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, datastore.ErrConfigNotFound)
+				co.EXPECT().CreateConfiguration(gomock.Any(), gomock.Any()).Times(1).Return(
+					util.NewServiceError(http.StatusConflict, datastore.ErrConfigAlreadyExists),
+				)
+			},
+			wantErr:    true,
+			wantErrMsg: datastore.ErrConfigAlreadyExists.Error(),
 		},
 	}
 
@@ -129,12 +171,11 @@ func TestCreateConfigService_Run(t *testing.T) {
 			config, err := c.Run(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Equal(t, tc.wantErrMsg, err.Error())
 				return
 			}
 
 			require.Nil(t, err)
-			require.Equal(t, config.IsAnalyticsEnabled, tc.wantConfig.IsAnalyticsEnabled)
 			require.Equal(t, config.IsSignupEnabled, tc.wantConfig.IsSignupEnabled)
 		})
 	}

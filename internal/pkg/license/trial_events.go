@@ -2,11 +2,13 @@ package license
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 
 	licensesvc "github.com/frain-dev/convoy/internal/pkg/license/service"
@@ -21,8 +23,9 @@ const trialDailyEventLimitKey = "daily_event_limit"
 // trial->paid transition is picked up quickly, long enough to spare the decrypt.
 const trialLimitCacheTTL = 60 * time.Second
 
-// trialCounterTTL lets Redis reclaim the per-day counter; the UTC-day key already
-// rolls the count at midnight.
+// trialCounterTTL lets Redis reclaim the per-day counter; the UTC-day key
+// already rolls the count at midnight. Postgres keeps one row per org and
+// replaces its count when the UTC day changes.
 const trialCounterTTL = 48 * time.Hour
 
 // ErrDailyEventLimit is returned by Allow when the trial daily cap is reached.
@@ -53,33 +56,97 @@ type cachedTrialLimit struct {
 	expiresAt   time.Time
 }
 
+type trialEventCounter interface {
+	Increment(ctx context.Context, orgID string, day time.Time, limit int64) (bool, error)
+}
+
+type redisTrialEventCounter struct {
+	client redis.UniversalClient
+}
+
+func (c *redisTrialEventCounter) Increment(ctx context.Context, orgID string, day time.Time, limit int64) (bool, error) {
+	key := trialDailyKey(orgID, day)
+	res, err := trialEventCounterScript.Run(ctx, c.client, []string{key}, limit, int64(trialCounterTTL.Seconds())).Int64()
+	if err != nil {
+		return false, err
+	}
+	return res != -1, nil
+}
+
+type postgresTrialEventCounter struct {
+	db *sqlx.DB
+}
+
+func (c *postgresTrialEventCounter) Increment(ctx context.Context, orgID string, day time.Time, limit int64) (bool, error) {
+	var count int64
+	err := c.db.QueryRowContext(ctx, `
+		INSERT INTO convoy.trial_event_counters (org_id, day, event_count, updated_at)
+		VALUES ($1, $2, 1, NOW())
+		ON CONFLICT (org_id) DO UPDATE SET
+			day = EXCLUDED.day,
+			event_count = CASE
+				WHEN convoy.trial_event_counters.day = EXCLUDED.day
+				THEN convoy.trial_event_counters.event_count + 1
+				ELSE 1
+			END,
+			updated_at = NOW()
+		WHERE convoy.trial_event_counters.day <> EXCLUDED.day
+		   OR convoy.trial_event_counters.event_count < $3
+		RETURNING event_count`,
+		orgID, day.UTC().Format("2006-01-02"), limit,
+	).Scan(&count)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return count <= limit, nil
+}
+
 // TrialEventLimiter resolves an org's daily event cap from its encrypted
-// license_data and enforces it with a per-org, per-UTC-day Redis counter. It is
+// license_data and enforces it with a per-org, per-UTC-day broker counter. It is
 // cloud-only; callers gate on config.UsesOrgBilling before invoking Allow.
 type TrialEventLimiter struct {
-	redis  redis.UniversalClient
-	logger log.Logger
+	counter trialEventCounter
+	logger  log.Logger
 
 	mu    sync.Mutex
 	cache map[string]cachedTrialLimit
 }
 
-// NewTrialEventLimiter builds a limiter over the given Redis client. A nil client
-// yields a limiter whose Allow is a no-op (no cap enforced).
+// NewTrialEventLimiter builds a limiter over Redis. A nil client yields a
+// limiter whose Allow is a no-op (no cap enforced).
 func NewTrialEventLimiter(r redis.UniversalClient, logger log.Logger) *TrialEventLimiter {
+	var counter trialEventCounter
+	if r != nil {
+		counter = &redisTrialEventCounter{client: r}
+	}
 	return &TrialEventLimiter{
-		redis:  r,
-		logger: logger,
-		cache:  make(map[string]cachedTrialLimit),
+		counter: counter,
+		logger:  logger,
+		cache:   make(map[string]cachedTrialLimit),
+	}
+}
+
+func NewPostgresTrialEventLimiter(db *sqlx.DB, logger log.Logger) *TrialEventLimiter {
+	var counter trialEventCounter
+	if db != nil {
+		counter = &postgresTrialEventCounter{db: db}
+	}
+	return &TrialEventLimiter{
+		counter: counter,
+		logger:  logger,
+		cache:   make(map[string]cachedTrialLimit),
 	}
 }
 
 // Allow returns ErrDailyEventLimit when the org's trial daily cap is reached, or
 // nil otherwise. Orgs with no cap (paid, self-hosted, unreadable license_data)
-// always pass. Fails open on a Redis error: a cost cap must not hard-block
+// always pass. Fails open on a counter error: a cost cap must not hard-block
 // ingestion during an outage.
 func (t *TrialEventLimiter) Allow(ctx context.Context, orgID, licenseData string) error {
-	if t == nil || t.redis == nil {
+	if t == nil || t.counter == nil {
 		return nil
 	}
 
@@ -88,15 +155,14 @@ func (t *TrialEventLimiter) Allow(ctx context.Context, orgID, licenseData string
 		return nil
 	}
 
-	key := trialDailyKey(orgID, time.Now().UTC())
-	res, err := trialEventCounterScript.Run(ctx, t.redis, []string{key}, limit, int64(trialCounterTTL.Seconds())).Int64()
+	allowed, err := t.counter.Increment(ctx, orgID, time.Now().UTC(), limit)
 	if err != nil {
 		if t.logger != nil {
-			t.logger.Warn("trial event limiter: redis error, allowing event (fail-open)", "error", err, "org_id", orgID)
+			t.logger.Warn("trial event limiter: counter error, allowing event (fail-open)", "error", err, "org_id", orgID)
 		}
 		return nil
 	}
-	if res == -1 {
+	if !allowed {
 		return ErrDailyEventLimit
 	}
 	return nil

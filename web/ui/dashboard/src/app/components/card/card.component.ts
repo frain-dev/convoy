@@ -19,9 +19,9 @@ export class CardComponent implements OnInit {
 
 	get classes(): string {
 		const colors = {
-			default: 'bg-white-100 border border-neutral-4',
+			default: 'bg-white-100 border border-new.border',
 			error: 'bg-error-a3 border border-error-6'
 		};
-		return `${colors[this.color]} ${this.hover === 'true' ? 'focus:shadow-default hover:shadow-default focus-visible:shadow-default hover:border-neutral-4 focus:border-neutral-4 focus-visible:border-neutral-4 outline-none transition-all duration-300' : ''} block`;
+		return `${colors[this.color]} ${this.hover === 'true' ? 'hover:bg-new.surface-subtle hover:border-new.border focus:border-new.border focus-visible:border-new.border outline-none transition-all duration-300' : ''} block`;
 	}
 }

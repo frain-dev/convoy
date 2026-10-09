@@ -28,7 +28,7 @@ type CreateEndpoint struct {
 	Description string `json:"description"`
 
 	// Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
-	// -- simple or advanced. If left unspecified, we default to false.
+	// -- simple or advanced. Only applies to outgoing projects, where it defaults to true when omitted. Incoming projects always use advanced signatures.
 	AdvancedSignatures *bool `json:"advanced_signatures"`
 
 	// Endpoint name.
@@ -44,6 +44,11 @@ type CreateEndpoint struct {
 	// Slack webhook URL is an alternative method to support email where endpoint developers
 	// can receive failure notifications on a slack channel.
 	SlackWebhookURL string `json:"slack_webhook_url"`
+
+	// Microsoft Teams webhook URL is an alternative method to support email where endpoint
+	// developers can receive failure notifications in a Teams channel. Use a Workflows
+	// (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
+	TeamsWebhookURL string `json:"teams_webhook_url"`
 
 	// Define endpoint http timeout in seconds.
 	HttpTimeout uint64 `json:"http_timeout" copier:"-"`
@@ -91,7 +96,7 @@ type UpdateEndpoint struct {
 	Description string `json:"description"`
 
 	// Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
-	// -- simple or advanced. If left unspecified, we default to false.
+	// -- simple or advanced. Only applies to outgoing projects; omit it to keep the current value. Incoming projects always use advanced signatures.
 	AdvancedSignatures *bool `json:"advanced_signatures"`
 
 	// Endpoint name.
@@ -108,6 +113,11 @@ type UpdateEndpoint struct {
 	// Slack webhook URL is an alternative method to support email where endpoint developers
 	// can receive failure notifications on a slack channel.
 	SlackWebhookURL *string `json:"slack_webhook_url"`
+
+	// Microsoft Teams webhook URL is an alternative method to support email where endpoint
+	// developers can receive failure notifications in a Teams channel. Use a Workflows
+	// (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
+	TeamsWebhookURL *string `json:"teams_webhook_url"`
 
 	// Define endpoint http timeout in seconds.
 	HttpTimeout uint64 `json:"http_timeout" copier:"-"`
@@ -355,4 +365,14 @@ type TestOAuth2Response struct {
 	ExpiresAt   time.Time `json:"expires_at,omitempty"`
 	Error       string    `json:"error,omitempty"`
 	Message     string    `json:"message,omitempty"`
+}
+
+// EndpointPeriodFailureRate is the display-only history rate for one endpoint.
+// Nil rate/counts mean no counted deliveries in the window (rendered as a dash).
+type EndpointPeriodFailureRate struct {
+	UID               string   `json:"uid"`
+	PeriodFailureRate *float64 `json:"period_failure_rate"`
+	SuccessCount      *int64   `json:"success_count"`
+	FailureCount      *int64   `json:"failure_count"`
+	RetryCount        *int64   `json:"retry_count"`
 }

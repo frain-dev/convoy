@@ -17,6 +17,7 @@ var templateDir embed.FS
 
 const (
 	templatePath = "templates/"
+	layoutPath   = "templates/_layout.html"
 	fileSuffix   = ".html"
 )
 
@@ -65,21 +66,30 @@ var templateFuncs = template.FuncMap{
 	"currentYear": func() int {
 		return time.Now().Year()
 	},
+
+	// Outlook ignores max-width, so the fluid shell needs a fixed-width ghost
+	// table to keep its 656px column. html/template strips comments out of
+	// template source, so the conditionals have to be emitted at render time.
+	"outlookShellOpen": func() template.HTML {
+		return `<!--[if mso]><table role="presentation" width="656" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td width="656"><![endif]-->`
+	},
+	"outlookShellClose": func() template.HTML {
+		return `<!--[if mso]></td></tr></table><![endif]-->`
+	},
 }
 
 // TODO(subomi): glob pattern must not match more than one template
 func (e *Email) Build(glob string, params interface{}) error {
 	pattern := e.buildGlob(glob)
+	base := path.Base(pattern)
 
-	// The root template must share the parsed file's base name so that
-	// Execute runs the parsed template.
-	templ, err := template.New(path.Base(pattern)).Funcs(templateFuncs).ParseFS(templateDir, pattern)
+	templ, err := template.New(base).Funcs(templateFuncs).ParseFS(templateDir, layoutPath, pattern)
 	if err != nil {
 		return fmt.Errorf("failed to parse template fs: %v", err)
 	}
 	e.templ = templ
 
-	err = e.templ.Execute(&e.body, params)
+	err = e.templ.ExecuteTemplate(&e.body, base, params)
 	if err != nil {
 		return fmt.Errorf("failed to execute template: %v", err)
 	}

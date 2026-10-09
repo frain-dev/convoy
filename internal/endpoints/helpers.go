@@ -44,6 +44,7 @@ type endpointFields struct {
 	Oauth2Config                        []byte
 	BasicAuthConfig                     []byte
 	ContentType                         string
+	TeamsWebhookUrl                     pgtype.Text
 }
 
 // ============================================================================
@@ -70,6 +71,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	case repo.FindEndpointsByIDsRow:
 		f = endpointFields{
@@ -84,6 +86,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	case repo.FindEndpointsByAppIDRow:
 		f = endpointFields{
@@ -98,6 +101,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	case repo.FindEndpointsByOwnerIDRow:
 		f = endpointFields{
@@ -112,6 +116,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	case repo.FindEndpointByTargetURLRow:
 		f = endpointFields{
@@ -126,6 +131,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	case repo.FetchEndpointsPagedForwardRow:
 		f = endpointFields{
@@ -140,6 +146,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	case repo.FetchEndpointsPagedBackwardRow:
 		f = endpointFields{
@@ -154,6 +161,7 @@ func rowToEndpoint(row any) (*datastore.Endpoint, error) {
 			AuthenticationTypeApiKeyHeaderValue: r.AuthenticationTypeApiKeyHeaderValue,
 			MtlsClientCert:                      r.MtlsClientCert, Oauth2Config: r.Oauth2Config,
 			BasicAuthConfig: r.BasicAuthConfig, ContentType: r.ContentType,
+			TeamsWebhookUrl: r.TeamsWebhookUrl,
 		}
 	default:
 		return nil, fmt.Errorf("unsupported row type: %T", row)
@@ -173,6 +181,7 @@ func fieldsToEndpoint(f endpointFields) (*datastore.Endpoint, error) {
 		Url:                f.Url,
 		Description:        common.PgTextToString(f.Description),
 		SlackWebhookURL:    common.PgTextToString(f.SlackWebhookUrl),
+		TeamsWebhookURL:    common.PgTextToString(f.TeamsWebhookUrl),
 		SupportEmail:       common.PgTextToString(f.SupportEmail),
 		AppID:              common.PgTextToString(f.AppID),
 		ProjectID:          f.ProjectID,

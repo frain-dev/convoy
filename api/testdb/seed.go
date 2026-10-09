@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -404,7 +405,8 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, ui
 	return ev, nil
 }
 
-// SeedEventDelivery creates a random event delivery for integration tests.
+// SeedEventDelivery creates an event delivery the same way the match worker
+// does: EventType is copied from the event. Do not leave it blank.
 func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
@@ -413,6 +415,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 	eventDelivery := &datastore.EventDelivery{
 		UID:            uid,
 		EventID:        event.UID,
+		EventType:      event.EventType,
 		EndpointID:     endpoint.UID,
 		Status:         status,
 		SubscriptionID: subcription.UID,
@@ -615,6 +618,17 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 }
 
 func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
+	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
+	ctx := context.TODO()
+
+	existing, err := configRepo.LoadConfiguration(ctx)
+	if err == nil {
+		return existing, nil
+	}
+	if !errors.Is(err, datastore.ErrConfigNotFound) {
+		return nil, err
+	}
+
 	c := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
@@ -623,10 +637,12 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		RetentionPolicy:    &datastore.DefaultRetentionPolicy,
 	}
 
-	// Seed Data
-	configRepo := configuration.New(log.New("convoy", log.LevelInfo), db)
-	err := configRepo.CreateConfiguration(context.TODO(), c)
+	err = configRepo.CreateConfiguration(ctx, c)
 	if err != nil {
+		var se *util.ServiceError
+		if errors.As(err, &se) && se.ErrCode() == http.StatusConflict {
+			return configRepo.LoadConfiguration(ctx)
+		}
 		return nil, err
 	}
 

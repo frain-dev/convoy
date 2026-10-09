@@ -158,71 +158,6 @@ func (q *Queries) CountExportedEventDeliveries(ctx context.Context, arg CountExp
 	return count, err
 }
 
-const countPrevEventDeliveries = `-- name: CountPrevEventDeliveries :one
-SELECT COALESCE(COUNT(*), 0) AS count
-FROM convoy.event_deliveries ed
-WHERE ed.deleted_at IS NULL
-  AND (ed.project_id = $1 OR $1 = '')
-  AND (ed.event_id = $2 OR $2 = '')
-  AND (ed.event_type = $3 OR $3 = '')
-  AND ed.created_at >= $4
-  AND ed.created_at <= $5
-  AND (CASE WHEN $6::BOOLEAN THEN ed.endpoint_id = ANY($7::TEXT[]) ELSE true END)
-  AND (CASE WHEN $8::BOOLEAN THEN ed.status = ANY($9::TEXT[]) ELSE true END)
-  AND (CASE WHEN $10::BOOLEAN THEN ed.subscription_id = $11 ELSE true END)
-  AND (CASE WHEN $12::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $13 ELSE true END)
-  AND (CASE WHEN $14::BOOLEAN THEN ed.idempotency_key = $15 ELSE true END)
-  AND (CASE
-           WHEN $16::text = 'DESC' THEN ed.id > $17
-           WHEN $16::text = 'ASC' THEN ed.id < $17
-           ELSE ed.id > $17 END)
-`
-
-type CountPrevEventDeliveriesParams struct {
-	ProjectID          pgtype.Text
-	EventID            pgtype.Text
-	EventType          pgtype.Text
-	StartDate          pgtype.Timestamptz
-	EndDate            pgtype.Timestamptz
-	HasEndpointIds     pgtype.Bool
-	EndpointIds        []string
-	HasStatus          pgtype.Bool
-	Statuses           []string
-	HasSubscriptionID  pgtype.Bool
-	SubscriptionID     pgtype.Text
-	HasBrokerMessageID pgtype.Bool
-	BrokerMessageID    pgtype.Text
-	HasIdempotencyKey  pgtype.Bool
-	IdempotencyKey     pgtype.Text
-	SortOrder          pgtype.Text
-	Cursor             pgtype.Text
-}
-
-func (q *Queries) CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, countPrevEventDeliveries,
-		arg.ProjectID,
-		arg.EventID,
-		arg.EventType,
-		arg.StartDate,
-		arg.EndDate,
-		arg.HasEndpointIds,
-		arg.EndpointIds,
-		arg.HasStatus,
-		arg.Statuses,
-		arg.HasSubscriptionID,
-		arg.SubscriptionID,
-		arg.HasBrokerMessageID,
-		arg.BrokerMessageID,
-		arg.HasIdempotencyKey,
-		arg.IdempotencyKey,
-		arg.SortOrder,
-		arg.Cursor,
-	)
-	var count pgtype.Int8
-	err := row.Scan(&count)
-	return count, err
-}
-
 const exportEventDeliveries = `-- name: ExportEventDeliveries :many
 
 SELECT ed.id,
@@ -604,7 +539,7 @@ SELECT
     COALESCE(s.name, '') AS "source_metadata.name"
 FROM convoy.event_deliveries ed
 LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
 LEFT JOIN convoy.devices d ON ed.device_id = d.id
 LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ed.deleted_at IS NULL
@@ -816,114 +751,53 @@ func (q *Queries) FindStuckEventDeliveriesByStatus(ctx context.Context, status p
 	return items, nil
 }
 
-const loadEventDeliveriesPaged = `-- name: LoadEventDeliveriesPaged :many
+const hydrateEventDeliveriesPage = `-- name: HydrateEventDeliveriesPage :many
 
-WITH filtered_deliveries AS (
-    SELECT
-        ed.id, ed.project_id, ed.event_id, ed.subscription_id,
-        ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
-        COALESCE(ed.target_url, '') AS target_url,
-        COALESCE(ed.url_query_params, '') AS url_query_params,
-        COALESCE(ed.idempotency_key, '') AS idempotency_key,
-        ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
-        COALESCE(ed.event_type, '') AS event_type,
-        COALESCE(ed.device_id, '') AS device_id,
-        COALESCE(ed.endpoint_id, '') AS endpoint_id,
-        COALESCE(ed.delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
-        COALESCE(ed.latency_seconds, 0) AS latency_seconds,
-        COALESCE(ep.id, '') AS "endpoint_metadata.id",
-        COALESCE(ep.name, '') AS "endpoint_metadata.name",
-        COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
-        COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
-        COALESCE(ep.url, '') AS "endpoint_metadata.url",
-        COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
-        COALESCE(ep.status, '') AS "endpoint_metadata.status",
-        ep.deleted_at AS "endpoint_metadata.deleted_at",
-        ev.id AS "event_metadata.id",
-        ev.event_type AS "event_metadata.event_type",
-        ev.created_at AS "event_metadata.created_at",
-        COALESCE(d.id, '') AS "device_metadata.id",
-        COALESCE(d.status, '') AS "device_metadata.status",
-        COALESCE(d.host_name, '') AS "device_metadata.host_name",
-        COALESCE(s.id, '') AS "source_metadata.id",
-        COALESCE(s.name, '') AS "source_metadata.name",
-        COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
-    FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
-    LEFT JOIN convoy.devices d ON ed.device_id = d.id
-    LEFT JOIN convoy.sources s ON s.id = ev.source_id
-    WHERE ed.deleted_at IS NULL
-      AND (ed.project_id = $2 OR $2 = '')
-      AND (ed.event_id = $3 OR $3 = '')
-      AND (ed.event_type = $4 OR $4 = '')
-      AND ed.created_at >= $5
-      AND ed.created_at <= $6
-      -- Endpoint filter
-      AND (CASE WHEN $7::BOOLEAN THEN ed.endpoint_id = ANY($8::TEXT[]) ELSE true END)
-      -- Status filter
-      AND (CASE WHEN $9::BOOLEAN THEN ed.status = ANY($10::TEXT[]) ELSE true END)
-      -- Subscription filter
-      AND (CASE WHEN $11::BOOLEAN THEN ed.subscription_id = $12 ELSE true END)
-      -- Broker message ID filter
-      -- TODO(perf): consider GIN index on metadata->>'broker_message_id' (cross-cutting concern across 9+ files)
-      AND (CASE WHEN $13::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = $14 ELSE true END)
-      -- Idempotency key filter
-      AND (CASE WHEN $15::BOOLEAN THEN ed.idempotency_key = $16 ELSE true END)
-      -- Cursor pagination
-      AND (
-        CASE
-            WHEN $17 = '' THEN true
-            WHEN ($1::text = 'DESC' AND $18::text = 'next') OR ($1::text = 'ASC' AND $18::text = 'prev') THEN ed.id <= $17
-            WHEN ($1::text = 'ASC' AND $18::text = 'next') OR ($1::text = 'DESC' AND $18::text = 'prev') THEN ed.id >= $17
-            ELSE true
-        END
-      )
-    ORDER BY
-        CASE WHEN ($1::text = 'DESC' AND $18::text = 'next') OR ($1::text = 'ASC' AND $18::text = 'prev') THEN ed.id END DESC,
-        CASE WHEN ($1::text = 'ASC' AND $18::text = 'next') OR ($1::text = 'DESC' AND $18::text = 'prev') THEN ed.id END ASC
-    LIMIT $19
-)
-SELECT id, project_id, event_id, subscription_id,
-       headers, attempts, status, metadata, cli_metadata,
-       target_url, url_query_params, idempotency_key, description,
-       created_at, updated_at, acknowledged_at,
-       event_type, device_id, endpoint_id, delivery_mode, latency_seconds,
-       "endpoint_metadata.id", "endpoint_metadata.name", "endpoint_metadata.project_id",
-       "endpoint_metadata.support_email", "endpoint_metadata.url", "endpoint_metadata.owner_id",
-       "endpoint_metadata.status", "endpoint_metadata.deleted_at",
-       "event_metadata.id", "event_metadata.event_type", "event_metadata.created_at",
-       "device_metadata.id", "device_metadata.status", "device_metadata.host_name",
-       "source_metadata.id", "source_metadata.name", "source_metadata.idempotency_keys"
-FROM filtered_deliveries
-ORDER BY
-    CASE WHEN $1::text = 'DESC' THEN id END DESC,
-    CASE WHEN $1::text = 'ASC' THEN id END ASC
+SELECT
+    ed.id, ed.project_id, ed.event_id, ed.subscription_id,
+    ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
+    COALESCE(ed.target_url, '') AS target_url,
+    COALESCE(ed.url_query_params, '') AS url_query_params,
+    COALESCE(ed.idempotency_key, '') AS idempotency_key,
+    ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
+    COALESCE(ed.event_type, '') AS event_type,
+    COALESCE(ed.device_id, '') AS device_id,
+    COALESCE(ed.endpoint_id, '') AS endpoint_id,
+    COALESCE(ed.delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
+    COALESCE(ed.latency_seconds, 0) AS latency_seconds,
+    COALESCE(ep.id, '') AS "endpoint_metadata.id",
+    COALESCE(ep.name, '') AS "endpoint_metadata.name",
+    COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
+    COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
+    COALESCE(ep.url, '') AS "endpoint_metadata.url",
+    COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
+    COALESCE(ep.status, '') AS "endpoint_metadata.status",
+    ep.deleted_at AS "endpoint_metadata.deleted_at",
+    ev.id AS "event_metadata.id",
+    ev.event_type AS "event_metadata.event_type",
+    ev.created_at AS "event_metadata.created_at",
+    COALESCE(d.id, '') AS "device_metadata.id",
+    COALESCE(d.status, '') AS "device_metadata.status",
+    COALESCE(d.host_name, '') AS "device_metadata.host_name",
+    COALESCE(s.id, '') AS "source_metadata.id",
+    COALESCE(s.name, '') AS "source_metadata.name",
+    COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
+FROM convoy.event_deliveries ed
+LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
+LEFT JOIN convoy.devices d ON ed.device_id = d.id
+LEFT JOIN convoy.sources s ON s.id = ev.source_id
+WHERE ed.project_id = $1
+  AND ed.id = ANY($2::TEXT[])
+  AND ed.deleted_at IS NULL
 `
 
-type LoadEventDeliveriesPagedParams struct {
-	SortOrder          pgtype.Text
-	ProjectID          pgtype.Text
-	EventID            pgtype.Text
-	EventType          pgtype.Text
-	StartDate          pgtype.Timestamptz
-	EndDate            pgtype.Timestamptz
-	HasEndpointIds     pgtype.Bool
-	EndpointIds        []string
-	HasStatus          pgtype.Bool
-	Statuses           []string
-	HasSubscriptionID  pgtype.Bool
-	SubscriptionID     pgtype.Text
-	HasBrokerMessageID pgtype.Bool
-	BrokerMessageID    pgtype.Text
-	HasIdempotencyKey  pgtype.Bool
-	IdempotencyKey     pgtype.Text
-	Cursor             pgtype.Text
-	Direction          pgtype.Text
-	PageLimit          pgtype.Int8
+type HydrateEventDeliveriesPageParams struct {
+	ProjectID pgtype.Text
+	Ids       []string
 }
 
-type LoadEventDeliveriesPagedRow struct {
+type HydrateEventDeliveriesPageRow struct {
 	ID                            string
 	ProjectID                     string
 	EventID                       string
@@ -967,37 +841,20 @@ type LoadEventDeliveriesPagedRow struct {
 // ============================================================================
 // Group 4: Pagination
 // ============================================================================
-// TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
-// Consider a "slim" paginated query variant that omits heavy columns for list views.
-func (q *Queries) LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDeliveriesPagedParams) ([]LoadEventDeliveriesPagedRow, error) {
-	rows, err := q.db.Query(ctx, loadEventDeliveriesPaged,
-		arg.SortOrder,
-		arg.ProjectID,
-		arg.EventID,
-		arg.EventType,
-		arg.StartDate,
-		arg.EndDate,
-		arg.HasEndpointIds,
-		arg.EndpointIds,
-		arg.HasStatus,
-		arg.Statuses,
-		arg.HasSubscriptionID,
-		arg.SubscriptionID,
-		arg.HasBrokerMessageID,
-		arg.BrokerMessageID,
-		arg.HasIdempotencyKey,
-		arg.IdempotencyKey,
-		arg.Cursor,
-		arg.Direction,
-		arg.PageLimit,
-	)
+// Hydrate a page of delivery ids. The id scan lives in Go (listFilter) so
+// status, cursor, and other optional filters are real predicates, not CASE
+// wrappers. Generic plans of the old InnerDesc/InnerAsc queries timed out on
+// rare-status page 2 because those CASE clauses kept status and the keyset
+// out of index cond. ORDER BY here is only the ~page of already-chosen ids.
+func (q *Queries) HydrateEventDeliveriesPage(ctx context.Context, arg HydrateEventDeliveriesPageParams) ([]HydrateEventDeliveriesPageRow, error) {
+	rows, err := q.db.Query(ctx, hydrateEventDeliveriesPage, arg.ProjectID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []LoadEventDeliveriesPagedRow
+	var items []HydrateEventDeliveriesPageRow
 	for rows.Next() {
-		var i LoadEventDeliveriesPagedRow
+		var i HydrateEventDeliveriesPageRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,
@@ -1301,9 +1158,17 @@ func (q *Queries) LoadEventDeliveryIntervalsYearly(ctx context.Context, arg Load
 }
 
 const updateEventDeliveryMetadata = `-- name: UpdateEventDeliveryMetadata :exec
-UPDATE convoy.event_deliveries
-SET status = $1, metadata = $2, latency_seconds = $3, description = $4, updated_at = NOW()
-WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL
+WITH updated AS (
+    UPDATE convoy.event_deliveries
+    SET status = $1, metadata = $2, latency_seconds = $3, description = $4, updated_at = NOW()
+    WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL
+    RETURNING created_at
+)
+INSERT INTO convoy.event_delivery_daily_counts_stale (day)
+SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date
+FROM updated
+WHERE created_at < DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+ON CONFLICT (day) DO NOTHING
 `
 
 type UpdateEventDeliveryMetadataParams struct {
@@ -1315,6 +1180,15 @@ type UpdateEventDeliveryMetadataParams struct {
 	ProjectID      pgtype.Text
 }
 
+// Records the delivery's day as stale for the per-status rollup unless the row
+// was created today, which the refresh window covers no matter when the next
+// run lands. Yesterday does not qualify: a run a second after midnight covers
+// today and yesterday as they are then, which no longer includes the day this
+// update touched. Those markers cost an idempotent insert and are cleared by
+// the window refresh itself, so they never reach the drain.
+//
+// Same statement as the status write, so a status change cannot land without
+// the rollup learning that the day moved.
 func (q *Queries) UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEventDeliveryMetadataParams) error {
 	_, err := q.db.Exec(ctx, updateEventDeliveryMetadata,
 		arg.Status,
@@ -1328,11 +1202,19 @@ func (q *Queries) UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEve
 }
 
 const updateStatusOfEventDeliveries = `-- name: UpdateStatusOfEventDeliveries :exec
-UPDATE convoy.event_deliveries
-SET status = $1, description = $2, updated_at = NOW()
-WHERE (project_id = $3 OR $3 = '')
-  AND id = ANY($4::TEXT[])
-  AND deleted_at IS NULL
+WITH updated AS (
+    UPDATE convoy.event_deliveries
+    SET status = $1, description = $2, updated_at = NOW()
+    WHERE (project_id = $3 OR $3 = '')
+      AND id = ANY($4::TEXT[])
+      AND deleted_at IS NULL
+    RETURNING created_at
+)
+INSERT INTO convoy.event_delivery_daily_counts_stale (day)
+SELECT DISTINCT (created_at AT TIME ZONE 'UTC')::date
+FROM updated
+WHERE created_at < DATE_TRUNC('day', NOW() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
+ON CONFLICT (day) DO NOTHING
 `
 
 type UpdateStatusOfEventDeliveriesParams struct {
@@ -1342,6 +1224,9 @@ type UpdateStatusOfEventDeliveriesParams struct {
 	Ids         []string
 }
 
+// Marks stale days the same way as UpdateEventDeliveryMetadata. This is the
+// path force resend and batch retry take, which is how a day long past the
+// refresh window gets its statuses rewritten in bulk.
 func (q *Queries) UpdateStatusOfEventDeliveries(ctx context.Context, arg UpdateStatusOfEventDeliveriesParams) error {
 	_, err := q.db.Exec(ctx, updateStatusOfEventDeliveries,
 		arg.Status,

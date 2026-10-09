@@ -56,11 +56,10 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
-	eventTypeTableHead: string[] = ['Event Type', 'Category', 'Description', ''];
+	eventTypeTableHead: string[] = ['Event Type', 'Status', 'Category', 'Description', ''];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
-			search_policy: [720],
 			strategy: this.formBuilder.group({
 				duration: [null],
 				retry_count: [null],
@@ -80,7 +79,8 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			disable_endpoint: [false, Validators.required],
 			multiple_endpoint_subscriptions: [false, Validators.required],
-			sync_dynamic_event_ack: [false, Validators.required],
+			verify_dynamic_events: [false, Validators.required],
+			allow_unmatched_dynamic_urls: [false, Validators.required],
 			meta_event: this.formBuilder.group({
 				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
@@ -118,7 +118,6 @@ export class CreateProjectComponent implements OnInit {
 	configurations = [
 		{ uid: 'strategy', name: 'Retry Config', show: false, deleted: false },
 		{ uid: 'ratelimit', name: 'Rate Limit', show: false, deleted: false },
-		{ uid: 'search_policy', name: 'Search Policy', show: false, deleted: false },
 		{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
 		{ uid: 'request_id_header', name: 'Request ID Header', show: false, deleted: false },
 	];
@@ -297,9 +296,8 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
-			this.projectForm.get('config.search_policy')?.patchValue(this.getHours(this.projectDetails.config.search_policy));
-
-			this.projectForm.get('config.sync_dynamic_event_ack')?.patchValue(!!this.projectDetails.config?.sync_dynamic_event_ack);
+			this.projectForm.get('config.verify_dynamic_events')?.patchValue(!!this.projectDetails.config?.verify_dynamic_events);
+			this.projectForm.get('config.allow_unmatched_dynamic_urls')?.patchValue(!!this.projectDetails.config?.allow_unmatched_dynamic_urls);
 
 			// set meta events config
 			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
@@ -396,7 +394,6 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof payload.config.strategy?.duration === 'string') payload.config.strategy.duration = this.getTimeValue(payload.config.strategy.duration);
 		if (typeof payload.config.strategy?.retry_count === 'string') payload.config.strategy.retry_count = parseInt(payload.config.strategy.retry_count);
 		if (typeof payload.config.ratelimit?.count === 'string') payload.config.ratelimit.count = parseInt(payload.config.ratelimit.count);
-		if (typeof payload.config.search_policy === 'number') payload.config.search_policy = `${payload.config.search_policy}h`;
 
 		if (!this.showConfig('ratelimit') && this.configDeleted('ratelimit')) {
 			payload.config.ratelimit = { count: 0, duration: 0 };
@@ -450,7 +447,6 @@ export class CreateProjectComponent implements OnInit {
 					delete projectData.config[configKey];
 				}
 			}
-			if (this.showConfig('search_policy') && typeof projectData.config.search_policy === 'number') projectData.config.search_policy = `${projectData.config.search_policy}h`;
 		});
 
 		if (!this.isCustomRequestIdHeader(projectData.config?.request_id_header)) {
@@ -475,11 +471,6 @@ export class CreateProjectComponent implements OnInit {
 			// so ensure it's set when meta events are enabled (load can null it out).
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 		}
-	}
-
-	getHours(hours: any) {
-		const [digits, _] = hours.match(/\D+|\d+/g);
-		return parseInt(digits);
 	}
 
 	getTimeString(timeValue: number) {

@@ -7,11 +7,9 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/hibiken/asynq"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
@@ -20,7 +18,6 @@ import (
 	pyro "github.com/grafana/pyroscope-go"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	dbhook "github.com/frain-dev/convoy/database/hooks"
@@ -31,20 +28,16 @@ import (
 	"github.com/frain-dev/convoy/internal/delivery_attempts"
 	"github.com/frain-dev/convoy/internal/meta_events"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/broker"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/license/service"
 	licenseusage "github.com/frain-dev/convoy/internal/pkg/license/usage"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/projects"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/internal/users"
 	log "github.com/frain-dev/convoy/pkg/logger"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -84,6 +77,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		if err := applyExplicitRetentionArchivingFlags(cmd); err != nil {
+			return err
+		}
+
 		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
@@ -116,36 +113,18 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		var ca cache.Cache
-		var q queue.Queuer
-
-		redis, err := rdb.NewClientFromRedisConfig(cfg.Redis)
-		if err != nil {
-			return errors.New("failed to connect to redis with err: " + err.Error())
-		}
-
-		opts, err := getQueueOptions(&cfg, redis)
+		brokerDeps, err := broker.New(cfg, db.GetDB(), lo)
 		if err != nil {
 			return err
 		}
+		q := brokerDeps.Queue
+		ca := brokerDeps.Cache
 
 		if cfg.Pyroscope.EnableProfiling {
 			err = enableProfiling(cfg, cmd)
 			if err != nil {
 				return err
 			}
-		}
-
-		q = redisQueue.NewQueue(opts)
-
-		ca, err = cache.NewCache(cfg.Redis)
-		if err != nil {
-			return errors.New("failed to create cache with err: " + err.Error())
-		}
-
-		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
-		if err != nil {
-			return errors.New("failed to ping redis with err: " + err.Error())
 		}
 
 		hooks := dbhook.Init()
@@ -172,11 +151,19 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
-		app.Redis = redis.Client()
+		// Postgres cache writes convoy.kv_cache. Ping after the migration
+		// check so a missing table is pending-migrations, not a cache failure.
+		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
+		if err != nil {
+			return errors.New("failed to ping cache with err: " + err.Error())
+		}
+
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
 		app.Cache = ca
+		app.Rate = brokerDeps.RateLimiter
+		app.Broker = brokerDeps
 
 		if ok := shouldBootstrap(cmd); ok {
 			err = ensureDefaultUser(context.Background(), app)
@@ -184,32 +171,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
-			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
-			if err != nil {
+			if _, err := ensureInstanceConfig(context.Background(), app, cfg); err != nil {
 				return err
 			}
 
 			if err := applyInstanceLicenseConfig(context.Background(), app, &cfg); err != nil {
 				return err
 			}
-
-			t := telemetry.NewTelemetry(lo, dbCfg,
-				telemetry.OptionBackend(telemetry.NewposthogBackend()),
-				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
-
-			err = t.Identify(cmd.Context(), dbCfg.UID)
-			if err != nil {
-				// do nothing?
-				return err
-			}
 		}
-
-		rateLimiter, err := limiter.NewLimiter(cfg)
-		if err != nil {
-			return err
-		}
-
-		app.Rate = rateLimiter
 
 		// Load the instance configuration UID before building the license client
 		// so validation requests can include the deployment_id. If configuration
@@ -238,7 +207,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 		// Licensed instances only: attach cached anonymized usage on validate.
 		if !util.IsStringEmpty(cfg.LicenseKey) {
-			licenseClientCfg.UsageLoader = licenseusage.NewStore(app.DB, redis)
+			licenseClientCfg.UsageLoader = licenseusage.NewStore(app.DB, app.Cache)
 		}
 		licenseClient := service.NewClient(licenseClientCfg)
 
@@ -262,6 +231,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		if err := broker.AllowPostgresQueue(cfg, app.Licenser); err != nil {
+			return err
+		}
+
 		lo.Debugf("Read replicas: %d", db.ReplicaSize())
 		if db.ReplicaSize() > 0 && !app.Licenser.ReadReplica() {
 			lo.Error("your instance does not have access to use read replicas, upgrade to access this feature")
@@ -271,11 +244,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.TracerBackend, err = tracer.Init(cfg.Tracer, cmd.Name(), app.Licenser)
 		if err != nil {
 			return err
-		}
-		// todo(raymond): I don't think the check below needs to exist since we perform the check in the tracer.Init() above.
-		if cfg.Tracer.Type == config.DatadogTracerProvider && !app.Licenser.DatadogTracing() {
-			lo.Error("your instance does not have access to datadog tracing, upgrade to access this feature")
-			_ = app.TracerBackend.Shutdown(context.Background())
 		}
 
 		return nil
@@ -446,8 +414,12 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	}
 
 	retentionPolicy := &datastore.RetentionPolicyConfiguration{
-		Policy:                   cfg.RetentionPolicy.Policy,
-		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
+		Period:       cfg.Retention.Period,
+		Enabled:      cfg.Retention.Enabled,
+		EnabledKnown: true,
+	}
+	webhookArchiving := &datastore.WebhookArchivingConfiguration{
+		Enabled: cfg.WebhookArchiving.Enabled,
 	}
 
 	configuration, err := configRepo.LoadConfiguration(ctx)
@@ -457,26 +429,120 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 			c := &datastore.Configuration{
 				UID:                ulid.Make().String(),
 				StoragePolicy:      storagePolicy,
-				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
+				IsAnalyticsEnabled: true,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				AdminManagedKnown:  true,
 				RetentionPolicy:    retentionPolicy,
+				WebhookArchiving:   webhookArchiving,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
 			}
 
-			return c, configRepo.CreateConfiguration(ctx, c)
+			if createErr := configRepo.CreateConfiguration(ctx, c); createErr != nil {
+				// Concurrent boot: peer won the live-row unique index. Use that row.
+				if loaded, loadErr := configRepo.LoadConfiguration(ctx); loadErr == nil {
+					return loaded, nil
+				}
+				return nil, createErr
+			}
+			return c, nil
 		}
 
 		return configuration, err
 	}
 
+	if !configuration.AdminManagedKnown {
+		err = completeAdminManagedMigration(ctx, cfg, configuration, configRepo)
+		if err != nil {
+			return configuration, err
+		}
+	}
+
+	if configuration.AdminManaged {
+		return configuration, nil
+	}
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
-	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.RetentionPolicy = retentionPolicy
+	configuration.WebhookArchiving = webhookArchiving
 	configuration.UpdatedAt = time.Now()
-
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
+}
+
+type adminManagedConfigurationStore interface {
+	CompleteAdminManagedMigration(context.Context, string, bool) (bool, bool, error)
+}
+
+// completeAdminManagedMigration marks a legacy NULL ownership column as known
+// env-owned (false). Admin Managed is opt-in; upgrades must not flip it on.
+func completeAdminManagedMigration(
+	ctx context.Context,
+	cfg config.Configuration,
+	configuration *datastore.Configuration,
+	configStore adminManagedConfigurationStore,
+) error {
+	if configuration.RetentionPolicy == nil {
+		return errors.New("complete admin-managed migration: missing retention policy")
+	}
+	adminManaged, retentionEnabled, err := configStore.CompleteAdminManagedMigration(
+		ctx,
+		configuration.UID,
+		cfg.Retention.Enabled,
+	)
+	if err != nil {
+		return err
+	}
+
+	configuration.AdminManaged = adminManaged
+	configuration.AdminManagedKnown = true
+	configuration.RetentionPolicy.Enabled = retentionEnabled
+	configuration.RetentionPolicy.EnabledKnown = true
+	configuration.UpdatedAt = time.Now()
+	return nil
+}
+
+// applyExplicitRetentionArchivingFlags force-applies Retention.Enabled and
+// WebhookArchiving.Enabled when the operator set the CLI flags. config.Override
+// skips false bools (reflect zero), so --retention-enabled=false would otherwise
+// leave the default true and keep the 01:00 partition-drop cron registered.
+func applyExplicitRetentionArchivingFlags(cmd *cobra.Command) error {
+	var retentionEnabled *bool
+	if cmd.Flags().Changed("retention-enabled") {
+		v, err := cmd.Flags().GetBool("retention-enabled")
+		if err != nil {
+			return err
+		}
+		retentionEnabled = &v
+	}
+
+	var webhookArchivingEnabled *bool
+	switch {
+	case cmd.Flags().Changed("webhook-archiving-enabled"):
+		v, err := cmd.Flags().GetBool("webhook-archiving-enabled")
+		if err != nil {
+			return err
+		}
+		webhookArchivingEnabled = &v
+	case cmd.Flags().Changed("retention-policy-enabled"):
+		v, err := cmd.Flags().GetBool("retention-policy-enabled")
+		if err != nil {
+			return err
+		}
+		webhookArchivingEnabled = &v
+	}
+
+	if retentionEnabled == nil && webhookArchivingEnabled == nil {
+		return nil
+	}
+
+	return config.ForceBools(func(c *config.Configuration) {
+		if retentionEnabled != nil {
+			c.Retention.Enabled = *retentionEnabled
+		}
+		if webhookArchivingEnabled != nil {
+			c.WebhookArchiving.Enabled = *webhookArchivingEnabled
+		}
+	})
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
@@ -673,25 +739,43 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Addresses:  redisAddresses,
 	}
 
-	// CONVOY_RETENTION_POLICY
-	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
+	// CONVOY_RETENTION_PERIOD (legacy: --retention-policy / CONVOY_RETENTION_POLICY)
+	retentionPeriod, err := cmd.Flags().GetString("retention-period")
 	if err != nil {
 		return nil, err
 	}
-
-	if !util.IsStringEmpty(retentionPolicy) {
-		c.RetentionPolicy.Policy = retentionPolicy
+	if util.IsStringEmpty(retentionPeriod) {
+		retentionPeriod, err = cmd.Flags().GetString("retention-policy")
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !util.IsStringEmpty(retentionPeriod) {
+		c.Retention.Period = retentionPeriod
 	}
 
-	// CONVOY_RETENTION_POLICY_ENABLED
-	isRetentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
-	if isRetentionPolicyEnabledSet {
+	// CONVOY_RETENTION_ENABLED
+	if cmd.Flags().Changed("retention-enabled") {
+		retentionEnabled, err := cmd.Flags().GetBool("retention-enabled")
+		if err != nil {
+			return nil, err
+		}
+		c.Retention.Enabled = retentionEnabled
+	}
+
+	// CONVOY_WEBHOOK_ARCHIVING_ENABLED (legacy: --retention-policy-enabled)
+	if cmd.Flags().Changed("webhook-archiving-enabled") {
+		webhookArchivingEnabled, err := cmd.Flags().GetBool("webhook-archiving-enabled")
+		if err != nil {
+			return nil, err
+		}
+		c.WebhookArchiving.Enabled = webhookArchivingEnabled
+	} else if cmd.Flags().Changed("retention-policy-enabled") {
 		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
 		if err != nil {
 			return nil, err
 		}
-
-		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
+		c.WebhookArchiving.Enabled = retentionPolicyEnabled
 	}
 
 	// CONVOY_DISPATCHER_BLOCK_LIST
@@ -848,8 +932,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		} else {
 			slog.Warn("metrics backend not specified")
 		}
-	} else {
-		slog.Info(fflag2.ErrPrometheusMetricsNotEnabled.Error())
 	}
 
 	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
@@ -1074,39 +1156,4 @@ func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) 
 	}
 
 	return nil
-}
-func getQueueOptions(cfg *config.Configuration, redis *rdb.Redis) (queue.QueueOptions, error) {
-	queueNames := map[string]int{
-		string(convoy.EventQueue):         5,
-		string(convoy.CreateEventQueue):   2,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-	}
-
-	opts := queue.QueueOptions{
-		Names:             queueNames,
-		RedisClient:       redis,
-		RedisAddress:      cfg.Redis.BuildDsn(),
-		Type:              string(config.RedisQueueProvider),
-		PrometheusAddress: cfg.Prometheus.Dsn,
-	}
-
-	if cfg.Redis.IsSentinel() {
-		db, err := strconv.Atoi(cfg.Redis.Database)
-		if err != nil {
-			return opts, err
-		}
-		opts.RedisFailoverOpt = &asynq.RedisFailoverClientOpt{
-			MasterName:       cfg.Redis.MasterName,
-			SentinelAddrs:    cfg.Redis.SentinelAddresses(),
-			Username:         cfg.Redis.Username,
-			Password:         cfg.Redis.Password,
-			SentinelPassword: cfg.Redis.SentinelPassword,
-			DB:               db,
-		}
-	}
-
-	return opts, nil
 }

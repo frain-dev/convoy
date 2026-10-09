@@ -1,13 +1,13 @@
-<div class="flex justify-between items-center mb-28px">
-  <div>
-    <h3 class="font-semibold">Resend Events</h3>
-    <p class="text-12 text-neutral-10">Retry event deliveries with a particular status within a specified time frame across all projects. This will requeue matching event deliveries for processing.</p>
-  </div>
+<div class="flex flex-col gap-4px mb-16px">
+  <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Resend events</h3>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Retry event deliveries with a particular status within a specified time frame across all projects. This will requeue matching event deliveries for processing.</p>
 </div>
+
+<div class="h-[1px] w-full bg-new.border mb-20px"></div>
 
 <!-- Resend Events Form -->
 <div class="mb-24px">
-  <div convoy-card class="p-24px">
+  <div class="bg-white-100 border border-new.border rounded-12px p-20px">
 
     <form [formGroup]="resendForm" (ngSubmit)="retryEventDeliveries()">
       <div class="grid grid-cols-2 gap-24px">
@@ -20,7 +20,7 @@
             placeholder="Select status"
             [searchable]="false"
           ></convoy-select>
-          <small class="text-10 text-neutral-9">Status of event deliveries to requeue</small>
+          <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Status of event deliveries to requeue</small>
           @if (resendForm.get('status')?.touched && resendForm.get('status')?.invalid) {
             <convoy-input-error>
               Status is required
@@ -38,7 +38,7 @@
                 [multiple]="true"
                 [searchable]="false"
               ></convoy-select>
-              <small class="text-10 text-neutral-9">Select one or more statuses to retry</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Select one or more statuses to retry</small>
               @if (resendForm.get('multipleStatuses')?.touched && resendForm.get('multipleStatuses')?.invalid) {
                 <convoy-input-error>
                   At least one status is required
@@ -57,7 +57,7 @@
             placeholder="Select time interval"
             [searchable]="false"
           ></convoy-select>
-          <small class="text-10 text-neutral-9">Lookback duration for event deliveries</small>
+          <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Lookback duration for event deliveries</small>
           @if (resendForm.get('time')?.touched && resendForm.get('time')?.invalid) {
             <convoy-input-error>
               Time interval is required
@@ -74,7 +74,7 @@
                 formControlName="customTime"
                 placeholder="e.g., 30m, 1h, 2h30m"
                 />
-              <small class="text-10 text-neutral-9">Enter duration in Go format (e.g., 30m, 1h, 2h30m)</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Enter duration in Go format (e.g., 30m, 1h, 2h30m)</small>
               @if (resendForm.get('customTime')?.touched && resendForm.get('customTime')?.invalid) {
                 <convoy-input-error>
                   @if (resendForm.get('customTime')?.errors?.['required']) {
@@ -98,24 +98,24 @@
             formControlName="event_id"
             placeholder="Leave empty to retry all matching events"
             />
-          <small class="text-10 text-neutral-9">Optional: Specify an event ID to retry only deliveries for that event</small>
+          <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Optional: Specify an event ID to retry only deliveries for that event</small>
         </convoy-input-field>
       </div>
 
       <!-- Event Count Display -->
       @if (eventCount !== null || isLoadingCount) {
-        <div class="mt-24px p-16px bg-neutral-a2 rounded-8px">
+        <div class="mt-24px p-16px bg-new.surface-subtle border border-new.border rounded-8px">
           <div class="flex items-center gap-12px">
             @if (isLoadingCount) {
               <convoy-loader class="w-16px h-16px"></convoy-loader>
             }
             @if (!isLoadingCount && eventCount !== null) {
-              <span class="text-14 font-medium text-neutral-10">
-                <span class="font-semibold text-new.primary-400">{{ eventCount | number }}</span> event {{ eventCount === 1 ? 'delivery' : 'deliveries' }} found with status <span class="font-semibold">{{ getStatusDisplayText() }}</span> in the selected time period
+              <span class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">
+                <span class="font-medium text-new.primary-400">{{ eventCount | number }}</span> event {{ eventCount === 1 ? 'delivery' : 'deliveries' }} found with status <span class="font-medium text-new.text-primary">{{ getStatusDisplayText() }}</span> in the selected time period
               </span>
             }
             @if (isLoadingCount) {
-              <span class="text-14 text-neutral-10">Loading event count...</span>
+              <span class="font-body font-normal text-[14px] text-new.text-secondary">Loading event count...</span>
             }
           </div>
         </div>
@@ -123,18 +123,15 @@
 
       <div class="flex justify-end gap-12px mt-24px">
         <button
-          convoy-button
           type="submit"
-          size="sm"
-          color="primary"
-          fill="solid"
+          class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none"
           [disabled]="isSubmitting || !resendForm.valid || isLoadingCount || eventCount === 0"
           >
           @if (!isSubmitting) {
-            <span class="text-white-100">Retry Event Deliveries</span>
+            <span>Retry Event Deliveries</span>
           }
           @if (isSubmitting) {
-            <span class="text-white-100">Retrying...</span>
+            <span>Retrying...</span>
           }
         </button>
       </div>
@@ -147,35 +144,35 @@
   <div class="mb-24px">
     @for (batch of batchProgressList; track $index) {
       <div class="mb-16px">
-        <div convoy-card class="p-24px">
+        <div class="bg-white-100 border border-new.border rounded-12px p-20px">
           <div class="flex items-center justify-between mb-16px">
             <div>
-              <h4 class="font-semibold text-16 mb-4px">Batch Retry Progress</h4>
-              <p class="text-12 text-neutral-10">Batch ID: {{ batch.batch_id }}</p>
+              <h4 class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary mb-4px">Batch Retry Progress</h4>
+              <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary">Batch ID: {{ batch.batch_id }}</p>
               <div class="flex items-center gap-12px mt-4px">
                 @if (batch.status_filter) {
-                  <span class="text-10 text-neutral-9">
-                    Status: <span class="font-medium">{{ batch.status_filter }}</span>
+                  <span class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">
+                    Status: <span class="font-medium text-new.text-primary">{{ batch.status_filter }}</span>
                   </span>
                 }
                 @if (batch.time_period) {
-                  <span class="text-10 text-neutral-9">
-                    Period: <span class="font-medium">{{ batch.time_period }}</span>
+                  <span class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">
+                    Period: <span class="font-medium text-new.text-primary">{{ batch.time_period }}</span>
                   </span>
                 }
                 @if (batch.event_id) {
-                  <span class="text-10 text-neutral-9">
-                    Event: <span class="font-medium font-mono">{{ batch.event_id.substring(0, 8) }}...</span>
+                  <span class="font-body font-normal text-[12px] leading-normal text-new.text-secondary">
+                    Event: <span class="font-medium font-mono text-new.text-primary">{{ batch.event_id.substring(0, 8) }}...</span>
                   </span>
                 }
               </div>
-              <p class="text-10 text-neutral-9 mt-4px">Started: {{ batch.start_time | date:'short' }}</p>
+              <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px">Started: {{ batch.start_time | date:'short' }}</p>
             </div>
             <div class="flex items-center gap-8px">
               @if (batch.status === 'running' && isPolling) {
                 <convoy-loader class="w-16px h-16px"></convoy-loader>
               }
-				<span class="text-12 font-medium" [ngClass]="{
+				<span class="font-body font-medium text-[13px]" [ngClass]="{
 					'text-new.primary-400': batch.status === 'running',
 					'text-green-500': batch.status === 'completed',
 					'text-red-500': batch.status === 'failed'
@@ -183,12 +180,9 @@
                 {{ batch.status === 'running' ? 'Processing...' : batch.status === 'completed' ? 'Completed' : 'Failed' }}
               </span>
               <button
-                convoy-button
-                size="sm"
-                color="neutral"
-                fill="outline"
+                type="button"
+                class="ml-8px px-12px py-8px rounded-full bg-new.surface-muted font-body font-medium text-[13px] leading-[16px] text-new.text-primary transition-all hover:opacity-80"
                 (click)="dismissBatchProgress(batch.batch_id)"
-                class="ml-8px"
                 >
                 Dismiss
               </button>
@@ -196,7 +190,7 @@
           </div>
           <!-- Progress Bar -->
           <div class="mb-16px">
-            <div class="w-full bg-neutral-a2 rounded-full h-8px overflow-hidden">
+            <div class="w-full bg-new.surface-muted rounded-full h-8px overflow-hidden">
               <div
                 class="h-full transition-all duration-300"
 					[ngClass]="{
@@ -208,37 +202,37 @@
               ></div>
             </div>
             <div class="flex justify-between items-center mt-8px">
-              <span class="text-12 text-neutral-10">
+              <span class="font-body font-normal text-[12px] text-new.text-secondary">
                 {{ batch.processed_count | number }} / {{ batch.total_count | number }} processed
               </span>
-              <span class="text-12 font-medium text-neutral-10">{{ getProgressPercentage(batch) }}%</span>
+              <span class="font-body font-medium text-[12px] text-new.text-secondary">{{ getProgressPercentage(batch) }}%</span>
             </div>
           </div>
           <!-- Status Details -->
           <div class="grid grid-cols-3 gap-16px mt-16px">
             <div>
-              <div class="text-12 text-neutral-9 mb-4px">Total</div>
-              <div class="text-16 font-semibold text-neutral-10">{{ batch.total_count | number }}</div>
+              <div class="font-body font-normal text-[12px] text-new.text-secondary mb-4px">Total</div>
+              <div class="font-body font-medium text-[16px] text-new.text-primary">{{ batch.total_count | number }}</div>
             </div>
             <div>
-              <div class="text-12 text-neutral-9 mb-4px">Processed</div>
-              <div class="text-16 font-semibold text-new.primary-400">{{ batch.processed_count | number }}</div>
+              <div class="font-body font-normal text-[12px] text-new.text-secondary mb-4px">Processed</div>
+              <div class="font-body font-medium text-[16px] text-new.primary-400">{{ batch.processed_count | number }}</div>
             </div>
             <div>
-              <div class="text-12 text-neutral-9 mb-4px">Failed</div>
-              <div class="text-16 font-semibold text-red-500">{{ batch.failed_count | number }}</div>
+              <div class="font-body font-normal text-[12px] text-new.text-secondary mb-4px">Failed</div>
+              <div class="font-body font-medium text-[16px] text-red-500">{{ batch.failed_count | number }}</div>
             </div>
           </div>
           <!-- Error Message -->
           @if (batch.status === 'failed' && batch.error) {
             <div class="mt-16px p-12px bg-red-50 rounded-8px">
-              <p class="text-12 text-red-600">{{ batch.error }}</p>
+              <p class="font-body font-normal text-[12px] leading-normal text-red-600">{{ batch.error }}</p>
             </div>
           }
           <!-- Completion Message -->
           @if (batch.status === 'completed') {
             <div class="mt-16px p-12px bg-green-50 rounded-8px">
-              <p class="text-12 text-green-600">
+              <p class="font-body font-normal text-[12px] leading-normal text-green-600">
                 Batch completed successfully
                 @if (batch.end_time) {
                   <span> at {{ batch.end_time | date:'short' }}</span>

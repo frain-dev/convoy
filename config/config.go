@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/configmigrate"
 )
 
 const (
@@ -71,11 +72,24 @@ var DefaultConfiguration = Configuration{
 		Host:   "localhost",
 		Port:   6379,
 	},
+	Queue: QueueConfiguration{
+		Postgres: PostgresQueueConfiguration{
+			BatchSize:           DefaultPostgresQueueBatchSize,
+			BatchWaitMs:         DefaultPostgresQueueBatchWaitMs,
+			WriteConcurrency:    DefaultPostgresQueueWriteConcurrency,
+			LeaseTimeoutSeconds: DefaultPostgresQueueLeaseTimeoutSecs,
+			ClaimBatchSize:      DefaultPostgresQueueClaimBatchSize,
+			PollIdleMs:          DefaultPostgresQueuePollIdleMs,
+		},
+	},
+	Cache: CacheConfiguration{
+		Postgres: PostgresCacheConfiguration{
+			LocalReadTTLMs: DefaultPostgresCacheLocalReadTTLMs,
+			LocalReadSize:  DefaultPostgresCacheLocalReadSize,
+		},
+	},
 	Logger: LoggerConfiguration{
 		Level: "error",
-	},
-	Analytics: AnalyticsConfiguration{
-		IsEnabled: true,
 	},
 	StoragePolicy: StoragePolicyConfiguration{
 		Type: "on-prem",
@@ -83,10 +97,13 @@ var DefaultConfiguration = Configuration{
 			Path: convoy.DefaultOnPremDir,
 		},
 	},
-	RetentionPolicy: RetentionPolicyConfiguration{
-		Policy:                   "720h",
-		IsRetentionPolicyEnabled: false,
-		BackupInterval:           "1h",
+	Retention: RetentionConfiguration{
+		Enabled: true,
+		Period:  "720h",
+	},
+	WebhookArchiving: WebhookArchivingConfiguration{
+		Enabled:  false,
+		Interval: "1h",
 	},
 	CircuitBreaker: CircuitBreakerConfiguration{
 		SampleRate:                  30,
@@ -116,6 +133,7 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	ConsumerPoolSize: 100,
+	QueueProvider:    RedisQueueProvider,
 	Tracer: TracerConfiguration{
 		OTel: OTelConfiguration{
 			SampleRate:         1.0,
@@ -141,7 +159,7 @@ var DefaultConfiguration = Configuration{
 	},
 	InstanceIngestRate:         1000,
 	ApiRateLimit:               1000,
-	SyncDynamicEventAckTimeout: 30,
+	VerifyDynamicEventsTimeout: 30,
 	WorkerExecutionMode:        DefaultExecutionMode,
 	Billing: BillingConfiguration{
 		URL:         "",
@@ -176,6 +194,217 @@ type DatabaseConfiguration struct {
 	SetConnMaxLifetime    int `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
 
 	ReadReplicas ReadReplicaConfiguration `json:"read_replicas" envconfig:"CONVOY_DB_READ_REPLICAS"`
+}
+
+// DefaultMaxOpenConnections is the pool size an unset database.max_open_conn
+// resolves to. The pool builder substitutes it rather than leaving the pool
+// unbounded, so sizing checks must reason about it too.
+const DefaultMaxOpenConnections = 100
+
+// EffectiveMaxOpenConnections is the pool size a replica will actually run with.
+// Every check that compares concurrency against the pool must go through this
+// rather than reading SetMaxOpenConnections, which is 0 when unset and would
+// silently skip the comparison on the deployments most likely to need it.
+func (dc DatabaseConfiguration) EffectiveMaxOpenConnections() int {
+	if dc.SetMaxOpenConnections <= 0 {
+		return DefaultMaxOpenConnections
+	}
+	return dc.SetMaxOpenConnections
+}
+
+type QueueConfiguration struct {
+	Postgres PostgresQueueConfiguration `json:"postgres"`
+}
+
+// PostgresQueueConfiguration tunes the Postgres queue provider's write path.
+// The defaults are the measured values and suit a single mid-sized instance;
+// they are configurable because the right settings depend on the database
+// connection pool and the number of replicas, which vary per deployment.
+type PostgresQueueConfiguration struct {
+	// BatchSize is the maximum number of jobs coalesced into one insert.
+	BatchSize int `json:"batch_size" envconfig:"CONVOY_POSTGRES_QUEUE_BATCH_SIZE"`
+	// BatchWaitMs is how long a flush window waits to fill before writing.
+	// Lower trades throughput for latency; unset takes the default rather than
+	// meaning zero, so set 1 for the shortest supported wait.
+	BatchWaitMs int `json:"batch_wait_ms" envconfig:"CONVOY_POSTGRES_QUEUE_BATCH_WAIT_MS"`
+	// WriteConcurrency is how many flush windows may be in flight at once.
+	// Each one holds a pool connection for the duration of its insert.
+	WriteConcurrency int `json:"write_concurrency" envconfig:"CONVOY_POSTGRES_QUEUE_WRITE_CONCURRENCY"`
+	// LeaseTimeoutSeconds is how long a claimed job stays owned without a
+	// renewal before another consumer may take it. Raise it if handlers can run
+	// longer than the default between renewals; it bounds how quickly work is
+	// recovered from a worker that died. The renewal interval is derived from
+	// this value rather than configured separately, so the two cannot drift
+	// into a setting where a live worker loses its own job.
+	LeaseTimeoutSeconds int `json:"lease_timeout_seconds" envconfig:"CONVOY_POSTGRES_QUEUE_LEASE_TIMEOUT_SECONDS"`
+	// ClaimBatchSize is how many jobs one dequeue claim may take per round trip.
+	ClaimBatchSize int `json:"claim_batch_size" envconfig:"CONVOY_POSTGRES_QUEUE_CLAIM_BATCH_SIZE"`
+	// PollIdleMs is how long the consumer sleeps when a claim finds no work.
+	PollIdleMs int `json:"poll_idle_ms" envconfig:"CONVOY_POSTGRES_QUEUE_POLL_IDLE_MS"`
+}
+
+const (
+	DefaultPostgresQueueBatchSize        = 64
+	DefaultPostgresQueueBatchWaitMs      = 2
+	DefaultPostgresQueueWriteConcurrency = 8
+	DefaultPostgresQueueLeaseTimeoutSecs = 90
+	DefaultPostgresQueueClaimBatchSize   = 64
+	DefaultPostgresQueuePollIdleMs       = 5
+
+	maxPostgresQueueClaimBatchSize = 1000
+
+	// maxPostgresQueueBatchSize bounds the arrays bound into a single insert.
+	maxPostgresQueueBatchSize = 10000
+
+	// minPostgresQueueLeaseTimeoutSecs keeps the derived renewal interval far
+	// enough above zero that a handful of slow renewals cannot expire the lease
+	// of a worker that is still alive.
+	minPostgresQueueLeaseTimeoutSecs = 30
+)
+
+// applyDefaults fills unset fields. Bounds are checked in validatePostgresQueue.
+func (q *PostgresQueueConfiguration) applyDefaults() {
+	if q.BatchSize == 0 {
+		q.BatchSize = DefaultPostgresQueueBatchSize
+	}
+	if q.BatchWaitMs == 0 {
+		q.BatchWaitMs = DefaultPostgresQueueBatchWaitMs
+	}
+	if q.WriteConcurrency == 0 {
+		q.WriteConcurrency = DefaultPostgresQueueWriteConcurrency
+	}
+	if q.LeaseTimeoutSeconds == 0 {
+		q.LeaseTimeoutSeconds = DefaultPostgresQueueLeaseTimeoutSecs
+	}
+	if q.ClaimBatchSize == 0 {
+		q.ClaimBatchSize = DefaultPostgresQueueClaimBatchSize
+	}
+	if q.PollIdleMs == 0 {
+		q.PollIdleMs = DefaultPostgresQueuePollIdleMs
+	}
+}
+
+// BatchWait is BatchWaitMs as a duration.
+func (q PostgresQueueConfiguration) BatchWait() time.Duration {
+	return time.Duration(q.BatchWaitMs) * time.Millisecond
+}
+
+// LeaseTimeout is LeaseTimeoutSeconds as a duration.
+func (q PostgresQueueConfiguration) LeaseTimeout() time.Duration {
+	return time.Duration(q.LeaseTimeoutSeconds) * time.Second
+}
+
+// PollIdle is PollIdleMs as a duration.
+func (q PostgresQueueConfiguration) PollIdle() time.Duration {
+	return time.Duration(q.PollIdleMs) * time.Millisecond
+}
+
+// validatePostgresQueue checks the queue tuning against the pool it draws from.
+// Flushers hold a connection for the length of their insert, so a concurrency
+// at or above the pool size starves reads on the same pool, which is the
+// failure this guard exists to prevent.
+func validatePostgresQueue(c *Configuration) error {
+	q := &c.Queue.Postgres
+	q.applyDefaults()
+
+	if q.BatchSize < 1 || q.BatchSize > maxPostgresQueueBatchSize {
+		return fmt.Errorf("queue.postgres.batch_size must be between 1 and %d, got %d", maxPostgresQueueBatchSize, q.BatchSize)
+	}
+	if q.BatchWaitMs < 1 {
+		return fmt.Errorf("queue.postgres.batch_wait_ms must be at least 1, got %d", q.BatchWaitMs)
+	}
+	if q.WriteConcurrency < 1 {
+		return fmt.Errorf("queue.postgres.write_concurrency must be at least 1, got %d", q.WriteConcurrency)
+	}
+	if q.LeaseTimeoutSeconds < minPostgresQueueLeaseTimeoutSecs {
+		return fmt.Errorf(
+			"queue.postgres.lease_timeout_seconds must be at least %d, got %d",
+			minPostgresQueueLeaseTimeoutSecs, q.LeaseTimeoutSeconds,
+		)
+	}
+	if q.ClaimBatchSize < 1 || q.ClaimBatchSize > maxPostgresQueueClaimBatchSize {
+		return fmt.Errorf(
+			"queue.postgres.claim_batch_size must be between 1 and %d, got %d",
+			maxPostgresQueueClaimBatchSize, q.ClaimBatchSize,
+		)
+	}
+	if q.PollIdleMs < 1 {
+		return fmt.Errorf("queue.postgres.poll_idle_ms must be at least 1, got %d", q.PollIdleMs)
+	}
+
+	if pool := c.Database.EffectiveMaxOpenConnections(); q.WriteConcurrency >= pool {
+		return fmt.Errorf(
+			"queue.postgres.write_concurrency (%d) must be below database.max_open_conn (%d) so queue writes cannot starve reads on the same pool",
+			q.WriteConcurrency, pool,
+		)
+	}
+	return nil
+}
+
+type CacheConfiguration struct {
+	Postgres PostgresCacheConfiguration `json:"postgres"`
+}
+
+// PostgresCacheConfiguration tunes how much of the cache a replica may answer
+// from its own memory. This exists only for Postgres: in Redis mode the cache
+// already lives outside the database, while here every read competes with the
+// queue and the application for the same connection pool.
+type PostgresCacheConfiguration struct {
+	// LocalReadTTLMs bounds how long a replica may serve a value from memory
+	// before reading the table again. An invalidation takes effect immediately
+	// on the replica that performed it and within this window on the others, so
+	// keep it well below the minutes-long TTLs the cached entities already use.
+	// Unset takes the default; a negative value disables local reads entirely
+	// and sends every read to the table.
+	LocalReadTTLMs int `json:"local_read_ttl_ms" envconfig:"CONVOY_POSTGRES_CACHE_LOCAL_READ_TTL_MS"`
+	// LocalReadSize is how many keys a replica may hold in memory. The oldest
+	// are evicted first, so this caps memory rather than correctness.
+	LocalReadSize int `json:"local_read_size" envconfig:"CONVOY_POSTGRES_CACHE_LOCAL_READ_SIZE"`
+}
+
+const (
+	DefaultPostgresCacheLocalReadTTLMs = 1000
+	DefaultPostgresCacheLocalReadSize  = 10000
+
+	// maxPostgresCacheLocalReadTTLMs bounds how far an invalidation on one
+	// replica may lag on another. Past a few seconds this stops being an
+	// optimisation and becomes behaviour an operator would not predict.
+	maxPostgresCacheLocalReadTTLMs = 30000
+)
+
+// applyDefaults fills unset fields. Bounds are checked in validatePostgresCache.
+func (c *PostgresCacheConfiguration) applyDefaults() {
+	if c.LocalReadTTLMs == 0 {
+		c.LocalReadTTLMs = DefaultPostgresCacheLocalReadTTLMs
+	}
+	if c.LocalReadSize == 0 {
+		c.LocalReadSize = DefaultPostgresCacheLocalReadSize
+	}
+}
+
+// LocalReadTTL is LocalReadTTLMs as a duration. It is zero when local reads are
+// disabled, which is the form the cache constructor expects.
+func (c PostgresCacheConfiguration) LocalReadTTL() time.Duration {
+	if c.LocalReadTTLMs < 0 {
+		return 0
+	}
+	return time.Duration(c.LocalReadTTLMs) * time.Millisecond
+}
+
+func validatePostgresCache(c *Configuration) error {
+	pc := &c.Cache.Postgres
+	pc.applyDefaults()
+
+	if pc.LocalReadTTLMs > maxPostgresCacheLocalReadTTLMs {
+		return fmt.Errorf(
+			"cache.postgres.local_read_ttl_ms must be at most %d, got %d",
+			maxPostgresCacheLocalReadTTLMs, pc.LocalReadTTLMs,
+		)
+	}
+	if pc.LocalReadSize < 1 {
+		return fmt.Errorf("cache.postgres.local_read_size must be at least 1, got %d", pc.LocalReadSize)
+	}
+	return nil
 }
 
 func (dc DatabaseConfiguration) BuildDsn() string {
@@ -386,12 +615,25 @@ type DatadogConfiguration struct {
 	AgentURL string `json:"agent_url" envconfig:"CONVOY_DATADOG_AGENT_URL"`
 }
 
-type RetentionPolicyConfiguration struct {
-	Policy                   string `json:"policy" envconfig:"CONVOY_RETENTION_POLICY"`
-	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
-	BackupInterval           string `json:"backup_interval" envconfig:"CONVOY_BACKUP_INTERVAL"`
-	CDCBackupEnabled         bool   `json:"cdc_backup_enabled" envconfig:"CONVOY_CDC_BACKUP_ENABLED"`
-	ReplicationDSN           string `json:"replication_dsn" envconfig:"CONVOY_REPLICATION_DSN"`
+// RetentionConfiguration is partition drop only (enable + keep window).
+type RetentionConfiguration struct {
+	// Enabled gates the licensed 01:00 partition drop. Default true.
+	// Env: CONVOY_RETENTION_ENABLED.
+	Enabled bool `json:"enabled" envconfig:"CONVOY_RETENTION_ENABLED"`
+	// Period is the keep window. Env: CONVOY_RETENTION_PERIOD.
+	// Legacy CONVOY_RETENTION_POLICY migrates here at load.
+	Period string `json:"period" envconfig:"CONVOY_RETENTION_PERIOD"`
+}
+
+// WebhookArchivingConfiguration gates cold-storage export of webhook data.
+// Distinct from RetentionConfiguration — not nested under retention_policy.
+type WebhookArchivingConfiguration struct {
+	// Enabled turns on archive/export jobs. Env: CONVOY_WEBHOOK_ARCHIVING_ENABLED.
+	// Legacy CONVOY_RETENTION_POLICY_ENABLED migrates here at load.
+	Enabled        bool   `json:"enabled" envconfig:"CONVOY_WEBHOOK_ARCHIVING_ENABLED"`
+	Interval       string `json:"interval" envconfig:"CONVOY_BACKUP_INTERVAL"`
+	CDCEnabled     bool   `json:"cdc_enabled" envconfig:"CONVOY_CDC_BACKUP_ENABLED"`
+	ReplicationDSN string `json:"replication_dsn" envconfig:"CONVOY_REPLICATION_DSN"`
 }
 
 type CircuitBreakerConfiguration struct {
@@ -403,10 +645,6 @@ type CircuitBreakerConfiguration struct {
 	ObservabilityWindow         uint64 `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
 	SkipSleep                   bool   `json:"skip_sleep" envconfig:"CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP"`
-}
-
-type AnalyticsConfiguration struct {
-	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
 
 type StoragePolicyConfiguration struct {
@@ -462,6 +700,7 @@ const (
 
 const (
 	RedisQueueProvider       QueueProvider           = "redis"
+	PostgresQueueProvider    QueueProvider           = "postgres"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	DefaultRequestIDHeader   RequestIDHeaderProvider = "X-Convoy-Idempotency-Key"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
@@ -511,35 +750,42 @@ const (
 )
 
 type Configuration struct {
-	InstanceId         string                       `json:"instance_id"`
-	APIVersion         string                       `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth               AuthConfiguration            `json:"auth,omitempty"`
-	Database           DatabaseConfiguration        `json:"database"`
-	Redis              RedisConfiguration           `json:"redis"`
-	Prometheus         PrometheusConfiguration      `json:"prometheus"`
-	Server             ServerConfiguration          `json:"server"`
-	MaxResponseSize    uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration            `json:"smtp"`
-	Environment        string                       `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration          `json:"logger"`
-	Tracer             TracerConfiguration          `json:"tracer"`
-	Host               string                       `json:"host" envconfig:"CONVOY_HOST"`
-	RootPath           string                       `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
-	Pyroscope          PyroscopeConfiguration       `json:"pyroscope"`
-	CustomDomainSuffix string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	EnableFeatureFlag  []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
-	RetentionPolicy    RetentionPolicyConfiguration `json:"retention_policy"`
-	CircuitBreaker     CircuitBreakerConfiguration  `json:"circuit_breaker"`
-	Analytics          AnalyticsConfiguration       `json:"analytics"`
-	StoragePolicy      StoragePolicyConfiguration   `json:"storage_policy"`
-	ConsumerPoolSize   int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	EnableProfiling    bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
-	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
-	InstanceIngestRate int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
-	ApiRateLimit       int                          `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
-	// SyncDynamicEventAckTimeout is the max seconds POST /events/dynamic waits for
-	// endpoint/subscription resolve when project config sync_dynamic_event_ack is true.
-	SyncDynamicEventAckTimeout uint64                      `json:"sync_dynamic_event_ack_timeout" envconfig:"CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT"`
+	// PreviousQueueProvider opts into inspecting the other configured queue store.
+	PreviousQueueProvider QueueProvider `json:"previous_queue_provider,omitempty" envconfig:"CONVOY_PREVIOUS_QUEUE_PROVIDER"`
+	QueueStoreScope       string        `json:"queue_store_scope,omitempty" envconfig:"CONVOY_QUEUE_STORE_SCOPE"`
+
+	InstanceId         string                        `json:"instance_id"`
+	APIVersion         string                        `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth               AuthConfiguration             `json:"auth,omitempty"`
+	Database           DatabaseConfiguration         `json:"database"`
+	Redis              RedisConfiguration            `json:"redis"`
+	Prometheus         PrometheusConfiguration       `json:"prometheus"`
+	Server             ServerConfiguration           `json:"server"`
+	MaxResponseSize    uint64                        `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration             `json:"smtp"`
+	Environment        string                        `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration           `json:"logger"`
+	Tracer             TracerConfiguration           `json:"tracer"`
+	Host               string                        `json:"host" envconfig:"CONVOY_HOST"`
+	RootPath           string                        `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
+	Pyroscope          PyroscopeConfiguration        `json:"pyroscope"`
+	CustomDomainSuffix string                        `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	EnableFeatureFlag  []string                      `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
+	Retention          RetentionConfiguration        `json:"retention"`
+	WebhookArchiving   WebhookArchivingConfiguration `json:"webhook_archiving"`
+	CircuitBreaker     CircuitBreakerConfiguration   `json:"circuit_breaker"`
+	StoragePolicy      StoragePolicyConfiguration    `json:"storage_policy"`
+	ConsumerPoolSize   int                           `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	QueueProvider      QueueProvider                 `json:"queue_provider" envconfig:"CONVOY_QUEUE_PROVIDER"`
+	Queue              QueueConfiguration            `json:"queue"`
+	Cache              CacheConfiguration            `json:"cache"`
+	EnableProfiling    bool                          `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics            MetricsConfiguration          `json:"metrics" envconfig:"CONVOY_METRICS"`
+	InstanceIngestRate int                           `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
+	ApiRateLimit       int                           `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
+	// VerifyDynamicEventsTimeout is the max seconds POST /events/dynamic waits for
+	// endpoint/subscription resolve when project config verify_dynamic_events is true.
+	VerifyDynamicEventsTimeout uint64                      `json:"verify_dynamic_events_timeout" envconfig:"CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT"`
 	WorkerExecutionMode        ExecutionMode               `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds            uint64                      `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey                 string                      `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
@@ -548,6 +794,23 @@ type Configuration struct {
 	Dispatcher                 DispatcherConfiguration     `json:"dispatcher"`
 	HCPVault                   HCPVaultConfig              `json:"hcp_vault"`
 	Billing                    BillingConfiguration        `json:"billing"`
+}
+
+// WorkerPoolUndersized reports whether a worker will run more consumers than
+// the connection pool can serve. In Postgres mode every consumer needs a
+// connection to claim and complete work, so below that ratio consumers block in
+// pgxpool.Acquire rather than on the database: 100 consumers against 50
+// connections halved drain rate in the lab.
+//
+// Failure policy: warn, do not reject. An undersized pool costs throughput but
+// stays correct, and the sizing rule pulls against the server's max_connections
+// on a small deployment, so an operator may have to make that trade
+// deliberately.
+func (c Configuration) WorkerPoolUndersized() bool {
+	if c.QueueProvider != PostgresQueueProvider {
+		return false
+	}
+	return c.Database.EffectiveMaxOpenConnections() < c.ConsumerPoolSize
 }
 
 func (c Configuration) BillingMode(instanceLicenseKey string) BillingMode {
@@ -587,7 +850,8 @@ type DispatcherConfiguration struct {
 	CACertPath         string   `json:"ca_cert_path" envconfig:"CONVOY_DISPATCHER_CACERT_PATH"`
 	CACertString       string   `json:"ca_cert_string" envconfig:"CONVOY_DISPATCHER_CACERT_STRING"`
 	PingMethods        []string `json:"ping_methods" envconfig:"CONVOY_DISPATCHER_PING_METHODS"`
-	SkipPingValidation bool     `json:"skip_ping_validation" envconfig:"CONVOY_DISPATCHER_SKIP_PING_VALIDATION"`
+	// SkipPingValidation disables the outbound probe on endpoint creation and update.
+	SkipPingValidation bool `json:"skip_ping_validation" envconfig:"CONVOY_DISPATCHER_SKIP_PING_VALIDATION"`
 }
 
 type PyroscopeConfiguration struct {
@@ -746,6 +1010,18 @@ func Override(newCfg *Configuration) error {
 	return nil
 }
 
+// ForceBools applies bool fields that Override skips when false (reflect zero).
+// Call only for values the operator explicitly set (cobra Flags().Changed, etc.).
+func ForceBools(mutate func(*Configuration)) error {
+	c, err := Get()
+	if err != nil {
+		return err
+	}
+	mutate(&c)
+	cfgSingleton.Store(&c)
+	return nil
+}
+
 func overrideFields(ov, nv reflect.Value) {
 	for i := 0; i < ov.NumField(); i++ {
 		ovField := ov.Field(i)
@@ -804,11 +1080,24 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		if err != nil {
 			return err
 		}
-
 		defer f.Close()
 
-		// load config from config.json
-		if err := json.NewDecoder(f).Decode(&c); err != nil {
+		var jsonRoot map[string]any
+		if err := json.NewDecoder(f).Decode(&jsonRoot); err != nil {
+			return err
+		}
+
+		deps, err := jsonRetentionArchivingMigrations().Apply(configmigrate.OSEnv{}, jsonRoot)
+		if err != nil {
+			return err
+		}
+		configmigrate.Warn(deps)
+
+		raw, err := json.Marshal(jsonRoot)
+		if err != nil {
+			return err
+		}
+		if err := json.Unmarshal(raw, &c); err != nil {
 			return err
 		}
 		applyServiceDefaults(&c)
@@ -816,12 +1105,19 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 		return fmt.Errorf("failed to check if config file exists: %w", err)
 	}
 
-	// override config from environment variables
 	for _, opt := range opts {
 		if err := opt(&c); err != nil {
 			return err
 		}
 	}
+
+	deps, err := envRetentionArchivingMigrations(&c).Apply(configmigrate.OSEnv{}, nil)
+	if err != nil {
+		return err
+	}
+	configmigrate.Warn(deps)
+
+	warnRenamedEnvVars()
 
 	if err := validate(&c); err != nil {
 		return err
@@ -829,6 +1125,21 @@ func LoadConfig(p string, opts ...ConfigFunc) error {
 
 	cfgSingleton.Store(&c)
 	return nil
+}
+
+// The old name is deliberately not read, so an operator whose deployment still
+// sets it would otherwise get the 30s default with no indication why their
+// configured wait stopped applying. Warn rather than fail: a stale timeout
+// variable is not worth refusing to boot over.
+func warnRenamedEnvVars() {
+	renamed := map[string]string{
+		"CONVOY_SYNC_DYNAMIC_EVENT_ACK_TIMEOUT": "CONVOY_VERIFY_DYNAMIC_EVENTS_TIMEOUT",
+	}
+	for old, current := range renamed {
+		if _, ok := os.LookupEnv(old); ok {
+			fmt.Fprintf(os.Stderr, "warning: %s is no longer read, use %s instead\n", old, current)
+		}
+	}
 }
 
 func ensureSSL(s ServerConfiguration) error {
@@ -869,10 +1180,28 @@ func ensureMaxResponseSize(c *Configuration) {
 }
 
 func validate(c *Configuration) error {
+	if err := c.ValidateQueueInventory(); err != nil {
+		return err
+	}
 	ensureMaxResponseSize(c)
 
-	if err := ensureQueueConfig(c.Redis); err != nil {
-		return err
+	switch c.QueueProvider {
+	case "", RedisQueueProvider:
+		c.QueueProvider = RedisQueueProvider
+		if err := ensureQueueConfig(c.Redis); err != nil {
+			return err
+		}
+	case PostgresQueueProvider:
+		// Postgres owns queue, cache, limiter, circuit breaker, locks, and
+		// queue monitoring. Redis DSN is not required.
+		if err := validatePostgresQueue(c); err != nil {
+			return err
+		}
+		if err := validatePostgresCache(c); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown queue_provider %q (want redis or postgres)", c.QueueProvider)
 	}
 
 	if err := ensureSSL(c.Server); err != nil {
@@ -947,5 +1276,30 @@ func ensureRootPath(c *Configuration) error {
 		return errors.New("root path contains invalid characters, only alphanumeric, hyphens, underscores, and slashes are allowed")
 	}
 
+	return nil
+}
+
+// ValidateQueueInventory does not connect to either store. Inspection failure is
+// reported in the admin UI instead of preventing the active provider booting.
+func (c Configuration) ValidateQueueInventory() error {
+	if c.PreviousQueueProvider == "" {
+		return nil
+	}
+	if c.PreviousQueueProvider != RedisQueueProvider && c.PreviousQueueProvider != PostgresQueueProvider {
+		return errors.New("previous_queue_provider must be redis or postgres")
+	}
+	active := c.QueueProvider
+	if active == "" {
+		active = RedisQueueProvider
+	}
+	if c.PreviousQueueProvider == active {
+		return errors.New("previous_queue_provider must differ from queue_provider")
+	}
+	if strings.TrimSpace(c.QueueStoreScope) == "" {
+		return errors.New("queue_store_scope is required when a previous queue is configured")
+	}
+	if c.PreviousQueueProvider == RedisQueueProvider {
+		return ensureQueueConfig(c.Redis)
+	}
 	return nil
 }

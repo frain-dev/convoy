@@ -23,8 +23,10 @@ func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	// Update configuration
 	cfg.IsAnalyticsEnabled = false
 	cfg.IsSignupEnabled = false
-	cfg.RetentionPolicy.Policy = "336h"
-	cfg.RetentionPolicy.IsRetentionPolicyEnabled = false
+	cfg.AdminManaged = true
+	cfg.RetentionPolicy.Period = "336h"
+	cfg.RetentionPolicy.Enabled = false
+	cfg.WebhookArchiving.Enabled = false
 
 	err := service.UpdateConfiguration(ctx, cfg)
 	require.NoError(t, err)
@@ -35,8 +37,10 @@ func TestUpdateConfiguration_ValidUpdate(t *testing.T) {
 	require.Equal(t, cfg.UID, loaded.UID)
 	require.False(t, loaded.IsAnalyticsEnabled)
 	require.False(t, loaded.IsSignupEnabled)
-	require.Equal(t, "336h", loaded.RetentionPolicy.Policy)
-	require.False(t, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.True(t, loaded.AdminManaged)
+	require.Equal(t, "336h", loaded.RetentionPolicy.Period)
+	require.False(t, loaded.RetentionPolicy.Enabled)
+	require.False(t, loaded.WebhookArchiving.Enabled)
 }
 
 func TestUpdateConfiguration_ChangeStorageFromS3ToOnPrem(t *testing.T) {
@@ -167,8 +171,8 @@ func TestUpdateConfiguration_UpdateRetentionPolicy(t *testing.T) {
 	cfg := seedConfiguration(t, db, datastore.S3)
 
 	// Update retention policy
-	cfg.RetentionPolicy.Policy = "2160h"
-	cfg.RetentionPolicy.IsRetentionPolicyEnabled = false
+	cfg.RetentionPolicy.Period = "2160h"
+	cfg.WebhookArchiving.Enabled = false
 
 	err := service.UpdateConfiguration(ctx, cfg)
 	require.NoError(t, err)
@@ -176,8 +180,8 @@ func TestUpdateConfiguration_UpdateRetentionPolicy(t *testing.T) {
 	// Verify retention policy updated
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
-	require.Equal(t, "2160h", loaded.RetentionPolicy.Policy)
-	require.False(t, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, "2160h", loaded.RetentionPolicy.Period)
+	require.False(t, loaded.WebhookArchiving.Enabled)
 }
 
 func TestUpdateConfiguration_EnableAnalytics(t *testing.T) {
@@ -253,8 +257,11 @@ func TestUpdateConfiguration_NonExistentConfiguration(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "72h",
-			IsRetentionPolicyEnabled: true,
+			Period:  "72h",
+			Enabled: true,
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: true,
 		},
 	}
 
@@ -361,7 +368,7 @@ func TestUpdateConfiguration_MultipleUpdates(t *testing.T) {
 	err = service.UpdateConfiguration(ctx, cfg)
 	require.NoError(t, err)
 
-	cfg.RetentionPolicy.Policy = "1000h"
+	cfg.RetentionPolicy.Period = "1000h"
 	err = service.UpdateConfiguration(ctx, cfg)
 	require.NoError(t, err)
 
@@ -370,7 +377,7 @@ func TestUpdateConfiguration_MultipleUpdates(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, loaded.IsAnalyticsEnabled)
 	require.False(t, loaded.IsSignupEnabled)
-	require.Equal(t, "1000h", loaded.RetentionPolicy.Policy)
+	require.Equal(t, "1000h", loaded.RetentionPolicy.Period)
 }
 
 func TestUpdateConfiguration_ChangeStorageFromS3ToAzureBlob(t *testing.T) {
@@ -446,7 +453,11 @@ func TestUpdateConfiguration_VerifyNoRowsAffectedError(t *testing.T) {
 			},
 		},
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy: "72h",
+			Period:  "72h",
+			Enabled: true,
+		},
+		WebhookArchiving: &datastore.WebhookArchivingConfiguration{
+			Enabled: false,
 		},
 	}
 

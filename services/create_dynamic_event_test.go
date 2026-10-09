@@ -6,12 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/dynamiceventack"
@@ -88,7 +90,7 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 			wantErrMsg:  "an error occurred while creating dynamic event - invalid project",
 		},
 		{
-			name: "should_fail_closed_when_sync_ack_enabled_without_redis",
+			name: "should_fail_closed_when_sync_ack_enabled_without_acker",
 			dbFn: func(es *CreateDynamicEventService) {
 				q, _ := es.Queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
@@ -101,15 +103,15 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 					EventType: "*",
 				},
 				g: &datastore.Project{
-					UID: "sync-nil-redis",
+					UID: "sync-nil-acker",
 					Config: &datastore.ProjectConfig{
-						SyncDynamicEventAck: true,
+						VerifyDynamicEvents: true,
 					},
 				},
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusServiceUnavailable,
-			wantErrMsg:  dynamiceventack.ErrNilRedis.Error(),
+			wantErrMsg:  dynamiceventack.ErrNilAcker.Error(),
 		},
 	}
 	for _, tc := range tests {
@@ -140,6 +142,9 @@ func TestCreateDynamicEventService_Run(t *testing.T) {
 			}
 
 			require.Nil(t, err)
+			require.NotEmpty(t, es.DynamicEvent.EventID)
+			_, parseErr := ulid.Parse(es.DynamicEvent.EventID)
+			require.NoError(t, parseErr)
 		})
 	}
 }
@@ -153,8 +158,7 @@ func errorAsService(err error, dest **util.ServiceError) bool {
 	return true
 }
 
-func TestCreateDynamicEventService_SyncAckWaitSuccess(t *testing.T) {
-	rdb := redisOrSkip(t)
+func TestCreateDynamicEventService_SyncAckWaitSuccessWithBrokerCache(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -163,7 +167,7 @@ func TestCreateDynamicEventService_SyncAckWaitSuccess(t *testing.T) {
 	project := &datastore.Project{
 		UID: "sync-ok-project",
 		Config: &datastore.ProjectConfig{
-			SyncDynamicEventAck: true,
+			VerifyDynamicEvents: true,
 		},
 	}
 	de := &models.DynamicEvent{
@@ -172,20 +176,21 @@ func TestCreateDynamicEventService_SyncAckWaitSuccess(t *testing.T) {
 		EventType: "*",
 	}
 	es := provideCreateDynamicEventService(ctrl, de, project)
-	es.Redis = rdb
+	es.Acker = dynamiceventack.NewCacheAcker(mcache.NewMemoryCache())
 
 	q, _ := es.Queue.(*mocks.MockQueuer)
 	q.EXPECT().Write(gomock.Any(), convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).
 		DoAndReturn(func(ctx context.Context, _ convoy.TaskName, _ convoy.QueueName, _ *queue.Job) error {
 			go func() {
 				time.Sleep(50 * time.Millisecond)
-				_ = dynamiceventack.Publish(context.Background(), rdb, project.UID, de.EventID, dynamiceventack.Result{OK: true})
+				_ = es.Acker.Publish(context.Background(), project.UID, de.EventID, dynamiceventack.Result{OK: true})
 			}()
 			return nil
 		})
 
 	err := es.Run(context.Background())
 	require.NoError(t, err)
+	require.NotEmpty(t, de.EventID)
 }
 
 func TestCreateDynamicEventService_SyncAckWaitResolveError(t *testing.T) {
@@ -198,7 +203,7 @@ func TestCreateDynamicEventService_SyncAckWaitResolveError(t *testing.T) {
 	project := &datastore.Project{
 		UID: "sync-err-project",
 		Config: &datastore.ProjectConfig{
-			SyncDynamicEventAck: true,
+			VerifyDynamicEvents: true,
 		},
 	}
 	de := &models.DynamicEvent{
@@ -207,7 +212,7 @@ func TestCreateDynamicEventService_SyncAckWaitResolveError(t *testing.T) {
 		EventType: "*",
 	}
 	es := provideCreateDynamicEventService(ctrl, de, project)
-	es.Redis = rdb
+	es.Acker = dynamiceventack.NewRedisAcker(rdb)
 
 	q, _ := es.Queue.(*mocks.MockQueuer)
 	q.EXPECT().Write(gomock.Any(), convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).
@@ -238,13 +243,13 @@ func TestCreateDynamicEventService_SyncAckWaitTimeout(t *testing.T) {
 	require.NoError(t, config.LoadConfig("./testdata/basic-config.json"))
 	cfg, err := config.Get()
 	require.NoError(t, err)
-	cfg.SyncDynamicEventAckTimeout = 1
+	cfg.VerifyDynamicEventsTimeout = 1
 	require.NoError(t, config.Override(&cfg))
 
 	project := &datastore.Project{
 		UID: "sync-timeout-project",
 		Config: &datastore.ProjectConfig{
-			SyncDynamicEventAck: true,
+			VerifyDynamicEvents: true,
 		},
 	}
 	de := &models.DynamicEvent{
@@ -253,7 +258,7 @@ func TestCreateDynamicEventService_SyncAckWaitTimeout(t *testing.T) {
 		EventType: "*",
 	}
 	es := provideCreateDynamicEventService(ctrl, de, project)
-	es.Redis = rdb
+	es.Acker = dynamiceventack.NewRedisAcker(rdb)
 
 	q, _ := es.Queue.(*mocks.MockQueuer)
 	q.EXPECT().Write(gomock.Any(), convoy.CreateDynamicEventProcessor, convoy.CreateEventQueue, gomock.Any()).Return(nil)

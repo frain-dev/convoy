@@ -8,9 +8,11 @@ import (
 )
 
 var (
-	ErrFeatureFlagNotFound         = errors.New("feature flag not found")
-	ErrOverrideNotFound            = errors.New("override not found")
-	ErrEarlyAdopterFeatureNotFound = errors.New("early adopter feature not found")
+	ErrFeatureFlagNotFound = errors.New("feature flag not found")
+	ErrOverrideNotFound    = errors.New("override not found")
+	// Mirrors what the postgres fetcher returns for a missing row so tests
+	// exercise the same "definitive off" classification as production.
+	ErrEarlyAdopterFeatureNotFound = fflag.ErrEarlyAdopterFeatureNotFound
 )
 
 // MockFeatureFlagFetcher is a mock implementation of fflag.FeatureFlagFetcher

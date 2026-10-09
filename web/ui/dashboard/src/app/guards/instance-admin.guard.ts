@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { RbacService } from '../services/rbac/rbac.service';
+import { PrivateService } from '../private/private.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -8,17 +9,20 @@ import { RbacService } from '../services/rbac/rbac.service';
 export class InstanceAdminGuard  {
 	constructor(
 		private rbacService: RbacService,
+		private privateService: PrivateService,
 		private router: Router
 	) {}
 
 	async canActivate(): Promise<boolean> {
 		try {
-			// Require a live role check for admin route access.
+			// Membership is org-scoped. A full reload of /admin runs this guard
+			// before the shell has fetched organisations, and getUserRole then
+			// reads an empty cache as PROJECT_VIEWER.
+			await this.privateService.getOrganizations();
 			const userRole = await this.rbacService.getUserRole({ allowCachedOnError: false });
 			if (userRole === 'INSTANCE_ADMIN') {
 				return true;
 			}
-			// Redirect to projects if not instance admin
 			this.router.navigate(['/projects']);
 			return false;
 		} catch (error) {

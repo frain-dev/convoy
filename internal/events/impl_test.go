@@ -20,7 +20,9 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/endpoints"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisations"
+	"github.com/frain-dev/convoy/internal/pkg/attach"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/sources"
@@ -30,28 +32,44 @@ import (
 	"github.com/frain-dev/convoy/testenv"
 )
 
-var testEnv *testenv.Environment
+var (
+	testEnv        *testenv.Environment
+	testEnvCleanup func() error
+	testEnvOnce    sync.Once
+	testEnvErr     error
+)
 
 func TestMain(m *testing.M) {
-	res, cleanup, err := testenv.Launch(context.Background())
-	if err != nil {
-		fmt.Printf("Failed to launch test environment: %v\n", err)
-		os.Exit(1)
-	}
-
-	testEnv = res
+	_ = os.Setenv("CONVOY_JWT_SECRET", "test-access-secret")
+	_ = os.Setenv("CONVOY_JWT_REFRESH_SECRET", "test-refresh-secret")
 
 	code := m.Run()
-
-	if err := cleanup(); err != nil {
-		fmt.Printf("Failed to cleanup test infrastructure: %v\n", err)
+	if testEnvCleanup != nil {
+		if err := testEnvCleanup(); err != nil {
+			fmt.Printf("Failed to cleanup test infrastructure: %v\n", err)
+		}
 	}
-
 	os.Exit(code)
+}
+
+func launchTestEnv() {
+	testEnvOnce.Do(func() {
+		res, cleanup, err := testenv.Launch(context.Background())
+		if err != nil {
+			testEnvErr = err
+			return
+		}
+		testEnv = res
+		testEnvCleanup = cleanup
+	})
 }
 
 func setupTestDB(t *testing.T) (*Service, database.Database) {
 	t.Helper()
+	launchTestEnv()
+	if testEnvErr != nil {
+		t.Fatalf("Failed to launch test environment: %v", testEnvErr)
+	}
 
 	err := config.LoadConfig("")
 	require.NoError(t, err)
@@ -79,6 +97,13 @@ func setupTestDB(t *testing.T) (*Service, database.Database) {
 
 	logger := log.New("convoy", log.LevelInfo)
 	return New(logger, db), db
+}
+
+func TestRequireEventEndpointIDs(t *testing.T) {
+	require.NoError(t, requireEventEndpointIDs(nil))
+	require.NoError(t, requireEventEndpointIDs([]string{"endpoint-id-1"}))
+	require.ErrorIs(t, requireEventEndpointIDs([]string{""}), datastore.ErrEventEndpointIDRequired)
+	require.ErrorIs(t, requireEventEndpointIDs([]string{"endpoint-id-1", "  "}), datastore.ErrEventEndpointIDRequired)
 }
 
 func seedTestProject(t *testing.T, db database.Database) *datastore.Project {
@@ -333,6 +358,13 @@ func TestCreateEvent(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, found.Endpoints, numEndpoints)
 	})
+
+	t.Run("CreateEvent_RejectsEmptyEndpointID", func(t *testing.T) {
+		event := createTestEvent(t, project.UID, []string{""}, source.UID)
+
+		err := service.CreateEvent(ctx, event)
+		require.ErrorIs(t, err, datastore.ErrEventEndpointIDRequired)
+	})
 }
 
 func TestFindEventByID(t *testing.T) {
@@ -546,6 +578,18 @@ func TestUpdateEventEndpoints(t *testing.T) {
 		t.Logf("Event after update - EventID: %s, Endpoints: %v", found.UID, found.Endpoints)
 		require.Len(t, found.Endpoints, 2, "Expected 2 endpoints after update, got %d: %v", len(found.Endpoints), found.Endpoints)
 	})
+
+	t.Run("UpdateEventEndpoints_RejectsEmptyEndpointID", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+
+		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		require.NoError(t, service.CreateEvent(ctx, event))
+
+		err := service.UpdateEventEndpoints(ctx, event, []string{""})
+		require.ErrorIs(t, err, datastore.ErrEventEndpointIDRequired)
+	})
 }
 
 func TestUpdateEventStatus(t *testing.T) {
@@ -562,14 +606,126 @@ func TestUpdateEventStatus(t *testing.T) {
 
 		// Update status
 		newStatus := datastore.ProcessingStatus
-		err := service.UpdateEventStatus(ctx, event, newStatus)
+		err := service.UpdateEventStatus(ctx, event, newStatus, "")
 		require.NoError(t, err)
 
 		// Verify update
 		found, err := service.FindEventByID(ctx, project.UID, event.UID)
 		require.NoError(t, err)
 		require.Equal(t, newStatus, found.Status)
+		require.Empty(t, found.FailureReason)
 	})
+
+	t.Run("UpdateEventStatus_PersistsFailureReason", func(t *testing.T) {
+		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		require.NoError(t, service.CreateEvent(ctx, event))
+
+		reason := "dynamic URL does not match any configured endpoint URL template"
+		require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, reason))
+
+		found, err := service.FindEventByID(ctx, project.UID, event.UID)
+		require.NoError(t, err)
+		require.Equal(t, datastore.FailureStatus, found.Status)
+		require.Equal(t, reason, found.FailureReason)
+	})
+
+	// A retry that succeeds must not keep showing why the previous attempt failed.
+	t.Run("UpdateEventStatus_ClearsStaleFailureReason", func(t *testing.T) {
+		event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		require.NoError(t, service.CreateEvent(ctx, event))
+
+		require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, "no subscription matched this event"))
+		require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.SuccessStatus, ""))
+
+		found, err := service.FindEventByID(ctx, project.UID, event.UID)
+		require.NoError(t, err)
+		require.Equal(t, datastore.SuccessStatus, found.Status)
+		require.Empty(t, found.FailureReason)
+	})
+}
+
+// Round-trip a row with every mutable column set. Attach keeps the heap; copy
+// unpartition still lists columns and will drop any that are missing from it.
+func TestPartitionEventsTableRoundTripsFailureReason(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	require.NoError(t, service.CreateEvent(ctx, event))
+
+	reason := "dynamic URL does not match any configured endpoint URL template"
+	require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, reason))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+
+	found, err := service.FindEventByID(ctx, project.UID, event.UID)
+	require.NoError(t, err)
+	require.Equal(t, datastore.FailureStatus, found.Status)
+	require.Equal(t, reason, found.FailureReason)
+
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+
+	found, err = service.FindEventByID(ctx, project.UID, event.UID)
+	require.NoError(t, err)
+	require.Equal(t, datastore.FailureStatus, found.Status)
+	require.Equal(t, reason, found.FailureReason)
+
+	// Writes must still work against the rebuilt table.
+	require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.SuccessStatus, ""))
+	found, err = service.FindEventByID(ctx, project.UID, event.UID)
+	require.NoError(t, err)
+	require.Empty(t, found.FailureReason)
+}
+
+// copy_rows writes acknowledged_at, status and metadata on every tokenization
+// run. Assert the whole mirrored column set survives a round trip.
+func TestPartitionEventsSearchTableRoundTripsMirroredColumns(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	event := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	require.NoError(t, service.CreateEvent(ctx, event))
+
+	reason := "dynamic URL does not match any configured endpoint URL template"
+	require.NoError(t, service.UpdateEventStatus(ctx, event, datastore.FailureStatus, reason))
+
+	require.NoError(t, service.CopyRows(ctx, project.UID, config.DefaultSearchTokenizationInterval))
+
+	requireSearchRow := func(stage string) {
+		t.Helper()
+
+		var status, failureReason string
+		err := db.GetDB().QueryRowx(
+			`SELECT COALESCE(status, ''), COALESCE(failure_reason, '') FROM convoy.events_search WHERE id = $1`,
+			event.UID,
+		).Scan(&status, &failureReason)
+		require.NoError(t, err, stage)
+		require.Equal(t, string(datastore.FailureStatus), status, stage)
+		require.Equal(t, reason, failureReason, stage)
+	}
+
+	requireSearchRow("before partitioning")
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+	requireSearchRow("after partitioning")
+
+	require.NoError(t, service.UnPartitionEventsSearchTable(ctx))
+	requireSearchRow("after un-partitioning")
+
+	// A non-default interval is the search-policy-change path: it purges the
+	// project's tokenized rows and re-runs copy_rows, which writes
+	// status/metadata/failure_reason and so fails outright if the rebuilt table
+	// lost a column.
+	require.NoError(t, service.CopyRows(ctx, project.UID, config.DefaultSearchTokenizationInterval+1))
+	requireSearchRow("after re-tokenizing")
 }
 
 func TestCountProjectMessages(t *testing.T) {
@@ -1097,6 +1253,81 @@ func TestCopyRows(t *testing.T) {
 	})
 }
 
+func TestPartitionEventsTableAdoptsTheExistingTable(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	var original int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events'`).Scan(&original))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+
+	var adopted int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_default'`).Scan(&adopted))
+	require.Equal(t, original, adopted, "the adopted partition has a different relfilenode, so the table was rewritten, not attached")
+}
+
+func TestPartitionEventsSearchTableAdoptsTheExistingTable(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events_search (id, event_type, project_id, raw, data, url_path)
+        VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/')`, ulid.Make().String(), project.UID)
+	require.NoError(t, err)
+
+	var original int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search'`).Scan(&original))
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+
+	var adopted int64
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relfilenode FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search_default'`).Scan(&adopted))
+	require.Equal(t, original, adopted, "the adopted partition has a different relfilenode, so the table was rewritten, not attached")
+}
+
+// Copy-unpartition creates events_search_new with PRIMARY KEY, then renames the
+// table. RENAME TABLE keeps the constraint name, so the heap's PK is
+// events_search_new_pkey. Swap used to drop only events_search_pkey and then
+// failed with "multiple primary keys for table events_search_default".
+func TestPartitionEventsSearchTableDropsCopyUnpartitionPrimaryKey(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	var current string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT con.conname
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search' AND con.contype = 'p'`).Scan(&current))
+
+	_, err := db.GetDB().ExecContext(ctx, `ALTER TABLE convoy.events_search RENAME CONSTRAINT `+current+` TO events_search_new_pkey`)
+	require.NoError(t, err)
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+
+	var kind string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events_search'`).Scan(&kind))
+	require.Equal(t, "p", kind, "attach after a copy-unpartition PK name should still convert")
+}
+
 func TestPartitionFunctions(t *testing.T) {
 	service, _ := setupTestDB(t)
 	ctx := context.Background()
@@ -1119,5 +1350,372 @@ func TestPartitionFunctions(t *testing.T) {
 	t.Run("UnPartitionEventsSearchTable", func(t *testing.T) {
 		err := service.UnPartitionEventsSearchTable(ctx)
 		require.NoError(t, err)
+	})
+}
+
+// Unpartitioning events restores event_deliveries_event_id_fkey, which is the
+// enforcement event_fk_check stood in for while events was partitioned. The
+// trigger must go, or every delivery insert pays a second existence query and a
+// violation is reported by whichever of the two fires first.
+func TestUnPartitionEventsTableRemovesTheStandInTrigger(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+
+	var triggers int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT count(*)
+        FROM pg_catalog.pg_trigger t
+        JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy'
+          AND c.relname = 'event_deliveries'
+          AND t.tgname = 'event_fk_check'`).Scan(&triggers))
+	require.Zero(t, triggers, "event_fk_check outlived the constraint it stood in for")
+
+	var constraints int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT count(*)
+        FROM pg_catalog.pg_constraint
+        WHERE conname = 'event_deliveries_event_id_fkey'`).Scan(&constraints))
+	require.NotZero(t, constraints, "dropping the trigger left no event-id enforcement at all")
+}
+
+func dropAdoptedBounds(t *testing.T, db database.Database, table string) {
+	t.Helper()
+	_, err := db.GetDB().ExecContext(context.Background(),
+		fmt.Sprintf(`ALTER TABLE convoy.%[1]s_default DROP CONSTRAINT %[1]s_default_bounds`, table))
+	require.NoError(t, err)
+}
+
+func relationKind(t *testing.T, db database.Database, table string) string {
+	t.Helper()
+	var kind string
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = $1`, table).Scan(&kind))
+	return kind
+}
+
+func countTrigger(t *testing.T, db database.Database, table, name string) int {
+	t.Helper()
+	var n int
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT count(*)
+        FROM pg_catalog.pg_trigger t
+        JOIN pg_catalog.pg_class c ON c.oid = t.tgrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = $1 AND t.tgname = $2`,
+		table, name).Scan(&n))
+	return n
+}
+
+// Retention can drop the adopted _default while the parent stays partitioned.
+// Revert then copies. Copy used to ADD event_deliveries_event_id_fkey on the
+// deliveries parent, which Postgres rejects when that table is partitioned.
+func TestUnPartitionEventsTableCopyWhileDeliveriesArePartitioned(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, event_deliveries.New(log.New("convoy", log.LevelError), db).PartitionEventDeliveriesTable(ctx))
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	dropAdoptedBounds(t, db, "events")
+
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+	require.Equal(t, "r", relationKind(t, db, "events"))
+	require.NotZero(t, countTrigger(t, db, "event_deliveries", "event_fk_check"),
+		"copy-unpartition dropped the stand-in while event_deliveries is still partitioned")
+	require.Zero(t, countNamedConstraint(t, db, "event_deliveries", "event_deliveries_event_id_fkey"),
+		"copy-unpartition installed a real event FK on a partitioned event_deliveries")
+}
+
+// Same copy path, but event_deliveries is still a heap. AfterDetach has to
+// put the real FK back; the copy SQL no longer does.
+func TestUnPartitionEventsTableCopyRestoresEventFK(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	dropAdoptedBounds(t, db, "events")
+
+	require.NoError(t, service.UnPartitionEventsTable(ctx))
+	require.Equal(t, "r", relationKind(t, db, "events"))
+	require.Zero(t, countTrigger(t, db, "event_deliveries", "event_fk_check"),
+		"copy-unpartition left the stand-in after both tables are heaps")
+	require.NotZero(t, countNamedConstraint(t, db, "event_deliveries", "event_deliveries_event_id_fkey"),
+		"copy-unpartition left no event-id enforcement")
+}
+
+// Operators convert tables one at a time. After event_deliveries is attached,
+// event_deliveries_event_id_fkey lives on the adopted child. Dropping it only
+// from the parent name leaves a stale FK that still points at events_default
+// after events is converted, and blocks retention from dropping that child.
+func TestPartitionEventsTableDropsAdoptedDeliveryFK(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, event_deliveries.New(log.New("convoy", log.LevelError), db).PartitionEventDeliveriesTable(ctx))
+
+	require.Equal(t, 1, countNamedConstraint(t, db, "event_deliveries_default", "event_deliveries_event_id_fkey"),
+		"precondition: attach left the event FK on the adopted child")
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+
+	require.Zero(t, countNamedConstraint(t, db, "event_deliveries_default", "event_deliveries_event_id_fkey"),
+		"partitioning events left the event FK on event_deliveries_default")
+}
+
+func countNamedConstraint(t *testing.T, db database.Database, table, name string) int {
+	t.Helper()
+
+	var n int
+	require.NoError(t, db.GetDB().QueryRowContext(context.Background(), `
+        SELECT count(*)
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_namespace ns ON ns.oid = c.relnamespace
+        WHERE ns.nspname = 'convoy' AND c.relname = $1 AND con.conname = $2`,
+		table, name).Scan(&n))
+	return n
+}
+
+func TestPartitionEventsTablesNameForRetention(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	require.NoError(t, service.CreateEvent(ctx, createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)))
+
+	require.NoError(t, service.PartitionEventsTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "events", project.UID)
+
+	// The partition helpers only create children for days that already hold rows,
+	// and no application write path in this package populates events_search, so
+	// seed it directly rather than leaving the second naming site uncovered.
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events_search (id, event_type, project_id, raw, data, url_path)
+        VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/')`, ulid.Make().String(), project.UID)
+	require.NoError(t, err)
+
+	require.NoError(t, service.PartitionEventsSearchTable(ctx))
+	testenv.RequirePartitionsAddressableByRetention(t, db, "events_search", project.UID)
+}
+
+func TestEventsPagedInnerDesc(t *testing.T) {
+	t.Parallel()
+
+	require.True(t, eventsPagedInnerDesc("DESC", "next"))
+	require.True(t, eventsPagedInnerDesc("ASC", "prev"))
+	require.False(t, eventsPagedInnerDesc("ASC", "next"))
+	require.False(t, eventsPagedInnerDesc("DESC", "prev"))
+}
+
+func eventsTableKind(t *testing.T, ctx context.Context, db database.Database) string {
+	t.Helper()
+
+	var kind string
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = 'convoy' AND c.relname = 'events'`).Scan(&kind))
+	return kind
+}
+
+func eventRelation(t *testing.T, ctx context.Context, db database.Database, eventID string) string {
+	t.Helper()
+
+	var name string
+	require.NoError(t, db.GetDB().QueryRowxContext(ctx, `
+        SELECT tableoid::regclass::text FROM convoy.events WHERE id = $1`, eventID).Scan(&name))
+	return name
+}
+
+func TestLoadEventsPaged_PayloadContainment(t *testing.T) {
+	t.Run("heap", func(t *testing.T) {
+		runLoadEventsPagedPayloadContainment(t, false)
+	})
+	t.Run("partitioned", func(t *testing.T) {
+		runLoadEventsPagedPayloadContainment(t, true)
+	})
+}
+
+func runLoadEventsPagedPayloadContainment(t *testing.T, partition bool) {
+	t.Helper()
+
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+
+	flat := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	flat.Raw = `{"status":"paid","amount":10}`
+	flat.Data = json.RawMessage(`{"status":"paid","amount":10}`)
+	require.NoError(t, service.CreateEvent(ctx, flat))
+
+	nested := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+	nested.Raw = `{"data":{"status":"paid"}}`
+	nested.Data = json.RawMessage(`{"data":{"status":"paid"}}`)
+	require.NoError(t, service.CreateEvent(ctx, nested))
+
+	noEndpoints := createTestEvent(t, project.UID, nil, source.UID)
+	noEndpoints.EventType = "test-event-searchable"
+	noEndpoints.Raw = `{"unique_search_term":"test12345"}`
+	noEndpoints.Data = json.RawMessage(`{"unique_search_term":"test12345"}`)
+	require.NoError(t, service.CreateEvent(ctx, noEndpoints))
+	require.NoError(t, service.UpdateEventStatus(ctx, noEndpoints, datastore.FailureStatus, "no subscription matched this event"))
+
+	if partition {
+		require.NoError(t, service.PartitionEventsTable(ctx))
+		require.Equal(t, "p", eventsTableKind(t, ctx, db))
+		require.Contains(t, eventRelation(t, ctx, db, flat.UID), "events_default")
+	} else {
+		require.Equal(t, "r", eventsTableKind(t, ctx, db))
+	}
+
+	pageable := datastore.Pageable{PerPage: 20, Direction: datastore.Next, Sort: "DESC"}
+
+	t.Run("hits flat key", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"status":"paid"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, flat.UID, events[0].UID)
+	})
+
+	t.Run("nested path misses a flat body", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"data":{"status":"paid"}}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, nested.UID, events[0].UID)
+	})
+
+	t.Run("empty body does not filter", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 3)
+	})
+
+	t.Run("two-key json containment hits flat", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"status":"paid","amount":10}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, flat.UID, events[0].UID)
+	})
+
+	t.Run("two-key json misses wrong amount", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"status":"paid","amount":99}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Empty(t, events)
+	})
+
+	t.Run("mix and hits matching type and body", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Query:        "test.event",
+			Body:         json.RawMessage(`{"status":"paid"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, flat.UID, events[0].UID)
+	})
+
+	t.Run("mix and misses wrong type", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Query:        "nope.event",
+			Body:         json.RawMessage(`{"status":"paid"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Empty(t, events)
+	})
+
+	t.Run("no endpoints payload and failure reason", func(t *testing.T) {
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body:         json.RawMessage(`{"unique_search_term":"test12345"}`),
+			SearchParams: defaultSearchParams(),
+			Pageable:     pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, noEndpoints.UID, events[0].UID)
+		require.Equal(t, "no subscription matched this event", events[0].FailureReason)
+	})
+
+	if !partition {
+		return
+	}
+
+	t.Run("hits row on a forward daily partition", func(t *testing.T) {
+		after := createTestEvent(t, project.UID, []string{endpoint.UID}, source.UID)
+		after.Raw = `{"status":"paid","post_partition":true}`
+		after.Data = json.RawMessage(`{"status":"paid","post_partition":true}`)
+		require.NoError(t, service.CreateEvent(ctx, after))
+
+		// CreateEvent leaves created_at as now(), which still belongs to the
+		// adopted default. Move the row onto a pre-made forward day so search
+		// is proven on both children, not only events_default.
+		forwardAt := attach.Cutoff(time.Now()).Add(time.Hour)
+		_, err := db.GetDB().ExecContext(ctx, `
+            UPDATE convoy.events SET created_at = $1 WHERE id = $2 AND project_id = $3`,
+			forwardAt, after.UID, project.UID)
+		require.NoError(t, err)
+		require.NotContains(t, eventRelation(t, ctx, db, after.UID), "events_default")
+
+		events, _, err := service.LoadEventsPaged(ctx, project.UID, &datastore.Filter{
+			Body: json.RawMessage(`{"post_partition":true}`),
+			SearchParams: datastore.SearchParams{
+				CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
+				CreatedAtEnd:   forwardAt.Add(24 * time.Hour).Unix(),
+			},
+			Pageable: pageable,
+		})
+		require.NoError(t, err)
+		require.Len(t, events, 1)
+		require.Equal(t, after.UID, events[0].UID)
 	})
 }

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/lib/pq"
@@ -111,12 +112,41 @@ type ProjectConfig struct {
 	// can be created for the endpoint in a project
 	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
 
-	// SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before
+	// VerifyDynamicEvents waits for dynamic endpoint/subscription resolve before
 	// acknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.
-	SyncDynamicEventAck bool `json:"sync_dynamic_event_ack"`
+	VerifyDynamicEvents bool `json:"verify_dynamic_events"`
+
+	// AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the project's
+	// endpoint URL templates auto-create an endpoint instead of failing. When false (the
+	// default), a project with templates configured rejects unmatched URLs.
+	AllowUnmatchedDynamicURLs bool `json:"allow_unmatched_dynamic_urls"`
 
 	// CircuitBreaker is used to configure the project's circuit breaker settings
 	CircuitBreaker *datastore.CircuitBreakerConfiguration `json:"circuit_breaker"`
+}
+
+// ErrRenamedSyncDynamicEventAck rejects the name this setting shipped under in
+// v26.7.0. Ignoring the old key would let a caller believe it toggled the
+// setting when nothing changed, so it fails loudly instead. Enforced here rather
+// than per handler so project create and update reject it identically.
+var ErrRenamedSyncDynamicEventAck = errors.New("sync_dynamic_event_ack has been renamed to verify_dynamic_events")
+
+func (pc *ProjectConfig) UnmarshalJSON(data []byte) error {
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(data, &keys); err != nil {
+		return err
+	}
+	if _, ok := keys["sync_dynamic_event_ack"]; ok {
+		return ErrRenamedSyncDynamicEventAck
+	}
+
+	type plain ProjectConfig
+	aux := plain{}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	*pc = ProjectConfig(aux)
+	return nil
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
@@ -130,7 +160,8 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		DisableEndpoint:               pc.DisableEndpoint,
 		AddEventIDTraceHeaders:        pc.AddEventIDTraceHeaders,
 		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
-		SyncDynamicEventAck:           pc.SyncDynamicEventAck,
+		VerifyDynamicEvents:           pc.VerifyDynamicEvents,
+		AllowUnmatchedDynamicURLs:     pc.AllowUnmatchedDynamicURLs,
 		SSL:                           pc.SSL.transform(),
 		SearchPolicy:                  pc.SearchPolicy,
 		RateLimit:                     pc.RateLimit.Transform(),

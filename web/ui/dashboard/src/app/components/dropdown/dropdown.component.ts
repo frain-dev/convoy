@@ -38,6 +38,7 @@ export class DropdownComponent implements OnInit {
 	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
 	@Input('show') showDropdown = false;
+	@Input('className') className = '';
 	@ViewChild('dropdownTriggerContainer', { static: true }) dropdownTriggerContainer!: ElementRef;
 	@ViewChild('dropdownContainer', { static: true }) dropdownOptions!: ElementRef;
     @Output() readonly onSelect = new EventEmitter<any>;

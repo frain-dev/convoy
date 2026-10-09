@@ -690,6 +690,95 @@ paths:
         description: OAuth2 Configuration
         required: true
       summary: Test OAuth2 connection
+  '/v1/projects/{projectID}/endpoints/period-failure-rates':
+    get:
+      parameters:
+        - description: Project ID
+          in: path
+          name: projectID
+          required: true
+          schema:
+            type: string
+        - description: Endpoint IDs
+          in: query
+          name: endpointId
+          schema:
+            items:
+              type: string
+            type: array
+          style: form
+        - description: Start date
+          in: query
+          name: startDate
+          schema:
+            type: string
+        - description: End date
+          in: query
+          name: endDate
+          schema:
+            type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        items:
+                          $ref: >-
+                            #/components/schemas/models.EndpointPeriodFailureRate
+                        type: array
+                    type: object
+          description: OK
+        '400':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Bad Request
+        '401':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Unauthorized
+        '404':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Not Found
+      security:
+        - ApiKeyAuth: []
+      tags:
+        - Endpoints
+      description: >-
+        Display-only delivery rates for the given endpoint ids over a date range (default last 7 days). Independent of the list so a slow COUNT cannot delay the table.
+      operationId: GetEndpointPeriodFailureRates
+      summary: Endpoint period failure rates
   '/v1/projects/{projectID}/endpoints/{endpointID}':
     delete:
       parameters:
@@ -1579,6 +1668,11 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
+        - description: 'Matches delivery id, event id, event type prefix, and endpoint name.'
+          in: query
+          name: query
+          schema:
+            type: string
         - description: 'Sort order, values are `ASC` or `DESC`, defaults to `DESC`'
           example: ASC | DESC
           in: query
@@ -1663,6 +1757,19 @@ paths:
                         nullable: true
                     type: object
           description: Not Found
+        '504':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Gateway Timeout
       security:
         - ApiKeyAuth: []
       tags:
@@ -1734,6 +1841,11 @@ paths:
           example: 01H0JATTVCXZK8FRDX1M1JN3QY
           in: query
           name: prev_page_cursor
+          schema:
+            type: string
+        - description: 'Matches delivery id, event id, event type prefix, and endpoint name.'
+          in: query
+          name: query
           schema:
             type: string
         - description: 'Sort order, values are `ASC` or `DESC`, defaults to `DESC`'
@@ -2206,6 +2318,13 @@ paths:
           required: true
           schema:
             type: string
+        - description: |-
+            URL-encoded JSON object matched against the event payload.
+            Combined with query as AND when both are set.
+          in: query
+          name: body
+          schema:
+            type: string
         - in: query
           name: direction
           schema:
@@ -2253,7 +2372,10 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
-        - description: Any arbitrary value to filter the events payload
+        - description: >-
+            Matches event id prefix, idempotency key, event type, and source name.
+
+            A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
           schema:
@@ -2323,6 +2445,19 @@ paths:
                         nullable: true
                     type: object
           description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Forbidden
         '404':
           content:
             application/json:
@@ -2336,6 +2471,19 @@ paths:
                         nullable: true
                     type: object
           description: Not Found
+        '504':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/util.ServerResponse'
+                  - properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/handlers.Stub'
+                        nullable: true
+                    type: object
+          description: Gateway Timeout
       security:
         - ApiKeyAuth: []
       tags:
@@ -2360,9 +2508,7 @@ paths:
                   - $ref: '#/components/schemas/util.ServerResponse'
                   - properties:
                       data:
-                        allOf:
-                          - $ref: '#/components/schemas/handlers.Stub'
-                        nullable: true
+                        $ref: '#/components/schemas/models.EventQueuedResponse'
                     type: object
           description: Created
         '400':
@@ -2408,7 +2554,10 @@ paths:
         - ApiKeyAuth: []
       tags:
         - Events
-      description: This endpoint creates an endpoint event
+      description: >-
+        This endpoint creates an endpoint event
+
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateEndpointEvent
       requestBody:
         content:
@@ -2425,6 +2574,13 @@ paths:
           in: path
           name: projectID
           required: true
+          schema:
+            type: string
+        - description: |-
+            URL-encoded JSON object matched against the event payload.
+            Combined with query as AND when both are set.
+          in: query
+          name: body
           schema:
             type: string
         - in: query
@@ -2474,7 +2630,10 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
-        - description: Any arbitrary value to filter the events payload
+        - description: >-
+            Matches event id prefix, idempotency key, event type, and source name.
+
+            A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
           schema:
@@ -2575,7 +2734,7 @@ paths:
                   - $ref: '#/components/schemas/util.ServerResponse'
                   - properties:
                       data:
-                        $ref: '#/components/schemas/models.EventResponse'
+                        $ref: '#/components/schemas/models.EventQueuedResponse'
                     type: object
           description: Created
         '400':
@@ -2623,6 +2782,8 @@ paths:
         - Events
       description: >-
         This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
+
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateBroadcastEvent
       requestBody:
         content:
@@ -2639,6 +2800,13 @@ paths:
           in: path
           name: projectID
           required: true
+          schema:
+            type: string
+        - description: |-
+            URL-encoded JSON object matched against the event payload.
+            Combined with query as AND when both are set.
+          in: query
+          name: body
           schema:
             type: string
         - in: query
@@ -2688,7 +2856,10 @@ paths:
           name: prev_page_cursor
           schema:
             type: string
-        - description: Any arbitrary value to filter the events payload
+        - description: >-
+            Matches event id prefix, idempotency key, event type, and source name.
+
+            A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
           schema:
@@ -2790,9 +2961,7 @@ paths:
                   - $ref: '#/components/schemas/util.ServerResponse'
                   - properties:
                       data:
-                        allOf:
-                          - $ref: '#/components/schemas/handlers.Stub'
-                        nullable: true
+                        $ref: '#/components/schemas/models.EventQueuedResponse'
                     type: object
           description: Created
         '400':
@@ -2839,7 +3008,9 @@ paths:
       tags:
         - Events
       description: >-
-        This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+        This endpoint creates a dynamic event without creating the endpoint and subscription ahead of time.
+
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateDynamicEvent
       requestBody:
         content:
@@ -2867,9 +3038,7 @@ paths:
                   - $ref: '#/components/schemas/util.ServerResponse'
                   - properties:
                       data:
-                        allOf:
-                          - $ref: '#/components/schemas/handlers.Stub'
-                        nullable: true
+                        $ref: '#/components/schemas/models.EventQueuedResponse'
                     type: object
           description: Created
         '400':
@@ -2917,6 +3086,8 @@ paths:
         - Events
       description: >-
         This endpoint uses the owner_id to fan out an event to multiple endpoints.
+
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateEndpointFanoutEvent
       requestBody:
         content:
@@ -6074,6 +6245,8 @@ components:
           type: integer
         support_email:
           type: string
+        teams_webhook_url:
+          type: string
         uid:
           type: string
         updated_at:
@@ -6150,14 +6323,18 @@ components:
           type: array
         event_type:
           type: string
+        failure_reason:
+          description: |-
+            FailureReason explains a Failure status to whoever is looking at the
+            dashboard. It carries operator facing text only, never endpoint
+            credentials, headers, or payload content.
+          type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         idempotency_key:
           type: string
         is_duplicate_event:
           type: boolean
-        metadata:
-          type: string
         project_id:
           type: string
         raw:
@@ -6556,6 +6733,14 @@ components:
       properties:
         add_event_id_trace_headers:
           type: boolean
+        allow_unmatched_dynamic_urls:
+          description: >-
+            AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the
+
+            project's endpoint URL templates auto-create an endpoint. Default false
+
+            rejects unmatched URLs.
+          type: boolean
         circuit_breaker:
           allOf:
             - $ref: '#/components/schemas/datastore.CircuitBreakerConfiguration'
@@ -6579,6 +6764,12 @@ components:
         request_id_header:
           $ref: '#/components/schemas/config.RequestIDHeaderProvider'
         search_policy:
+          description: >-
+            SearchPolicy is an optional Go duration (e.g. "24h") shown in project settings.
+
+            When set, the dashboard explains that payload/JSON search is additionally clamped
+
+            to this lookback intersected with the Events log date picker. Empty means opt-out.
           type: string
         signature:
           allOf:
@@ -6592,9 +6783,9 @@ components:
           allOf:
             - $ref: '#/components/schemas/datastore.StrategyConfiguration'
           nullable: true
-        sync_dynamic_event_ack:
+        verify_dynamic_events:
           description: >-
-            SyncDynamicEventAck waits for endpoint/subscription resolve before
+            VerifyDynamicEvents waits for endpoint/subscription resolve before
 
             returning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.
           type: boolean
@@ -7072,7 +7263,7 @@ components:
           description: >-
             Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
 
-            -- simple or advanced. If left unspecified, we default to false.
+            -- simple or advanced. Only applies to outgoing projects, where it defaults to true when omitted. Incoming projects always use advanced signatures.
           type: boolean
         appID:
           description: Deprecated but necessary for backward compatibility
@@ -7139,6 +7330,14 @@ components:
             Endpoint developers support email. This is used for communicating endpoint state
 
             changes. You should always turn this on when disabling endpoints are enabled.
+          type: string
+        teams_webhook_url:
+          description: >-
+            Microsoft Teams webhook URL is an alternative method to support email where endpoint
+
+            developers can receive failure notifications in a Teams channel. Use a Workflows
+
+            (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
           type: string
         url:
           description: >-
@@ -7399,6 +7598,19 @@ components:
         type:
           $ref: '#/components/schemas/datastore.EndpointAuthenticationType'
       type: object
+    models.EndpointPeriodFailureRate:
+      properties:
+        failure_count:
+          type: integer
+        period_failure_rate:
+          type: number
+        retry_count:
+          type: integer
+        success_count:
+          type: integer
+        uid:
+          type: string
+      type: object
     models.EndpointResponse:
       properties:
         advanced_signatures:
@@ -7481,6 +7693,8 @@ components:
           type: integer
         support_email:
           type: string
+        teams_webhook_url:
+          type: string
         uid:
           type: string
         updated_at:
@@ -7558,6 +7772,16 @@ components:
         url_query_params:
           type: string
       type: object
+    models.EventQueuedResponse:
+      properties:
+        event_type:
+          type: string
+        idempotency_key:
+          type: string
+        uid:
+          description: UID is the event id.
+          type: string
+      type: object
     models.EventResponse:
       properties:
         acknowledged_at:
@@ -7588,14 +7812,18 @@ components:
           type: array
         event_type:
           type: string
+        failure_reason:
+          description: |-
+            FailureReason explains a Failure status to whoever is looking at the
+            dashboard. It carries operator facing text only, never endpoint
+            credentials, headers, or payload content.
+          type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         idempotency_key:
           type: string
         is_duplicate_event:
           type: boolean
-        metadata:
-          type: string
         project_id:
           type: string
         raw:
@@ -8000,6 +8228,14 @@ components:
           description: >-
             Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
           type: boolean
+        allow_unmatched_dynamic_urls:
+          description: >-
+            AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the project's
+
+            endpoint URL templates auto-create an endpoint instead of failing. When false (the
+
+            default), a project with templates configured rejects unmatched URLs.
+          type: boolean
         circuit_breaker:
           allOf:
             - $ref: '#/components/schemas/datastore.CircuitBreakerConfiguration'
@@ -8057,9 +8293,9 @@ components:
             - $ref: '#/components/schemas/models.StrategyConfiguration'
           description: >-
             Strategy is used to configure the project's retry strategies for failing events.
-        sync_dynamic_event_ack:
+        verify_dynamic_events:
           description: >-
-            SyncDynamicEventAck waits for dynamic endpoint/subscription resolve before
+            VerifyDynamicEvents waits for dynamic endpoint/subscription resolve before
 
             acknowledging POST /events/dynamic. When false, the handler returns 201 after enqueue.
           type: boolean
@@ -8364,7 +8600,7 @@ components:
           description: >-
             Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
 
-            -- simple or advanced. If left unspecified, we default to false.
+            -- simple or advanced. Only applies to outgoing projects; omit it to keep the current value. Incoming projects always use advanced signatures.
           type: boolean
         authentication:
           allOf:
@@ -8427,6 +8663,14 @@ components:
             Endpoint developers support email. This is used for communicating endpoint state
 
             changes. You should always turn this on when disabling endpoints are enabled.
+          type: string
+        teams_webhook_url:
+          description: >-
+            Microsoft Teams webhook URL is an alternative method to support email where endpoint
+
+            developers can receive failure notifications in a Teams channel. Use a Workflows
+
+            (Power Automate) webhook URL; retired Office 365 connector URLs no longer deliver.
           type: string
         url:
           description: >-

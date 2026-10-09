@@ -1,9 +1,9 @@
-<div class="flex justify-between items-center mb-28px">
-  <div>
-    <h3 class="font-semibold">Circuit Breaker Configuration</h3>
-    <p class="text-12 text-neutral-10">Configure circuit breaker settings for projects. These settings control how endpoints are automatically disabled when they fail too frequently.</p>
-  </div>
+<div class="flex flex-col gap-4px mb-16px">
+  <h3 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary">Circuit breaker configuration</h3>
+  <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Configure circuit breaker settings for projects. These settings control how endpoints are automatically disabled when they fail too frequently.</p>
 </div>
+
+<div class="h-[1px] w-full bg-new.border mb-20px"></div>
 
 <!-- Organization Selector -->
 <div class="mb-24px" [formGroup]="organisationForm">
@@ -40,24 +40,24 @@
 
 <!-- Banner when no organization is selected -->
 @if (!selectedOrganisation) {
-  <div class="p-24px bg-neutral-a2 rounded-8px text-center mb-24px">
-    <p class="text-14 text-neutral-10">Select an organisation to configure circuit breaker settings</p>
+  <div class="p-24px bg-white-100 border border-new.border rounded-12px text-center mb-24px">
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Select an organisation to configure circuit breaker settings</p>
   </div>
 }
 
 <!-- Banner when no project is selected -->
 @if (selectedOrganisation && !selectedProject && !isLoadingProjects) {
-  <div class="p-24px bg-neutral-a2 rounded-8px text-center mb-24px">
-    <p class="text-14 text-neutral-10">Select a project to configure circuit breaker settings</p>
+  <div class="p-24px bg-white-100 border border-new.border rounded-12px text-center mb-24px">
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Select a project to configure circuit breaker settings</p>
   </div>
 }
 
 <!-- Circuit Breaker Configuration Form -->
 @if (selectedProject) {
   <div class="mb-24px">
-    <div convoy-card class="p-24px">
-      <div class="mb-24px">
-        <label convoy-label class="text-12 mb-8px block">{{ selectedProject.name }}</label>
+    <div class="bg-white-100 border border-new.border rounded-12px p-20px">
+      <div class="mb-20px">
+        <span class="font-heading font-medium text-[16px] leading-[24px] text-new.text-primary block">{{ selectedProject.name }}</span>
       </div>
       @if (isLoadingCircuitBreakerConfig) {
         <convoy-loader class="flex items-center justify-center py-40px"></convoy-loader>
@@ -76,7 +76,7 @@
                 placeholder="e.g. 30"
                 min="1"
                 />
-              <small class="text-10 text-neutral-9">Time interval for polling data source</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Time interval for polling data source</small>
               @if (circuitBreakerForm.get('sample_rate')?.touched && circuitBreakerForm.get('sample_rate')?.invalid) {
                 <convoy-input-error>
                   Sample rate must be greater than 0
@@ -93,7 +93,7 @@
                 placeholder="e.g. 30"
                 min="1"
                 />
-              <small class="text-10 text-neutral-9">Time before circuit breaker resets</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Time before circuit breaker resets</small>
               @if (circuitBreakerForm.get('error_timeout')?.touched && circuitBreakerForm.get('error_timeout')?.invalid) {
                 <convoy-input-error>
                   Error timeout must be greater than 0
@@ -111,7 +111,7 @@
                 min="0"
                 max="100"
                 />
-              <small class="text-10 text-neutral-9">Percentage of failures to trigger circuit breaker</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Percentage of failures to trigger circuit breaker</small>
               @if (circuitBreakerForm.get('failure_threshold')?.touched && circuitBreakerForm.get('failure_threshold')?.invalid) {
                 <convoy-input-error>
                   Failure threshold must be between 0 and 100
@@ -129,7 +129,7 @@
                 min="0"
                 max="100"
                 />
-              <small class="text-10 text-neutral-9">Percentage of successes to close circuit breaker</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Percentage of successes to close circuit breaker</small>
               @if (circuitBreakerForm.get('success_threshold')?.touched && circuitBreakerForm.get('success_threshold')?.invalid) {
                 <convoy-input-error>
                   Success threshold must be between 0 and 100
@@ -146,7 +146,7 @@
                 placeholder="e.g. 5"
                 min="1"
                 />
-              <small class="text-10 text-neutral-9">Time window for monitoring failures</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Time window for monitoring failures</small>
               @if (circuitBreakerForm.get('observability_window')?.touched && circuitBreakerForm.get('observability_window')?.invalid) {
                 <convoy-input-error>
                   Observability window must be greater than 0
@@ -163,7 +163,7 @@
                 placeholder="e.g. 10"
                 min="0"
                 />
-              <small class="text-10 text-neutral-9">Minimum requests before triggering</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Minimum requests before triggering</small>
               @if (circuitBreakerForm.get('minimum_request_count')?.touched && circuitBreakerForm.get('minimum_request_count')?.invalid) {
                 <convoy-input-error>
                   Minimum request count must be 0 or greater
@@ -180,7 +180,7 @@
                 placeholder="e.g. 5"
                 min="0"
                 />
-              <small class="text-10 text-neutral-9">Consecutive failures before disabling endpoint</small>
+              <small class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px block">Consecutive failures before disabling endpoint</small>
               @if (circuitBreakerForm.get('consecutive_failure_threshold')?.touched && circuitBreakerForm.get('consecutive_failure_threshold')?.invalid) {
                 <convoy-input-error>
                   Consecutive failure threshold must be 0 or greater
@@ -190,30 +190,24 @@
           </div>
           <div class="flex justify-end gap-12px mt-24px">
             <button
-              convoy-button
               type="button"
-              size="sm"
-              color="neutral"
-              fill="outline"
+              class="px-16px py-10px rounded-full bg-new.surface-muted font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-all hover:opacity-80 disabled:opacity-50 disabled:pointer-events-none"
               [disabled]="isSavingCircuitBreakerConfig || !circuitBreakerForm.dirty"
               (click)="resetCircuitBreakerForm()"
               >
               Cancel
             </button>
             <button
-              convoy-button
               type="button"
-              size="sm"
-              color="primary"
-              fill="solid"
+              class="px-16px py-10px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none"
               [disabled]="isSavingCircuitBreakerConfig || !circuitBreakerForm.valid || !circuitBreakerForm.dirty"
               (click)="saveCircuitBreakerConfig()"
               >
               @if (!isSavingCircuitBreakerConfig) {
-                <span class="text-white-100">Save Configuration</span>
+                <span>Save Configuration</span>
               }
               @if (isSavingCircuitBreakerConfig) {
-                <span class="text-white-100">Saving...</span>
+                <span>Saving...</span>
               }
             </button>
           </div>

@@ -40,7 +40,10 @@ type EventRepository interface {
 	ExportRepository
 	CreateEvent(context.Context, *Event) error
 	UpdateEventEndpoints(context.Context, *Event, []string) error
-	UpdateEventStatus(context.Context, *Event, EventStatus) error
+	// UpdateEventStatus sets the status and the operator facing failure reason.
+	// Pass an empty reason for non-failure statuses so a later success clears
+	// the reason recorded by an earlier failed attempt.
+	UpdateEventStatus(context.Context, *Event, EventStatus, string) error
 	FindEventByID(ctx context.Context, projectID string, id string) (*Event, error)
 	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)
@@ -208,7 +211,11 @@ type EndpointRepository interface {
 	FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*Endpoint, error)
 	FindEndpointsWithURLTemplates(ctx context.Context, projectID string) ([]Endpoint, error)
 	UpdateEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
-	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) error
+	// UpdateEndpointStatus writes the status, re-applying one the endpoint
+	// already holds without erroring, because callers do that on a schedule. It
+	// reports whether the write changed the status, which is what callers alert
+	// on so a repeated write does not repeat the alert.
+	UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status EndpointStatus) (bool, error)
 	DeleteEndpoint(ctx context.Context, endpoint *Endpoint, projectID string) error
 	CountProjectEndpoints(ctx context.Context, projectID string) (int64, error)
 	LoadEndpointsPaged(ctx context.Context, projectID string, filter *Filter, pageable Pageable) ([]Endpoint, PaginationData, error)
@@ -273,6 +280,9 @@ type JobRepository interface {
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error
+	// RotateEmailVerificationToken updates token fields only while email_verified
+	// is still false. 0 rows means the account verified concurrently.
+	RotateEmailVerificationToken(ctx context.Context, userID, token string, expiresAt time.Time) error
 	CountUsers(ctx context.Context) (int64, error)
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)

@@ -15,7 +15,6 @@ import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { MultiInputComponent } from 'src/app/components/multi-input/multi-input.component';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { SourceURLComponent } from './source-url/source-url.component';
 import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
@@ -43,7 +42,6 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		ToggleComponent,
 		MultiInputComponent,
 		DialogDirective,
-		NotificationComponent,
 		ConfigButtonComponent,
 		SourceURLComponent,
         CreateTransformFunctionComponent,

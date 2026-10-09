@@ -22,7 +22,6 @@ type Querier interface {
 	CountDeliveriesByStatus(ctx context.Context, arg CountDeliveriesByStatusParams) (pgtype.Int8, error)
 	CountEventDeliveries(ctx context.Context, arg CountEventDeliveriesParams) (pgtype.Int8, error)
 	CountExportedEventDeliveries(ctx context.Context, arg CountExportedEventDeliveriesParams) (pgtype.Int8, error)
-	CountPrevEventDeliveries(ctx context.Context, arg CountPrevEventDeliveriesParams) (pgtype.Int8, error)
 	// Event Deliveries Repository SQL Queries
 	// Migrated from database/postgres/event_delivery.go to sqlc
 	// ============================================================================
@@ -52,9 +51,12 @@ type Querier interface {
 	// ============================================================================
 	// Group 4: Pagination
 	// ============================================================================
-	// TODO(perf): this query fetches all columns including large JSONB blobs (metadata, headers, cli_metadata).
-	// Consider a "slim" paginated query variant that omits heavy columns for list views.
-	LoadEventDeliveriesPaged(ctx context.Context, arg LoadEventDeliveriesPagedParams) ([]LoadEventDeliveriesPagedRow, error)
+	// Hydrate a page of delivery ids. The id scan lives in Go (listFilter) so
+	// status, cursor, and other optional filters are real predicates, not CASE
+	// wrappers. Generic plans of the old InnerDesc/InnerAsc queries timed out on
+	// rare-status page 2 because those CASE clauses kept status and the keyset
+	// out of index cond. ORDER BY here is only the ~page of already-chosen ids.
+	HydrateEventDeliveriesPage(ctx context.Context, arg HydrateEventDeliveriesPageParams) ([]HydrateEventDeliveriesPageRow, error)
 	// ============================================================================
 	// Group 5: Intervals
 	// ============================================================================
@@ -62,7 +64,19 @@ type Querier interface {
 	LoadEventDeliveryIntervalsMonthly(ctx context.Context, arg LoadEventDeliveryIntervalsMonthlyParams) ([]LoadEventDeliveryIntervalsMonthlyRow, error)
 	LoadEventDeliveryIntervalsWeekly(ctx context.Context, arg LoadEventDeliveryIntervalsWeeklyParams) ([]LoadEventDeliveryIntervalsWeeklyRow, error)
 	LoadEventDeliveryIntervalsYearly(ctx context.Context, arg LoadEventDeliveryIntervalsYearlyParams) ([]LoadEventDeliveryIntervalsYearlyRow, error)
+	// Records the delivery's day as stale for the per-status rollup unless the row
+	// was created today, which the refresh window covers no matter when the next
+	// run lands. Yesterday does not qualify: a run a second after midnight covers
+	// today and yesterday as they are then, which no longer includes the day this
+	// update touched. Those markers cost an idempotent insert and are cleared by
+	// the window refresh itself, so they never reach the drain.
+	//
+	// Same statement as the status write, so a status change cannot land without
+	// the rollup learning that the day moved.
 	UpdateEventDeliveryMetadata(ctx context.Context, arg UpdateEventDeliveryMetadataParams) error
+	// Marks stale days the same way as UpdateEventDeliveryMetadata. This is the
+	// path force resend and batch retry take, which is how a day long past the
+	// refresh window gets its statuses rewritten in bulk.
 	UpdateStatusOfEventDeliveries(ctx context.Context, arg UpdateStatusOfEventDeliveriesParams) error
 }
 

@@ -5,7 +5,12 @@ import { Component, Input, OnInit } from '@angular/core';
     selector: 'convoy-tooltip',
     imports: [],
     templateUrl: './tooltip.component.html',
-    styleUrls: ['./tooltip.component.scss']
+    styleUrls: ['./tooltip.component.scss'],
+	host: {
+		'[class.block]': 'fillHost',
+		'[class.w-full]': 'fillHost',
+		'[class.min-w-0]': 'fillHost'
+	}
 })
 export class TooltipComponent implements OnInit {
 	@Input('size') size: 'sm' | 'md' = 'md';
@@ -16,6 +21,25 @@ export class TooltipComponent implements OnInit {
 	@Input('tooltipContent') tooltipContent!: string;
 	@Input('type') type: 'primary' | 'white' = 'white';
 	@Input('className') class!: string;
+
+	// The tooltip body only appears on hover and focus, so a value whose whole
+	// explanation lives in there is unreadable to a screen reader and on touch.
+	// Callers whose toggle is not self-explanatory, a bare dash standing in for a
+	// value that could not be read, pass the same text here. Left unset the
+	// button keeps the name the browser computes from its contents, so existing
+	// callers are unchanged.
+	@Input('ariaLabel') ariaLabel = '';
+
+	// When false, the tooltip body stays pointer-events-none even on hover so
+	// read-only table tooltips do not intercept clicks on nearby row actions.
+	@Input('interactive') interactive = true;
+
+	// Stretch the hover target to the host width so read-only table tooltips stay
+	// open while the pointer is anywhere in the cell, not only on the toggle text.
+	@Input('fillHost') fillHost = false;
+
+	// Sit above dropdown dismiss overlays (z-55) but below open menus (z-60).
+	@Input('stackAboveOverlay') stackAboveOverlay = false;
 
 	constructor() {}
 
@@ -34,6 +58,24 @@ export class TooltipComponent implements OnInit {
 			'top-right': `-right-[160px] after:right-[157px] bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`,
 			'top-left': `-right-[16px] after:right-[15px] bottom-[calc(100%+20px)] after:-bottom-[19px] after:border-b-transparent after:border-x-transparent`
 		};
-		return `${positions[this.position]} ${colors[this.color]}  min-w-[192px] ${this.class}`;
+		// Overlay classes live on the same [class] binding as position/color.
+		// A static class= plus [class] string overwrites the static list, which
+		// dropped `absolute` and let min-w-[192px] bodies sit in layout.
+		const pointerEvents = this.interactive
+			? 'group-hover/tooltip:pointer-events-auto group-focus-within/tooltip:pointer-events-auto group-focus/tooltip:pointer-events-auto pointer-events-none'
+			: 'pointer-events-none';
+		const zIndex = this.stackAboveOverlay ? 'z-[56]' : 'z-50';
+		return `absolute opacity-0 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 group-focus/tooltip:opacity-100 ${pointerEvents} transition-all ${zIndex} rounded-8px p-14px text-12 text-left after:content-[''] after:absolute font-light after:border-[10px] ${positions[this.position]} ${colors[this.color]} min-w-[192px] ${this.class}`;
 	}
+
+	get hostClasses(): string {
+		const width = this.fillHost ? 'w-full max-w-full' : 'w-fit max-w-full';
+		return `relative inline-flex flex-col items-stretch ${width} group/tooltip`;
+	}
+
+	get toggleClasses(): string {
+		const base = 'inline-flex flex-col w-full border-0 bg-transparent p-0';
+		return this.fillHost ? `${base} items-end text-right` : `${base} items-stretch text-left`;
+	}
+
 }

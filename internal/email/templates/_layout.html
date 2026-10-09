@@ -1,0 +1,74 @@
+{{define "email_styles"}}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body, table, td, p, a, li {
+        font-family: 'Inter', Arial, sans-serif;
+    }
+
+    /* The desktop gutters are wider than a phone can spare: 37px each side
+       leaves 286px of a 360px screen. Clients that drop this block still lay
+       out correctly, because every table here is fluid. */
+    @media only screen and (max-width: 600px) {
+        .gutter {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+        }
+        .card-pad {
+            padding: 24px 20px 16px 20px !important;
+        }
+        .card-foot {
+            padding: 0 20px 24px 20px !important;
+        }
+    }
+</style>
+{{end}}
+
+{{define "email_header"}}
+<tr>
+    <td style="padding: 0; background-color: #ffffff;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border: none; border-spacing: 0;">
+            <tr>
+                <td align="center" class="gutter" style="padding: 36px 37px 0 37px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width: 100%; border: none; border-spacing: 0;">
+                        <tr>
+                            <td background="https://www.getconvoy.io/images/email/email-dots-left.png" bgcolor="#0082F9" valign="middle" align="center" style="
+                                    height: 134px;
+                                    background-color: #0082F9;
+                                    background-image: url('https://www.getconvoy.io/images/email/email-dots-left.png'), url('https://www.getconvoy.io/images/email/email-dots-right.png');
+                                    background-repeat: no-repeat, no-repeat;
+                                    background-position: left top, right top;
+                                    background-size: 203px 203px, 176px 176px;
+                                ">
+                                <!--[if gte mso 9]>
+                                <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="width:582px;height:134px;">
+                                    <v:fill type="frame" src="https://www.getconvoy.io/images/email/email-dots-left.png" color="#0082F9" />
+                                    <v:textbox inset="0,0,0,0">
+                                <![endif]-->
+                                <img src="https://www.getconvoy.io/images/email/email-logo-white.png"
+                                     alt="Convoy"
+                                     width="216"
+                                     height="44"
+                                     style="display: block; margin: 0 auto; border: 0; height: 44px; width: 216px; max-width: 100%;">
+                                <!--[if gte mso 9]>
+                                    </v:textbox>
+                                </v:rect>
+                                <![endif]-->
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+{{end}}
+
+{{define "email_footer"}}
+<tr>
+    <td class="card-foot" style="padding: 0 32px 32px 32px; background-color: #F7F7F7;">
+        <p style="margin: 0; font-family: 'Inter', Arial, sans-serif; font-weight: 400; font-size: 11px; line-height: 22px; color: #9B9B9B;">
+            © {{ currentYear }} Frain Technologies | 2261 Market Street, San Francisco, CA 94114
+        </p>
+    </td>
+</tr>
+{{end}}

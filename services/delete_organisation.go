@@ -106,7 +106,7 @@ func SoftDeleteOrganisationWithCascade(ctx context.Context, deps SoftDeleteOrgan
 
 	if deps.Cache != nil && deps.Logger != nil {
 		for _, projectID := range projectIDs {
-			cachedrepo.Invalidate(ctx, deps.Cache, deps.Logger, "projects:"+projectID)
+			cachedrepo.Invalidate(ctx, deps.Cache, deps.Logger, cached.ProjectCacheKey(projectID))
 		}
 		for _, maskID := range maskIDs {
 			cachedrepo.Invalidate(ctx, deps.Cache, deps.Logger, "apikeys_by_mask:"+maskID)

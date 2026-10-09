@@ -35,6 +35,16 @@ UPDATE convoy.users SET
     updated_at = CURRENT_TIMESTAMP
 WHERE id = @id AND deleted_at IS NULL;
 
+-- Rotate verification token only while the account is still unverified.
+-- Prevents a stale resend UpdateUser from undoing VerifyEmailService.
+-- name: RotateEmailVerificationToken :execresult
+UPDATE convoy.users SET
+    email_verification_token = @email_verification_token,
+    email_verification_expires_at = @email_verification_expires_at,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = @id AND deleted_at IS NULL AND email_verified = false;
+
+
 -- ============================================================================
 -- FETCH Operations
 -- ============================================================================

@@ -4,13 +4,20 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
+	partman "github.com/jirevwe/gopartman"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/delivery_attempts"
+	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/events"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/testenv"
@@ -46,9 +53,6 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 
 	ctx := context.Background()
 
-	err := config.LoadConfig("")
-	require.NoError(t, err)
-
 	conn, err := testEnv.CloneTestDatabase(t, "convoy")
 	require.NoError(t, err)
 
@@ -73,4 +77,642 @@ func TestUnpartitionedTables(t *testing.T) {
 	missing, err = UnpartitionedTables(ctx, db)
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"event_deliveries", "delivery_attempts"}, missing)
+}
+
+// Partitioning a table is only half of enabling retention: gopartman still has
+// to adopt the existing children into partman.partitions, and it only adopts
+// the ones whose name it can parse. Adoption failures are reported rather than
+// returned as errors, so nothing fails loudly when this breaks. The observable
+// symptom is that retention runs forever and drops nothing, which is why this
+// asserts on partman's own bookkeeping rather than on the partition names.
+func TestRegisterParentsAdoptsExistingPartitions(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	projectID := seedProjectWithEvent(t, db)
+
+	eventsRepo := events.New(log.New("convoy", log.LevelInfo), db)
+	require.NoError(t, eventsRepo.PartitionEventsTable(ctx))
+
+	policy, err := NewPartitionRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour)
+	require.NoError(t, err)
+
+	policy.registerParents(ctx)
+
+	var adopted int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT count(*)
+        FROM partman.partitions p
+        JOIN partman.parent_tables t ON t.id = p.parent_table_id
+        WHERE t.table_name = 'events' AND p.tenant_id = $1`, projectID).Scan(&adopted))
+
+	require.NotZero(t, adopted,
+		"retention adopted no partitions for convoy.events tenant %s, so it will never drop anything",
+		projectID)
+}
+
+// Instances partitioned before the naming fix carry children whose tenant
+// segment PostgreSQL folded to lower case. gopartman v0.2.0 parses a child name
+// against its parent instead of guessing where the tenant starts, so those names
+// are adopted as they are. This is what lets an existing instance heal on upgrade
+// rather than needing every partition renamed by hand, so it is asserted here and
+// not left as a property of the dependency.
+func TestRegisterParentsAdoptsFoldedPartitionNames(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithEvent(t, db)
+
+	eventsRepo := events.New(log.New("convoy", log.LevelInfo), db)
+	require.NoError(t, eventsRepo.PartitionEventsTable(ctx))
+
+	// Reproduce the pre-fix state by folding a child's name back down.
+	var current string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT c.relname
+        FROM pg_catalog.pg_inherits i
+        JOIN pg_catalog.pg_class c ON c.oid = i.inhrelid
+        JOIN pg_catalog.pg_class p ON p.oid = i.inhparent
+        JOIN pg_catalog.pg_namespace n ON n.oid = p.relnamespace
+        WHERE n.nspname = 'convoy' AND p.relname = 'events'
+        ORDER BY c.relname
+        LIMIT 1`).Scan(&current))
+
+	folded := strings.ToLower(current)
+	require.NotEqual(t, current, folded, "partition name held no upper case, so this test proves nothing")
+
+	_, err := db.GetDB().ExecContext(ctx,
+		fmt.Sprintf(`ALTER TABLE convoy.%q RENAME TO %q`, current, folded))
+	require.NoError(t, err)
+
+	policy, err := NewPartitionRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour)
+	require.NoError(t, err)
+
+	policy.registerParents(ctx)
+
+	// Metadata stores the schema-qualified name exactly as PostgreSQL holds it,
+	// so the recorded name must still resolve to a real relation: retention drops
+	// by this value, and a canonicalised copy would name a table that is not there.
+	var tenant string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT p.tenant_id
+        FROM partman.partitions p
+        JOIN partman.parent_tables t ON t.id = p.parent_table_id
+        WHERE t.table_name = 'events' AND p.name = $1`, "convoy."+folded).Scan(&tenant),
+		"convoy.%s was not adopted, so retention will never drop it and instances partitioned before the naming fix still need manual renames",
+		folded)
+
+	// Tenant identity comes from the partition bound, not the folded name, so one
+	// tenant keeps one form in metadata however its children happen to be spelled.
+	require.Equal(t, strings.ToUpper(tenant), tenant,
+		"tenant recorded as %q from a folded child name, so the same tenant now has two identities in metadata", tenant)
+}
+
+// seedProjectWithEvent inserts the minimum chain convoy.events requires
+// (user, organisation, project configuration, project) plus one event, because
+// the partition helpers only create children for days that already hold rows.
+func seedProjectWithEvent(t *testing.T, db database.Database) string {
+	t.Helper()
+
+	ctx := context.Background()
+	userID := ulid.Make().String()
+	orgID := ulid.Make().String()
+	configID := ulid.Make().String()
+	projectID := ulid.Make().String()
+
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.users (id, first_name, last_name, email, password, email_verified)
+        VALUES ($1, 'retention', 'test', $2, 'x', true)`, userID, userID+"@example.com")
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.organisations (id, name, owner_id) VALUES ($1, 'retention-test', $2)`, orgID, userID)
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.project_configurations (
+            id, max_payload_read_size, replay_attacks_prevention_enabled,
+            ratelimit_count, ratelimit_duration, strategy_type, strategy_duration,
+            strategy_retry_count, signature_header, signature_versions)
+        VALUES ($1, 51200, false, 1000, 60, 'linear', 100, 10, 'X-Convoy-Signature', '[]'::jsonb)`, configID)
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.projects (id, name, type, organisation_id, project_configuration_id)
+        VALUES ($1, 'retention-test', 'outgoing', $2, $3)`, projectID, orgID, configID)
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.events (id, event_type, project_id, raw, data, url_path)
+        VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/')`, ulid.Make().String(), projectID)
+	require.NoError(t, err)
+
+	return projectID
+}
+
+// Converting event_deliveries adopts the pre-conversion table as the parent's
+// DEFAULT partition instead of copying it into daily children, and gopartman
+// will not drop a default. Without this step every row written before the
+// conversion outlives the retention period permanently, which on a real
+// instance is nearly the whole table.
+func TestDropsAdoptedHistoryPartitionOnceEveryRowExpired(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithDelivery(t, db, time.Now().AddDate(0, 0, -90))
+	partitionDeliveries(t, ctx, db)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped, "history partition survived with every row 90 days past a 24 hour retention period")
+	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
+
+	// gopartman allows one default per parent, so a metadata row left pointing at
+	// a table that no longer exists blocks the next one from being registered.
+	// It stores the name schema qualified, which is the form the delete has to
+	// match.
+	var orphaned int
+	require.NoError(t, db.GetDB().QueryRowContext(ctx,
+		`SELECT count(*) FROM partman.partitions WHERE name = $1`,
+		"convoy.event_deliveries_default").Scan(&orphaned))
+	require.Zero(t, orphaned, "the dropped partition is still registered with gopartman")
+}
+
+// The gate is the newest row, not the partition's declared bound, so a
+// partition that still holds live rows is never dropped early.
+func TestKeepsAdoptedHistoryPartitionWhileItHoldsLiveRows(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithDelivery(t, db, time.Now())
+	partitionDeliveries(t, ctx, db)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.False(t, dropped, "dropped a history partition holding rows inside the retention period")
+	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
+// gopartman provisions a default under the same name to catch rows that arrive
+// when a day partition is missing. That one holds live data and must never be
+// dropped on a schedule, so the bounds constraint the conversion writes is what
+// authorises the drop. Removing it here reproduces the catch-all exactly.
+func TestNeverDropsADefaultThatIsNotAnAdoptedTable(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithDelivery(t, db, time.Now().AddDate(0, 0, -90))
+	partitionDeliveries(t, ctx, db)
+
+	_, err := db.GetDB().ExecContext(ctx,
+		`ALTER TABLE convoy.event_deliveries_default DROP CONSTRAINT event_deliveries_default_bounds`)
+	require.NoError(t, err)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.False(t, dropped, "dropped a default that carries no conversion bound, which is where misrouted live rows land")
+	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
+func TestUnpartitionedTablesEmptyOnceEveryRetentionTableIsPartitioned(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	seedProjectWithEvent(t, db)
+	partitionAll(t, ctx, db)
+
+	missing, err := UnpartitionedTables(ctx, db)
+	require.NoError(t, err)
+	require.Empty(t, missing)
+}
+
+func TestDropsAdoptedHistoryPartitionForEveryRetentionTable(t *testing.T) {
+	expired := time.Now().AddDate(0, 0, -90)
+
+	for _, table := range RetentionTables {
+		t.Run(table, func(t *testing.T) {
+			db, ctx := setupTestDB(t)
+			seedExpiredRow(t, db, table, expired)
+			partitionTable(t, ctx, db, table)
+
+			policy := newDropPolicy(t, db, 24*time.Hour)
+			policy.registerParents(ctx)
+
+			dropped, _, err := policy.dropAdoptedPartition(ctx, table)
+			require.NoError(t, err)
+			require.True(t, dropped, "history partition survived with every row 90 days past a 24 hour retention period")
+			require.False(t, relationExists(t, ctx, db, table+"_default"))
+
+			var orphaned int
+			require.NoError(t, db.GetDB().QueryRowContext(ctx,
+				`SELECT count(*) FROM partman.partitions WHERE name = $1`,
+				"convoy."+table+"_default").Scan(&orphaned))
+			require.Zero(t, orphaned, "the dropped partition is still registered with gopartman")
+		})
+	}
+}
+
+func TestLeavesEmptyAdoptedHistoryPartition(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	projectID := seedProjectWithEvent(t, db)
+	_, err := db.GetDB().ExecContext(ctx, `DELETE FROM convoy.events WHERE project_id = $1`, projectID)
+	require.NoError(t, err)
+	partitionTable(t, ctx, db, "events")
+
+	dropped, _, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "events")
+	require.NoError(t, err)
+	require.False(t, dropped, "dropped an empty adopted partition, which still routes rows below the conversion cutoff")
+	require.True(t, relationExists(t, ctx, db, "events_default"))
+}
+
+func TestKeepsAdoptedHistoryPartitionWhenOldestIsExpiredButNewestIsLive(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	projectID := seedProjectWithDelivery(t, db, time.Now().AddDate(0, 0, -90))
+	var eventID, subscriptionID string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx,
+		`SELECT event_id, subscription_id FROM convoy.event_deliveries WHERE project_id = $1`, projectID).
+		Scan(&eventID, &subscriptionID))
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.event_deliveries (
+            id, status, description, project_id, event_id, subscription_id, metadata, created_at)
+        VALUES ($1, 'Success', '', $2, $3, $4, '{}'::jsonb, $5)`,
+		ulid.Make().String(), projectID, eventID, subscriptionID, time.Now())
+	require.NoError(t, err)
+	partitionDeliveries(t, ctx, db)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.False(t, dropped, "dropped a history partition because it also held expired rows")
+	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
+func TestDropAdoptedPartitionNoopsWhenDefaultIsMissing(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	dropped, _, err := newDropPolicy(t, db, 24*time.Hour).dropAdoptedPartition(ctx, "events")
+	require.NoError(t, err)
+	require.False(t, dropped)
+}
+
+func TestDropAdoptedPartitionStillDropsWhenCountBudgetIsGone(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedExpiredRow(t, db, "event_deliveries", time.Now().AddDate(0, 0, -90))
+	partitionDeliveries(t, ctx, db)
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	// Remaining deadline is under the count cap, so COUNT(*) skips.
+	// DROP still uses this ctx and must succeed.
+	jobCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	dropped, _, err := policy.dropAdoptedPartition(jobCtx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped, "history partition survived because the row count consumed the job deadline")
+	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
+func TestDropAdoptedPartitionIsIdempotent(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedExpiredRow(t, db, "event_deliveries", time.Now().AddDate(0, 0, -90))
+	partitionDeliveries(t, ctx, db)
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped)
+
+	dropped, _, err = policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.False(t, dropped)
+}
+
+func TestDropExpiredAdoptedPartitionsDoesNotDropALiveSiblingTable(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	projectID := seedProjectWithDelivery(t, db, time.Now())
+	_, err := db.GetDB().ExecContext(ctx,
+		`UPDATE convoy.events SET created_at = $1 WHERE project_id = $2`,
+		time.Now().AddDate(0, 0, -90), projectID)
+	require.NoError(t, err)
+	partitionTable(t, ctx, db, "events")
+	partitionDeliveries(t, ctx, db)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+	policy.dropExpiredAdoptedPartitions(ctx, RunDetails{})
+
+	require.False(t, relationExists(t, ctx, db, "events_default"), "expired events history was not dropped")
+	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"), "live deliveries history was dropped because a sibling expired")
+}
+
+func TestDroppingAdoptedHistoryLeavesDailyPartitions(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedExpiredRow(t, db, "event_deliveries", time.Now().AddDate(0, 0, -90))
+	partitionDeliveries(t, ctx, db)
+
+	daily := childPartitions(t, ctx, db, "event_deliveries")
+	require.Greater(t, len(daily), 1, "conversion created no daily partitions to leave behind")
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+	dropped, _, err := policy.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped)
+
+	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
+	for _, child := range daily {
+		if child == "event_deliveries_default" {
+			continue
+		}
+		require.True(t, relationExists(t, ctx, db, child), "daily partition %s was dropped with the history partition", child)
+	}
+}
+
+func TestLicensedRetentionPolicySkipsWhenTablesAreUnpartitioned(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	ctx, cancel := context.WithCancel(ctx)
+	t.Cleanup(cancel)
+
+	policy := NewLicensedRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour)
+	policy.Start(ctx, time.Hour)
+	require.NoError(t, policy.Perform(ctx))
+
+	runs, err := NewRunStore(db).List(ctx, 10)
+	require.NoError(t, err)
+	require.Empty(t, runs, "pre-partition skips are log-only; retention_runs records Maintain only")
+
+	missing, err := UnpartitionedTables(ctx, db)
+	require.NoError(t, err)
+	require.ElementsMatch(t, RetentionTables, missing)
+}
+
+// RegisterParent is insert-if-absent. A later config change plus a full
+// restart used to leave partman.parent_tables.retention_period on the first
+// write, so Maintain kept dropping on the old window while dropAdoptedPartition
+// used the new one.
+func TestRegisterParentsReconcilesStoredRetentionPeriod(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	seedProjectWithEvent(t, db)
+	partitionAll(t, ctx, db)
+
+	first := newDropPolicy(t, db, 720*time.Hour)
+	first.registerParents(ctx)
+	require.Equal(t, 720*time.Hour, storedRetentionPeriod(t, ctx, first, "events"))
+
+	second := newDropPolicy(t, db, 360*time.Hour)
+	second.registerParents(ctx)
+	require.Equal(t, 360*time.Hour, storedRetentionPeriod(t, ctx, second, "events"),
+		"stored retention_period stayed on the first register, so daily drops keep the old window")
+
+	for _, table := range RetentionTables {
+		require.Equal(t, 360*time.Hour, storedRetentionPeriod(t, ctx, second, table), table)
+	}
+
+	second.registerParents(ctx)
+	require.Equal(t, 360*time.Hour, storedRetentionPeriod(t, ctx, second, "events"),
+		"second reconcile rewrote a period that already matched")
+}
+
+func TestRegisterParentsReconcilesStoredPremake(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	seedProjectWithEvent(t, db)
+	partitionAll(t, ctx, db)
+
+	policy := newDropPolicy(t, db, 24*time.Hour)
+	policy.registerParents(ctx)
+
+	_, err := db.GetConn().Exec(ctx, `
+        UPDATE partman.parent_tables
+        SET premake = 1
+        WHERE schema_name = $1 AND table_name = $2`, retentionSchema, "events")
+	require.NoError(t, err)
+
+	policy.registerParents(ctx)
+	require.Equal(t, retentionPremake, storedPremake(t, ctx, policy, "events"),
+		"stored premake stayed on the first register")
+}
+
+func TestLicensedRetentionPolicyRefusesActivationBeforeStart(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	seedProjectWithEvent(t, db)
+	partitionAll(t, ctx, db)
+
+	err := NewLicensedRetentionPolicy(db, log.New("convoy", log.LevelInfo), 24*time.Hour).Perform(ctx)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Start has not run")
+}
+
+func storedParent(t *testing.T, ctx context.Context, policy *PartitionRetentionPolicy, table string) partman.ParentInfo {
+	t.Helper()
+
+	parent, err := policy.storedParent(ctx, table)
+	require.NoError(t, err)
+	return parent
+}
+
+// A 10-day-old adopted heap is expired under 24h and live under 720h. The
+// drop must follow the stored window, not the in-process period, or the two
+// drop paths disagree after a config change that has not been reconciled.
+func TestDropAdoptedPartitionUsesStoredRetentionPeriod(t *testing.T) {
+	db, ctx := setupTestDB(t)
+
+	seedProjectWithDelivery(t, db, time.Now().AddDate(0, 0, -10))
+	partitionDeliveries(t, ctx, db)
+
+	registered := newDropPolicy(t, db, 720*time.Hour)
+	registered.registerParents(ctx)
+
+	inProcess := newDropPolicy(t, db, 24*time.Hour)
+	dropped, _, err := inProcess.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.False(t, dropped, "dropped on the in-process 24h period instead of the stored 720h window")
+	require.True(t, relationExists(t, ctx, db, "event_deliveries_default"))
+
+	inProcess.registerParents(ctx)
+	dropped, _, err = inProcess.dropAdoptedPartition(ctx, "event_deliveries")
+	require.NoError(t, err)
+	require.True(t, dropped, "stored 24h window did not drop a 10-day-old history partition")
+	require.False(t, relationExists(t, ctx, db, "event_deliveries_default"))
+}
+
+func storedRetentionPeriod(t *testing.T, ctx context.Context, policy *PartitionRetentionPolicy, table string) time.Duration {
+	t.Helper()
+	return storedParent(t, ctx, policy, table).RetentionPeriod
+}
+
+func storedPremake(t *testing.T, ctx context.Context, policy *PartitionRetentionPolicy, table string) int {
+	t.Helper()
+	return storedParent(t, ctx, policy, table).Premake
+}
+
+func newDropPolicy(t *testing.T, db database.Database, period time.Duration) *PartitionRetentionPolicy {
+	t.Helper()
+
+	policy, err := NewPartitionRetentionPolicy(db, log.New("convoy", log.LevelInfo), period)
+	require.NoError(t, err)
+	return policy
+}
+
+func partitionDeliveries(t *testing.T, ctx context.Context, db database.Database) {
+	t.Helper()
+	partitionTable(t, ctx, db, "event_deliveries")
+}
+
+func partitionAll(t *testing.T, ctx context.Context, db database.Database) {
+	t.Helper()
+	for _, table := range RetentionTables {
+		partitionTable(t, ctx, db, table)
+	}
+}
+
+func partitionTable(t *testing.T, ctx context.Context, db database.Database, table string) {
+	t.Helper()
+
+	logger := log.New("convoy", log.LevelInfo)
+	switch table {
+	case "events":
+		require.NoError(t, events.New(logger, db).PartitionEventsTable(ctx))
+	case "events_search":
+		require.NoError(t, events.New(logger, db).PartitionEventsSearchTable(ctx))
+	case "event_deliveries":
+		// The delivery repository resolves the change hook when it is constructed.
+		hooks.Init().RegisterHook(datastore.EventDeliveryUpdated, func(context.Context, any, any) {})
+		require.NoError(t, event_deliveries.New(logger, db).PartitionEventDeliveriesTable(ctx))
+	case "delivery_attempts":
+		require.NoError(t, delivery_attempts.New(logger, db).PartitionDeliveryAttemptsTable(ctx))
+	default:
+		t.Fatalf("unknown retention table %s", table)
+	}
+}
+
+func seedExpiredRow(t *testing.T, db database.Database, table string, created time.Time) {
+	t.Helper()
+
+	switch table {
+	case "events":
+		projectID := seedProjectWithEvent(t, db)
+		_, err := db.GetDB().ExecContext(context.Background(),
+			`UPDATE convoy.events SET created_at = $1 WHERE project_id = $2`, created, projectID)
+		require.NoError(t, err)
+	case "events_search":
+		projectID := seedProjectWithEvent(t, db)
+		_, err := db.GetDB().ExecContext(context.Background(), `
+            INSERT INTO convoy.events_search (id, event_type, project_id, raw, data, url_path, created_at)
+            VALUES ($1, 'test.event', $2, '{}', '{}'::bytea, '/', $3)`,
+			ulid.Make().String(), projectID, created)
+		require.NoError(t, err)
+	case "event_deliveries":
+		seedProjectWithDelivery(t, db, created)
+	case "delivery_attempts":
+		seedProjectWithAttempt(t, db, created)
+	default:
+		t.Fatalf("unknown retention table %s", table)
+	}
+}
+
+func seedProjectWithAttempt(t *testing.T, db database.Database, created time.Time) string {
+	t.Helper()
+
+	ctx := context.Background()
+	projectID := seedProjectWithDelivery(t, db, created)
+
+	var deliveryID string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx,
+		`SELECT id FROM convoy.event_deliveries WHERE project_id = $1`, projectID).Scan(&deliveryID))
+
+	endpointID := ulid.Make().String()
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.endpoints (
+            id, name, status, url, http_timeout, rate_limit, rate_limit_duration,
+            advanced_signatures, project_id, secrets)
+        VALUES ($1, 'retention', 'active', 'https://example.com', 10000, 1000, 60, false, $2, '[]'::jsonb)`,
+		endpointID, projectID)
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.delivery_attempts (
+            id, url, method, api_version, project_id, endpoint_id, event_delivery_id, created_at)
+        VALUES ($1, 'https://example.com', 'POST', '2024-04-01', $2, $3, $4, $5)`,
+		ulid.Make().String(), projectID, endpointID, deliveryID, created)
+	require.NoError(t, err)
+
+	return projectID
+}
+
+func childPartitions(t *testing.T, ctx context.Context, db database.Database, parent string) []string {
+	t.Helper()
+
+	rows, err := db.GetDB().QueryContext(ctx, `
+        SELECT c.relname
+        FROM pg_catalog.pg_inherits i
+        JOIN pg_catalog.pg_class c ON c.oid = i.inhrelid
+        JOIN pg_catalog.pg_class p ON p.oid = i.inhparent
+        JOIN pg_catalog.pg_namespace n ON n.oid = p.relnamespace
+        WHERE n.nspname = 'convoy' AND p.relname = $1
+        ORDER BY c.relname`, parent)
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var names []string
+	for rows.Next() {
+		var name string
+		require.NoError(t, rows.Scan(&name))
+		names = append(names, name)
+	}
+	require.NoError(t, rows.Err())
+	return names
+}
+
+func relationExists(t *testing.T, ctx context.Context, db database.Database, name string) bool {
+	t.Helper()
+
+	var exists bool
+	require.NoError(t, db.GetDB().QueryRowContext(ctx, `
+        SELECT EXISTS (
+            SELECT 1 FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'convoy' AND c.relname = $1)`, name).Scan(&exists))
+	return exists
+}
+
+// seedProjectWithDelivery inserts the chain convoy.event_deliveries requires and
+// one delivery stamped at created, which is the value the drop decision reads.
+func seedProjectWithDelivery(t *testing.T, db database.Database, created time.Time) string {
+	t.Helper()
+
+	ctx := context.Background()
+	projectID := seedProjectWithEvent(t, db)
+
+	var eventID string
+	require.NoError(t, db.GetDB().QueryRowContext(ctx,
+		`SELECT id FROM convoy.events WHERE project_id = $1`, projectID).Scan(&eventID))
+
+	subscriptionID := ulid.Make().String()
+	_, err := db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.subscriptions (
+            id, name, type, project_id, alert_config_count, alert_config_threshold,
+            retry_config_type, retry_config_duration, retry_config_retry_count,
+            filter_config_event_types, filter_config_filter_headers, filter_config_filter_body,
+            rate_limit_config_count, rate_limit_config_duration)
+        VALUES ($1, 'retention-test', 'api', $2, 10, '1m', 'linear', 100, 10,
+                '{*}', '{}'::jsonb, '{}'::jsonb, 1000, 60)`, subscriptionID, projectID)
+	require.NoError(t, err)
+
+	_, err = db.GetDB().ExecContext(ctx, `
+        INSERT INTO convoy.event_deliveries (
+            id, status, description, project_id, event_id, subscription_id, metadata, created_at)
+        VALUES ($1, 'Success', '', $2, $3, $4, '{}'::jsonb, $5)`,
+		ulid.Make().String(), projectID, eventID, subscriptionID, created)
+	require.NoError(t, err)
+
+	return projectID
 }

@@ -1,5 +1,5 @@
 @if (label) {
-  <label for="input" class="text-12 text-neutral-11 mt-24px flex items-center justify-between">
+  <label for="input" class="font-body font-normal text-[12px] text-new.text-secondary mt-24px flex items-center justify-between">
     <div class="flex items-center">
       {{ label }}
       @if (tooltip) {
@@ -7,21 +7,21 @@
       }
     </div>
     @if (required === 'true') {
-      <span class="text-10 text-neutral-11 px-6px rounded-22px font-medium bg-neutral-a3">required</span>
+      <span class="font-body font-medium text-[10px] text-new.text-secondary px-6px rounded-full bg-new.surface-muted">required</span>
     }
   </label>
 }
 
-<div (click)="focusInput()" class="w-full font-medium text-14 text-neutral-12 border border-new.primary-25 outline-none rounded-4px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
+<div (click)="focusInput()" class="w-full font-body font-medium text-[14px] text-new.text-primary border border-new.border outline-none rounded-8px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
   @for (key of keys; track $index) {
-    <div class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
+    <div class="border border-new.border py-4px px-8px font-body font-medium text-[12px] text-new.text-secondary mr-1 mb-1 rounded-full flex items-center">
       {{ key === '*' ? 'All Events' : key }}
-      <button convoy-button (click)="removeKey(key)" fill="text" type="button" class="py-0 px-0 ml-4px">
-        <svg width="14" height="14" class="fill-neutral-10">
+      <button type="button" (click)="removeKey(key)" class="ml-4px w-14px h-14px flex items-center justify-center" aria-label="Remove">
+        <svg width="14" height="14" class="fill-new.text-secondary">
           <use xlink:href="#close-icon-2"></use>
         </svg>
       </button>
     </div>
   }
-  <input type="text" id="input" (input)="addKey()" required class="text-12 bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
+  <input type="text" id="input" (input)="addKey()" required class="font-body text-[12px] bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
 </div>

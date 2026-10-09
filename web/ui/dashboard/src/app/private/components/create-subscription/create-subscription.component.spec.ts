@@ -63,6 +63,27 @@ describe('CreateSubscriptionComponent', () => {
     expect(filter?.body).toEqual({ kind: 'invoice' });
   });
 
+  it('selects a specific event type and clears the wildcard', () => {
+    component.action = 'update';
+    component.selectedEventTypes = ['*'];
+    component.filtersMap.set('*', {
+      uid: '',
+      subscription_id: 'sub-id',
+      event_type: '*',
+      enabled_at: '2026-05-28T00:00:00.000Z',
+      headers: {},
+      body: {},
+      query: {},
+      path: {}
+    });
+
+    component.toggleEventType('payment.failed');
+
+    expect(component.selectedEventTypes).toEqual(['payment.failed']);
+    expect(component.isEventTypeSelected('payment.failed')).toBeTrue();
+    expect(component.isEventTypeSelected('*')).toBeFalse();
+  });
+
   it('disables specific filters instead of deleting them when All events is selected', () => {
     component.subscriptionId = 'sub-id';
     component.selectedEventTypes = ['invoice.created'];
@@ -82,6 +103,38 @@ describe('CreateSubscriptionComponent', () => {
     expect(component.selectedEventTypes).toEqual(['*']);
     expect(component.filtersMap.get('invoice.created')?.enabled_at).toBeNull();
     expect(component.filtersMap.get('invoice.created')?.body).toEqual({ kind: 'invoice' });
+    expect(component.filtersMap.get('*')?.enabled_at).toEqual(jasmine.any(String));
+  });
+
+  it('re-enables the existing wildcard filter when the last specific type is unchecked', () => {
+    component.action = 'update';
+    component.subscriptionId = 'sub-id';
+    component.selectedEventTypes = ['invoice.created'];
+    component.filtersMap.set('*', {
+      uid: 'wildcard-filter-id',
+      subscription_id: 'sub-id',
+      event_type: '*',
+      enabled_at: null,
+      headers: {},
+      body: {},
+      query: {},
+      path: {}
+    });
+    component.filtersMap.set('invoice.created', {
+      uid: 'filter-id',
+      subscription_id: 'sub-id',
+      event_type: 'invoice.created',
+      enabled_at: '2026-05-28T00:00:00.000Z',
+      headers: {},
+      body: { kind: 'invoice' },
+      query: {},
+      path: {}
+    });
+
+    component.toggleEventType('invoice.created');
+
+    expect(component.selectedEventTypes).toEqual(['*']);
+    expect(component.filtersMap.get('invoice.created')?.enabled_at).toBeNull();
     expect(component.filtersMap.get('*')?.enabled_at).toEqual(jasmine.any(String));
   });
 

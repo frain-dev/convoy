@@ -399,20 +399,38 @@
           "flag_scope": "root_persistent"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "root_persistent"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "root_persistent",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "root_persistent"
+          "hidden": true,
+          "flag_scope": "root_persistent",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -451,6 +469,14 @@
           "usage": "Tracer backend, e.g. sentry, datadog or otel",
           "default": "",
           "def_value": "",
+          "hidden": false,
+          "flag_scope": "root_persistent"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
           "hidden": false,
           "flag_scope": "root_persistent"
         }
@@ -505,13 +531,16 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
         "sentry-debug",
         "sentry-dsn",
         "sentry-sample-rate",
-        "tracer-type"
+        "tracer-type",
+        "webhook-archiving-enabled"
       ]
     },
     {
@@ -946,20 +975,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -1064,6 +1111,14 @@
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
         }
       ],
       "flag_order": [
@@ -1116,6 +1171,8 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
@@ -1123,6 +1180,7 @@
         "sentry-dsn",
         "sentry-sample-rate",
         "tracer-type",
+        "webhook-archiving-enabled",
         "consumers",
         "interval",
         "mode",
@@ -1537,20 +1595,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -1589,6 +1665,14 @@
           "usage": "Tracer backend, e.g. sentry, datadog or otel",
           "default": "",
           "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
           "hidden": false,
           "flag_scope": "inherited"
         }
@@ -1643,13 +1727,16 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
         "sentry-debug",
         "sentry-dsn",
         "sentry-sample-rate",
-        "tracer-type"
+        "tracer-type",
+        "webhook-archiving-enabled"
       ]
     },
     {
@@ -2052,20 +2139,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -2104,6 +2209,14 @@
           "usage": "Tracer backend, e.g. sentry, datadog or otel",
           "default": "",
           "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
           "hidden": false,
           "flag_scope": "inherited"
         }
@@ -2158,13 +2271,16 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
         "sentry-debug",
         "sentry-dsn",
         "sentry-sample-rate",
-        "tracer-type"
+        "tracer-type",
+        "webhook-archiving-enabled"
       ]
     },
     {
@@ -2568,20 +2684,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -2620,6 +2754,14 @@
           "usage": "Tracer backend, e.g. sentry, datadog or otel",
           "default": "",
           "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
           "hidden": false,
           "flag_scope": "inherited"
         }
@@ -2674,13 +2816,16 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
         "sentry-debug",
         "sentry-dsn",
         "sentry-sample-rate",
-        "tracer-type"
+        "tracer-type",
+        "webhook-archiving-enabled"
       ]
     },
     {
@@ -3095,20 +3240,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -3147,6 +3310,14 @@
           "usage": "Tracer backend, e.g. sentry, datadog or otel",
           "default": "",
           "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
           "hidden": false,
           "flag_scope": "inherited"
         }
@@ -3201,6 +3372,8 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
@@ -3208,6 +3381,7 @@
         "sentry-dsn",
         "sentry-sample-rate",
         "tracer-type",
+        "webhook-archiving-enabled",
         "max"
       ]
     },
@@ -3615,20 +3789,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -3667,6 +3859,14 @@
           "usage": "Tracer backend, e.g. sentry, datadog or otel",
           "default": "",
           "def_value": "",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
           "hidden": false,
           "flag_scope": "inherited"
         }
@@ -3721,13 +3921,16 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
         "sentry-debug",
         "sentry-dsn",
         "sentry-sample-rate",
-        "tracer-type"
+        "tracer-type",
+        "webhook-archiving-enabled"
       ]
     },
     {
@@ -4230,20 +4433,38 @@
           "flag_scope": "inherited"
         },
         {
-          "name": "retention-policy",
-          "usage": "Retention Policy Duration",
+          "name": "retention-enabled",
+          "usage": "Enable licensed partition retention drop",
+          "default": "true",
+          "def_value": "true",
+          "hidden": false,
+          "flag_scope": "inherited"
+        },
+        {
+          "name": "retention-period",
+          "usage": "Retention keep window (e.g. 720h)",
           "default": "",
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
         },
         {
+          "name": "retention-policy",
+          "usage": "Retention keep window (legacy alias)",
+          "default": "",
+          "def_value": "",
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --retention-period instead"
+        },
+        {
           "name": "retention-policy-enabled",
-          "usage": "Retention Policy Enabled",
+          "usage": "Enable webhook cold-storage archiving (legacy alias)",
           "default": "false",
           "def_value": "false",
-          "hidden": false,
-          "flag_scope": "inherited"
+          "hidden": true,
+          "flag_scope": "inherited",
+          "deprecated": "use --webhook-archiving-enabled instead"
         },
         {
           "name": "root-path",
@@ -4308,6 +4529,14 @@
           "def_value": "",
           "hidden": false,
           "flag_scope": "inherited"
+        },
+        {
+          "name": "webhook-archiving-enabled",
+          "usage": "Enable webhook cold-storage archiving",
+          "default": "false",
+          "def_value": "false",
+          "hidden": false,
+          "flag_scope": "inherited"
         }
       ],
       "flag_order": [
@@ -4360,6 +4589,8 @@
         "redis-sentinel-username",
         "redis-type",
         "redis-username",
+        "retention-enabled",
+        "retention-period",
         "retention-policy",
         "retention-policy-enabled",
         "root-path",
@@ -4367,6 +4598,7 @@
         "sentry-dsn",
         "sentry-sample-rate",
         "tracer-type",
+        "webhook-archiving-enabled",
         "api-auth",
         "basic-auth",
         "cache",

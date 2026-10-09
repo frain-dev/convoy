@@ -1,5 +1,5 @@
 <div [class]="class">
-  <button convoy-button fill="text" type="button" size="sm" (click)="copyItem($event)" class="relative">
+  <button type="button" (click)="copyItem($event)" class="relative inline-flex items-center justify-center transition-opacity hover:opacity-80">
     @if (showIcon == 'true') {
       <svg width="16" height="16" [attr.height]="size === 'sm' ? '14' : '16'" [attr.width]="size === 'sm' ? '14' : '16'" [class]="colors[color]">
         <use [attr.xlink:href]="size === 'sm' ? '#copy-icon-3' : '#copy-icon-2'"></use>

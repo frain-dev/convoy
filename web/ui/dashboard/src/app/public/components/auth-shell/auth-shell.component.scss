@@ -1,0 +1,12 @@
+.auth-brand-grid {
+	background-image: linear-gradient(to right, #4490ef 1px, transparent 1px), linear-gradient(to bottom, #4490ef 1px, transparent 1px);
+	background-size: 36px 36px;
+	background-position: 50% 0;
+}
+
+.auth-dot-matrix {
+	display: grid;
+	grid-template-columns: repeat(5, 50px);
+	grid-template-rows: repeat(5, 50px);
+	place-items: center;
+}

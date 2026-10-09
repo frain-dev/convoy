@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/indexes"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/partitions"
 )
 
 type Runtime struct {
@@ -52,6 +54,16 @@ func (r *Runtime) Run(ctx context.Context) error {
 	case <-time.After(30 * time.Second):
 		return fmt.Errorf("worker failed to become ready within 30 seconds")
 	}
+
+	// Fail open: queries seq-scan until owed indexes are valid. Do not block
+	// ingest. Orphan invalid indexes are adopted into dropped_indexes first.
+	if n, err := indexes.Adopt(ctx, r.opts.DB.GetConn()); err != nil {
+		r.opts.Logger.Error("invalid index adoption failed", "error", err.Error())
+	} else if n > 0 {
+		r.opts.Logger.Info("adopted invalid indexes for rebuild", "count", n)
+	}
+	p := partitions.New(r.opts.DB, r.opts.Logger)
+	p.StartQueuedDroppedIndexes(ctx)
 
 	if err := StartIngest(ctx, r.opts, r.cfg); err != nil {
 		return fmt.Errorf("error starting data plane ingest component: %w", err)

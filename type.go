@@ -103,8 +103,9 @@ const (
 	NotificationProcessor            TaskName = "NotificationProcessor"
 	TokenizeSearch                   TaskName = "TokenizeSearch"
 	TokenizeSearchForProject         TaskName = "TokenizeProjectSearch"
-	DailyAnalytics                   TaskName = "DailyAnalytics"
 	SnapshotUsage                    TaskName = "SnapshotUsage"
+	RefreshEventDeliveryDailyCounts  TaskName = "RefreshEventDeliveryDailyCounts"
+	RefreshQueueMetricsSnapshot      TaskName = "RefreshQueueMetricsSnapshot"
 	StreamCliEventsProcessor         TaskName = "StreamCliEventsProcessor"
 	MonitorTwitterSources            TaskName = "MonitorTwitterSources"
 	RetentionPolicies                TaskName = "RetentionPolicies"
@@ -118,7 +119,6 @@ const (
 	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
 	BulkOnboardProcessor             TaskName = "BulkOnboardProcessor"
 	UpdateOrganisationStatus         TaskName = "UpdateOrganisationStatus"
-	RefreshMetricsMaterializedViews  TaskName = "RefreshMetricsMaterializedViews"
 
 	TokenCacheKey   CacheKey = "tokens"
 	ProjectCacheKey CacheKey = "projects"

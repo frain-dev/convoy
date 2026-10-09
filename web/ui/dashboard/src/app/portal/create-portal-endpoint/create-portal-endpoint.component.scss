@@ -1,5 +1,35 @@
-// Empty file with standard Angular styling approaches
-// Any custom styles needed for the dialogs
+/* Global forms.scss sets appearance:none on checkboxes — draw the box ourselves. */
+.event-type-checkbox {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 16px;
+	height: 16px;
+	margin: 0 12px 0 0;
+	border-radius: 4px;
+	border: 1px solid #e7e7e7;
+	background-color: #ffffff;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+
+	&:checked {
+		background-color: #2780f1;
+		border-color: #2780f1;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 6.2L5 8.7L9.5 3.7' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E");
+		background-position: center;
+		background-repeat: no-repeat;
+	}
+
+	&:disabled {
+		cursor: default;
+		opacity: 0.6;
+	}
+
+	&:focus-visible {
+		outline: 2px solid #2780f1;
+		outline-offset: 2px;
+	}
+}
+
 dialog {
   &[open] {
     display: block;

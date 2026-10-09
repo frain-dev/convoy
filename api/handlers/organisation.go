@@ -15,16 +15,15 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
 	"github.com/frain-dev/convoy/internal/organisation_members"
 	"github.com/frain-dev/convoy/internal/organisations"
-	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/cbenablement"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
@@ -324,7 +323,7 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	features := fflag.GetEarlyAdopterFeatures()
 	responseFeatures := make([]models.EarlyAdopterFeature, 0, len(features))
 
-	earlyAdopterFeatures, err := postgres.LoadEarlyAdopterFeaturesByOrg(r.Context(), h.A.DB, org.UID)
+	earlyAdopterFeatures, err := h.A.FeatureFlagService.LoadEarlyAdopterFeaturesByOrg(r.Context(), org.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -384,9 +383,8 @@ func (h *Handler) GetOrganisationFeatureFlags(w http.ResponseWriter, r *http.Req
 	for featureKey := range fflag.DefaultFeaturesState {
 		var enabled bool
 		if featureKey == fflag.CircuitBreaker {
-			// Fold env into the instance base (per-org override still wins) so the
-			// dashboard column-visibility check matches actual display and enforcement.
-			enabled = cbenablement.EnabledForOrg(r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, org.UID)
+			enabled = cbenablement.EnabledForOrg(
+				r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, h.A.AdminManaged, org.UID)
 		} else {
 			enabled = h.A.FFlag.CanAccessOrgFeature(
 				r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
@@ -422,7 +420,7 @@ func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, feat
 		feature.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	err := postgres.UpsertEarlyAdopterFeature(r.Context(), h.A.DB, feature)
+	err := h.A.FeatureFlagService.UpsertEarlyAdopterFeature(r.Context(), feature)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return err
@@ -468,16 +466,15 @@ func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	flags, err := postgres.LoadFeatureFlags(r.Context(), h.A.DB)
+	flags, err := h.A.FeatureFlagService.LoadFeatureFlags(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	// Mark which flags are forced on instance-wide via the environment so the admin
-	// UI can show whether the env or this page is the authoritative instance default.
+	// Return both inputs so the Admin UI can show the selected source.
 	for i := range flags {
-		flags[i].EnvEnabled = h.A.FFlag.CanAccessFeature(fflag.FeatureFlagKey(flags[i].FeatureKey))
+		setFeatureFlagSource(&flags[i], h.A.FFlag, h.A.AdminManaged)
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flags fetched successfully", flags, http.StatusOK))
@@ -533,7 +530,7 @@ func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	overrides, err := postgres.LoadFeatureFlagOverridesByOwner(r.Context(), h.A.DB, "organisation", orgID)
+	overrides, err := h.A.FeatureFlagService.LoadFeatureFlagOverridesByOwner(r.Context(), "organisation", orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -547,7 +544,7 @@ func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Reques
 
 	enrichedOverrides := make([]OverrideWithKey, 0, len(overrides))
 	for i := range overrides {
-		featureFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, overrides[i].FeatureFlagID)
+		featureFlag, err := h.A.FeatureFlagService.FetchFeatureFlagByID(r.Context(), overrides[i].FeatureFlagID)
 		if err != nil {
 			h.A.Logger.WarnContext(r.Context(), fmt.Sprintf("Failed to fetch feature flag for override: %s: %v", overrides[i].FeatureFlagID, err))
 			continue
@@ -589,9 +586,9 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Fetch the feature flag
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, overrideRequest.FeatureKey)
+	featureFlag, err := h.A.FeatureFlagService.FetchFeatureFlagByKey(r.Context(), overrideRequest.FeatureKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+overrideRequest.FeatureKey, http.StatusBadRequest))
 			return
 		}
@@ -617,7 +614,7 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		override.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
+	err = h.A.FeatureFlagService.UpsertFeatureFlagOverride(r.Context(), override)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -646,9 +643,9 @@ func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Fetch the feature flag to get its ID
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	featureFlag, err := h.A.FeatureFlagService.FetchFeatureFlagByKey(r.Context(), featureKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
 			return
 		}
@@ -656,7 +653,7 @@ func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = postgres.DeleteFeatureFlagOverride(r.Context(), h.A.DB, "organisation", orgID, featureFlag.UID)
+	err = h.A.FeatureFlagService.DeleteFeatureFlagOverride(r.Context(), "organisation", orgID, featureFlag.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -956,9 +953,9 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the feature flag
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	featureFlag, err := h.A.FeatureFlagService.FetchFeatureFlagByKey(r.Context(), featureKey)
 	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+		if errors.Is(err, datastore.ErrFeatureFlagNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
 			return
 		}
@@ -968,20 +965,29 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 
 	// Update enabled state if provided
 	if updateRequest.Enabled != nil {
-		err = postgres.UpdateFeatureFlag(r.Context(), h.A.DB, featureFlag.UID, *updateRequest.Enabled)
+		err = h.A.FeatureFlagService.UpdateFeatureFlag(r.Context(), featureFlag.UID, *updateRequest.Enabled)
 		if err != nil {
 			_ = render.Render(w, r, util.NewServiceErrResponse(err))
 			return
 		}
 	}
 
-	updatedFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, featureFlag.UID)
+	updatedFlag, err := h.A.FeatureFlagService.FetchFeatureFlagByID(r.Context(), featureFlag.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	setFeatureFlagSource(updatedFlag, h.A.FFlag, h.A.AdminManaged)
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flag updated successfully", updatedFlag, http.StatusOK))
+}
+
+func setFeatureFlagSource(flag *datastore.FeatureFlag, envFlags *fflag.FFlag, adminManaged bool) {
+	if flag == nil {
+		return
+	}
+	flag.EnvEnabled = envFlags != nil && envFlags.CanAccessFeature(fflag.FeatureFlagKey(flag.FeatureKey))
+	flag.AdminManaged = adminManaged
 }
 
 // RetryEventDeliveries retries event deliveries with a particular status in a timeframe (instance admin only)
@@ -1036,17 +1042,17 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.A.Queue == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry is only available with Redis queue", http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry requires a configured queue provider", http.StatusBadRequest))
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusBadRequest))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusBadRequest))
 		return
 	}
 
 	// Generate batch ID and create tracker
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 	batchID := tracker.GenerateBatchID()
 
 	// Run retry in background goroutine - don't block the response.
@@ -1121,30 +1127,18 @@ func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Reque
 		CreatedAtEnd:   now.Unix(),
 	}
 
-	eventDeliveryRepo := event_deliveries.New(h.A.Logger, h.A.DB)
+	projectIDs, err := projects.New(h.A.Logger, h.A.DB).IDsForRetry(r.Context(), "")
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to resolve projects for event delivery count", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
+		return
+	}
 
-	// Count across all statuses
-	var totalCount int64
-	if eventID != "" {
-		// If eventID is provided, use CountEventDeliveries which supports eventID filter
-		// This method accepts multiple statuses, so we can pass all at once
-		totalCount, err = eventDeliveryRepo.CountEventDeliveries(r.Context(), "", []string{}, eventID, statuses, searchParams)
-		if err != nil {
-			h.A.Logger.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
-			return
-		}
-	} else {
-		// Otherwise, count each status separately and sum them
-		for _, deliveryStatus := range statuses {
-			count, err := eventDeliveryRepo.CountDeliveriesByStatus(r.Context(), "", deliveryStatus, searchParams)
-			if err != nil {
-				h.A.Logger.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
-				_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
-				return
-			}
-			totalCount += count
-		}
+	totalCount, err := event_deliveries.New(h.A.Logger, h.A.DB).CountRetryCandidates(r.Context(), projectIDs, statuses, eventID, searchParams)
+	if err != nil {
+		h.A.Logger.ErrorContext(r.Context(), "failed to count event deliveries", "error", err)
+		_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
+		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries count successful", map[string]interface{}{
@@ -1165,12 +1159,12 @@ func (h *Handler) GetBatchProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusInternalServerError))
 		return
 	}
 
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 
 	// Sync counters before retrieving to get latest progress
 	if err := tracker.SyncCounters(r.Context(), batchID); err != nil {
@@ -1193,12 +1187,12 @@ func (h *Handler) ListBatchProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusInternalServerError))
 		return
 	}
 
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 
 	batches, err := tracker.ListBatches(r.Context())
 	if err != nil {
@@ -1234,12 +1228,12 @@ func (h *Handler) DeleteBatchProgress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.Redis == nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+	if h.A.BatchTracker == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch tracking is not configured", http.StatusInternalServerError))
 		return
 	}
 
-	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	tracker := h.A.BatchTracker
 
 	if err := tracker.DeleteBatch(r.Context(), batchID); err != nil {
 		h.A.Logger.ErrorContext(r.Context(), "failed to delete batch", "error", err)

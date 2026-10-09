@@ -149,6 +149,8 @@ func IsValidPeriod(period string) bool {
 type SearchParams struct {
 	CreatedAtStart int64 `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`
+	// Query is the event-deliveries table search (id, event type prefix, endpoint name).
+	Query string `json:"query,omitempty"`
 }
 
 type (
@@ -303,7 +305,7 @@ const (
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		SearchPolicy:           "720h",
+		SearchPolicy:           "",
 		MaxIngestSize:          config.MaxResponseSize,
 		ReplayAttacks:          false,
 		DisableEndpoint:        false,
@@ -347,8 +349,12 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: false,
-		Policy:                   "720h",
+		Period:       "720h",
+		Enabled:      true,
+		EnabledKnown: true,
+	}
+	DefaultWebhookArchiving = WebhookArchivingConfiguration{
+		Enabled: false,
 	}
 	// DefaultCircuitBreakerConfiguration holds the non-zero defaults for
 	// project-level circuit breaker settings.
@@ -441,6 +447,7 @@ type Endpoint struct {
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`
 	SlackWebhookURL    string  `json:"slack_webhook_url,omitempty" db:"slack_webhook_url"`
+	TeamsWebhookURL    string  `json:"teams_webhook_url,omitempty" db:"teams_webhook_url"`
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
@@ -637,17 +644,24 @@ type ProjectConfig struct {
 	AddEventIDTraceHeaders        bool   `json:"add_event_id_trace_headers"`
 	DisableEndpoint               bool   `json:"disable_endpoint" db:"disable_endpoint"`
 	MultipleEndpointSubscriptions bool   `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	// SyncDynamicEventAck waits for endpoint/subscription resolve before
+	// VerifyDynamicEvents waits for endpoint/subscription resolve before
 	// returning 2xx from POST /events/dynamic. Default false keeps 201-on-queue.
-	SyncDynamicEventAck bool                           `json:"sync_dynamic_event_ack" db:"sync_dynamic_event_ack"`
-	SearchPolicy        string                         `json:"search_policy" db:"search_policy"`
-	SSL                 *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
-	RateLimit           *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
-	Strategy            *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
-	Signature           *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
-	RequestIDHeader     config.RequestIDHeaderProvider `json:"request_id_header"`
-	MetaEvent           *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
-	CircuitBreaker      *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
+	VerifyDynamicEvents bool `json:"verify_dynamic_events" db:"verify_dynamic_events"`
+	// AllowUnmatchedDynamicURLs lets a dynamic event URL that matches none of the
+	// project's endpoint URL templates auto-create an endpoint. Default false
+	// rejects unmatched URLs.
+	AllowUnmatchedDynamicURLs bool `json:"allow_unmatched_dynamic_urls" db:"allow_unmatched_dynamic_urls"`
+	// SearchPolicy is an optional Go duration (e.g. "24h") shown in project settings.
+	// When set, the dashboard explains that payload/JSON search is additionally clamped
+	// to this lookback intersected with the Events log date picker. Empty means opt-out.
+	SearchPolicy    string                         `json:"search_policy" db:"search_policy"`
+	SSL             *SSLConfiguration              `json:"ssl" db:"ssl" extensions:"x-nullable"`
+	RateLimit       *RateLimitConfiguration        `json:"ratelimit" db:"ratelimit" extensions:"x-nullable"`
+	Strategy        *StrategyConfiguration         `json:"strategy" db:"strategy" extensions:"x-nullable"`
+	Signature       *SignatureConfiguration        `json:"signature" db:"signature" extensions:"x-nullable"`
+	RequestIDHeader config.RequestIDHeaderProvider `json:"request_id_header"`
+	MetaEvent       *MetaEventConfiguration        `json:"meta_event" db:"meta_event" extensions:"x-nullable"`
+	CircuitBreaker  *CircuitBreakerConfiguration   `json:"circuit_breaker" db:"circuit_breaker" extensions:"x-nullable"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -760,9 +774,19 @@ type CircuitBreakerConfiguration struct {
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
+// RetentionPolicyConfiguration is partition drop only (enable + keep window).
+// Cold-storage archive enable lives on WebhookArchivingConfiguration.
 type RetentionPolicyConfiguration struct {
-	Policy                   string `json:"policy" db:"policy"`
-	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
+	Period  string `json:"period" db:"period"`
+	Enabled bool   `json:"enabled" db:"enabled"`
+	// EnabledKnown is false when convoy.configurations.retention_enabled is NULL
+	// (pre-seed upgrade). Not serialized; boot seeds Enabled from env once.
+	EnabledKnown bool `json:"-"`
+}
+
+// WebhookArchivingConfiguration gates export of webhook data to cold storage.
+type WebhookArchivingConfiguration struct {
+	Enabled bool `json:"enabled" db:"enabled"`
 }
 
 type ProjectStatistics struct {
@@ -801,6 +825,7 @@ var (
 	ErrUserNotFound                                  = errors.New("user not found")
 	ErrSourceNotFound                                = errors.New("source not found")
 	ErrEventNotFound                                 = errors.New("event not found")
+	ErrEventEndpointIDRequired                       = errors.New("endpoint_id is required")
 	ErrProjectNotFound                               = errors.New("project not found")
 	ErrEndpointNotFound                              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound                          = errors.New("subscription not found")
@@ -809,12 +834,17 @@ var (
 	ErrPortalLinkNotFound                            = errors.New("portal link not found")
 	ErrNotAuthorisedToAccessDocument                 = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                                = errors.New("config not found")
+	ErrConfigAlreadyExists                           = errors.New("configuration already exists")
 	ErrDuplicateProjectName                          = errors.New("a project with this name already exists")
 	ErrDuplicateEmail                                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                                = errors.New("no active secret found")
 	ErrSecretNotFound                                = errors.New("secret not found")
 	ErrMetaEventNotFound                             = errors.New("meta event not found")
 	ErrMissingIdempotencyKeyForCustomRequestIDHeader = errors.New("idempotency_key is required when a custom request_id_header is configured")
+	ErrJobNotFound                                   = errors.New("job not found")
+	ErrFeatureFlagNotFound                           = errors.New("feature flag not found")
+	ErrFeatureFlagOverrideNotFound                   = errors.New("feature flag override not found")
+	ErrEarlyAdopterFeatureNotFound                   = errors.New("early adopter feature not found")
 )
 
 type AppMetadata struct {
@@ -878,8 +908,18 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data" swaggertype:"object"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	Status   EventStatus `json:"status" db:"status"`
-	Metadata string      `json:"metadata,omitempty" db:"metadata"`
+	Status EventStatus `json:"status" db:"status"`
+
+	// Metadata is internal worker routing state (channel, delay and, for dynamic
+	// events, the original payload including the endpoint secret and custom
+	// authorization headers). It is never serialized: it has no API consumer and
+	// emitting it would hand those credentials back over GET /events.
+	Metadata string `json:"-" db:"metadata"`
+
+	// FailureReason explains a Failure status to whoever is looking at the
+	// dashboard. It carries operator facing text only, never endpoint
+	// credentials, headers, or payload content.
+	FailureReason string `json:"failure_reason,omitempty" db:"failure_reason"`
 
 	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string" extensions:"x-nullable"`
 	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
@@ -1718,10 +1758,11 @@ type FeatureFlag struct {
 	Enabled    bool      `json:"enabled" db:"enabled"`
 	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	// EnvEnabled is transient (not persisted): whether this flag is forced on
-	// instance-wide via CONVOY_ENABLE_FEATURE_FLAG. Surfaced to the admin UI so it
-	// can show which source is authoritative for the instance default.
+	// EnvEnabled is transient (not persisted): whether this flag is listed in
+	// CONVOY_ENABLE_FEATURE_FLAG.
 	EnvEnabled bool `json:"env_enabled" db:"-"`
+	// AdminManaged is transient and only used by the Admin feature-flags UI.
+	AdminManaged bool `json:"admin_managed" db:"-"`
 }
 
 type FeatureFlagOverride struct {
@@ -1775,11 +1816,14 @@ type UsageMetrics struct {
 
 type Configuration struct {
 	UID                string `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsAnalyticsEnabled bool   `json:"-" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
+	AdminManaged       bool   `json:"admin_managed" db:"admin_managed"`
+	AdminManagedKnown  bool   `json:"-" db:"-"`
 
-	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
-	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
+	StoragePolicy    *StoragePolicyConfiguration    `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
+	RetentionPolicy  *RetentionPolicyConfiguration  `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
+	WebhookArchiving *WebhookArchivingConfiguration `json:"webhook_archiving" db:"webhook_archiving" extensions:"x-nullable"`
 
 	LicenseKey              string                               `json:"license_key,omitempty" db:"license_key"`
 	CheckoutLicenseKey      string                               `json:"checkout_license_key,omitempty" db:"checkout_license_key"`
@@ -1817,6 +1861,13 @@ func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 		return *c.RetentionPolicy
 	}
 	return RetentionPolicyConfiguration{}
+}
+
+func (c *Configuration) GetWebhookArchivingConfig() WebhookArchivingConfiguration {
+	if c.WebhookArchiving != nil {
+		return *c.WebhookArchiving
+	}
+	return WebhookArchivingConfiguration{}
 }
 
 type StoragePolicyConfiguration struct {

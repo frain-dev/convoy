@@ -35,7 +35,7 @@ func NewServerWithLogger(port uint32, stopFn func(), logger log.Logger) *Server 
 	// Match CreateDynamicEventService: zero/negative timeout falls back to 30s.
 	writeTimeout := 30 * time.Second
 	if cfg, err := config.Get(); err == nil {
-		ackSecs := cfg.SyncDynamicEventAckTimeout
+		ackSecs := cfg.VerifyDynamicEventsTimeout
 		if ackSecs == 0 {
 			ackSecs = 30
 		}

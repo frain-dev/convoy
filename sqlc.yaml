@@ -96,6 +96,11 @@ sql:
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true
+        overrides:
+          - column: "convoy.configurations.retention_enabled"
+            go_type: "github.com/jackc/pgx/v5/pgtype.Bool"
+          - column: "convoy.configurations.admin_managed"
+            go_type: "github.com/jackc/pgx/v5/pgtype.Bool"
   - queries: ./internal/projects/queries.sql
     engine: postgresql
     database: *db_config
@@ -209,6 +214,26 @@ sql:
       go:
         package: "repo"
         out: "./internal/backup_jobs/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+  - queries: ./internal/jobs/queries.sql
+    engine: postgresql
+    database: *db_config
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/jobs/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true
+  - queries: ./internal/feature_flags/queries.sql
+    engine: postgresql
+    database: *db_config
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/feature_flags/repo"
         sql_package: "pgx/v5"
         omit_unused_structs: true
         emit_interface: true

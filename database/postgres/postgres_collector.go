@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -14,11 +15,13 @@ import (
 // Namespace used in fully-qualified metrics names.
 const namespace = "convoy"
 
-var lastRun = time.Now()
-
-var cachedMetrics *Metrics // needed to feed the UI with data when sampling time has not yet elapsed
-
-var metricsConfig *config.MetricsConfiguration
+var (
+	metricsMu       sync.Mutex
+	lastRun         time.Time
+	cachedMetrics   *Metrics
+	metricsInFlight bool
+	metricsConfig   *config.MetricsConfiguration
+)
 
 type EventQueueMetrics struct {
 	ProjectID string `json:"project_id" db:"project_id"`
@@ -109,39 +112,114 @@ var (
 )
 
 func (p *Postgres) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(p, ch)
+	// Static descriptors only. DescribeByCollect ran collectMetrics during
+	// prometheus.Register, which sits on the server and agent boot path before
+	// listen/Asynq. The delivery-queue GROUP BY can take the full QueryTimeout
+	// (default 30s) when the materialized views are absent.
+	ch <- eventQueueTotalDesc
+	ch <- eventQueueBacklogDesc
+	ch <- eventDeliveryQueueTotalDesc
+	ch <- eventDeliveryQueueBacklogDesc
+	ch <- eventDeliveryAttemptsTotalDesc
 }
 
 func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
-	if metricsConfig == nil {
-		cfg, err := config.Get()
-		if err != nil {
-			return
-		}
-		metricsConfig = &cfg.Metrics
-	}
-	if !metricsConfig.IsEnabled {
+	if !p.metricsEnabled() {
 		return
 	}
 
-	var metrics *Metrics
-	var err error
-	now := time.Now()
-	if cachedMetrics != nil && lastRun.Add(time.Duration(metricsConfig.Prometheus.SampleTime)*time.Second).After(now) {
-		metrics = cachedMetrics
-	} else {
-		metrics, err = p.collectMetrics()
-		if err != nil {
-			p.logger.Error(fmt.Sprintf("Failed to collect metrics data: %v", err))
-			if cachedMetrics != nil {
-				metrics = cachedMetrics
-				p.logger.Warn("Using cached metrics due to collection failure")
-			} else {
-				// Return empty metrics to prevent blocking the endpoint
-				metrics = &Metrics{}
-			}
+	snapshot := p.cachedSnapshot()
+	p.scheduleRefresh()
+	p.emitMetrics(ch, snapshot)
+}
+
+// StartMetricsCollection kicks the first refresh off the boot path after
+// Register. Failure policy: fail open. The scrape serves whatever cache exists
+// (empty until the first refresh finishes); ingest and listen must not wait.
+func (p *Postgres) StartMetricsCollection() {
+	if !p.metricsEnabled() {
+		return
+	}
+	p.scheduleRefresh()
+}
+
+func (p *Postgres) metricsEnabled() bool {
+	cfg := p.loadMetricsConfig()
+	return cfg != nil && cfg.IsEnabled
+}
+
+func (p *Postgres) loadMetricsConfig() *config.MetricsConfiguration {
+	metricsMu.Lock()
+	defer metricsMu.Unlock()
+	if metricsConfig != nil {
+		return metricsConfig
+	}
+	cfg, err := config.Get()
+	if err != nil {
+		return nil
+	}
+	metricsConfig = &cfg.Metrics
+	return metricsConfig
+}
+
+func (p *Postgres) cachedSnapshot() *Metrics {
+	metricsMu.Lock()
+	defer metricsMu.Unlock()
+	if cachedMetrics == nil {
+		return &Metrics{}
+	}
+	return cachedMetrics
+}
+
+func (p *Postgres) scheduleRefresh() {
+	cfg := p.loadMetricsConfig()
+	if cfg == nil || !cfg.IsEnabled {
+		return
+	}
+	sample := time.Duration(cfg.Prometheus.SampleTime) * time.Second
+
+	metricsMu.Lock()
+	fresh := !lastRun.IsZero() && time.Since(lastRun) < sample
+	if fresh || metricsInFlight {
+		metricsMu.Unlock()
+		return
+	}
+	metricsInFlight = true
+	metricsMu.Unlock()
+
+	go p.refreshMetrics()
+}
+
+func (p *Postgres) refreshMetrics() {
+	defer func() {
+		if rec := recover(); rec != nil {
+			p.metricsLogError(fmt.Sprintf("postgres metrics refresh panicked: %v", rec))
 		}
-		cachedMetrics = metrics
+		metricsMu.Lock()
+		metricsInFlight = false
+		metricsMu.Unlock()
+	}()
+
+	metrics, err := p.collectMetrics()
+	metricsMu.Lock()
+	defer metricsMu.Unlock()
+	lastRun = time.Now()
+	if err != nil {
+		p.metricsLogError(fmt.Sprintf("Failed to collect metrics data: %v", err))
+		return
+	}
+	cachedMetrics = metrics
+}
+
+func (p *Postgres) metricsLogError(msg string) {
+	if p != nil && p.logger != nil {
+		p.logger.Error(msg)
+	}
+}
+
+func (p *Postgres) emitMetrics(ch chan<- prometheus.Metric, metrics *Metrics) {
+	if metrics == nil {
+		return
 	}
 
 	// Use unique keys per metric type to prevent collisions
@@ -236,54 +314,25 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		)
 		metricsMap[key] = struct{}{}
 	}
-
-	lastRun = now
 }
 
-// materializedViewExists checks if a materialized view exists in the database
-func (p *Postgres) materializedViewExists(ctx context.Context, viewName string) bool {
-	query := `
-		SELECT EXISTS (
-			SELECT 1 
-			FROM pg_matviews 
-			WHERE schemaname = 'convoy' 
-			AND matviewname = $1
-		)`
-	var exists bool
-	err := p.GetDB().GetContext(ctx, &exists, query, viewName)
-	if err != nil {
-		p.logger.Warn(fmt.Sprintf("Failed to check if materialized view %s exists: %v", viewName, err))
-		return false
-	}
-	return exists
-}
-
-// collectMetrics gathers essential metrics from the DB
+// collectMetrics reads the current snapshot generation. The live GROUP BY
+// lives in WriteQueueMetricsSnapshot, which a locked worker runs off scrape.
 func (p *Postgres) collectMetrics() (*Metrics, error) {
-	queryTimeout := time.Duration(metricsConfig.Prometheus.QueryTimeout) * time.Second
-	if queryTimeout == 0 {
-		queryTimeout = 30 * time.Second
+	queryTimeout := 30 * time.Second
+	if cfg := p.loadMetricsConfig(); cfg != nil && cfg.Prometheus.QueryTimeout != 0 {
+		queryTimeout = time.Duration(cfg.Prometheus.QueryTimeout) * time.Second
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), queryTimeout)
 	defer cancel()
 
 	metrics := &Metrics{}
 
-	useMaterializedViews := p.materializedViewExists(ctx, "event_queue_metrics_mv")
-
-	var queryEventQueueMetrics string
-	if useMaterializedViews {
-		queryEventQueueMetrics = "SELECT project_id, source_id, total FROM convoy.event_queue_metrics_mv"
-	} else {
-		queryEventQueueMetrics = `
-			SELECT DISTINCT 
-				project_id,
-				COALESCE(source_id, 'http') AS source_id,
-				COUNT(*) AS total
-			FROM convoy.events
-			GROUP BY project_id, source_id`
-	}
-	rows, err := p.GetDB().QueryxContext(ctx, queryEventQueueMetrics)
+	rows, err := p.GetDB().QueryxContext(ctx, `
+		SELECT q.project_id, q.source_id, q.total
+		FROM convoy.metrics_event_queue q
+		JOIN convoy.metrics_snapshot_meta m
+		  ON m.name = $1 AND m.generation = q.generation`, metricsSnapshotEventQueue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query event queue metrics: %w", err)
 	}
@@ -299,43 +348,11 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueMetrics = eventQueueMetrics
 
-	var backlogQM string
-	if useMaterializedViews {
-		backlogQM = "SELECT project_id, source_id, age_seconds FROM convoy.event_queue_backlog_metrics_mv"
-	} else {
-		backlogQM = `
-			WITH a1 AS (
-				SELECT ed.project_id,
-					   COALESCE(e.source_id, 'http') AS source_id,
-					   EXTRACT(EPOCH FROM (NOW() - MIN(ed.created_at))) AS age_seconds
-				FROM convoy.event_deliveries ed
-				LEFT JOIN convoy.events e ON e.id = ed.event_id
-				WHERE ed.status = 'Processing'
-				GROUP BY ed.project_id, e.source_id
-				ORDER BY age_seconds DESC, ed.project_id, e.source_id
-				LIMIT 1000
-			)
-			SELECT project_id, source_id, age_seconds
-			FROM (
-				SELECT * FROM a1
-				UNION ALL
-				SELECT ed.project_id,
-					   COALESCE(e.source_id, 'http'),
-					   0 AS age_seconds
-				FROM convoy.event_deliveries ed
-				LEFT JOIN convoy.events e ON e.id = ed.event_id
-				WHERE ed.status = 'Success'
-				  AND NOT EXISTS (
-					  SELECT 1 FROM a1 
-					  WHERE a1.project_id = ed.project_id 
-						AND a1.source_id = COALESCE(e.source_id, 'http')
-				  )
-				GROUP BY ed.project_id, e.source_id
-			) AS combined
-			ORDER BY project_id, source_id
-			LIMIT 1000`
-	}
-	rows1, err := p.GetDB().QueryxContext(ctx, backlogQM)
+	rows1, err := p.GetDB().QueryxContext(ctx, `
+		SELECT q.project_id, q.source_id, q.age_seconds
+		FROM convoy.metrics_event_queue_backlog q
+		JOIN convoy.metrics_snapshot_meta m
+		  ON m.name = $1 AND m.generation = q.generation`, metricsSnapshotEventQueueBacklog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query backlog metrics: %w", err)
 	}
@@ -351,39 +368,12 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
-	var queryDeliveryQ string
-	if useMaterializedViews {
-		queryDeliveryQ = `SELECT 
-			project_id, 
-			project_name,
-			endpoint_id, 
-			status,
-			event_type,
-			source_id,
-			organisation_id,
-			organisation_name,
-			total 
-		FROM convoy.event_delivery_queue_metrics_mv`
-	} else {
-		queryDeliveryQ = `
-			SELECT DISTINCT 
-				ed.project_id,
-				COALESCE(p.name, '') AS project_name,
-				ed.endpoint_id,
-				ed.status,
-				COALESCE(ed.event_type, '') AS event_type,
-				COALESCE(e.source_id, 'http') AS source_id,
-				COALESCE(p.organisation_id, '') AS organisation_id,
-				COALESCE(o.name, '') AS organisation_name,
-				COUNT(*) AS total
-			FROM convoy.event_deliveries ed
-			LEFT JOIN convoy.events e ON ed.event_id = e.id
-			LEFT JOIN convoy.projects p ON ed.project_id = p.id
-			LEFT JOIN convoy.organisations o ON p.organisation_id = o.id
-			WHERE ed.deleted_at IS NULL
-			GROUP BY ed.project_id, p.name, ed.endpoint_id, ed.status, ed.event_type, e.source_id, p.organisation_id, o.name`
-	}
-	rows2, err := p.GetDB().QueryxContext(ctx, queryDeliveryQ)
+	rows2, err := p.GetDB().QueryxContext(ctx, `
+		SELECT q.project_id, q.project_name, q.endpoint_id, q.status, q.event_type,
+		       q.source_id, q.organisation_id, q.organisation_name, q.total
+		FROM convoy.metrics_event_delivery_queue q
+		JOIN convoy.metrics_snapshot_meta m
+		  ON m.name = $1 AND m.generation = q.generation`, metricsSnapshotEventDeliveryQueue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query delivery queue metrics: %w", err)
 	}
@@ -399,46 +389,11 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventDeliveryQueueMetrics = eventDeliveryQueueMetrics
 
-	var backlogEQM string
-	if useMaterializedViews {
-		backlogEQM = "SELECT project_id, source_id, endpoint_id, age_seconds FROM convoy.event_endpoint_backlog_metrics_mv"
-	} else {
-		backlogEQM = `
-			WITH a1 AS (
-				SELECT ed.project_id,
-					   COALESCE(e.source_id, 'http') AS source_id,
-					   ed.endpoint_id,
-					   EXTRACT(EPOCH FROM (NOW() - MIN(ed.created_at))) AS age_seconds
-				FROM convoy.event_deliveries ed
-				LEFT JOIN convoy.events e ON e.id = ed.event_id
-				WHERE ed.status = 'Processing'
-				GROUP BY ed.project_id, e.source_id, ed.endpoint_id
-				ORDER BY age_seconds DESC, ed.project_id, e.source_id, ed.endpoint_id
-				LIMIT 1000
-			)
-			SELECT project_id, source_id, endpoint_id, age_seconds
-			FROM (
-				SELECT * FROM a1
-				UNION ALL
-				SELECT ed.project_id,
-					   COALESCE(e.source_id, 'http'),
-					   ed.endpoint_id,
-					   0 AS age_seconds
-				FROM convoy.event_deliveries ed
-				LEFT JOIN convoy.events e ON e.id = ed.event_id
-				WHERE ed.status = 'Success'
-				  AND NOT EXISTS (
-					  SELECT 1 FROM a1 
-					  WHERE a1.project_id = ed.project_id 
-						AND a1.source_id = COALESCE(e.source_id, 'http')
-						AND a1.endpoint_id = ed.endpoint_id
-				  )
-				GROUP BY ed.project_id, e.source_id, ed.endpoint_id
-			) AS combined
-			ORDER BY project_id, source_id, endpoint_id
-			LIMIT 1000`
-	}
-	rows3, err := p.GetDB().QueryxContext(ctx, backlogEQM)
+	rows3, err := p.GetDB().QueryxContext(ctx, `
+		SELECT q.project_id, q.source_id, q.endpoint_id, q.age_seconds
+		FROM convoy.metrics_event_endpoint_backlog q
+		JOIN convoy.metrics_snapshot_meta m
+		  ON m.name = $1 AND m.generation = q.generation`, metricsSnapshotEventEndpointBacklog)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query endpoint backlog metrics: %w", err)
 	}

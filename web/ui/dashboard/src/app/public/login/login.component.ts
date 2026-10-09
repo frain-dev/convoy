@@ -2,14 +2,8 @@
 import {AfterViewInit, Component} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
-import {ButtonComponent} from 'src/app/components/button/button.component';
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent,
-    PasswordInputFieldComponent
-} from 'src/app/components/input/input.component';
+import {InputErrorComponent} from 'src/app/components/input/input.component';
+import {AuthShellComponent} from '../components/auth-shell/auth-shell.component';
 import {LoginService} from './login.service';
 import {LoaderModule} from 'src/app/private/components/loader/loader.module';
 import {PrivateService} from 'src/app/private/private.service';
@@ -19,10 +13,11 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {GoogleOAuthService} from 'src/app/services/google-oauth/google-oauth.service';
 import {ConfigService} from 'src/app/services/config/config.service';
 import {GeneralService} from 'src/app/services/general/general.service';
+import {consumeInviteRedirect, rememberInviteRedirect} from '../accept-invite/invite-redirect';
 
 @Component({
     selector: 'app-login',
-    imports: [FormsModule, ReactiveFormsModule, ButtonComponent, InputFieldDirective, InputDirective, LabelComponent, InputErrorComponent, PasswordInputFieldComponent, LoaderModule],
+    imports: [FormsModule, ReactiveFormsModule, InputErrorComponent, LoaderModule, AuthShellComponent],
     templateUrl: './login.component.html',
     styleUrls: ['./login.component.scss']
 })
@@ -62,6 +57,7 @@ export class LoginComponent implements AfterViewInit {
 	) {}
 
 	async ngAfterViewInit() {
+		rememberInviteRedirect(this.router.parseUrl(this.router.url).queryParams['redirect']);
 		const licensePromise = this.licenseService.setLicenses(true);
 
 		try {
@@ -159,7 +155,7 @@ export class LoginComponent implements AfterViewInit {
 			});
 
 			await this.getOrganisations();
-			await this.router.navigateByUrl('/');
+			await this.router.navigateByUrl(this.postLoginDestination());
 		} catch (error: any) {
 			console.error('Login failed:', error);
 
@@ -173,6 +169,11 @@ export class LoginComponent implements AfterViewInit {
 
 			this.disableLoginBtn = false;
 		}
+	}
+
+	private postLoginDestination(): string {
+		const redirect = this.router.parseUrl(this.router.url).queryParams['redirect'];
+		return consumeInviteRedirect(typeof redirect === 'string' ? redirect : null) || '/';
 	}
 
 	async getOrganisations() {
@@ -283,7 +284,7 @@ export class LoginComponent implements AfterViewInit {
 					localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 					await this.getOrganisations();
-					await this.router.navigateByUrl('/');
+					await this.router.navigateByUrl(this.postLoginDestination());
                 }
             }
         } catch (error: any) {

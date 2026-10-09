@@ -1,15 +1,15 @@
 <div class="flex flex-col items-center justify-center">
   @if (imgSrc) {
-    <img [src]="imgSrc" alt="empty state" class="mb-46px h-156px" />
+    <img [src]="imgSrc" alt="empty state" class="mb-40px h-156px" />
   }
   @if (heading) {
-    <h2 class="font-bold mb-14px text-16 text-neutral-12 text-center">{{ heading }}</h2>
+    <h2 class="font-heading font-medium text-[18px] leading-[26px] text-new.text-primary text-center mb-8px">{{ heading }}</h2>
   }
   @if (description) {
-    <p class="text-14 text-neutral-10 w-full max-w-[410px] text-center mt-8px">{{ description }}</p>
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary w-full max-w-[410px] text-center">{{ description }}</p>
   }
   @if (buttonText) {
-    <button convoy-button class="mt-22px" (click)="onAction.emit()">{{ buttonText }}</button>
+    <button type="button" class="mt-24px px-20px py-12px rounded-full bg-new.primary-400 font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90" (click)="onAction.emit()">{{ buttonText }}</button>
   }
   <div class="empty:hidden">
     <ng-content select="[emptyStateCTA]"></ng-content>

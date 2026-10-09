@@ -2,8 +2,6 @@ import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angula
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { DialogHeaderComponent, DialogDirective } from 'src/app/components/dialog/dialog.directive';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSourceModule } from '../../components/create-source/create-source.module';
 import { CreateSubscriptionModule } from '../../components/create-subscription/create-subscription.module';
 import { CreateEndpointComponent } from '../../components/create-endpoint/create-endpoint.component';
@@ -12,18 +10,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { SOURCE } from 'src/app/models/source.model';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
 import { CreateSourceComponent } from '../../components/create-source/create-source.component';
 import { CreateSubscriptionComponent } from '../../components/create-subscription/create-subscription.component';
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';
 import { LoaderModule } from '../../components/loader/loader.module';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { SourceURLComponent } from '../../components/create-source/source-url/source-url.component';
 import { SelectComponent } from 'src/app/components/select/select.component';
 
 @Component({
     selector: 'convoy-setup-project',
-    imports: [CommonModule, ReactiveFormsModule, DialogHeaderComponent, CardComponent, ButtonComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, CardComponent, DialogDirective, NotificationComponent, SourceURLComponent, SelectComponent],
+    imports: [CommonModule, ReactiveFormsModule, DialogHeaderComponent, CreateSourceModule, CreateSubscriptionModule, CreateEndpointComponent, ToggleComponent, LoaderModule, DialogDirective, SourceURLComponent, SelectComponent],
     templateUrl: './setup-project.component.html',
     styleUrls: ['./setup-project.component.scss']
 })

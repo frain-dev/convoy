@@ -127,7 +127,7 @@ func TestE2E_BackupProjectData_OnPrem(t *testing.T) {
 	require.NoError(t, err, "should load configuration")
 	require.NotNil(t, loadedConfig, "configuration should not be nil")
 	require.NotNil(t, loadedConfig.RetentionPolicy, "retention policy should not be nil")
-	require.True(t, loadedConfig.RetentionPolicy.IsRetentionPolicyEnabled, "retention policy should be enabled")
+	require.True(t, loadedConfig.WebhookArchiving.Enabled, "retention policy should be enabled")
 
 	// Seed an endpoint
 	endpoint := &datastore.Endpoint{

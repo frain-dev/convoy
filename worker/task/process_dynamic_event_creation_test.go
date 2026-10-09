@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -336,6 +337,36 @@ func TestFindEndpoint_TemplateMatching(t *testing.T) {
 			},
 		},
 		{
+			// A missing early adopter row means the org never enabled templates.
+			// That is a definitive "off", identical to a disabled row, so the
+			// dynamic event auto creates instead of retrying a lookup that will
+			// keep returning "no row" forever.
+			name: "missing early adopter row disables templates and auto creates",
+			fn: func(t *testing.T, args EventChannelArgs, project *datastore.Project) {
+				concreteURL := "https://example.com/invoices/123/callback"
+
+				repo, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+				repo.EXPECT().FindEndpointByTargetURL(gomock.Any(), project.UID, concreteURL).Return(nil, datastore.ErrEndpointNotFound)
+				repo.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), project.UID).DoAndReturn(func(_ context.Context, endpoint *datastore.Endpoint, _ string) error {
+					require.Equal(t, concreteURL, endpoint.Url)
+					return nil
+				})
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().EndpointURLTemplates().Return(true)
+
+				args.earlyAdopterFeatureFetcher = &mocks.MockEarlyAdopterFeatureFetcher{
+					FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+						return nil, fflag.ErrEarlyAdopterFeatureNotFound
+					},
+				}
+
+				got, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL, Secret: "secret"})
+				require.NoError(t, err)
+				require.Equal(t, concreteURL, got.Url)
+			},
+		},
+		{
 			name: "feature lookup error auto creates when no valid templates exist",
 			fn: func(t *testing.T, args EventChannelArgs, project *datastore.Project) {
 				concreteURL := "https://example.com/orders/123/callback"
@@ -414,6 +445,9 @@ func TestFindEndpoint_TemplateMatching(t *testing.T) {
 				_, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL})
 				require.Error(t, err)
 				require.Contains(t, err.Error(), "dynamic URL does not match any configured endpoint URL template")
+				// The reason is what the dashboard shows, so it must survive the
+				// EndpointError wrapper rather than coming back empty.
+				require.Equal(t, "dynamic URL does not match any configured endpoint URL template", dynamicURLTemplateFailureReason(err))
 			},
 		},
 		{
@@ -443,6 +477,131 @@ func TestFindEndpoint_TemplateMatching(t *testing.T) {
 				require.Contains(t, err.Error(), "multiple endpoint URL templates match dynamic URL")
 			},
 		},
+		{
+			// The strict default must come from the flag, not only from a nil
+			// config, so a project that explicitly opts out still fails closed.
+			name: "template miss fails closed when project explicitly disallows unmatched URLs",
+			fn: func(t *testing.T, args EventChannelArgs, project *datastore.Project) {
+				project.Config = &datastore.ProjectConfig{AllowUnmatchedDynamicURLs: false}
+
+				concreteURL := "https://example.com/invoices/123/callback"
+				templates := []datastore.Endpoint{
+					{UID: "endpoint-template", ProjectID: project.UID, Url: "https://example.com/orders/{reference}/callback"},
+				}
+
+				repo, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+				repo.EXPECT().FindEndpointByTargetURL(gomock.Any(), project.UID, concreteURL).Return(nil, datastore.ErrEndpointNotFound)
+				repo.EXPECT().FindEndpointsWithURLTemplates(gomock.Any(), project.UID).Return(templates, nil)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().EndpointURLTemplates().Return(true)
+
+				args.earlyAdopterFeatureFetcher = &mocks.MockEarlyAdopterFeatureFetcher{
+					FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+						return &fflag.EarlyAdopterFeatureInfo{Enabled: true}, nil
+					},
+				}
+
+				_, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL})
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "dynamic URL does not match any configured endpoint URL template")
+			},
+		},
+		{
+			// Partners still on plain URLs keep working alongside templated ones.
+			name: "template miss auto creates when project allows unmatched URLs",
+			fn: func(t *testing.T, args EventChannelArgs, project *datastore.Project) {
+				project.Config = &datastore.ProjectConfig{AllowUnmatchedDynamicURLs: true}
+
+				concreteURL := "https://example.com/invoices/123/callback"
+				templates := []datastore.Endpoint{
+					{UID: "endpoint-template", ProjectID: project.UID, Url: "https://example.com/orders/{reference}/callback"},
+				}
+
+				repo, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+				repo.EXPECT().FindEndpointByTargetURL(gomock.Any(), project.UID, concreteURL).Return(nil, datastore.ErrEndpointNotFound)
+				repo.EXPECT().FindEndpointsWithURLTemplates(gomock.Any(), project.UID).Return(templates, nil)
+				repo.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), project.UID).DoAndReturn(func(_ context.Context, endpoint *datastore.Endpoint, _ string) error {
+					require.Equal(t, concreteURL, endpoint.Url)
+					return nil
+				})
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().EndpointURLTemplates().Return(true)
+
+				args.earlyAdopterFeatureFetcher = &mocks.MockEarlyAdopterFeatureFetcher{
+					FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+						return &fflag.EarlyAdopterFeatureInfo{Enabled: true}, nil
+					},
+				}
+
+				got, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL, Secret: "secret"})
+				require.NoError(t, err)
+				require.Equal(t, concreteURL, got.Url)
+			},
+		},
+		{
+			// Allowing unmatched URLs must not loosen ambiguity: auto-creating here
+			// would hide a template misconfiguration behind a new endpoint.
+			name: "overlapping template matches fail closed even when unmatched URLs are allowed",
+			fn: func(t *testing.T, args EventChannelArgs, project *datastore.Project) {
+				project.Config = &datastore.ProjectConfig{AllowUnmatchedDynamicURLs: true}
+
+				concreteURL := "https://example.com/orders/123/callback"
+				templates := []datastore.Endpoint{
+					{UID: "endpoint-template-1", ProjectID: project.UID, Url: "https://example.com/orders/{reference}/callback"},
+					{UID: "endpoint-template-2", ProjectID: project.UID, Url: "https://example.com/orders/{transaction_id}/callback"},
+				}
+
+				repo, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+				repo.EXPECT().FindEndpointByTargetURL(gomock.Any(), project.UID, concreteURL).Return(nil, datastore.ErrEndpointNotFound)
+				repo.EXPECT().FindEndpointsWithURLTemplates(gomock.Any(), project.UID).Return(templates, nil)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().EndpointURLTemplates().Return(true)
+
+				args.earlyAdopterFeatureFetcher = &mocks.MockEarlyAdopterFeatureFetcher{
+					FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+						return &fflag.EarlyAdopterFeatureInfo{Enabled: true}, nil
+					},
+				}
+
+				_, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL})
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "multiple endpoint URL templates match dynamic URL")
+			},
+		},
+		{
+			// The feature-lookup failure path is retryable infra, not a policy
+			// choice, so opting into unmatched URLs must not turn it into an
+			// auto-create that bypasses templates the project still enforces.
+			name: "feature lookup error still fails closed when unmatched URLs are allowed",
+			fn: func(t *testing.T, args EventChannelArgs, project *datastore.Project) {
+				project.Config = &datastore.ProjectConfig{AllowUnmatchedDynamicURLs: true}
+
+				concreteURL := "https://example.com/orders/123/callback"
+				templates := []datastore.Endpoint{
+					{UID: "endpoint-template", ProjectID: project.UID, Url: "https://example.com/orders/{reference}/callback"},
+				}
+
+				repo, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
+				repo.EXPECT().FindEndpointByTargetURL(gomock.Any(), project.UID, concreteURL).Return(nil, datastore.ErrEndpointNotFound)
+				repo.EXPECT().FindEndpointsWithURLTemplates(gomock.Any(), project.UID).Return(templates, nil)
+
+				licenser, _ := args.licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().EndpointURLTemplates().Return(true)
+
+				args.earlyAdopterFeatureFetcher = &mocks.MockEarlyAdopterFeatureFetcher{
+					FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+						return nil, errors.New("feature store unavailable")
+					},
+				}
+
+				_, err := findEndpoint(context.Background(), project, args, &models.DynamicEvent{URL: concreteURL})
+				require.Error(t, err)
+				require.Contains(t, err.Error(), "endpoint URL template feature lookup failed")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -461,6 +620,57 @@ func TestFindEndpoint_TemplateMatching(t *testing.T) {
 			project := &datastore.Project{UID: "project-id-1", OrganisationID: "org-id-1"}
 
 			tt.fn(t, args, project)
+		})
+	}
+}
+
+// Regression: the reason is read through the EndpointError wrapper. Using
+// errors.Is on the wrapper itself silently returns "" because EndpointError
+// does not implement Unwrap, which would persist failures with no explanation.
+func TestDynamicURLTemplateFailureReason(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{
+			name: "no matching template",
+			err:  &EndpointError{Err: errDynamicURLTemplateNoMatch},
+			want: "dynamic URL does not match any configured endpoint URL template",
+		},
+		{
+			name: "templated dynamic URL",
+			err:  &EndpointError{Err: errDynamicURLTemplateNotConcrete},
+			want: "dynamic event URL must be concrete, not an endpoint URL template",
+		},
+		{
+			name: "multiple templates match",
+			err:  &EndpointError{Err: errDynamicURLTemplateMultipleMatch},
+			want: "multiple endpoint URL templates match dynamic URL",
+		},
+		{
+			name: "wrapped sentinel is still classified",
+			err:  &EndpointError{Err: fmt.Errorf("resolve failed: %w", errDynamicURLTemplateNoMatch)},
+			want: "dynamic URL does not match any configured endpoint URL template",
+		},
+		{
+			// Retryable infra failure: no reason, so the event is not marked
+			// Failure and sync waiters fail closed on timeout instead.
+			name: "feature lookup failure is not a validation reason",
+			err:  &EndpointError{Err: fmt.Errorf("%w: boom", errDynamicURLTemplateFeatureLookup)},
+			want: "",
+		},
+		{
+			name: "unwrapped error is not classified",
+			err:  errDynamicURLTemplateNoMatch,
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, dynamicURLTemplateFailureReason(tt.err))
+			require.Equal(t, tt.want != "", isDynamicURLTemplateValidationError(tt.err))
 		})
 	}
 }

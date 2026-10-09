@@ -31,7 +31,8 @@ func (q *RedisQueue) Describe(ch chan<- *prometheus.Desc) {
 	if q == nil {
 		return
 	}
-	prometheus.DescribeByCollect(q, ch)
+	ch <- eventQueueTotalDesc
+	ch <- eventQueueMatchSubscriptionsTotalDesc
 }
 
 func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {

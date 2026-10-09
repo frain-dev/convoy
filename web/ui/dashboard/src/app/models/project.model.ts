@@ -8,7 +8,8 @@ export interface PROJECT {
 			duration: string;
 		};
 		disable_endpoint: boolean;
-		sync_dynamic_event_ack?: boolean;
+		verify_dynamic_events?: boolean;
+		allow_unmatched_dynamic_urls?: boolean;
 		strategy: {
 			type: string;
 			retry_count: number;

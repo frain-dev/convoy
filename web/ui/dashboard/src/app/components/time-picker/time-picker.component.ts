@@ -1,13 +1,12 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent } from '../button/button.component';
 import { FormsModule } from '@angular/forms';
 import { DropdownContainerComponent } from '../dropdown-container/dropdown-container.component';
 import { OverlayDirective } from '../overlay/overlay.directive';
 
 @Component({
     selector: 'convoy-time-picker',
-    imports: [CommonModule, ButtonComponent, FormsModule, DropdownContainerComponent, OverlayDirective],
+    imports: [CommonModule, FormsModule, DropdownContainerComponent, OverlayDirective],
     templateUrl: './time-picker.component.html',
     styleUrls: ['./time-picker.component.scss']
 })

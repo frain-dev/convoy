@@ -25,7 +25,7 @@ export class TagComponent implements OnInit {
 		const colors = {
 			primary: { solid: 'bg-new.primary-400 text-white-100', outline: 'border border-new.primary-400 text-new.primary-400', soft: 'bg-new.primary-25 text-new.primary-400', 'soft-outline': 'border border-new.primary-200 bg-new.primary-25 text-new.primary-400' },
 			error: { solid: 'bg-error-9 text-white-100', outline: 'border border-error-9 text-error-9', soft: 'bg-error-a3 text-error-11', 'soft-outline': 'border border-error-6 bg-error-a2 text-error-9' },
-			neutral: { solid: 'bg-neutral-9 text-white-100', outline: 'border border-neutral-9 text-neutral-9', soft: 'bg-neutral-a3 text-neutral-11', 'soft-outline': 'border border-neutral-6 bg-neutral-a2 text-neutral-9' },
+			neutral: { solid: 'bg-new.text-secondary text-white-100', outline: 'border border-new.border text-new.text-secondary', soft: 'bg-new.surface-muted text-new.text-secondary', 'soft-outline': 'border border-new.border bg-new.surface-subtle text-new.text-secondary' },
 			success: { solid: 'bg-success-9 text-white-100', outline: 'border border-success-9 text-success-9', soft: 'bg-success-a3 text-success-11', 'soft-outline': 'border border-success-6 bg-success-a2 text-success-9' },
 			warning: { solid: 'bg-warning-9 text-white-100', outline: 'border border-warning-9 text-warning-9', soft: 'bg-warning-a3 text-warning-11', 'soft-outline': 'border border-warning-6 bg-warning-a2 text-warning-9' }
 		};

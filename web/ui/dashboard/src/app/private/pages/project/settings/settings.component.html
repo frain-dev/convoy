@@ -1,29 +1,36 @@
-<div class="max-w-[1000px] m-auto desktop:px-24px">
+<div class="pb-40px">
   <div id="project-settings"></div>
   @if (isloading) {
     <convoy-loader></convoy-loader>
   }
 
-  <app-create-project-component [action]="'update'" class="block -mt-24px"></app-create-project-component>
+  <!-- Section header -->
+  <div class="flex flex-col gap-4px">
+    <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Project settings</h2>
+    <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Configure this project&rsquo;s defaults and behaviour</p>
+  </div>
 
-  <div class="w-full max-w-[730px] ml-auto">
-    <hr class="border-t border-neutral-a3 my-40px" />
-    <div convoy-card color="error" class="p-26px my-24px">
-      <h2 class="text-error-9 text-14 font-semibold mb-20px">Danger zone</h2>
-      <p class="text-12">
-        Deleting this project will delete all of it's data including events, apps, subscriptions and config.
-        <strong>Are you sure you want to delete this project?</strong>
-      </p>
-      <button convoy-button convoy-permission="Project Settings|MANAGE" color="error" size="sm" class="mt-32px" (click)="deleteDialog.showModal()">
-        <svg width="18" height="18" class="mr-2 fill-white-100">
-          <use xlink:href="#delete-icon"></use>
-        </svg>
-        Delete Project
-      </button>
-    </div>
+  <div class="h-[1px] w-full bg-new.border mt-16px mb-32px"></div>
+
+  <app-create-project-component [action]="'update'" class="block"></app-create-project-component>
+
+  <!-- Danger zone -->
+  <div class="bg-white-100 border border-[#F5C6C6] rounded-16px p-24px mt-48px md:ml-[260px]">
+    <h3 class="font-heading font-semibold text-[16px] leading-[24px] text-[#DC2626]">Danger zone</h3>
+    <p class="font-body font-normal text-[13px] leading-normal text-new.text-secondary mt-2px max-w-[560px]">
+      Deleting this project will delete all of its data including events, endpoints, subscriptions and config. This action is irreversible.
+    </p>
+    <button
+      type="button"
+      convoy-permission="Project Settings|MANAGE"
+      class="mt-20px px-16px py-10px rounded-full bg-[#DC2626] font-body font-medium text-[14px] leading-[16px] text-white-100 transition-all hover:opacity-90"
+      (click)="deleteDialog.showModal()"
+      >
+      Delete Project
+    </button>
   </div>
 </div>
 
-<dialog #deleteDialog convoy-dialog position="center" size="sm">
+<dialog #deleteDialog convoy-dialog position="center" class="!w-[480px] !max-w-[92vw] !rounded-24px !mt-[24vh] !bg-new.surface-page border border-new.border">
   <app-delete-modal [isLoading]="isloading" [deleteText]="'delete this project'" (closeModal)="deleteDialog.close()" (deleteData)="deleteProject()"></app-delete-modal>
 </dialog>

@@ -269,3 +269,36 @@ func TestMtlsClientCert_ScanAndValue(t *testing.T) {
 		require.Equal(t, original.ClientKey, decoded.ClientKey)
 	})
 }
+
+// Event.Metadata holds the dynamic event payload, which carries the endpoint
+// secret and any custom authorization headers the caller supplied. Serializing
+// it would return those credentials from GET /events in plaintext.
+func TestEvent_MetadataIsNeverSerialized(t *testing.T) {
+	event := Event{
+		UID:      "event-1",
+		Status:   FailureStatus,
+		Metadata: `{"dynamicPayload":"{\"url\":\"https://example.com\",\"secret\":\"super-secret\",\"custom_headers\":{\"Authorization\":\"Bearer leaked-token\"}}"}`,
+	}
+
+	out, err := json.Marshal(&event)
+	require.NoError(t, err)
+
+	require.NotContains(t, string(out), "super-secret")
+	require.NotContains(t, string(out), "leaked-token")
+	require.NotContains(t, string(out), "dynamicPayload")
+	require.NotContains(t, string(out), `"metadata"`)
+}
+
+func TestEvent_FailureReasonIsSerialized(t *testing.T) {
+	reason := "dynamic URL does not match any configured endpoint URL template"
+
+	out, err := json.Marshal(&Event{UID: "event-1", Status: FailureStatus, FailureReason: reason})
+	require.NoError(t, err)
+	require.Contains(t, string(out), reason)
+
+	// Omitted entirely for events that did not fail, so the dashboard can treat
+	// presence of the field as "there is something to explain".
+	out, err = json.Marshal(&Event{UID: "event-2", Status: SuccessStatus})
+	require.NoError(t, err)
+	require.NotContains(t, string(out), "failure_reason")
+}
