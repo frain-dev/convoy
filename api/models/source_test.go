@@ -172,6 +172,141 @@ func TestUpdateSource_ValidateRejectsPayloadSignatureMetadataEventTypeLocation(t
 	require.Error(t, source.Validate())
 }
 
+func TestUpdateSource_Validate(t *testing.T) {
+	name := "Convoy-Prod"
+	tests := []struct {
+		name        string
+		source      *UpdateSource
+		wantErr     bool
+		expectedErr string
+	}{
+		{
+			name: "should_pass_validation_with_valid_provider_and_hmac",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &HMac{
+						Encoding: datastore.Base64Encoding,
+						Header:   "X-Hub-Signature-256",
+						Hash:     "SHA256",
+						Secret:   "Convoy-Secret",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_pass_validation_without_provider",
+			source: &UpdateSource{
+				Name: &name,
+				Type: datastore.HTTPSource,
+				Verifier: VerifierConfig{
+					Type: datastore.NoopVerifier,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_github_provider_with_empty_verifier",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{},
+			},
+			wantErr:     true,
+			expectedErr: "hmac secret is required for github source",
+		},
+		{
+			name: "should_error_for_shopify_provider_with_empty_verifier",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.ShopifySourceProvider,
+				Verifier: VerifierConfig{},
+			},
+			wantErr:     true,
+			expectedErr: "hmac secret is required for shopify source",
+		},
+		{
+			name: "should_error_for_twitter_provider_with_empty_verifier",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.TwitterSourceProvider,
+				Verifier: VerifierConfig{},
+			},
+			wantErr:     true,
+			expectedErr: "hmac secret is required for twitter source",
+		},
+		{
+			name: "should_error_for_provider_with_nil_hmac",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: nil,
+				},
+			},
+			wantErr:     true,
+			expectedErr: "hmac secret is required for github source",
+		},
+		{
+			name: "should_error_for_provider_with_empty_hmac_secret",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &HMac{
+						Secret: "",
+					},
+				},
+			},
+			wantErr:     true,
+			expectedErr: "hmac secret is required for github source",
+		},
+		{
+			name: "should_error_for_provider_with_non_hmac_verifier",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{
+					Type: datastore.APIKeyVerifier,
+					ApiKey: &ApiKey{
+						HeaderName:  "X-API-Key",
+						HeaderValue: "secret-value",
+					},
+				},
+			},
+			wantErr:     true,
+			expectedErr: "hmac secret is required for github source",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.source.Validate()
+			if tc.wantErr {
+				require.Error(t, err)
+				if tc.expectedErr != "" {
+					require.Contains(t, err.Error(), tc.expectedErr)
+				}
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestValidateEventTypeLocation(t *testing.T) {
 	tests := []struct {
 		name     string

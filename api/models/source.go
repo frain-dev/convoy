@@ -246,9 +246,14 @@ type UpdateSource struct {
 }
 
 func (us *UpdateSource) Validate() error {
-	if us.Provider.IsValid() && us.Name != nil && us.Verifier.Type != "" {
+	if us.Provider.IsValid() {
+		var name string
+		if us.Name != nil {
+			name = *us.Name
+		}
+
 		if err := validateSourceForProvider(&CreateSource{
-			Name:     *us.Name,
+			Name:     name,
 			Type:     us.Type,
 			Provider: us.Provider,
 			Verifier: us.Verifier,
