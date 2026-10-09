@@ -19,6 +19,10 @@ type UpdateSourceService struct {
 }
 
 func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error) {
+	if !util.IsStringEmpty(string(s.SourceUpdate.Provider)) && !s.SourceUpdate.Provider.IsValid() {
+		return nil, &ServiceError{ErrMsg: "Invalid source provider"}
+	}
+
 	s.Source.Name = *s.SourceUpdate.Name
 	s.Source.Verifier = s.SourceUpdate.Verifier.Transform()
 	s.Source.Type = s.SourceUpdate.Type

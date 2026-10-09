@@ -52,7 +52,11 @@ type CreateSource struct {
 }
 
 func (cs *CreateSource) Validate() error {
-	if cs.Provider.IsValid() {
+	if !util.IsStringEmpty(string(cs.Provider)) {
+		if !cs.Provider.IsValid() {
+			return errors.New("please provide a valid source provider")
+		}
+
 		if err := validateSourceForProvider(cs); err != nil {
 			return err
 		}
@@ -186,11 +190,18 @@ func validateSourceForProvider(newSource *CreateSource) error {
 		return errors.New("please provide a valid source type")
 	}
 
+	if !newSource.Provider.IsValid() {
+		return errors.New("please provide a valid source provider")
+	}
+
 	switch newSource.Provider {
 	case datastore.GithubSourceProvider,
 		datastore.ShopifySourceProvider,
 		datastore.TwitterSourceProvider:
 		verifierConfig := newSource.Verifier
+		if verifierConfig.Type != datastore.HMacVerifier {
+			return fmt.Errorf("hmac verifier is required for %s source", newSource.Provider)
+		}
 		if verifierConfig.HMac == nil || verifierConfig.HMac.Secret == "" {
 			return fmt.Errorf("hmac secret is required for %s source", newSource.Provider)
 		}
@@ -246,7 +257,11 @@ type UpdateSource struct {
 }
 
 func (us *UpdateSource) Validate() error {
-	if us.Provider.IsValid() {
+	if !util.IsStringEmpty(string(us.Provider)) {
+		if !us.Provider.IsValid() {
+			return errors.New("please provide a valid source provider")
+		}
+
 		var name string
 		if us.Name != nil {
 			name = *us.Name

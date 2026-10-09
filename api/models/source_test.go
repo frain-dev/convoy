@@ -72,6 +72,7 @@ func TestCreateSource_Validate(t *testing.T) {
 				Type:     datastore.HTTPSource,
 				Provider: datastore.GithubSourceProvider,
 				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
 					HMac: &HMac{
 						Secret: "",
 					},
@@ -86,7 +87,42 @@ func TestCreateSource_Validate(t *testing.T) {
 				Name:     "Convoy-Prod",
 				Type:     datastore.HTTPSource,
 				Provider: datastore.GithubSourceProvider,
-				Verifier: VerifierConfig{HMac: nil},
+				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: nil,
+				},
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "should_error_for_unsupported_provider",
+			source: &CreateSource{
+				Name:     "Convoy-Prod",
+				Type:     datastore.HTTPSource,
+				Provider: datastore.SourceProvider("unsupported"),
+				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &HMac{
+						Secret: "Convoy-Secret",
+					},
+				},
+			},
+			wantErr: true,
+		},
+
+		{
+			name: "should_error_for_provider_with_noop_verifier_and_populated_hmac",
+			source: &CreateSource{
+				Name:     "Convoy-Prod",
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{
+					Type: datastore.NoopVerifier,
+					HMac: &HMac{
+						Secret: "Convoy-Secret",
+					},
+				},
 			},
 			wantErr: true,
 		},
@@ -218,7 +254,7 @@ func TestUpdateSource_Validate(t *testing.T) {
 				Verifier: VerifierConfig{},
 			},
 			wantErr:     true,
-			expectedErr: "hmac secret is required for github source",
+			expectedErr: "hmac verifier is required for github source",
 		},
 		{
 			name: "should_error_for_shopify_provider_with_empty_verifier",
@@ -229,7 +265,7 @@ func TestUpdateSource_Validate(t *testing.T) {
 				Verifier: VerifierConfig{},
 			},
 			wantErr:     true,
-			expectedErr: "hmac secret is required for shopify source",
+			expectedErr: "hmac verifier is required for shopify source",
 		},
 		{
 			name: "should_error_for_twitter_provider_with_empty_verifier",
@@ -240,7 +276,7 @@ func TestUpdateSource_Validate(t *testing.T) {
 				Verifier: VerifierConfig{},
 			},
 			wantErr:     true,
-			expectedErr: "hmac secret is required for twitter source",
+			expectedErr: "hmac verifier is required for twitter source",
 		},
 		{
 			name: "should_error_for_provider_with_nil_hmac",
@@ -287,7 +323,42 @@ func TestUpdateSource_Validate(t *testing.T) {
 				},
 			},
 			wantErr:     true,
-			expectedErr: "hmac secret is required for github source",
+			expectedErr: "hmac verifier is required for github source",
+		},
+		{
+			name: "should_error_for_provider_with_noop_verifier_and_populated_hmac",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.GithubSourceProvider,
+				Verifier: VerifierConfig{
+					Type: datastore.NoopVerifier,
+					HMac: &HMac{
+						Secret: "secret-value",
+					},
+				},
+			},
+			wantErr:     true,
+			expectedErr: "hmac verifier is required for github source",
+		},
+		{
+			name: "should_error_for_unsupported_provider",
+			source: &UpdateSource{
+				Name:     &name,
+				Type:     datastore.HTTPSource,
+				Provider: datastore.SourceProvider("unsupported"),
+				Verifier: VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &HMac{
+						Encoding: datastore.Base64Encoding,
+						Header:   "X-Hub-Signature-256",
+						Hash:     "SHA256",
+						Secret:   "Convoy-Secret",
+					},
+				},
+			},
+			wantErr:     true,
+			expectedErr: "please provide a valid source provider",
 		},
 	}
 
