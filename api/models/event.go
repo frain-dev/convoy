@@ -309,7 +309,7 @@ type CountResponse struct {
 // DeliveryStatusTotalsResponse carries per-status delivery totals for a window.
 // A status with no deliveries is absent from Totals rather than present as zero,
 // so a client can tell an empty window from a failed request. Source names the
-// table that answered, either the daily rollup or a live scan.
+// read strategy: daily rollups with exact live boundary reads, or a live scan.
 type DeliveryStatusTotalsResponse struct {
 	Totals map[string]int64 `json:"totals"`
 	Source string           `json:"source"`
