@@ -1,4 +1,4 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {EventDeliveriesModule} from 'src/app/private/pages/project/events/event-deliveries/event-deliveries.module';
 import {EventDeliveriesComponent as EventDeliveriesTableComponent} from 'src/app/private/pages/project/events/event-deliveries/event-deliveries.component';
@@ -12,7 +12,9 @@ import {ENDPOINT} from '../../models/endpoint.model';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {EventsService} from '../../private/pages/project/events/events.service';
 import {PrivateService} from '../../private/private.service';
-import {Router} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
+import {Subscription} from 'rxjs';
+import {deliveryRangeDate, resolveDeliveryDateRange} from '../../private/pages/project/events/delivery-date-range';
 import {LicensesService} from "../../services/licenses/licenses.service";
 import {CountLabelPipe} from 'src/app/pipes/count-label/count-label.pipe';
 
@@ -22,7 +24,7 @@ import {CountLabelPipe} from 'src/app/pipes/count-label/count-label.pipe';
     templateUrl: './event-deliveries.component.html',
     styleUrls: ['./event-deliveries.component.scss']
 })
-export class EventDeliveriesComponent implements OnInit {
+export class EventDeliveriesComponent implements OnInit, OnDestroy {
     isloadingDashboardData: boolean = false;
     dashboardFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' = 'daily';
     filterOptions: ['daily', 'weekly', 'monthly'] = ['daily', 'weekly', 'monthly'];
@@ -45,22 +47,41 @@ export class EventDeliveriesComponent implements OnInit {
     deliveryCounts: { success: number | null; failure: number | null } = {success: null, failure: null};
     isLoadingDeliveryCounts = false;
     private deliveryCountsFetchId = 0;
+    private dashboardFetchId = 0;
+    private dateSubscription?: Subscription;
     summaryEndpoints: ENDPOINT[] = [];
     selectedSummaryEndpoint?: ENDPOINT;
     isLoadingSummaryEndpoints = false;
 
     @ViewChild(EventDeliveriesTableComponent) eventDeliveriesTable?: EventDeliveriesTableComponent;
 
-    constructor(private formBuilder: FormBuilder, private eventsService: EventsService, private privateService: PrivateService, public licenseService: LicensesService, public router: Router) {
+    constructor(private formBuilder: FormBuilder, private eventsService: EventsService, private privateService: PrivateService, public licenseService: LicensesService, public router: Router, private route: ActivatedRoute) {
+        this.statsDateRange.patchValue(resolveDeliveryDateRange(this.route.snapshot.queryParams));
+        this.dateRangeValue = this.statsDateRangeForRequest;
     }
 
 
     async ngOnInit() {
+        this.dateSubscription = this.route.queryParams.subscribe(params => {
+            const range = resolveDeliveryDateRange(params);
+            this.eventDeliveriesTable?.restoreFiltersFromURL({...params, ...range});
+            const current = this.statsDateRangeForRequest;
+            if (range.startDate === current.startDate && range.endDate === current.endDate) return;
+            this.statsDateRange.patchValue(range);
+            this.dateRangeValue = range;
+            this.fetchDashboardData();
+        });
         this.isloadingDashboardData = true;
         this.isPageLoading = true;
         this.fetchDashboardData();
         this.getEndpointsForSummary();
         this.licenseService.setLicenses()
+    }
+
+    ngOnDestroy() {
+        this.dateSubscription?.unsubscribe();
+        this.dashboardFetchId++;
+        this.deliveryCountsFetchId++;
     }
 
     setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
@@ -74,7 +95,7 @@ export class EventDeliveriesComponent implements OnInit {
     get dateRangeLabel(): string {
         const {startDate, endDate} = this.statsDateRange.getRawValue();
         if (!startDate || !endDate) return 'Select date range';
-        return `${format(new Date(startDate), 'dd/MM/yyyy')} - ${format(new Date(endDate), 'dd/MM/yyyy')}`;
+        return `${format(deliveryRangeDate(startDate), 'dd/MM/yyyy')} - ${format(deliveryRangeDate(endDate), 'dd/MM/yyyy')}`;
     }
 
     get statsDateRangeForRequest(): { startDate: string; endDate: string } {
@@ -84,6 +105,8 @@ export class EventDeliveriesComponent implements OnInit {
 
     async fetchDashboardData() {
         const {startDate, endDate} = this.statsDateRangeForRequest;
+        const fetchId = ++this.dashboardFetchId;
+        this.isloadingDashboardData = true;
 
         this.fetchDeliveryCounts();
 
@@ -93,12 +116,14 @@ export class EventDeliveriesComponent implements OnInit {
                 endDate,
                 type: this.dashboardFrequency
             });
+            if (fetchId !== this.dashboardFetchId) return;
             this.dashboardData = dashboardResponse.data;
             this.initConvoyChart(dashboardResponse);
 
             this.isloadingDashboardData = false;
             return;
         } catch (error: any) {
+            if (fetchId !== this.dashboardFetchId) return;
             this.chartData = [];
             this.isloadingDashboardData = false;
             this.isPageLoading = false;
@@ -149,11 +174,8 @@ export class EventDeliveriesComponent implements OnInit {
     }
 
     getSelectedDateRange(dateRange?: { startDate: Date; endDate: Date }) {
-        this.dateRangeValue = dateRange;
-        this.statsDateRange.patchValue({
-            startDate: dateRange?.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
-            endDate: dateRange?.endDate || new Date()
-        });
+        this.statsDateRange.patchValue(dateRange || resolveDeliveryDateRange());
+        this.dateRangeValue = this.statsDateRangeForRequest;
         this.fetchDashboardData();
 
         // The page-level date range also scopes the delivery table below.

@@ -303,6 +303,56 @@ func defaultSearchParams() datastore.SearchParams {
 	}
 }
 
+func TestDashboardRollupsRespectTimeFilters(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	day := time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC)
+	for _, hour := range []int{12, 18, 24} {
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+		delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		delivery.Status = datastore.SuccessEventStatus
+		require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+		at := day.Add(time.Duration(hour) * time.Hour)
+		_, err := db.GetDB().ExecContext(ctx, "UPDATE convoy.events SET created_at=$1, updated_at=$1 WHERE id=$2", at, event.UID)
+		require.NoError(t, err)
+		_, err = db.GetDB().ExecContext(ctx, "UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2", at, delivery.UID)
+		require.NoError(t, err)
+	}
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.RefreshDailyCounts(ctx, day, day.AddDate(0, 0, 2)))
+	}
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+	require.NoError(t, service.markEventDailyCountsBackfillCompleted(ctx))
+	for _, period := range []datastore.Period{datastore.Daily, datastore.Weekly, datastore.Monthly, datastore.Yearly} {
+		for _, window := range []struct {
+			start, end time.Time
+			count      uint64
+		}{
+			{day, day.Add(13 * time.Hour), 1},
+			{day.Add(12 * time.Hour), day.Add(13 * time.Hour), 1},
+			{day.Add(-12 * time.Hour), day.Add(24 * time.Hour), 3},
+			{day.Add(12 * time.Hour), day.Add(48 * time.Hour), 3},
+		} {
+			params := datastore.SearchParams{CreatedAtStart: window.start.Unix(), CreatedAtEnd: window.end.Unix()}
+			for _, endpoints := range [][]string{nil, {endpoint.UID}} {
+				events, err := service.LoadEventIntervals(ctx, project.UID, params, period, endpoints)
+				require.NoError(t, err)
+				require.Equal(t, window.count, sumIntervalCounts(events), "chart time filter after backfill")
+				deliveries, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, params, period, endpoints)
+				require.NoError(t, err)
+				require.Equal(t, window.count, sumIntervalCounts(deliveries), "delivery time filter after backfill")
+				totals, _, err := service.StatusTotals(ctx, project.UID, params, endpoints)
+				require.NoError(t, err)
+				require.Equal(t, int64(window.count), totals[datastore.SuccessEventStatus], "card/table count time filter after backfill")
+			}
+		}
+	}
+}
+
 func TestCreateEventDelivery(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
@@ -1265,25 +1315,29 @@ func TestLoadEventDeliveriesIntervals(t *testing.T) {
 	t.Run("Daily", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 
 	t.Run("Weekly", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Weekly, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 
 	t.Run("Monthly", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Monthly, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 
 	t.Run("Yearly", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Yearly, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 }
 
@@ -1866,6 +1920,7 @@ func TestAdvanceDailyCountsBackfillWalksHistoryToCompletion(t *testing.T) {
 func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
+	params := datastore.SearchParams{CreatedAtStart: utcDate(time.Now()).AddDate(0, 0, -1).Unix(), CreatedAtEnd: utcDate(time.Now()).AddDate(0, 0, 1).Unix()}
 
 	project := seedTestProject(t, db)
 	endpoint := seedTestEndpoint(t, db, project.UID)
@@ -1885,7 +1940,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 
 	// Until the backfill completes the totals come off a live scan, which is the
 	// number the rollup then has to match.
-	live, liveSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	live, liveSource, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, StatusTotalsFromLive, liveSource)
 	require.Equal(t, int64(3), live[datastore.SuccessEventStatus])
@@ -1903,7 +1958,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 	}
 	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
 
-	fromRollup, rollupSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	fromRollup, rollupSource, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, StatusTotalsFromRollup, rollupSource)
 	require.Equal(t, live, fromRollup, "rollup disagrees with the live scan")
@@ -1913,7 +1968,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 	seed(datastore.SuccessEventStatus, 1)
 	require.NoError(t, service.RefreshRecentDailyCounts(ctx))
 
-	updated, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	updated, _, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, int64(4), updated[datastore.SuccessEventStatus])
 	require.Equal(t, int64(2), updated[datastore.FailureEventStatus])
@@ -1922,6 +1977,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 func TestStatusTotalsScopeToEndpoint(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
+	params := datastore.SearchParams{CreatedAtStart: utcDate(time.Now()).AddDate(0, 0, -1).Unix(), CreatedAtEnd: utcDate(time.Now()).AddDate(0, 0, 1).Unix()}
 
 	project := seedTestProject(t, db)
 	scoped := seedTestEndpoint(t, db, project.UID)
@@ -1945,12 +2001,12 @@ func TestStatusTotalsScopeToEndpoint(t *testing.T) {
 	}
 	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
 
-	totals, source, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), []string{scoped.UID})
+	totals, source, err := service.StatusTotals(ctx, project.UID, params, []string{scoped.UID})
 	require.NoError(t, err)
 	require.Equal(t, StatusTotalsFromRollup, source)
 	require.Equal(t, int64(2), totals[datastore.SuccessEventStatus])
 
-	all, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	all, _, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, int64(7), all[datastore.SuccessEventStatus])
 }

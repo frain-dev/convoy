@@ -359,8 +359,8 @@ func (s *Service) markDailyCountsBackfillCompleted(ctx context.Context) error {
 	return s.stampDailyCountsPruned(ctx)
 }
 
-// StatusTotalsSource names the table a StatusTotals answer came from, so a
-// caller (or a curl) can tell a rollup read from a live scan.
+// StatusTotalsSource identifies a live scan or a rollup with exact live
+// boundary-day reads.
 type StatusTotalsSource string
 
 const (
@@ -368,8 +368,7 @@ const (
 	StatusTotalsFromLive   StatusTotalsSource = "live"
 )
 
-// Day grain, so the rollup and the chart describe the same window. End is
-// timestamp-exclusive at day grain for the same reason as rollupIntervalQuery.
+// Complete UTC days only. Partial boundary days use statusTotalsLiveQuery.
 const statusTotalsRollupQuery = `
 SELECT status, SUM(count)::bigint
 FROM convoy.event_delivery_daily_counts
@@ -394,9 +393,9 @@ GROUP BY status`
 // StatusTotals returns per-status delivery totals for the window, keyed by
 // status, plus the table it read.
 //
-// It uses the rollup only once the backfill has completed, the same gate
-// LoadEventDeliveriesIntervals applies, so the summary cards and the chart above
-// them can never describe different sources. Statuses with no deliveries are
+// It uses the rollup only once the backfill has completed. Whole days use the
+// rollup and partial days preserve the exact timestamp limits with live reads.
+// Statuses with no deliveries are
 // absent from the map rather than present as zero: the caller distinguishes "no
 // deliveries" from "we could not find out", which is the whole point of serving
 // this instead of a swallowed error.
@@ -409,28 +408,46 @@ func (s *Service) StatusTotals(ctx context.Context, projectID string, params dat
 		return nil, "", err
 	}
 
-	query, source := statusTotalsLiveQuery, StatusTotalsFromLive
-	if completed {
-		query, source = statusTotalsRollupQuery, StatusTotalsFromRollup
+	type statusTotal struct {
+		status string
+		count  int64
 	}
-
-	rows, err := s.db.Query(ctx, query, projectID, start, end, len(endpointIDs) > 0, endpointIDs)
+	read := func(query string, start, end time.Time) ([]statusTotal, error) {
+		rows, err := s.db.Query(ctx, query, projectID, start, end, len(endpointIDs) > 0, endpointIDs)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		var result []statusTotal
+		for rows.Next() {
+			var total statusTotal
+			if err := rows.Scan(&total.status, &total.count); err != nil {
+				return nil, err
+			}
+			result = append(result, total)
+		}
+		return result, rows.Err()
+	}
+	live := func(start, end time.Time) ([]statusTotal, error) { return read(statusTotalsLiveQuery, start, end) }
+	var result []statusTotal
+	source := StatusTotalsFromLive
+	if completed {
+		var usedRollup bool
+		result, usedRollup, err = readDashboardWindow(start, end, func(start, end time.Time) ([]statusTotal, error) {
+			return read(statusTotalsRollupQuery, start, end)
+		}, live)
+		if usedRollup {
+			source = StatusTotalsFromRollup
+		}
+	} else {
+		result, err = live(start, end)
+	}
 	if err != nil {
 		return nil, "", err
 	}
-	defer rows.Close()
-
 	totals := make(map[datastore.EventDeliveryStatus]int64)
-	for rows.Next() {
-		var status string
-		var count int64
-		if scanErr := rows.Scan(&status, &count); scanErr != nil {
-			return nil, "", scanErr
-		}
-		totals[datastore.EventDeliveryStatus(status)] = count
-	}
-	if rowsErr := rows.Err(); rowsErr != nil {
-		return nil, "", rowsErr
+	for _, total := range result {
+		totals[datastore.EventDeliveryStatus(total.status)] += total.count
 	}
 	return totals, source, nil
 }
@@ -441,28 +458,17 @@ func (s *Service) loadEventDeliveriesIntervalsFromRollup(ctx context.Context, pr
 		return nil, err
 	}
 
-	rows, err := s.db.Query(ctx, query, projectID, start, end, len(endpointIDs) > 0, endpointIDs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var rawRows []intervalRow
-	for rows.Next() {
-		var r intervalRow
-		if scanErr := rows.Scan(&r.DataIndex, &r.DataTotalTime, &r.Count); scanErr != nil {
-			return nil, scanErr
-		}
-		rawRows = append(rawRows, r)
-	}
-	return rawRows, rows.Err()
+	rows, _, err := readDashboardWindow(start, end, func(start, end time.Time) ([]intervalRow, error) {
+		return s.scanEventIntervalRows(ctx, query, projectID, start, end, len(endpointIDs) > 0, endpointIDs)
+	}, func(start, end time.Time) ([]intervalRow, error) {
+		return s.loadEventDeliveriesIntervalsLive(ctx, projectID, start, end, period, pgtype.Bool{Bool: len(endpointIDs) > 0, Valid: true}, endpointIDs)
+	})
+	return rows, err
 }
 
 func rollupIntervalQuery(period datastore.Period) (string, error) {
-	// End is timestamp-exclusive at day grain: include day D iff D's UTC
-	// midnight is < end. That matches live `created_at <= end` when the API
-	// sends midnight (the goldie / dashboard contract) without pulling in the
-	// rest of that calendar day. Intra-day end still includes D (day grain).
+	// The caller supplies complete UTC days with an exclusive end. Exact
+	// partial-day limits, including end at midnight, are handled live.
 	const filter = `
 FROM convoy.event_delivery_daily_counts
 WHERE project_id = $1
