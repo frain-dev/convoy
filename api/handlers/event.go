@@ -451,6 +451,11 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if data.IdempotencyValue != "" {
+		_ = render.Render(w, r, util.NewErrorResponse("batch replay does not support idempotencyValue", http.StatusBadRequest))
+		return
+	}
+
 	data.Filter.Project = p
 
 	var ownedEndpointIDs []string
@@ -567,6 +572,23 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if data.IdempotencyValue != "" {
+		if err := h.rejectPortalIdempotencyValue(r, data.IdempotencyValue); err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		keys, err := h.idempotencyValueKeys(r.Context(), project.UID, data.IdempotencyValue, data.Filter.SourceIDs)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		if len(keys) > 1 {
+			_ = render.Render(w, r, util.NewErrorResponse("idempotencyValue matches more than one source; pass sourceId", http.StatusBadRequest))
+			return
+		}
+		data.Filter.IdempotencyKey = keys[0]
+	}
+
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if h.IsReqWithPortalLinkToken(authUser) {
 		portalLink, err := h.retrievePortalLinkFromToken(r)
@@ -651,6 +673,11 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if data.IdempotencyValue != "" {
+		_ = render.Render(w, r, util.NewErrorResponse("batch replay count does not support idempotencyValue", http.StatusBadRequest))
 		return
 	}
 

@@ -156,6 +156,10 @@ type QueryListEvent struct {
 	// IdempotencyKey to filter by
 	IdempotencyKey string `json:"idempotencyKey"`
 
+	// Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+	// List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+	IdempotencyValue string `json:"idempotencyValue"`
+
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
 
@@ -165,6 +169,9 @@ type QueryListEvent struct {
 
 type QueryListEventResponse struct {
 	*datastore.Filter
+
+	// IdempotencyValue is resolved to IdempotencyKey by the handler before querying.
+	IdempotencyValue string
 }
 
 func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, error) {
@@ -178,18 +185,25 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 		body = json.RawMessage(raw)
 	}
 
+	idempotencyKey := r.URL.Query().Get("idempotencyKey")
+	idempotencyValue := strings.TrimSpace(r.URL.Query().Get("idempotencyValue"))
+	if idempotencyValue != "" && idempotencyKey != "" {
+		return nil, errors.New("idempotencyValue cannot be combined with idempotencyKey")
+	}
+
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
 			OwnerID:         r.URL.Query().Get("ownerId"),
 			Query:           r.URL.Query().Get("query"),
 			Body:            body,
-			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
+			IdempotencyKey:  idempotencyKey,
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EndpointIDs:     getEndpointIDs(r),
 			SourceIDs:       getSourceIDs(r),
 			SearchParams:    searchParams,
 			Pageable:        m.GetPageableFromContext(r.Context()),
 		},
+		IdempotencyValue: idempotencyValue,
 	}, nil
 }
 

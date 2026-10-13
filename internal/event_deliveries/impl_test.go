@@ -852,6 +852,57 @@ func TestCountEventDeliveries(t *testing.T) {
 	})
 }
 
+func TestEventDeliveriesFilterByEventIDsAndMinTrials(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	eventA := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	eventB := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	other := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	create := func(eventID string, trials uint64) *datastore.EventDelivery {
+		d := createTestEventDelivery(t, project.UID, eventID, endpoint.UID, sub.UID)
+		d.Metadata.NumTrials = trials
+		require.NoError(t, service.CreateEventDelivery(ctx, d))
+		return d
+	}
+
+	firstTry := create(eventA.UID, 1)
+	retried := create(eventA.UID, 3)
+	retriedB := create(eventB.UID, 2)
+	create(other.UID, 4)
+
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+	load := func(params datastore.SearchParams) []string {
+		deliveries, _, err := service.LoadEventDeliveriesPaged(ctx, project.UID, nil, "", "", nil, params, pageable, "", "", "")
+		require.NoError(t, err)
+		ids := make([]string, 0, len(deliveries))
+		for i := range deliveries {
+			ids = append(ids, deliveries[i].UID)
+		}
+		return ids
+	}
+
+	params := defaultSearchParams()
+	params.EventIDs = []string{eventA.UID, eventB.UID}
+	require.ElementsMatch(t, []string{firstTry.UID, retried.UID, retriedB.UID}, load(params))
+
+	count, err := service.CountEventDeliveries(ctx, project.UID, nil, "", nil, params)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), count)
+
+	params.MinTrials = 2
+	require.ElementsMatch(t, []string{retried.UID, retriedB.UID}, load(params))
+
+	count, err = service.CountEventDeliveries(ctx, project.UID, nil, "", nil, params)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), count)
+}
+
 func TestCountDeliveriesByEndpointAndStatus(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()

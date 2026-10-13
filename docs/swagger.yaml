@@ -4373,12 +4373,24 @@ paths:
           type: string
         - description: EventType to filter by
           in: query
-          name: event_type
+          name: eventType
           type: string
         - description: IdempotencyKey to filter by
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            Matches deliveries of events ingested with it. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
+        - description: |-
+            Only return deliveries with at least this many attempts; 2 or more means retried.
+            Requires idempotencyValue, eventId, or endpointId.
+          in: query
+          name: minTrials
+          type: integer
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -4403,6 +4415,13 @@ paths:
           in: query
           name: sort
           type: string
+        - collectionFormat: csv
+          description: Limits idempotencyValue matching to these source IDs.
+          in: query
+          items:
+            type: string
+          name: sourceId
+          type: array
         - description: The start date
           example: 2006-01-02T15:04:05
           in: query
@@ -4801,12 +4820,24 @@ paths:
           type: string
         - description: EventType to filter by
           in: query
-          name: event_type
+          name: eventType
           type: string
         - description: IdempotencyKey to filter by
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            Matches deliveries of events ingested with it. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
+        - description: |-
+            Only return deliveries with at least this many attempts; 2 or more means retried.
+            Requires idempotencyValue, eventId, or endpointId.
+          in: query
+          name: minTrials
+          type: integer
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -4831,6 +4862,13 @@ paths:
           in: query
           name: sort
           type: string
+        - collectionFormat: csv
+          description: Limits idempotencyValue matching to these source IDs.
+          in: query
+          items:
+            type: string
+          name: sourceId
+          type: array
         - description: The start date
           example: 2006-01-02T15:04:05
           in: query
@@ -5011,6 +5049,12 @@ paths:
         - description: IdempotencyKey to filter by
           in: query
           name: idempotencyKey
+          type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
           type: string
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
@@ -5375,6 +5419,12 @@ paths:
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -5575,6 +5625,12 @@ paths:
         - description: IdempotencyKey to filter by
           in: query
           name: idempotencyKey
+          type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
           type: string
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
