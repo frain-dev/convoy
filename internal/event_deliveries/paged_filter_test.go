@@ -75,6 +75,23 @@ func TestListFilterEventTypeUsesDisplayExpr(t *testing.T) {
 	require.Equal(t, "bench.event", args[3])
 }
 
+func TestListFilterEventIDsAndMinTrials(t *testing.T) {
+	f := testListFilter()
+	f.EventIDs = []string{"evt_1", "evt_2"}
+	f.MinTrials = 2
+
+	sql, args := f.pageSQL(21, true)
+	require.Contains(t, sql, "ed.event_id = ANY($4::TEXT[])")
+	require.Contains(t, sql, "(ed.metadata ->> 'num_trials')::BIGINT >= $5")
+	require.Equal(t, []string{"evt_1", "evt_2"}, args[3])
+	require.Equal(t, int64(2), args[4])
+
+	countSQL, countArgs := f.countSQL()
+	require.Contains(t, countSQL, "ed.event_id = ANY($4::TEXT[])")
+	require.Contains(t, countSQL, "::BIGINT >= $5")
+	require.Equal(t, args[:5], countArgs)
+}
+
 func TestListFilterCountUsesSameWhere(t *testing.T) {
 	f := testListFilter()
 	f.Statuses = []string{"Success"}

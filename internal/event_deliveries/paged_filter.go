@@ -25,6 +25,8 @@ type listFilter struct {
 	SubscriptionID  string
 	BrokerMessageID string
 	IdempotencyKey  string
+	EventIDs        []string
+	MinTrials       int64
 
 	DeliveryID      string
 	EventIDSearch   string
@@ -73,6 +75,14 @@ func (f listFilter) appendWhere(b *strings.Builder, args []any) []any {
 	if f.IdempotencyKey != "" {
 		args = append(args, f.IdempotencyKey)
 		fmt.Fprintf(b, ` AND ed.idempotency_key = $%d`, len(args))
+	}
+	if len(f.EventIDs) > 0 {
+		args = append(args, f.EventIDs)
+		fmt.Fprintf(b, ` AND ed.event_id = ANY($%d::TEXT[])`, len(args))
+	}
+	if f.MinTrials > 0 {
+		args = append(args, f.MinTrials)
+		fmt.Fprintf(b, ` AND (ed.metadata ->> 'num_trials')::BIGINT >= $%d`, len(args))
 	}
 
 	switch {

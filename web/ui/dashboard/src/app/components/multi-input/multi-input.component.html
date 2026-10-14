@@ -1,5 +1,5 @@
 @if (label) {
-  <label for="input" class="font-body font-normal text-[12px] text-new.text-secondary mt-24px flex items-center justify-between">
+  <label [attr.for]="inputId" class="font-body font-normal text-[12px] text-new.text-secondary mt-24px flex items-center justify-between">
     <div class="flex items-center">
       {{ label }}
       @if (tooltip) {
@@ -14,14 +14,14 @@
 
 <div (click)="focusInput()" class="w-full font-body font-medium text-[14px] text-new.text-primary border border-new.border outline-none rounded-8px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
   @for (key of keys; track $index) {
-    <div class="border border-new.border py-4px px-8px font-body font-medium text-[12px] text-new.text-secondary mr-1 mb-1 rounded-full flex items-center">
+    <div class="border border-new.border py-4px px-8px font-body font-medium text-[12px] text-new.text-secondary mr-1 mb-1 rounded-full flex items-center max-w-full break-all">
       {{ key === '*' ? 'All Events' : key }}
-      <button type="button" (click)="removeKey(key)" class="ml-4px w-14px h-14px flex items-center justify-center" aria-label="Remove">
+      <button type="button" (click)="removeKey(key)" class="ml-4px w-14px h-14px shrink-0 flex items-center justify-center" aria-label="Remove">
         <svg width="14" height="14" class="fill-new.text-secondary">
           <use xlink:href="#close-icon-2"></use>
         </svg>
       </button>
     </div>
   }
-  <input type="text" id="input" (input)="addKey()" required class="font-body text-[12px] bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
+  <input #inputField [id]="inputId" type="text" (input)="onInput()" (keydown)="onKeydown($event)" (blur)="commitPending()" class="flex-1 min-w-[160px] mb-1 font-body text-[12px] bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
 </div>

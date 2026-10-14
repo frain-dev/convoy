@@ -2,7 +2,10 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -68,8 +71,19 @@ type QueryListEventDelivery struct {
 	// IdempotencyKey to filter by
 	IdempotencyKey string `json:"idempotencyKey"`
 
+	// Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+	// Matches deliveries of events ingested with it. Not combinable with idempotencyKey.
+	IdempotencyValue string `json:"idempotencyValue"`
+
+	// Limits idempotencyValue matching to these source IDs.
+	SourceIDs []string `json:"sourceId"`
+
+	// Only return deliveries with at least this many attempts; 2 or more means retried.
+	// Requires idempotencyValue, eventId, or endpointId.
+	MinTrials int64 `json:"minTrials"`
+
 	// EventType to filter by
-	EventType string `json:"event_type"`
+	EventType string `json:"eventType"`
 
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
@@ -83,6 +97,10 @@ type QueryListEventDelivery struct {
 
 type QueryListEventDeliveryResponse struct {
 	*datastore.Filter
+
+	// IdempotencyValue is resolved to event IDs by the handler before querying.
+	IdempotencyValue string
+	SourceIDs        []string
 }
 
 func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDeliveryResponse, error) {
@@ -91,19 +109,46 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 		return nil, err
 	}
 
+	query := r.URL.Query()
+	idempotencyKey := query.Get("idempotencyKey")
+	idempotencyValue := strings.TrimSpace(query.Get("idempotencyValue"))
+	sourceIDs := getSourceIDs(r)
+	endpointIDs := getEndpointIDs(r)
+	eventID := query.Get("eventId")
+
+	if idempotencyValue != "" && idempotencyKey != "" {
+		return nil, errors.New("idempotencyValue cannot be combined with idempotencyKey")
+	}
+	if len(sourceIDs) > 0 && idempotencyValue == "" {
+		return nil, errors.New("sourceId requires idempotencyValue")
+	}
+
+	if raw := query.Get("minTrials"); raw != "" {
+		minTrials, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || minTrials < 1 {
+			return nil, errors.New("minTrials must be a positive integer")
+		}
+		if idempotencyValue == "" && eventID == "" && len(endpointIDs) == 0 {
+			return nil, errors.New("minTrials requires idempotencyValue, eventId, or endpointId")
+		}
+		searchParams.MinTrials = minTrials
+	}
+
 	return &QueryListEventDeliveryResponse{
 		Filter: &datastore.Filter{
-			EndpointIDs:     getEndpointIDs(r),
-			SubscriptionID:  r.URL.Query().Get("subscriptionId"),
-			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
-			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
-			EventID:         r.URL.Query().Get("eventId"),
-			EventType:       r.URL.Query().Get("eventType"),
+			EndpointIDs:     endpointIDs,
+			SubscriptionID:  query.Get("subscriptionId"),
+			IdempotencyKey:  idempotencyKey,
+			BrokerMessageId: query.Get("brokerMessageId"),
+			EventID:         eventID,
+			EventType:       query.Get("eventType"),
 			Query:           searchParams.Query,
 			Pageable:        m.GetPageableFromContext(r.Context()),
 			Status:          getEventDeliveryStatus(r),
 			SearchParams:    searchParams,
 		},
+		IdempotencyValue: idempotencyValue,
+		SourceIDs:        sourceIDs,
 	}, nil
 }
 

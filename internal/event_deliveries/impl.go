@@ -305,6 +305,8 @@ func (s *Service) CountEventDeliveries(ctx context.Context, projectID string, en
 		End:         end,
 		EndpointIDs: endpointIDs,
 		Statuses:    statusStrings(status),
+		EventIDs:    params.EventIDs,
+		MinTrials:   params.MinTrials,
 	}
 	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return 0, err
@@ -377,6 +379,8 @@ func (s *Service) LoadEventDeliveriesPaged(
 		SubscriptionID:  subscriptionID,
 		BrokerMessageID: brokerMessageId,
 		IdempotencyKey:  idempotencyKey,
+		EventIDs:        params.EventIDs,
+		MinTrials:       params.MinTrials,
 	}
 	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return nil, datastore.PaginationData{}, err
