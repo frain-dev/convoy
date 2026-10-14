@@ -40,6 +40,21 @@ func TestPadIntervalsRequestedWindow(t *testing.T) {
 			require.Len(t, empty, len(tc.want))
 		})
 	}
+	t.Run("ends at the last bucket with data", func(t *testing.T) {
+		rows := []datastore.EventInterval{
+			{Data: datastore.EventIntervalData{Time: "2026-10-02"}, Count: 4},
+			{Data: datastore.EventIntervalData{Time: "2026-10-05"}, Count: 6},
+		}
+		padded, err := padIntervals(rows, date("2026-10-01"), date("2026-10-14"), datastore.Daily)
+		require.NoError(t, err)
+		got := make([]string, len(padded))
+		for i, row := range padded {
+			got[i] = row.Data.Time
+		}
+		require.Equal(t, []string{"2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05"}, got)
+		require.Equal(t, uint64(0), padded[2].Count)
+		require.Equal(t, uint64(6), padded[4].Count)
+	})
 	rows := []datastore.EventInterval{{Data: datastore.EventIntervalData{Time: "2026-10-12"}, Count: 9}}
 	padded, err := padIntervals(rows, date("1900-01-01"), date("2026-10-12"), datastore.Daily)
 	require.NoError(t, err)

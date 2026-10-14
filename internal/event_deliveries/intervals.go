@@ -8,8 +8,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-// padIntervals fills missing UTC calendar buckets in the requested window.
-// Monthly/yearly steps use calendar arithmetic rather than 30/365-day approximations.
+// padIntervals fills missing UTC calendar buckets from the start of the
+// requested window to the last bucket with data, or across the whole window
+// when nothing matched. Monthly/yearly steps use calendar arithmetic rather
+// than 30/365-day approximations.
 func padIntervals(intervals []datastore.EventInterval, start, end time.Time, period datastore.Period) ([]datastore.EventInterval, error) {
 	start, end = start.UTC(), end.UTC()
 	if end.Before(start) {
@@ -39,6 +41,7 @@ func padIntervals(intervals []datastore.EventInterval, start, end time.Time, per
 		byDate[interval.Data.Time] = interval
 	}
 	padded := make([]datastore.EventInterval, 0)
+	lastFound := -1
 	for !bucket.After(end) {
 		// Very large API windows keep their sparse result; do not allocate an
 		// unbounded number of synthetic zeroes for a user-controlled date range.
@@ -52,11 +55,16 @@ func padIntervals(intervals []datastore.EventInterval, start, end time.Time, per
 		}
 		date := bucket.Format(layout)
 		interval, found := byDate[date]
-		if !found {
+		if found {
+			lastFound = len(padded)
+		} else {
 			interval.Data.Time = date
 		}
 		padded = append(padded, interval)
 		bucket = step(bucket)
+	}
+	if lastFound >= 0 {
+		padded = padded[:lastFound+1]
 	}
 	return padded, nil
 }
