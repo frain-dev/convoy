@@ -79,6 +79,7 @@ export interface FILTER_QUERY_PARAM {
 	eventId?: string;
 	endpointId?: string;
 	idempotencyKey?: string;
+	idempotencyValue?: string;
 	status?: string;
 	sourceId?: string;
 	next_page_cursor?: string;

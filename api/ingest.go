@@ -70,66 +70,23 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 3. Select verifier based of source config.
-	// TODO(subomi): Can verifier be nil?
-	var v verifier.Verifier
-	verifierConfig := source.Verifier
-
-	if !util.IsStringEmpty(string(source.Provider)) {
-		switch source.Provider {
-		case datastore.GithubSourceProvider:
-			v = verifier.NewGithubVerifier(verifierConfig.HMac.Secret)
-		case datastore.TwitterSourceProvider:
-			v = verifier.NewTwitterVerifier(verifierConfig.HMac.Secret)
-		case datastore.ShopifySourceProvider:
-			v = verifier.NewShopifyVerifier(verifierConfig.HMac.Secret)
-		default:
-			_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined",
-				http.StatusBadRequest))
+	v, err := selectIngestVerifier(source)
+	if err != nil {
+		if errors.Is(err, errIngestVerifierInit) {
+			a.A.Logger.Error("failed to initialize HMAC verifier", "error", err, "source_id", source.UID, "mask_id", maskID)
+			_ = render.Render(w, r, util.NewErrorResponse("failed to initialize HMAC verifier", http.StatusInternalServerError))
 			return
 		}
-	} else {
-		switch verifierConfig.Type {
-		case datastore.HMacVerifier:
-			opts := &verifier.HmacOptions{
-				Header:   verifierConfig.HMac.Header,
-				Hash:     verifierConfig.HMac.Hash,
-				Secret:   verifierConfig.HMac.Secret,
-				Encoding: string(verifierConfig.HMac.Encoding),
-			}
-			v, err = verifier.NewHmacVerifier(opts)
-			if err != nil {
-				a.A.Logger.Error("failed to initialize HMAC verifier", "error", err)
-
-				_ = render.Render(w, r, util.NewErrorResponse("failed to initialize HMAC verifier", http.StatusInternalServerError))
-
-				return
-			}
-
-		case datastore.BasicAuthVerifier:
-			v = verifier.NewBasicAuthVerifier(
-				verifierConfig.BasicAuth.UserName,
-				verifierConfig.BasicAuth.Password,
-			)
-		case datastore.APIKeyVerifier:
-			v = verifier.NewAPIKeyVerifier(
-				verifierConfig.ApiKey.HeaderValue,
-				verifierConfig.ApiKey.HeaderName,
-			)
-		case datastore.NoopVerifier:
-			// Explicit opt-out of verification. Sources persisted without a
-			// verifier row are canonicalized to this type by the sources read
-			// layer (buildVerifierConfig), so "no verifier configured" lands
-			// here by design.
-			v = &verifier.NoopVerifier{}
-		default:
-			// Fail closed: an unknown or stale verifier type must not silently
-			// accept unverified events (see frain-dev/convoy#2656).
-			a.A.Logger.Error("no valid verifier configured for source",
-				"source_id", source.UID, "verifier_type", verifierConfig.Type, "mask_id", maskID)
-			_ = render.Render(w, r, util.NewErrorResponse(
-				"source has no valid verifier configured", http.StatusBadRequest))
+		if errors.Is(err, errIngestProviderUndefined) {
+			_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined", http.StatusBadRequest))
 			return
 		}
+		a.A.Logger.Error("no valid verifier configured for source",
+			"error", err, "source_id", source.UID, "mask_id", maskID,
+			"provider", source.Provider, "verifier_type", verifierTypeOrEmpty(source.Verifier))
+		_ = render.Render(w, r, util.NewErrorResponse(
+			"source has no valid verifier configured", http.StatusBadRequest))
+		return
 	}
 
 	var maxIngestSize uint64
@@ -482,7 +439,15 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 
 	switch source.Provider {
 	case datastore.TwitterSourceProvider:
-		c = crc.NewTwitterCrc(source.Verifier.HMac.Secret)
+		secret, err := providerHMACSecret(source)
+		if err != nil {
+			a.A.Logger.Error("no valid verifier configured for source",
+				"error", err, "source_id", source.UID, "mask_id", maskId, "provider", source.Provider)
+			_ = render.Render(w, r, util.NewErrorResponse(
+				"source has no valid verifier configured", http.StatusBadRequest))
+			return
+		}
+		c = crc.NewTwitterCrc(secret)
 	default:
 		_ = render.Render(w, r, util.NewErrorResponse("Provider type is not supported", http.StatusBadRequest))
 		return
@@ -494,5 +459,112 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		a.A.Logger.Error("CRC check failed", "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse("CRC verification failed", http.StatusBadRequest))
 		return
+	}
+}
+
+var (
+	errIngestVerifierMissing   = errors.New("source has no valid verifier configured")
+	errIngestProviderUndefined = errors.New("provider type undefined")
+	errIngestVerifierInit      = errors.New("failed to initialize HMAC verifier")
+)
+
+func verifierTypeOrEmpty(cfg *datastore.VerifierConfig) datastore.VerifierType {
+	if cfg == nil {
+		return ""
+	}
+	return cfg.Type
+}
+
+// providerHMACSecret returns the HMAC secret required by provider-backed ingest
+// and CRC handlers. Provider sources always sign with HMAC; a missing config
+// must fail closed instead of panicking on a nil HMac pointer.
+func providerHMACSecret(source *datastore.Source) (string, error) {
+	if source == nil || source.Verifier == nil || source.Verifier.HMac == nil {
+		return "", errIngestVerifierMissing
+	}
+	if util.IsStringEmpty(source.Verifier.HMac.Secret) {
+		return "", errIngestVerifierMissing
+	}
+	return source.Verifier.HMac.Secret, nil
+}
+
+// selectIngestVerifier picks the request verifier for an HTTP source. Provider
+// presets (GitHub/Twitter/Shopify) require an HMAC secret; generic sources
+// follow Verifier.Type. Missing nested config returns errIngestVerifierMissing
+// rather than dereferencing nil.
+func selectIngestVerifier(source *datastore.Source) (verifier.Verifier, error) {
+	if source == nil {
+		return nil, errIngestVerifierMissing
+	}
+
+	verifierConfig := source.Verifier
+	if verifierConfig == nil {
+		return nil, errIngestVerifierMissing
+	}
+
+	if !util.IsStringEmpty(string(source.Provider)) {
+		secret, err := providerHMACSecret(source)
+		if err != nil {
+			return nil, err
+		}
+
+		switch source.Provider {
+		case datastore.GithubSourceProvider:
+			return verifier.NewGithubVerifier(secret), nil
+		case datastore.TwitterSourceProvider:
+			return verifier.NewTwitterVerifier(secret), nil
+		case datastore.ShopifySourceProvider:
+			return verifier.NewShopifyVerifier(secret), nil
+		default:
+			return nil, errIngestProviderUndefined
+		}
+	}
+
+	switch verifierConfig.Type {
+	case datastore.HMacVerifier:
+		if verifierConfig.HMac == nil {
+			return nil, errIngestVerifierMissing
+		}
+		opts := &verifier.HmacOptions{
+			Header:   verifierConfig.HMac.Header,
+			Hash:     verifierConfig.HMac.Hash,
+			Secret:   verifierConfig.HMac.Secret,
+			Encoding: string(verifierConfig.HMac.Encoding),
+		}
+		v, err := verifier.NewHmacVerifier(opts)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", errIngestVerifierInit, err)
+		}
+		return v, nil
+
+	case datastore.BasicAuthVerifier:
+		if verifierConfig.BasicAuth == nil {
+			return nil, errIngestVerifierMissing
+		}
+		return verifier.NewBasicAuthVerifier(
+			verifierConfig.BasicAuth.UserName,
+			verifierConfig.BasicAuth.Password,
+		), nil
+
+	case datastore.APIKeyVerifier:
+		if verifierConfig.ApiKey == nil {
+			return nil, errIngestVerifierMissing
+		}
+		return verifier.NewAPIKeyVerifier(
+			verifierConfig.ApiKey.HeaderValue,
+			verifierConfig.ApiKey.HeaderName,
+		), nil
+
+	case datastore.NoopVerifier:
+		// Explicit opt-out of verification. Sources persisted without a
+		// verifier row are canonicalized to this type by the sources read
+		// layer (buildVerifierConfig), so "no verifier configured" lands
+		// here by design when Provider is empty.
+		return &verifier.NoopVerifier{}, nil
+
+	default:
+		// Fail closed: an unknown or stale verifier type must not silently
+		// accept unverified events (see frain-dev/convoy#2656).
+		return nil, errIngestVerifierMissing
 	}
 }

@@ -34,8 +34,9 @@ func extractNamedQuery(t *testing.T, sql, name string) string {
 func innerCTEOrderBy(t *testing.T, query string) string {
 	t.Helper()
 	upper := strings.ToUpper(query)
-	start := strings.Index(upper, "WITH FILTERED_EVENTS AS (")
-	require.NotEqual(t, -1, start)
+	// page_ids selects only IDs before hydrating wide event rows.
+	start := strings.Index(upper, "WITH PAGE_IDS AS (")
+	require.NotEqual(t, -1, start, "inner query must page by ID CTE first")
 	limitIdx := strings.Index(upper[start:], "LIMIT")
 	require.NotEqual(t, -1, limitIdx)
 	cte := upper[start : start+limitIdx]

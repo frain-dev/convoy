@@ -14,8 +14,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-const SearchTimeout = 5 * time.Second
-
 var (
 	ErrSearchUnlicensed   = errors.New("event search requires the Event Search entitlement")
 	ErrInvalidPayloadBody = errors.New("body must be a nonempty JSON object")
@@ -99,6 +97,9 @@ func ListSearchSQLFromFilter(filter *datastore.Filter, project *datastore.Projec
 	return out
 }
 
+// NeedsSearchTimeout reports whether the filter uses payload containment search.
+// Callers use this to skip expensive secondary probes (for example previous-page
+// checks), not to impose an artificial request deadline.
 func NeedsSearchTimeout(filter *datastore.Filter, project *datastore.Project) bool {
 	sql := ListSearchSQLFromFilter(filter, project)
 	return sql.HasBody
@@ -161,7 +162,7 @@ func escapeLikePattern(value string) string {
 	return value
 }
 
-// IsSearchTimeout reports query timeouts for payload-heavy list search.
+// IsSearchTimeout reports cancelled or statement-timeout query failures.
 func IsSearchTimeout(err error) bool {
 	return IsPayloadSearchTimeout(err)
 }

@@ -10,6 +10,7 @@ import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { ProjectService } from '../../project.service';
 import type { ENDPOINT } from 'src/app/models/endpoint.model';
+import axios from 'axios';
 
 @Component({
     selector: 'app-event-deliveries',
@@ -51,6 +52,8 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	private eventTypesFetchId = 0;
 	sortOrder: 'asc' | 'desc' | string = 'desc';
 	searchString = '';
+	providerDeliveryId = '';
+	private providerDeliveryIdTimeout: any;
 	enableTailMode = false;
 
 	// Client-side page tracking for the "1-10 of 50" pagination label; the API is
@@ -59,6 +62,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	totalCount?: number;
 	private totalCountFetchId = 0;
 	private deliveriesFetchId = 0;
+	private deliveriesAbort?: AbortController;
 	selectedDeliveries = new Set<string>();
 	batchRetryParams?: FILTER_QUERY_PARAM;
 	batchRetryDate = '';
@@ -91,9 +95,11 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.deliveriesFetchId++;
 		this.totalCountFetchId++;
 		this.eventTypesFetchId++;
+		this.deliveriesAbort?.abort();
 		clearInterval(this.getEventDeliveriesInterval);
 		clearTimeout(this.endpointSearchTimeout);
 		clearTimeout(this.tableSearchTimeout);
+		clearTimeout(this.providerDeliveryIdTimeout);
 	}
 
 	get isOutgoingProject(): boolean {
@@ -110,6 +116,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.statusDraft = [...this.statusFilter];
 		this.sortOrder = this.queryParams?.sort || 'desc';
 		this.searchString = this.queryParams.query || '';
+		this.providerDeliveryId = this.queryParams.idempotencyValue || '';
 	}
 
 	restoreFiltersFromURL(params: FILTER_QUERY_PARAM) {
@@ -216,10 +223,17 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.statusDraft = [];
 		this.selectedEndpointData = undefined;
 		this.searchString = '';
+		this.providerDeliveryId = '';
 		this.endpointSearchString = '';
 
 		const sort = this.queryParams?.sort;
-		this.queryParams = { ...this.dateRange, ...(sort ? { sort } : {}), ...(this.portalToken ? { token: this.portalToken } : {}) };
+		this.queryParams = {
+			...this.dateRange,
+			...(sort ? { sort } : {}),
+			...(this.portalToken ? { token: this.portalToken } : {})
+		};
+		delete this.queryParams.query;
+		delete this.queryParams.idempotencyValue;
 		const query = new URLSearchParams(this.queryParams as Record<string, string>).toString();
 		this._location.go(`${location.pathname}${query ? `?${query}` : ''}`);
 		this.getEventTypesForFilter();
@@ -239,6 +253,20 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			else {
 				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' }, true);
 				delete this.queryParams.query;
+			}
+			this.refreshDeliveries();
+		}, 300);
+	}
+
+	onProviderDeliveryIdChange() {
+		clearTimeout(this.providerDeliveryIdTimeout);
+		this.providerDeliveryIdTimeout = setTimeout(() => {
+			const idempotencyValue = this.providerDeliveryId.trim();
+			if (idempotencyValue) {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, idempotencyValue }, true);
+			} else {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, idempotencyValue: '' }, true);
+				delete this.queryParams.idempotencyValue;
 			}
 			this.refreshDeliveries();
 		}, 300);
@@ -287,10 +315,15 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
 		const fetchId = ++this.deliveriesFetchId;
+		this.deliveriesAbort?.abort();
+		this.deliveriesAbort = new AbortController();
 		if (requestDetails?.showLoader) this.isloadingEventDeliveries = true;
 
 		try {
-			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries(requestDetails);
+			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries({
+				...requestDetails,
+				signal: this.deliveriesAbort.signal
+			});
 			if (fetchId !== this.deliveriesFetchId) return eventDeliveriesResponse;
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.setEventDeliveriesContent(eventDeliveriesResponse.data.content);
@@ -299,7 +332,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
 		} catch (error: any) {
-			if (fetchId !== this.deliveriesFetchId) return error;
+			if (fetchId !== this.deliveriesFetchId || axios.isCancel(error) || error?.code === 'ERR_CANCELED') {
+				return error;
+			}
 			this.loadError = true;
 			this.isloadingEventDeliveries = false;
 			return error;

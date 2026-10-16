@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -623,17 +622,10 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	if events.NeedsSearchTimeout(data.Filter, project) {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, events.SearchTimeout)
-		defer cancel()
-	}
-
-	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(ctx, project.UID, data.Filter)
+	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		if events.IsSearchTimeout(err) {
-			_ = render.Render(w, r, util.NewErrorResponse("Search took too long. Narrow the time range or search term.", http.StatusGatewayTimeout))
+			_ = render.Render(w, r, util.NewErrorResponse("Search took too long. Try again.", http.StatusGatewayTimeout))
 			return
 		}
 		h.A.Logger.ErrorContext(r.Context(), "failed to fetch events", "error", err)

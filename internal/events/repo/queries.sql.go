@@ -82,8 +82,12 @@ func (q *Queries) CountExportedEvents(ctx context.Context, arg CountExportedEven
 }
 
 const countPrevEvents = `-- name: CountPrevEvents :one
-SELECT COALESCE(COUNT(*), 0) AS count
-FROM convoy.events ev
+-- Previous-page probe via EXISTS (stops at first match)
+-- "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
+SELECT CASE
+           WHEN EXISTS (
+               SELECT 1
+               FROM convoy.events ev
          LEFT JOIN convoy.sources s ON s.id = ev.source_id
 WHERE ev.deleted_at IS NULL
   AND ev.project_id = $1
@@ -131,7 +135,9 @@ WHERE ev.deleted_at IS NULL
            WHEN $21::text = 'DESC' THEN ev.id > $22
            WHEN $21::text = 'ASC' THEN ev.id < $22
            ELSE ev.id > $22 END)
-`
+           ) THEN 1
+           ELSE 0
+       END::bigint AS count`
 
 type CountPrevEventsParams struct {
 	ProjectID                pgtype.Text
@@ -221,6 +227,9 @@ WHERE ev.deleted_at IS NULL
            WHEN $14::text = 'DESC' THEN ev.id > $15
            WHEN $14::text = 'ASC' THEN ev.id < $15
            ELSE ev.id > $15 END)
+           ) THEN 1
+           ELSE 0
+       END::bigint AS count
 `
 
 type CountPrevEventsSearchParams struct {
@@ -707,28 +716,8 @@ func (q *Queries) HardDeleteTokenizedEvents(ctx context.Context, arg HardDeleteT
 }
 
 const loadEventsPagedExistsInnerAsc = `-- name: LoadEventsPagedExistsInnerAsc :many
-WITH filtered_events AS (
-    SELECT ev.id,
-           ev.project_id,
-           ev.event_type,
-           ev.is_duplicate_event,
-           COALESCE(ev.source_id, '')        AS source_id,
-           ev.endpoints,
-           ev.headers,
-           ev.raw,
-           ev.data,
-           ev.created_at,
-           COALESCE(ev.idempotency_key, '')  AS idempotency_key,
-           COALESCE(ev.url_query_params, '') AS url_query_params,
-           COALESCE(ev.url_path, '')         AS url_path,
-           ev.updated_at,
-           ev.deleted_at,
-           ev.acknowledged_at,
-           ev.metadata,
-           ev.status,
-           COALESCE(ev.failure_reason, '')   AS failure_reason,
-           COALESCE(s.id, '')                AS "source_metadata.id",
-           COALESCE(s.name, '')              AS "source_metadata.name"
+WITH page_ids AS (
+    SELECT ev.id
     FROM convoy.events ev
              LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL
@@ -779,14 +768,33 @@ WITH filtered_events AS (
     ORDER BY ev.id ASC
     LIMIT $24
 )
-SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
-       "source_metadata.id", "source_metadata.name"
-FROM filtered_events
+SELECT ev.id,
+       ev.project_id,
+       ev.event_type,
+       ev.is_duplicate_event,
+       COALESCE(ev.source_id, '')        AS source_id,
+       ev.endpoints,
+       ev.headers,
+       ev.raw,
+       ev.data,
+       ev.created_at,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
+       ev.updated_at,
+       ev.deleted_at,
+       ev.acknowledged_at,
+       ev.metadata,
+       ev.status,
+       COALESCE(ev.failure_reason, '')   AS failure_reason,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
+FROM page_ids p
+         JOIN convoy.events ev ON ev.id = p.id
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 ORDER BY
-    CASE WHEN $1::text = 'DESC' THEN id END DESC,
-    CASE WHEN $1::text = 'ASC' THEN id END ASC
+    CASE WHEN $1::text = 'DESC' THEN ev.id END DESC,
+    CASE WHEN $1::text = 'ASC' THEN ev.id END ASC
 `
 
 type LoadEventsPagedExistsInnerAscParams struct {
@@ -910,28 +918,8 @@ func (q *Queries) LoadEventsPagedExistsInnerAsc(ctx context.Context, arg LoadEve
 
 const loadEventsPagedExistsInnerDesc = `-- name: LoadEventsPagedExistsInnerDesc :many
 
-WITH filtered_events AS (
-    SELECT ev.id,
-           ev.project_id,
-           ev.event_type,
-           ev.is_duplicate_event,
-           COALESCE(ev.source_id, '')        AS source_id,
-           ev.endpoints,
-           ev.headers,
-           ev.raw,
-           ev.data,
-           ev.created_at,
-           COALESCE(ev.idempotency_key, '')  AS idempotency_key,
-           COALESCE(ev.url_query_params, '') AS url_query_params,
-           COALESCE(ev.url_path, '')         AS url_path,
-           ev.updated_at,
-           ev.deleted_at,
-           ev.acknowledged_at,
-           ev.metadata,
-           ev.status,
-           COALESCE(ev.failure_reason, '')   AS failure_reason,
-           COALESCE(s.id, '')                AS "source_metadata.id",
-           COALESCE(s.name, '')              AS "source_metadata.name"
+WITH page_ids AS (
+    SELECT ev.id
     FROM convoy.events ev
              LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL
@@ -982,14 +970,33 @@ WITH filtered_events AS (
     ORDER BY ev.id DESC
     LIMIT $24
 )
-SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
-       "source_metadata.id", "source_metadata.name"
-FROM filtered_events
+SELECT ev.id,
+       ev.project_id,
+       ev.event_type,
+       ev.is_duplicate_event,
+       COALESCE(ev.source_id, '')        AS source_id,
+       ev.endpoints,
+       ev.headers,
+       ev.raw,
+       ev.data,
+       ev.created_at,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
+       ev.updated_at,
+       ev.deleted_at,
+       ev.acknowledged_at,
+       ev.metadata,
+       ev.status,
+       COALESCE(ev.failure_reason, '')   AS failure_reason,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
+FROM page_ids p
+         JOIN convoy.events ev ON ev.id = p.id
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 ORDER BY
-    CASE WHEN $1::text = 'DESC' THEN id END DESC,
-    CASE WHEN $1::text = 'ASC' THEN id END ASC
+    CASE WHEN $1::text = 'DESC' THEN ev.id END DESC,
+    CASE WHEN $1::text = 'ASC' THEN ev.id END ASC
 `
 
 type LoadEventsPagedExistsInnerDescParams struct {

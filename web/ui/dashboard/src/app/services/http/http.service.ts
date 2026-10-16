@@ -199,6 +199,7 @@ export class HttpService {
 		level?: 'org' | 'org_project';
 		isOut?: boolean;
 		returnFullError?: boolean;
+		signal?: AbortSignal;
 	}): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
@@ -235,25 +236,29 @@ export class HttpService {
 				const url = this.buildURL(requestDetails);
 				if (url === 'error') return;
 
-                // make request
+				// make request; signal cancels in-flight work when filters change
 				const { data } = await http.request({
-                    method: requestDetails.method,
-                    headers: requestHeader,
-                    url,
-                    data: requestDetails.body
-                });
-                resolve(data);
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    const msg = axiosErrorMessage(error);
-                    if ('project not found' === error.response?.data?.message) {
-                        localStorage.removeItem('CONVOY_PROJECT');
-                    }
-                    if (requestDetails.returnFullError) {
-                        return reject(error);
-                    } else {
-                        return reject(msg);
-                    }
+					method: requestDetails.method,
+					headers: requestHeader,
+					url,
+					data: requestDetails.body,
+					signal: requestDetails.signal
+				});
+				resolve(data);
+			} catch (error) {
+				if (axios.isCancel(error) || (axios.isAxiosError(error) && error.code === 'ERR_CANCELED')) {
+					return reject(error);
+				}
+				if (axios.isAxiosError(error)) {
+					const msg = axiosErrorMessage(error);
+					if ('project not found' === error.response?.data?.message) {
+						localStorage.removeItem('CONVOY_PROJECT');
+					}
+					if (requestDetails.returnFullError) {
+						return reject(error);
+					} else {
+						return reject(msg);
+					}
 				} else {
 					console.log('unexpected error: ', error);
 					return reject('An unexpected error occurred');

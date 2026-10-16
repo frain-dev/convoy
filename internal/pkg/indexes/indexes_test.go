@@ -179,6 +179,32 @@ func TestEventDeliveriesProjectEventTypeCreatedDefinitionMatchesMigration(t *tes
 	require.NotRegexp(t, `(?m)^CREATE INDEX`, string(body))
 }
 
+func TestListFilterIndexDefinitionsMatchMigration(t *testing.T) {
+	body, err := os.ReadFile("../../../sql/1792500000.sql")
+	require.NoError(t, err)
+	src := string(body)
+	for _, def := range []string{
+		EventDeliveriesListStatusCreatedIDDefinition,
+		EventDeliveriesListEndpointStatusCreatedIDDefinition,
+		EventsListProjectIDDefinition,
+		EventDeliveriesUsageDefinition,
+	} {
+		require.Contains(t, src, def)
+	}
+	require.NotRegexp(t, `(?m)^CREATE INDEX`, src)
+}
+
+func TestListFilterIndexesAreBootQueued(t *testing.T) {
+	for _, name := range []string{
+		EventDeliveriesListStatusCreatedID,
+		EventDeliveriesListEndpointStatusCreatedID,
+		EventsListProjectID,
+		EventDeliveriesUsage,
+	} {
+		require.True(t, BootQueued(name), name)
+	}
+}
+
 func TestEventPayloadJsonbIsParallelUnsafe(t *testing.T) {
 	for _, name := range []string{"../../../sql/1787200000.sql", "../../../sql/1787200002.sql"} {
 		body, err := os.ReadFile(name)
