@@ -160,31 +160,12 @@ WHERE ev.project_id = @project_id
 
 -- name: LoadEventsPagedExistsInnerDesc :many
 -- Fast pagination using EXISTS subquery (no search query)
--- Inner scan uses plain ORDER BY id DESC so generic plans keep the events_pkey index.
+-- Select page IDs first so filters/search do not pull TOAST payloads, then
+-- hydrate the page. Inner scan uses ORDER BY id DESC for a stable keyset.
 -- @direction: 'next' or 'prev' (pagination direction)
 -- @sort_order: 'ASC' or 'DESC' (user-requested sort order for cursor + outer re-sort)
-WITH filtered_events AS (
-    SELECT ev.id,
-           ev.project_id,
-           ev.event_type,
-           ev.is_duplicate_event,
-           COALESCE(ev.source_id, '')        AS source_id,
-           ev.endpoints,
-           ev.headers,
-           ev.raw,
-           ev.data,
-           ev.created_at,
-           COALESCE(ev.idempotency_key, '')  AS idempotency_key,
-           COALESCE(ev.url_query_params, '') AS url_query_params,
-           COALESCE(ev.url_path, '')         AS url_path,
-           ev.updated_at,
-           ev.deleted_at,
-           ev.acknowledged_at,
-           ev.metadata,
-           ev.status,
-           COALESCE(ev.failure_reason, '')   AS failure_reason,
-           COALESCE(s.id, '')                AS "source_metadata.id",
-           COALESCE(s.name, '')              AS "source_metadata.name"
+WITH page_ids AS (
+    SELECT ev.id
     FROM convoy.events ev
              LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL
@@ -235,39 +216,38 @@ WITH filtered_events AS (
     ORDER BY ev.id DESC
     LIMIT @page_limit
 )
-SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
-       "source_metadata.id", "source_metadata.name"
-FROM filtered_events
+SELECT ev.id,
+       ev.project_id,
+       ev.event_type,
+       ev.is_duplicate_event,
+       COALESCE(ev.source_id, '')        AS source_id,
+       ev.endpoints,
+       ev.headers,
+       ev.raw,
+       ev.data,
+       ev.created_at,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
+       ev.updated_at,
+       ev.deleted_at,
+       ev.acknowledged_at,
+       ev.metadata,
+       ev.status,
+       COALESCE(ev.failure_reason, '')   AS failure_reason,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
+FROM page_ids p
+         JOIN convoy.events ev ON ev.id = p.id
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 ORDER BY
-    CASE WHEN @sort_order::text = 'DESC' THEN id END DESC,
-    CASE WHEN @sort_order::text = 'ASC' THEN id END ASC;
+    CASE WHEN @sort_order::text = 'DESC' THEN ev.id END DESC,
+    CASE WHEN @sort_order::text = 'ASC' THEN ev.id END ASC;
 
 -- name: LoadEventsPagedExistsInnerAsc :many
 -- Same as LoadEventsPagedExistsInnerDesc but inner scan uses ORDER BY id ASC.
-WITH filtered_events AS (
-    SELECT ev.id,
-           ev.project_id,
-           ev.event_type,
-           ev.is_duplicate_event,
-           COALESCE(ev.source_id, '')        AS source_id,
-           ev.endpoints,
-           ev.headers,
-           ev.raw,
-           ev.data,
-           ev.created_at,
-           COALESCE(ev.idempotency_key, '')  AS idempotency_key,
-           COALESCE(ev.url_query_params, '') AS url_query_params,
-           COALESCE(ev.url_path, '')         AS url_path,
-           ev.updated_at,
-           ev.deleted_at,
-           ev.acknowledged_at,
-           ev.metadata,
-           ev.status,
-           COALESCE(ev.failure_reason, '')   AS failure_reason,
-           COALESCE(s.id, '')                AS "source_metadata.id",
-           COALESCE(s.name, '')              AS "source_metadata.name"
+WITH page_ids AS (
+    SELECT ev.id
     FROM convoy.events ev
              LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL
@@ -318,14 +298,33 @@ WITH filtered_events AS (
     ORDER BY ev.id ASC
     LIMIT @page_limit
 )
-SELECT id, project_id, event_type, is_duplicate_event, source_id, endpoints,
-       headers, raw, data, created_at, idempotency_key, url_query_params, url_path,
-       updated_at, deleted_at, acknowledged_at, metadata, status, failure_reason,
-       "source_metadata.id", "source_metadata.name"
-FROM filtered_events
+SELECT ev.id,
+       ev.project_id,
+       ev.event_type,
+       ev.is_duplicate_event,
+       COALESCE(ev.source_id, '')        AS source_id,
+       ev.endpoints,
+       ev.headers,
+       ev.raw,
+       ev.data,
+       ev.created_at,
+       COALESCE(ev.idempotency_key, '')  AS idempotency_key,
+       COALESCE(ev.url_query_params, '') AS url_query_params,
+       COALESCE(ev.url_path, '')         AS url_path,
+       ev.updated_at,
+       ev.deleted_at,
+       ev.acknowledged_at,
+       ev.metadata,
+       ev.status,
+       COALESCE(ev.failure_reason, '')   AS failure_reason,
+       COALESCE(s.id, '')                AS "source_metadata.id",
+       COALESCE(s.name, '')              AS "source_metadata.name"
+FROM page_ids p
+         JOIN convoy.events ev ON ev.id = p.id
+         LEFT JOIN convoy.sources s ON s.id = ev.source_id
 ORDER BY
-    CASE WHEN @sort_order::text = 'DESC' THEN id END DESC,
-    CASE WHEN @sort_order::text = 'ASC' THEN id END ASC;
+    CASE WHEN @sort_order::text = 'DESC' THEN ev.id END DESC,
+    CASE WHEN @sort_order::text = 'ASC' THEN ev.id END ASC;
 
 -- name: LoadEventsPagedSearch :many
 -- Full-text search pagination using CTE + JOIN + GROUP BY
@@ -408,57 +407,60 @@ ORDER BY
     CASE WHEN @sort_order::text = 'ASC' THEN id END ASC;
 
 -- name: CountPrevEvents :one
--- Count events before cursor (for HasPrevPage) - EXISTS path
--- "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
-SELECT COALESCE(COUNT(*), 0) AS count
-FROM convoy.events ev
-         LEFT JOIN convoy.sources s ON s.id = ev.source_id
-WHERE ev.deleted_at IS NULL
-  AND ev.project_id = @project_id
-  AND (CASE
-           WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
-           ELSE true END)
-  AND ev.created_at >= @start_date
-  AND ev.created_at <= @end_date
-  -- Source filter
-  AND (CASE
-           WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
-           ELSE true END)
-  -- Endpoint/owner filter (matches LoadEventsPagedExists)
-  AND (
-      CASE
-          WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
-              EXISTS (SELECT 1
-                      FROM convoy.events_endpoints ee
-                               JOIN convoy.endpoints e ON e.id = ee.endpoint_id
-                      WHERE ee.event_id = ev.id
-                        AND (CASE WHEN @has_owner_id::BOOLEAN THEN e.owner_id = @owner_id ELSE true END)
-                        AND (CASE
-                                 WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
-                                 ELSE true END)
-              )
-          ELSE true
-          END
-      )
-  -- Broker message ID filter
-  AND (CASE
-           WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
-           ELSE true END)
-  AND (CASE
-           WHEN @has_search::BOOLEAN THEN (
-               (CASE WHEN @has_body::BOOLEAN THEN convoy.event_payload_jsonb(ev.data) @> @body::jsonb ELSE true END)
-               AND (CASE WHEN @has_query::BOOLEAN THEN (
-                   ev.id ILIKE @search_id_prefix ESCAPE '\'
-                   OR COALESCE(ev.idempotency_key, '') ILIKE @search_contains ESCAPE '\'
-                   OR ev.event_type ILIKE @search_contains ESCAPE '\'
-                   OR COALESCE(s.name, '') ILIKE @search_contains ESCAPE '\'
-               ) ELSE true END)
-           )
-           ELSE true END)
-  AND (CASE
-           WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
-           WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
-           ELSE ev.id > @cursor END);
+-- Previous-page probe (HasPrevPage). EXISTS stops at the first match instead of
+-- counting every preceding row. "Previous" depends on sort order:
+-- DESC → id > cursor, ASC → id < cursor.
+SELECT CASE
+           WHEN EXISTS (
+               SELECT 1
+               FROM convoy.events ev
+                        LEFT JOIN convoy.sources s ON s.id = ev.source_id
+               WHERE ev.deleted_at IS NULL
+                 AND ev.project_id = @project_id
+                 AND (CASE
+                          WHEN @has_idempotency_key::BOOLEAN THEN ev.idempotency_key = @idempotency_key
+                          ELSE true END)
+                 AND ev.created_at >= @start_date
+                 AND ev.created_at <= @end_date
+                 AND (CASE
+                          WHEN @has_source_ids::BOOLEAN THEN ev.source_id = ANY (@source_ids::TEXT[])
+                          ELSE true END)
+                 AND (
+                     CASE
+                         WHEN @has_endpoint_or_owner_filter::BOOLEAN THEN
+                             EXISTS (SELECT 1
+                                     FROM convoy.events_endpoints ee
+                                              JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+                                     WHERE ee.event_id = ev.id
+                                       AND (CASE WHEN @has_owner_id::BOOLEAN THEN e.owner_id = @owner_id ELSE true END)
+                                       AND (CASE
+                                                WHEN @has_endpoint_ids::BOOLEAN THEN ee.endpoint_id = ANY (@endpoint_ids::TEXT[])
+                                                ELSE true END)
+                             )
+                         ELSE true
+                         END
+                     )
+                 AND (CASE
+                          WHEN @has_broker_message_id::BOOLEAN THEN ev.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id
+                          ELSE true END)
+                 AND (CASE
+                          WHEN @has_search::BOOLEAN THEN (
+                              (CASE WHEN @has_body::BOOLEAN THEN convoy.event_payload_jsonb(ev.data) @> @body::jsonb ELSE true END)
+                              AND (CASE WHEN @has_query::BOOLEAN THEN (
+                                  ev.id ILIKE @search_id_prefix ESCAPE '\'
+                                  OR COALESCE(ev.idempotency_key, '') ILIKE @search_contains ESCAPE '\'
+                                  OR ev.event_type ILIKE @search_contains ESCAPE '\'
+                                  OR COALESCE(s.name, '') ILIKE @search_contains ESCAPE '\'
+                              ) ELSE true END)
+                          )
+                          ELSE true END)
+                 AND (CASE
+                          WHEN @sort_order::text = 'DESC' THEN ev.id > @cursor
+                          WHEN @sort_order::text = 'ASC' THEN ev.id < @cursor
+                          ELSE ev.id > @cursor END)
+           ) THEN 1
+           ELSE 0
+       END::bigint AS count;
 
 -- name: CountPrevEventsSearch :one
 -- Count events before cursor (for HasPrevPage) - Search path

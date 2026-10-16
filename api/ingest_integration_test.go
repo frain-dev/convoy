@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/internal/users"
 )
 
@@ -443,6 +445,32 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_UnknownVerifierRejected() 
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
+}
+
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_GithubProviderMissingHMACDoesNotPanic() {
+	// Provider presets previously dereferenced Verifier.HMac unconditionally.
+	// A github source whose verifier row is missing (read layer → noop) must
+	// return 400, not 500/panic.
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
+
+	v := &datastore.VerifierConfig{Type: datastore.NoopVerifier}
+	source, err := testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
+	require.NoError(i.T(), err)
+
+	source.Provider = datastore.GithubSourceProvider
+	require.NoError(i.T(), sources.New(i.ConvoyApp.A.Logger, i.ConvoyApp.A.DB).UpdateSource(
+		context.Background(), i.DefaultProject.UID, source,
+	))
+
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	req := createRequest(http.MethodPost, url, "", serialize(`{ "name": "convoy" }`))
+	w := httptest.NewRecorder()
+
+	require.NotPanics(i.T(), func() {
+		i.Router.ServeHTTP(w, req)
+	})
+	require.Equal(i.T(), http.StatusBadRequest, w.Code)
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {

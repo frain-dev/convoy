@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -349,10 +348,9 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	f := data.Filter
 
-	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
-	defer cancel()
-
-	ed, paginationData, err := event_deliveries.New(h.A.Logger, h.A.DB).LoadEventDeliveriesPaged(ctx, project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
+	// Use the request context so a cancelled client aborts the query. Do not
+	// impose a short artificial deadline; list filters must finish on large projects.
+	ed, paginationData, err := event_deliveries.New(h.A.Logger, h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType, f.BrokerMessageId)
 	if err != nil {
 		if renderEventDeliveriesTimeout(w, r, err) {
 			return
@@ -420,10 +418,7 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 
 	f := data.Filter
 
-	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
-	defer cancel()
-
-	count, err := event_deliveries.New(h.A.Logger, h.A.DB).CountEventDeliveries(ctx, project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
+	count, err := event_deliveries.New(h.A.Logger, h.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
 		if renderEventDeliveriesTimeout(w, r, err) {
 			return
@@ -482,11 +477,8 @@ func (h *Handler) EventDeliveryStatusTotals(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
-	defer cancel()
-
 	totals, source, err := event_deliveries.New(h.A.Logger, h.A.DB).
-		StatusTotals(ctx, project.UID, data.Filter.SearchParams, endpointIDs)
+		StatusTotals(r.Context(), project.UID, data.Filter.SearchParams, endpointIDs)
 	if err != nil {
 		if renderEventDeliveriesTimeout(w, r, err) {
 			return
@@ -549,11 +541,8 @@ func (h *Handler) EventDeliveryFilterEventTypes(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
-	defer cancel()
-
 	observed, err := event_deliveries.New(h.A.Logger, h.A.DB).
-		ObservedEventTypes(ctx, project.UID, data.Filter.SearchParams, endpointIDs)
+		ObservedEventTypes(r.Context(), project.UID, data.Filter.SearchParams, endpointIDs)
 	if err != nil {
 		if renderEventDeliveriesTimeout(w, r, err) {
 			return
@@ -564,7 +553,7 @@ func (h *Handler) EventDeliveryFilterEventTypes(w http.ResponseWriter, r *http.R
 	}
 
 	var catalog []datastore.ProjectEventType
-	fetched, catalogErr := event_types.New(h.A.Logger, h.A.DB).FetchAllEventTypes(ctx, project.UID)
+	fetched, catalogErr := event_types.New(h.A.Logger, h.A.DB).FetchAllEventTypes(r.Context(), project.UID)
 	if catalogErr != nil {
 		h.A.Logger.ErrorContext(r.Context(), "filter event types catalog fetch failed; returning observed only", "error", catalogErr)
 	} else {
@@ -576,13 +565,13 @@ func (h *Handler) EventDeliveryFilterEventTypes(w http.ResponseWriter, r *http.R
 		models.DeliveryFilterEventTypesResponse{Catalog: catalogOut, Observed: observedOut}, http.StatusOK))
 }
 
-const eventDeliveriesTimeoutMsg = "Event deliveries took too long. Narrow the date range."
+const eventDeliveriesTimeoutMsg = "Event deliveries took too long. Try again."
 
-// renderEventDeliveriesTimeout maps a query deadline to 504.
+// renderEventDeliveriesTimeout maps a cancelled or statement-timeout query to 504.
 // Failure policy: fail closed. DeadlineExceeded and Postgres 57014 are
-// timeouts; other errors are left to the caller. The timeout is
-// events.SearchTimeout so a wide date range cannot sit until WriteTimeout
-// and return a 500 from a canceled request context.
+// timeouts; other errors are left to the caller. List handlers use the
+// request context so a cancelled client stops the query without a short
+// artificial deadline.
 func renderEventDeliveriesTimeout(w http.ResponseWriter, r *http.Request, err error) bool {
 	if !events.IsSearchTimeout(err) {
 		return false
