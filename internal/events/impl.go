@@ -383,13 +383,13 @@ func (s *Service) LoadEventsPaged(ctx context.Context, projectID string, filter 
 		return nil, datastore.PaginationData{}, err
 	}
 
-	// Calculate PrevRowCount if not first page. Skip the COUNT when payload search
-	// is active so the timeout budget is spent on the page query, not a second scan.
+	// Calculate PrevRowCount if not first page. Payload containment search still
+	// skips the probe so a heavy body filter is not run twice.
 	var rowCount datastore.PrevRowCount
 	isFirstPage := util.IsStringEmpty(filter.Pageable.Cursor())
 	if len(events) > 0 && !isFirstPage {
 		if NeedsSearchTimeout(filter, filter.Project) {
-			rowCount = datastore.PrevRowCount{Count: 1}
+			rowCount = datastore.PrevRowCount{Exists: true}
 		} else {
 			first := events[0]
 			rowCount, err = s.countPrevEvents(ctx, projectID, filter, first.UID, startDate, endDate)
@@ -574,7 +574,7 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
+	return datastore.PrevRowCount{Exists: count.Int64 > 0}, nil
 }
 
 // CopyRows copies rows from events to events_search

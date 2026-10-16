@@ -124,6 +124,10 @@
                 matches event ID, event type, source name, and idempotency key.
               </p>
               <p class="mb-8px leading-[18px]">
+                <span class="font-medium text-new.text-primary">Provider delivery ID</span>
+                looks up events by the raw value from a source idempotency location.
+              </p>
+              <p class="mb-8px leading-[18px]">
                 <span class="font-medium text-new.text-primary">JSON object</span>
                 filters the payload with exact JSON containment. Every key and value you include must match the stored body at the same path.
               </p>
@@ -148,9 +152,22 @@
                 Open an event and mirror the field paths shown in the payload panel. A nested field is not the same as a top-level field with the same name.
               </p>
               <p class="leading-[18px] text-new.text-secondary">
-                Search uses the date range above (default last 7 days). Narrow the range if a search times out.
+                Search uses the date range above (default last 7 days).
               </p>
             </convoy-tooltip>
+          </div>
+          <div class="flex items-center gap-8px px-12px h-40px border-t border-new.border">
+            <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0" alt="" />
+            <input
+              type="search"
+              placeholder="Provider delivery ID"
+              [(ngModel)]="providerDeliveryId"
+              (input)="onProviderDeliveryIdChange()"
+              [ngModelOptions]="{ standalone: true }"
+              spellcheck="false"
+              aria-label="Provider delivery ID"
+              class="event-log-search-input flex-1 min-w-0 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+              />
           </div>
         } @else {
           <div

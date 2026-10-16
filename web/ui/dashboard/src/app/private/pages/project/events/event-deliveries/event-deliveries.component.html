@@ -159,6 +159,17 @@
         class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
         />
     </div>
+    <div class="flex items-center gap-8px px-12px h-40px border-b border-new.border">
+      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="" />
+      <input
+        type="search"
+        placeholder="Provider delivery ID"
+        [(ngModel)]="providerDeliveryId"
+        (input)="onProviderDeliveryIdChange()"
+        [ngModelOptions]="{ standalone: true }"
+        class="flex-1 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
+        />
+    </div>
 
     @if (isloadingEventDeliveries) {
       <!-- Loading state -->

@@ -1,5 +1,4 @@
-export const eventLogsSearchTimeoutCopy =
-	'Search took too long. Narrow the date range, simplify your JSON filter, or try a shorter search term.';
+export const eventLogsSearchTimeoutCopy = 'Search took too long. Try again.';
 export const eventLogsNetworkCopy = 'Check your connection and try again.';
 export const eventLogsServerCopy = 'Try again.';
 

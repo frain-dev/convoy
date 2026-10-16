@@ -137,10 +137,10 @@ func (f listFilter) pageSQL(limit int, desc bool) (string, []any) {
 }
 
 // pageSQLPerStatus probes each requested status on
-// idx_event_deliveries_usage. A generic prepared plan for
-// `status = ANY($1)` plus a (created_at, id) keyset walks
-// idx_event_deliveries_project_created_id_deleted and filters
-// Success rows until LIMIT fills, which 504s the 5s list budget.
+// idx_event_deliveries_list_status_created_id (or usage). A generic
+// prepared plan for `status = ANY($1)` plus a (created_at, id) keyset
+// walks the project/created index and filters Success rows until LIMIT
+// fills, which stalls the list on large projects.
 func (f listFilter) pageSQLPerStatus(limit int, order string) (string, []any) {
 	statuses := f.Statuses
 	f.Statuses = nil
@@ -249,7 +249,7 @@ func (s *Service) applySearch(ctx context.Context, f *listFilter, q string) erro
 	f.TypePrefix = escapeLike(q) + "%"
 
 	rows, err := s.db.Query(ctx,
-		`SELECT id FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL AND name ILIKE $2 ESCAPE '\' LIMIT 200`,
+		`SELECT id FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL AND name ILIKE $2 ESCAPE '\'`,
 		f.ProjectID, "%"+escapeLike(q)+"%",
 	)
 	if err != nil {

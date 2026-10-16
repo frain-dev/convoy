@@ -9,14 +9,30 @@ import { GeneralService } from 'src/app/services/general/general.service';
 export class EventsService {
 	constructor(private http: HttpService, private generalService: GeneralService) {}
 
-	getEvents(requestDetails?: { page?: number; idempotencyKey?: string; startDate?: string; endDate?: string; query?: string; body?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
+	getEvents(requestDetails?: {
+		page?: number;
+		idempotencyKey?: string;
+		idempotencyValue?: string;
+		startDate?: string;
+		endDate?: string;
+		query?: string;
+		body?: string;
+		sourceId?: string;
+		endpointId?: string;
+		next_page_cursor?: string;
+		prev_page_cursor?: string;
+		direction?: 'next' | 'prev';
+		signal?: AbortSignal;
+	}): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const { signal, ...query } = requestDetails || {};
 				const response = await this.http.request({
 					url: `/events`,
 					method: 'get',
-					query: requestDetails,
-					level: 'org_project'
+					query,
+					level: 'org_project',
+					signal
 				});
 
 				return resolve(response);
@@ -26,14 +42,29 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; query?: string; next_page_cursor?: string; sort?: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails?: {
+		page?: any;
+		startDate?: string;
+		endDate?: string;
+		endpointId?: string;
+		eventId?: string;
+		sourceId?: string;
+		status?: any;
+		query?: string;
+		idempotencyValue?: string;
+		next_page_cursor?: string;
+		sort?: string;
+		signal?: AbortSignal;
+	}): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const { signal, ...query } = requestDetails || {};
 				const response = await this.http.request({
 					url: `/eventdeliveries`,
 					method: 'get',
-					query: requestDetails,
-					level: 'org_project'
+					query,
+					level: 'org_project',
+					signal
 				});
 
 				return resolve(response);
@@ -59,7 +90,7 @@ export class EventsService {
 				const raw = typeof error === 'string' ? error : '';
 				const timedOut = /took too long|timed out|timeout|504/i.test(raw);
 				this.generalService.showNotification({
-					message: timedOut ? "Couldn't load the chart in time. Try a shorter date range." : raw || 'Could not load the chart. Try again.',
+					message: timedOut ? "Couldn't load the chart in time. Try again." : raw || 'Could not load the chart. Try again.',
 					style: 'error'
 				});
 				return reject(error);

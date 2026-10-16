@@ -93,9 +93,45 @@ const EventDeliveriesProjectEventTypeCreated = "idx_event_deliveries_project_eve
 // It has to match the row sql/1787702400.sql inserts.
 const EventDeliveriesProjectEventTypeCreatedDefinition = `CREATE INDEX idx_event_deliveries_project_event_type_created ON convoy.event_deliveries USING btree (project_id, event_type, created_at) WHERE (deleted_at IS NULL)`
 
+// EventDeliveriesListStatusCreatedID is the status-filtered deliveries list index.
+// sql/1792500000.sql inserts this name into dropped_indexes instead of CREATE INDEX at migrate.
+const EventDeliveriesListStatusCreatedID = "idx_event_deliveries_list_status_created_id"
+
+// EventDeliveriesListStatusCreatedIDDefinition matches sql/1792500000.sql.
+const EventDeliveriesListStatusCreatedIDDefinition = `CREATE INDEX idx_event_deliveries_list_status_created_id ON convoy.event_deliveries USING btree (project_id, status, created_at DESC, id DESC) WHERE (deleted_at IS NULL)`
+
+// EventDeliveriesListEndpointStatusCreatedID is the endpoint+status deliveries list index.
+// sql/1792500000.sql inserts this name into dropped_indexes instead of CREATE INDEX at migrate.
+const EventDeliveriesListEndpointStatusCreatedID = "idx_event_deliveries_list_endpoint_status_created_id"
+
+// EventDeliveriesListEndpointStatusCreatedIDDefinition matches sql/1792500000.sql.
+const EventDeliveriesListEndpointStatusCreatedIDDefinition = `CREATE INDEX idx_event_deliveries_list_endpoint_status_created_id ON convoy.event_deliveries USING btree (project_id, endpoint_id, status, created_at DESC, id DESC) WHERE (deleted_at IS NULL)`
+
+// EventsListProjectID is the Event Logs id-order page index.
+// sql/1792500000.sql inserts this name into dropped_indexes instead of CREATE INDEX at migrate.
+const EventsListProjectID = "idx_events_list_project_id"
+
+// EventsListProjectIDDefinition matches sql/1792500000.sql.
+const EventsListProjectIDDefinition = `CREATE INDEX idx_events_list_project_id ON convoy.events USING btree (project_id, id DESC) WHERE (deleted_at IS NULL)`
+
+// EventDeliveriesUsage is the status/created usage index (may already exist from earlier ops).
+// sql/1792500000.sql inserts this name into dropped_indexes with ON CONFLICT DO NOTHING.
+const EventDeliveriesUsage = "idx_event_deliveries_usage"
+
+// EventDeliveriesUsageDefinition matches sql/1792500000.sql.
+const EventDeliveriesUsageDefinition = `CREATE INDEX idx_event_deliveries_usage ON convoy.event_deliveries USING btree (project_id, status, created_at) INCLUDE (event_bytes) WHERE (deleted_at IS NULL)`
+
 // BootQueuedNames are the indexes migrate always inserts into dropped_indexes
 // instead of CREATE INDEX, so every upgraded instance owes them a rebuild.
-var BootQueuedNames = []string{EventDeliveriesProjectCreated, EventDeliveriesProjectEventTypeCreated, PayloadGIN}
+var BootQueuedNames = []string{
+	EventDeliveriesProjectCreated,
+	EventDeliveriesProjectEventTypeCreated,
+	EventDeliveriesListStatusCreatedID,
+	EventDeliveriesListEndpointStatusCreatedID,
+	EventsListProjectID,
+	EventDeliveriesUsage,
+	PayloadGIN,
+}
 
 // BootQueued reports whether migrate always queues this name. Repair tests use
 // it to look past those rows when counting operator-dropped indexes.
@@ -219,6 +255,9 @@ func ListDropped(ctx context.Context, db *pgxpool.Pool) ([]Dropped, error) {
                   (definition LIKE 'CREATE UNIQUE %') DESC,
                   (index_name = '`+EventDeliveriesProjectCreated+`') DESC,
                   (index_name = '`+EventDeliveriesProjectEventTypeCreated+`') DESC,
+                  (index_name = '`+EventDeliveriesListStatusCreatedID+`') DESC,
+                  (index_name = '`+EventDeliveriesListEndpointStatusCreatedID+`') DESC,
+                  (index_name = '`+EventsListProjectID+`') DESC,
                   dropped_at`)
 	if err != nil {
 		return nil, fmt.Errorf("reading dropped indexes: %w", err)
