@@ -294,25 +294,7 @@ func (s *Service) LoadEventIntervals(ctx context.Context, projectID string, para
 		})
 	}
 
-	if len(intervals) < minLen {
-		var d time.Duration
-		switch period {
-		case datastore.Daily:
-			d = time.Hour * 24
-		case datastore.Weekly:
-			d = time.Hour * 24 * 7
-		case datastore.Monthly:
-			d = time.Hour * 24 * 30
-		case datastore.Yearly:
-			d = time.Hour * 24 * 365
-		}
-		intervals, err = padIntervals(intervals, d, period)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return intervals, nil
+	return padIntervals(intervals, start, end, period)
 }
 
 func (s *Service) loadEventIntervalsFromRollup(ctx context.Context, projectID string, start, end time.Time, period datastore.Period) ([]intervalRow, error) {
@@ -320,7 +302,12 @@ func (s *Service) loadEventIntervalsFromRollup(ctx context.Context, projectID st
 	if err != nil {
 		return nil, err
 	}
-	return s.scanEventIntervalRows(ctx, query, projectID, start, end)
+	rows, _, err := readDashboardWindow(start, end, func(start, end time.Time) ([]intervalRow, error) {
+		return s.scanEventIntervalRows(ctx, query, projectID, start, end)
+	}, func(start, end time.Time) ([]intervalRow, error) {
+		return s.loadEventIntervalsLive(ctx, projectID, start, end, period, nil)
+	})
+	return rows, err
 }
 
 func (s *Service) loadEventIntervalsFromEndpointRollup(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, endpointID string) ([]intervalRow, error) {
@@ -328,7 +315,12 @@ func (s *Service) loadEventIntervalsFromEndpointRollup(ctx context.Context, proj
 	if err != nil {
 		return nil, err
 	}
-	return s.scanEventIntervalRows(ctx, query, projectID, start, end, endpointID)
+	rows, _, err := readDashboardWindow(start, end, func(start, end time.Time) ([]intervalRow, error) {
+		return s.scanEventIntervalRows(ctx, query, projectID, start, end, endpointID)
+	}, func(start, end time.Time) ([]intervalRow, error) {
+		return s.loadEventIntervalsLive(ctx, projectID, start, end, period, []string{endpointID})
+	})
+	return rows, err
 }
 
 func (s *Service) loadEventIntervalsLive(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, endpointIDs []string) ([]intervalRow, error) {

@@ -151,6 +151,12 @@ type SearchParams struct {
 	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`
 	// Query is the event-deliveries table search (id, event type prefix, endpoint name).
 	Query string `json:"query,omitempty"`
+	// EventIDs keeps event deliveries of any of these events. An empty slice means no
+	// filter, so callers that resolved zero events must not run the query.
+	EventIDs []string `json:"event_ids,omitempty"`
+	// MinTrials keeps event deliveries with at least this many attempts. It is
+	// evaluated per row without an index, so the API requires a narrowing filter.
+	MinTrials int64 `json:"min_trials,omitempty"`
 }
 
 type (
@@ -184,13 +190,14 @@ const (
 )
 
 const (
-	ProjectUpdated       HookEventType = "project.updated"
-	EndpointCreated      HookEventType = "endpoint.created"
-	EndpointUpdated      HookEventType = "endpoint.updated"
-	EndpointDeleted      HookEventType = "endpoint.deleted"
-	EventDeliveryUpdated HookEventType = "eventdelivery.updated"
-	EventDeliverySuccess HookEventType = "eventdelivery.success"
-	EventDeliveryFailed  HookEventType = "eventdelivery.failed"
+	ProjectUpdated        HookEventType = "project.updated"
+	EndpointCreated       HookEventType = "endpoint.created"
+	EndpointUpdated       HookEventType = "endpoint.updated"
+	EndpointDeleted       HookEventType = "endpoint.deleted"
+	EventDeliveryUpdated  HookEventType = "eventdelivery.updated"
+	EventDeliverySuccess  HookEventType = "eventdelivery.success"
+	EventDeliveryFailed   HookEventType = "eventdelivery.failed"
+	EventDeliveryRetrying HookEventType = "eventdelivery.retrying"
 )
 
 const (

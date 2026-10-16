@@ -305,6 +305,8 @@ func (s *Service) CountEventDeliveries(ctx context.Context, projectID string, en
 		End:         end,
 		EndpointIDs: endpointIDs,
 		Statuses:    statusStrings(status),
+		EventIDs:    params.EventIDs,
+		MinTrials:   params.MinTrials,
 	}
 	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return 0, err
@@ -377,6 +379,8 @@ func (s *Service) LoadEventDeliveriesPaged(
 		SubscriptionID:  subscriptionID,
 		BrokerMessageID: brokerMessageId,
 		IdempotencyKey:  idempotencyKey,
+		EventIDs:        params.EventIDs,
+		MinTrials:       params.MinTrials,
 	}
 	if err := s.applySearch(ctx, &f, params.Query); err != nil {
 		return nil, datastore.PaginationData{}, err
@@ -532,26 +536,7 @@ func (s *Service) LoadEventDeliveriesIntervals(ctx context.Context, projectID st
 		})
 	}
 
-	if len(intervals) < minLen {
-		var d time.Duration
-		switch period {
-		case datastore.Daily:
-			d = time.Hour * 24
-		case datastore.Weekly:
-			d = time.Hour * 24 * 7
-		case datastore.Monthly:
-			d = time.Hour * 24 * 30
-		case datastore.Yearly:
-			d = time.Hour * 24 * 365
-		}
-		var err error
-		intervals, err = padIntervals(intervals, d, period)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return intervals, nil
+	return padIntervals(intervals, start, end, period)
 }
 
 func (s *Service) loadEventDeliveriesIntervalsLive(ctx context.Context, projectID string, start, end time.Time, period datastore.Period, hasEndpoints pgtype.Bool, endpointIds []string) ([]intervalRow, error) {

@@ -133,6 +133,16 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	matched, err := h.applyIdempotencyValue(r, project.UID, data)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !matched {
+		_ = render.Render(w, r, util.NewErrorResponse("no events match idempotencyValue", http.StatusBadRequest))
+		return
+	}
+
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if h.IsReqWithPortalLinkToken(authUser) {
 		portalLink, err := h.retrievePortalLinkFromToken(r)
@@ -303,6 +313,17 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 		data.EventID = event.UID
 	}
 
+	matched, err := h.applyIdempotencyValue(r, project.UID, data)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !matched {
+		_ = render.Render(w, r, util.NewServerResponse("Event deliveries fetched successfully",
+			models.PagedResponse{Content: []models.EventDeliveryResponse{}, Pagination: &datastore.PaginationData{PerPage: int64(data.Filter.Pageable.PerPage)}}, http.StatusOK))
+		return
+	}
+
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if h.IsReqWithPortalLinkToken(authUser) {
 		portalLink, err := h.retrievePortalLinkFromToken(r)
@@ -362,6 +383,16 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	matched, err := h.applyIdempotencyValue(r, project.UID, data)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !matched {
+		_ = render.Render(w, r, util.NewServerResponse("event deliveries count successful", map[string]interface{}{"num": 0}, http.StatusOK))
 		return
 	}
 

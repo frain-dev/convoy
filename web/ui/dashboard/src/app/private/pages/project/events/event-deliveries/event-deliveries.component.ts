@@ -58,6 +58,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	currentPage = 1;
 	totalCount?: number;
 	private totalCountFetchId = 0;
+	private deliveriesFetchId = 0;
 	selectedDeliveries = new Set<string>();
 	batchRetryParams?: FILTER_QUERY_PARAM;
 	batchRetryDate = '';
@@ -73,8 +74,11 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	ngOnInit() {
 		this.getFiltersFromURL();
-		if (this.dateRange?.startDate && this.dateRange?.endDate && !this.queryParams.startDate) {
+		if (this.dateRange?.startDate && this.dateRange?.endDate) {
 			this.queryParams = { ...this.queryParams, ...this.dateRange };
+			// Pin the effective initial window in the existing history entry.
+			// Back/reload must not reinterpret it using a subsequently saved default.
+			this._location.replaceState(this._location.path().split('?')[0], new URLSearchParams(this.queryParams as Record<string, string>).toString());
 		}
 		this.refreshDeliveries(false);
 		if (this.checkIfTailModeIsEnabled()) this.getEventDeliveriesAtInterval();
@@ -84,6 +88,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy() {
+		this.deliveriesFetchId++;
+		this.totalCountFetchId++;
+		this.eventTypesFetchId++;
 		clearInterval(this.getEventDeliveriesInterval);
 		clearTimeout(this.endpointSearchTimeout);
 		clearTimeout(this.tableSearchTimeout);
@@ -97,12 +104,21 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		return this.isOutgoingProject || !!this.portalToken;
 	}
 
-	getFiltersFromURL() {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
+	getFiltersFromURL(params = this.route.snapshot.queryParams) {
+		this.queryParams = { ...params };
 		this.statusFilter = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
 		this.statusDraft = [...this.statusFilter];
 		this.sortOrder = this.queryParams?.sort || 'desc';
 		this.searchString = this.queryParams.query || '';
+	}
+
+	restoreFiltersFromURL(params: FILTER_QUERY_PARAM) {
+		this.getFiltersFromURL(params);
+		this.dateRange = { startDate: params.startDate!, endDate: params.endDate! };
+		this.selectedEndpointData = undefined;
+		if (this.queryParams.endpointId) this.getSelectedEndpointData();
+		this.getEventTypesForFilter();
+		this.refreshDeliveries();
 	}
 
 	formatPreciseTimestamp(value?: string): string {
@@ -122,7 +138,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	applyStatusFilter() {
 		this.statusFilter = [...this.statusDraft];
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, status: this.statusFilter.length ? JSON.stringify(this.statusFilter) : '' });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, status: this.statusFilter.length ? JSON.stringify(this.statusFilter) : '' }, true);
 		if (!this.statusFilter.length) delete this.queryParams.status;
 		this.refreshDeliveries();
 	}
@@ -150,23 +166,23 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	updateEndpointFilter(endpoint: ENDPOINT) {
 		this.selectedEndpointData = endpoint;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: endpoint.uid });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: endpoint.uid }, true);
 		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
 	clearEndpointFilter() {
 		this.selectedEndpointData = undefined;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' }, true);
 		delete this.queryParams.endpointId;
 		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
 	setEventType(eventType?: string) {
-		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType });
+		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType }, true);
 		else {
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: '' });
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: '' }, true);
 			delete this.queryParams.eventType;
 		}
 		this.refreshDeliveries();
@@ -174,16 +190,20 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	setSortOrder(order: 'asc' | 'desc') {
 		this.sortOrder = order;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: order });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: order }, true);
 		this.refreshDeliveries();
 	}
 
 	// Called by the parent page when the summary date range changes; the range
 	// scopes the delivery table too.
-	applyDateFilter(dateRange?: { startDate: string; endDate: string }) {
-		if (dateRange) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
+	applyDateFilter(dateRange?: { startDate: string; endDate: string }, updateURL = true) {
+		if (dateRange) {
+			this.dateRange = dateRange;
+			const params = { ...this.queryParams, ...dateRange };
+			this.queryParams = updateURL ? this.generalService.addFilterToURL(params, true) : params;
+		}
 		else {
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' });
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' }, true);
 			delete this.queryParams.startDate;
 			delete this.queryParams.endDate;
 		}
@@ -199,8 +219,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.endpointSearchString = '';
 
 		const sort = this.queryParams?.sort;
-		this.queryParams = sort ? { sort } : {};
-		this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);
+		this.queryParams = { ...this.dateRange, ...(sort ? { sort } : {}), ...(this.portalToken ? { token: this.portalToken } : {}) };
+		const query = new URLSearchParams(this.queryParams as Record<string, string>).toString();
+		this._location.go(`${location.pathname}${query ? `?${query}` : ''}`);
 		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
@@ -214,9 +235,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		clearTimeout(this.tableSearchTimeout);
 		this.tableSearchTimeout = setTimeout(() => {
 			const query = this.searchString.trim();
-			if (query) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query });
+			if (query) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query }, true);
 			else {
-				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' });
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' }, true);
 				delete this.queryParams.query;
 			}
 			this.refreshDeliveries();
@@ -265,10 +286,12 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
+		const fetchId = ++this.deliveriesFetchId;
 		if (requestDetails?.showLoader) this.isloadingEventDeliveries = true;
 
 		try {
 			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries(requestDetails);
+			if (fetchId !== this.deliveriesFetchId) return eventDeliveriesResponse;
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.setEventDeliveriesContent(eventDeliveriesResponse.data.content);
 
@@ -276,6 +299,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
 		} catch (error: any) {
+			if (fetchId !== this.deliveriesFetchId) return error;
 			this.loadError = true;
 			this.isloadingEventDeliveries = false;
 			return error;
@@ -339,7 +363,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		const cursor =
 			direction === 'next' ? { next_page_cursor: pagination.next_page_cursor, prev_page_cursor: '', direction: 'next' as const } : { prev_page_cursor: pagination.prev_page_cursor, next_page_cursor: '', direction: 'prev' as const };
 
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...cursor });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...cursor }, true);
 		this.currentPage = Math.max(1, this.currentPage + (direction === 'next' ? 1 : -1));
 		this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}

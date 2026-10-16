@@ -127,8 +127,8 @@ export class GeneralService {
 		return displayedItems;
 	}
 
-	addFilterToURL(params?: FILTER_QUERY_PARAM) {
-		const queryParams = { ...this.route.snapshot.queryParams, ...params };
+	addFilterToURL(params?: FILTER_QUERY_PARAM, replace = false) {
+		const queryParams = replace ? { ...params } : { ...this.route.snapshot.queryParams, ...params };
 
 		if (!params?.next_page_cursor) delete queryParams.next_page_cursor;
 		if (!params?.prev_page_cursor) delete queryParams.prev_page_cursor;

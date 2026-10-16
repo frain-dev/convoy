@@ -3104,7 +3104,7 @@
           {
             "description": "EventType to filter by",
             "in": "query",
-            "name": "event_type",
+            "name": "eventType",
             "schema": {
               "type": "string"
             }
@@ -3115,6 +3115,22 @@
             "name": "idempotencyKey",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nMatches deliveries of events ingested with it. Not combinable with idempotencyKey.",
+            "in": "query",
+            "name": "idempotencyValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only return deliveries with at least this many attempts; 2 or more means retried.\nRequires idempotencyValue, eventId, or endpointId.",
+            "in": "query",
+            "name": "minTrials",
+            "schema": {
+              "type": "integer"
             }
           },
           {
@@ -3160,6 +3176,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Limits idempotencyValue matching to these source IDs.",
+            "in": "query",
+            "name": "sourceId",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "The start date",
@@ -3410,7 +3438,7 @@
           {
             "description": "EventType to filter by",
             "in": "query",
-            "name": "event_type",
+            "name": "eventType",
             "schema": {
               "type": "string"
             }
@@ -3421,6 +3449,22 @@
             "name": "idempotencyKey",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nMatches deliveries of events ingested with it. Not combinable with idempotencyKey.",
+            "in": "query",
+            "name": "idempotencyValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only return deliveries with at least this many attempts; 2 or more means retried.\nRequires idempotencyValue, eventId, or endpointId.",
+            "in": "query",
+            "name": "minTrials",
+            "schema": {
+              "type": "integer"
             }
           },
           {
@@ -3466,6 +3510,18 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Limits idempotencyValue matching to these source IDs.",
+            "in": "query",
+            "name": "sourceId",
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "style": "form"
           },
           {
             "description": "The start date",
@@ -4404,6 +4460,14 @@
             }
           },
           {
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nList only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.",
+            "in": "query",
+            "name": "idempotencyValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "A pagination cursor to fetch the next page of a list",
             "example": "01H0JA5MEES38RRK3HTEJC647K",
             "in": "query",
@@ -4861,6 +4925,14 @@
             }
           },
           {
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nList only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.",
+            "in": "query",
+            "name": "idempotencyValue",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "description": "A pagination cursor to fetch the next page of a list",
             "example": "01H0JA5MEES38RRK3HTEJC647K",
             "in": "query",
@@ -5246,6 +5318,14 @@
             "description": "IdempotencyKey to filter by",
             "in": "query",
             "name": "idempotencyKey",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nList only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.",
+            "in": "query",
+            "name": "idempotencyValue",
             "schema": {
               "type": "string"
             }

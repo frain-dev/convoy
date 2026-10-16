@@ -58,7 +58,7 @@ INSERT INTO convoy.project_configurations (
     replay_attacks_prevention_enabled, ratelimit_count,
     ratelimit_duration, strategy_type, strategy_duration,
     strategy_retry_count, signature_header, signature_versions, request_id_header,
-    disable_endpoint, meta_events_enabled, meta_events_type,
+    disable_endpoint, add_event_id_trace_headers, meta_events_enabled, meta_events_type,
     meta_events_event_type, meta_events_url, meta_events_secret,
     meta_events_pub_sub, ssl_enforce_secure_endpoints,
     verify_dynamic_events, sync_dynamic_event_ack, allow_unmatched_dynamic_urls,
@@ -71,13 +71,13 @@ VALUES (
     $4, $5,
     $6, $7, $8,
     $9, $10, $11, $12,
-    $13, $14, $15,
-    $16, $17, $18,
-    $19, $20,
-    $21, $22, $23,
-    $24, $25, $26,
-    $27, $28,
-    $29, $30
+    $13, $14, $15, $16,
+    $17, $18, $19,
+    $20, $21,
+    $22, $23, $24,
+    $25, $26, $27,
+    $28, $29,
+    $30, $31
 )
 `
 
@@ -95,6 +95,7 @@ type CreateProjectConfigurationParams struct {
 	SignatureVersions              []byte
 	RequestIDHeader                pgtype.Text
 	DisableEndpoint                pgtype.Bool
+	AddEventIDTraceHeaders         pgtype.Bool
 	MetaEventsEnabled              pgtype.Bool
 	MetaEventsType                 pgtype.Text
 	MetaEventsEventType            pgtype.Text
@@ -130,6 +131,7 @@ func (q *Queries) CreateProjectConfiguration(ctx context.Context, arg CreateProj
 		arg.SignatureVersions,
 		arg.RequestIDHeader,
 		arg.DisableEndpoint,
+		arg.AddEventIDTraceHeaders,
 		arg.MetaEventsEnabled,
 		arg.MetaEventsType,
 		arg.MetaEventsEventType,
@@ -217,6 +219,7 @@ SELECT
     c.signature_versions AS "config_signature_versions",
     c.request_id_header AS "config_request_id_header",
     c.disable_endpoint AS "config_disable_endpoint",
+    c.add_event_id_trace_headers AS "config_add_event_id_trace_headers",
     c.ssl_enforce_secure_endpoints AS "config_ssl_enforce_secure_endpoints",
     c.meta_events_enabled AS "config_meta_events_enabled",
     COALESCE(c.meta_events_type, '') AS "config_meta_events_type",
@@ -264,6 +267,7 @@ type FetchProjectByIDRow struct {
 	ConfigSignatureVersions              []byte
 	ConfigRequestIDHeader                string
 	ConfigDisableEndpoint                bool
+	ConfigAddEventIDTraceHeaders         bool
 	ConfigSslEnforceSecureEndpoints      pgtype.Bool
 	ConfigMetaEventsEnabled              bool
 	ConfigMetaEventsType                 pgtype.Text
@@ -309,6 +313,7 @@ func (q *Queries) FetchProjectByID(ctx context.Context, id pgtype.Text) (FetchPr
 		&i.ConfigSignatureVersions,
 		&i.ConfigRequestIDHeader,
 		&i.ConfigDisableEndpoint,
+		&i.ConfigAddEventIDTraceHeaders,
 		&i.ConfigSslEnforceSecureEndpoints,
 		&i.ConfigMetaEventsEnabled,
 		&i.ConfigMetaEventsType,
@@ -383,6 +388,7 @@ SELECT
     c.signature_versions AS "config_signature_versions",
     c.request_id_header AS "config_request_id_header",
     c.disable_endpoint AS "config_disable_endpoint",
+    c.add_event_id_trace_headers AS "config_add_event_id_trace_headers",
     c.ssl_enforce_secure_endpoints AS "config_ssl_enforce_secure_endpoints",
     c.meta_events_enabled AS "config_meta_events_enabled",
     COALESCE(c.meta_events_type, '') AS "config_meta_events_type",
@@ -430,6 +436,7 @@ type FetchProjectsRow struct {
 	ConfigSignatureVersions              []byte
 	ConfigRequestIDHeader                string
 	ConfigDisableEndpoint                bool
+	ConfigAddEventIDTraceHeaders         bool
 	ConfigSslEnforceSecureEndpoints      pgtype.Bool
 	ConfigMetaEventsEnabled              bool
 	ConfigMetaEventsType                 pgtype.Text
@@ -481,6 +488,7 @@ func (q *Queries) FetchProjects(ctx context.Context, orgID pgtype.Text) ([]Fetch
 			&i.ConfigSignatureVersions,
 			&i.ConfigRequestIDHeader,
 			&i.ConfigDisableEndpoint,
+			&i.ConfigAddEventIDTraceHeaders,
 			&i.ConfigSslEnforceSecureEndpoints,
 			&i.ConfigMetaEventsEnabled,
 			&i.ConfigMetaEventsType,
@@ -584,26 +592,27 @@ UPDATE convoy.project_configurations SET
     signature_versions = $9,
     request_id_header = $10,
     disable_endpoint = $11,
-    meta_events_enabled = $12,
-    meta_events_type = $13,
-    meta_events_event_type = $14,
-    meta_events_url = $15,
-    meta_events_secret = $16,
-    meta_events_pub_sub = $17,
-    search_policy = $18,
-    ssl_enforce_secure_endpoints = $19,
-    verify_dynamic_events = $20,
-    sync_dynamic_event_ack = $21,
-    allow_unmatched_dynamic_urls = $22,
-    cb_sample_rate = $23,
-    cb_error_timeout = $24,
-    cb_failure_threshold = $25,
-    cb_success_threshold = $26,
-    cb_observability_window = $27,
-    cb_minimum_request_count = $28,
-    cb_consecutive_failure_threshold = $29,
+    add_event_id_trace_headers = $12,
+    meta_events_enabled = $13,
+    meta_events_type = $14,
+    meta_events_event_type = $15,
+    meta_events_url = $16,
+    meta_events_secret = $17,
+    meta_events_pub_sub = $18,
+    search_policy = $19,
+    ssl_enforce_secure_endpoints = $20,
+    verify_dynamic_events = $21,
+    sync_dynamic_event_ack = $22,
+    allow_unmatched_dynamic_urls = $23,
+    cb_sample_rate = $24,
+    cb_error_timeout = $25,
+    cb_failure_threshold = $26,
+    cb_success_threshold = $27,
+    cb_observability_window = $28,
+    cb_minimum_request_count = $29,
+    cb_consecutive_failure_threshold = $30,
     updated_at = NOW()
-WHERE id = $30 AND deleted_at IS NULL
+WHERE id = $31 AND deleted_at IS NULL
 `
 
 type UpdateProjectConfigurationParams struct {
@@ -618,6 +627,7 @@ type UpdateProjectConfigurationParams struct {
 	SignatureVersions              []byte
 	RequestIDHeader                pgtype.Text
 	DisableEndpoint                pgtype.Bool
+	AddEventIDTraceHeaders         pgtype.Bool
 	MetaEventsEnabled              pgtype.Bool
 	MetaEventsType                 pgtype.Text
 	MetaEventsEventType            pgtype.Text
@@ -652,6 +662,7 @@ func (q *Queries) UpdateProjectConfiguration(ctx context.Context, arg UpdateProj
 		arg.SignatureVersions,
 		arg.RequestIDHeader,
 		arg.DisableEndpoint,
+		arg.AddEventIDTraceHeaders,
 		arg.MetaEventsEnabled,
 		arg.MetaEventsType,
 		arg.MetaEventsEventType,
@@ -699,14 +710,14 @@ type UpdateProjectEndpointStatusParams struct {
 
 type UpdateProjectEndpointStatusRow struct {
 	ID                              string
-	Name                            pgtype.Text
+	Name                            string
 	Status                          string
 	OwnerID                         pgtype.Text
-	Url                             pgtype.Text
+	Url                             string
 	Description                     pgtype.Text
-	HttpTimeout                     pgtype.Int4
+	HttpTimeout                     int32
 	RateLimit                       int32
-	RateLimitDuration               pgtype.Int4
+	RateLimitDuration               int32
 	AdvancedSignatures              bool
 	SlackWebhookUrl                 pgtype.Text
 	SupportEmail                    pgtype.Text

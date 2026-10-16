@@ -245,6 +245,28 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 	return rowToEvent(row)
 }
 
+// FindEventIDsByIdempotencyKeys returns up to limit non-duplicate event IDs, oldest
+// first, whose idempotency key is any of keys.
+func (s *Service) FindEventIDsByIdempotencyKeys(ctx context.Context, projectID string, keys []string, limit int) ([]string, error) {
+	if len(keys) == 0 || limit <= 0 {
+		return nil, nil
+	}
+
+	rows, err := s.db.Query(ctx,
+		`SELECT id FROM convoy.events
+		WHERE project_id = $1 AND idempotency_key = ANY($2::TEXT[])
+		  AND is_duplicate_event IS FALSE AND deleted_at IS NULL
+		ORDER BY created_at
+		LIMIT $3`,
+		projectID, keys, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, pgx.RowTo[string])
+}
+
 // UpdateEventEndpoints updates event endpoints with batch processing
 func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Event, endpoints []string) error {
 	if err := requireEventEndpointIDs(endpoints); err != nil {

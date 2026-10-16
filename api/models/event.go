@@ -156,6 +156,10 @@ type QueryListEvent struct {
 	// IdempotencyKey to filter by
 	IdempotencyKey string `json:"idempotencyKey"`
 
+	// Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+	// List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+	IdempotencyValue string `json:"idempotencyValue"`
+
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
 
@@ -165,6 +169,9 @@ type QueryListEvent struct {
 
 type QueryListEventResponse struct {
 	*datastore.Filter
+
+	// IdempotencyValue is resolved to IdempotencyKey by the handler before querying.
+	IdempotencyValue string
 }
 
 func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, error) {
@@ -178,18 +185,25 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 		body = json.RawMessage(raw)
 	}
 
+	idempotencyKey := r.URL.Query().Get("idempotencyKey")
+	idempotencyValue := strings.TrimSpace(r.URL.Query().Get("idempotencyValue"))
+	if idempotencyValue != "" && idempotencyKey != "" {
+		return nil, errors.New("idempotencyValue cannot be combined with idempotencyKey")
+	}
+
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
 			OwnerID:         r.URL.Query().Get("ownerId"),
 			Query:           r.URL.Query().Get("query"),
 			Body:            body,
-			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
+			IdempotencyKey:  idempotencyKey,
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EndpointIDs:     getEndpointIDs(r),
 			SourceIDs:       getSourceIDs(r),
 			SearchParams:    searchParams,
 			Pageable:        m.GetPageableFromContext(r.Context()),
 		},
+		IdempotencyValue: idempotencyValue,
 	}, nil
 }
 
@@ -309,7 +323,7 @@ type CountResponse struct {
 // DeliveryStatusTotalsResponse carries per-status delivery totals for a window.
 // A status with no deliveries is absent from Totals rather than present as zero,
 // so a client can tell an empty window from a failed request. Source names the
-// table that answered, either the daily rollup or a live scan.
+// read strategy: daily rollups with exact live boundary reads, or a live scan.
 type DeliveryStatusTotalsResponse struct {
 	Totals map[string]int64 `json:"totals"`
 	Source string           `json:"source"`
