@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/util"
 )
 
 func provideUpdateSourceService(ctrl *gomock.Controller, t *testing.T, sourceUpdate *models.UpdateSource, source *datastore.Source, project *datastore.Project) *UpdateSourceService {
@@ -97,6 +98,49 @@ func TestUpdateSourceService_Run(t *testing.T) {
 				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 		},
+		{
+			name: "should_update_source_provider",
+			args: args{
+				ctx: ctx,
+				source: &datastore.Source{
+					UID:      "12345",
+					Provider: datastore.GithubSourceProvider,
+				},
+				update: &models.UpdateSource{
+					Name:     stringPtr("Convoy-Prod"),
+					Type:     datastore.HTTPSource,
+					Provider: datastore.ShopifySourceProvider,
+					Verifier: models.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &models.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				project: &datastore.Project{UID: "12345"},
+			},
+			wantSource: &datastore.Source{
+				Name:     "Convoy-Prod",
+				Type:     datastore.HTTPSource,
+				Provider: datastore.ShopifySourceProvider,
+				Verifier: &datastore.VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &datastore.HMac{
+						Encoding: datastore.Base64Encoding,
+						Header:   "X-Convoy-Header",
+						Hash:     "SHA512",
+						Secret:   "Convoy-Secret",
+					},
+				},
+			},
+			dbFn: func(so *UpdateSourceService) {
+				s, _ := so.SourceRepo.(*mocks.MockSourceRepository)
+				s.EXPECT().UpdateSource(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+			},
+		},
 
 		{
 			name: "should_fail_to_update_source",
@@ -164,6 +208,33 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "event type location cannot use request headers or query parameters with payload signature verification",
 		},
+		{
+			name: "should_fail_to_update_source_with_unsupported_provider",
+			args: args{
+				ctx: ctx,
+				source: &datastore.Source{
+					UID:      "12345",
+					Provider: datastore.GithubSourceProvider,
+				},
+				update: &models.UpdateSource{
+					Name:     stringPtr("Convoy-Prod"),
+					Type:     datastore.HTTPSource,
+					Provider: datastore.SourceProvider("unsupported"),
+					Verifier: models.VerifierConfig{
+						Type: datastore.HMacVerifier,
+						HMac: &models.HMac{
+							Encoding: datastore.Base64Encoding,
+							Header:   "X-Convoy-Header",
+							Hash:     "SHA512",
+							Secret:   "Convoy-Secret",
+						},
+					},
+				},
+				project: &datastore.Project{UID: "12345"},
+			},
+			wantErr:    true,
+			wantErrMsg: "Invalid source provider",
+		},
 	}
 
 	for _, tc := range tests {
@@ -181,6 +252,9 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				if tc.args.source != nil && tc.args.update != nil && !tc.args.update.Provider.IsValid() && !util.IsStringEmpty(string(tc.args.update.Provider)) {
+					require.Equal(t, datastore.GithubSourceProvider, tc.args.source.Provider)
+				}
 				return
 			}
 
@@ -191,6 +265,34 @@ func TestUpdateSourceService_Run(t *testing.T) {
 			require.Equal(t, source.Type, tc.wantSource.Type)
 			require.Equal(t, source.Verifier.Type, tc.wantSource.Verifier.Type)
 			require.Equal(t, source.Verifier.HMac.Header, tc.wantSource.Verifier.HMac.Header)
+			if tc.wantSource.Provider != "" {
+				require.Equal(t, tc.wantSource.Provider, source.Provider)
+			}
 		})
 	}
+}
+
+func TestUpdateSourceService_RejectUnsupportedProviderLeavesExistingUnchanged(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	initialProvider := datastore.GithubSourceProvider
+	source := &datastore.Source{
+		UID:      "12345",
+		Provider: initialProvider,
+	}
+	name := "Convoy-Prod"
+	update := &models.UpdateSource{
+		Name:     &name,
+		Type:     datastore.HTTPSource,
+		Provider: datastore.SourceProvider("unsupported"),
+	}
+	project := &datastore.Project{UID: "12345"}
+
+	so := provideUpdateSourceService(ctrl, t, update, source, project)
+	res, err := so.Run(context.Background())
+	require.Error(t, err)
+	require.Nil(t, res)
+	require.Equal(t, "Invalid source provider", err.(*ServiceError).Error())
+	require.Equal(t, initialProvider, source.Provider)
 }

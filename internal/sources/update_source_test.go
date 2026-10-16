@@ -386,3 +386,99 @@ func TestUpdateSource_UpdatedAtTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, fetched.UpdatedAt.After(originalUpdatedAt))
 }
+
+func TestUpdateSource_AddVerifierToNoopSource(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db)
+	service := createSourceService(t, db)
+
+	// Create source with NoopVerifier (no verifier record created)
+	source := SeedSource(t, db, project, datastore.NoopVerifier)
+	require.Empty(t, source.VerifierID)
+
+	// Update source to have an HMAC verifier
+	source.Verifier = &datastore.VerifierConfig{
+		Type: datastore.HMacVerifier,
+		HMac: &datastore.HMac{
+			Hash:     "SHA256",
+			Header:   "X-Signature",
+			Secret:   "secret-key",
+			Encoding: datastore.HexEncoding,
+		},
+	}
+
+	err := service.UpdateSource(ctx, project.UID, source)
+	require.NoError(t, err)
+	require.NotEmpty(t, source.VerifierID)
+
+	// Verify verifier was inserted and linked
+	fetched, err := service.FindSourceByID(ctx, project.UID, source.UID)
+	require.NoError(t, err)
+	require.NotEmpty(t, fetched.VerifierID)
+	require.Equal(t, datastore.HMacVerifier, fetched.Verifier.Type)
+	require.NotNil(t, fetched.Verifier.HMac)
+	require.Equal(t, "SHA256", fetched.Verifier.HMac.Hash)
+	require.Equal(t, "X-Signature", fetched.Verifier.HMac.Header)
+	require.Equal(t, "secret-key", fetched.Verifier.HMac.Secret)
+	require.Equal(t, datastore.HexEncoding, fetched.Verifier.HMac.Encoding)
+}
+
+func TestUpdateSource_VerifierNotFound_InsertsAndLinks(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db)
+	service := createSourceService(t, db)
+
+	// Create source with Noop verifier
+	source := SeedSource(t, db, project, datastore.NoopVerifier)
+
+	// Simulate source having a dangling or non-existent verifier ID
+	source.VerifierID = ulid.Make().String()
+	source.Verifier = &datastore.VerifierConfig{
+		Type: datastore.APIKeyVerifier,
+		ApiKey: &datastore.ApiKey{
+			HeaderName:  "X-API-Key",
+			HeaderValue: "inserted-key",
+		},
+	}
+
+	err := service.UpdateSource(ctx, project.UID, source)
+	require.NoError(t, err)
+	require.NotEmpty(t, source.VerifierID)
+
+	// Verify new verifier was inserted and linked
+	fetched, err := service.FindSourceByID(ctx, project.UID, source.UID)
+	require.NoError(t, err)
+	require.NotEmpty(t, fetched.VerifierID)
+	require.Equal(t, datastore.APIKeyVerifier, fetched.Verifier.Type)
+	require.NotNil(t, fetched.Verifier.ApiKey)
+	require.Equal(t, "X-API-Key", fetched.Verifier.ApiKey.HeaderName)
+	require.Equal(t, "inserted-key", fetched.Verifier.ApiKey.HeaderValue)
+}
+
+func TestUpdateSource_UpdateProvider(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	project := seedTestData(t, db)
+	service := createSourceService(t, db)
+
+	// Create source with initial provider Github
+	source := SeedSource(t, db, project, datastore.NoopVerifier)
+	require.Equal(t, datastore.GithubSourceProvider, source.Provider)
+
+	// Update provider to Shopify
+	source.Provider = datastore.ShopifySourceProvider
+
+	err := service.UpdateSource(ctx, project.UID, source)
+	require.NoError(t, err)
+
+	// Verify provider was updated
+	fetched, err := service.FindSourceByID(ctx, project.UID, source.UID)
+	require.NoError(t, err)
+	require.Equal(t, datastore.ShopifySourceProvider, fetched.Provider)
+}
+

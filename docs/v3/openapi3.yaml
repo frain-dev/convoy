@@ -8850,6 +8850,10 @@ components:
         name:
           description: Source name.
           type: string
+        provider:
+          allOf:
+            - $ref: '#/components/schemas/datastore.SourceProvider'
+          description: Use this to specify one of our predefined source types.
         pub_sub:
           allOf:
             - $ref: '#/components/schemas/models.PubSubConfig'
