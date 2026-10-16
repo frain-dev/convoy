@@ -13826,6 +13826,14 @@
           "description": "Source name.",
           "type": "string"
         },
+        "provider": {
+          "description": "Use this to specify one of our predefined source types.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SourceProvider"
+            }
+          ]
+        },
         "pub_sub": {
           "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to specify this when the source type is `pub_sub`.",
           "allOf": [
