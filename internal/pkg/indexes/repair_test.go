@@ -786,9 +786,9 @@ func names(invalid []Invalid) []string {
 	return out
 }
 
-// sql/1787200001.sql, sql/1787251200.sql, and sql/1787702400.sql always
-// queue these names on every migrated test DB. Repair assertions that
-// count other dropped indexes have to look past those rows.
+// sql/1787200001.sql, sql/1787251200.sql, sql/1787702400.sql, and
+// sql/1792500000.sql always queue BootQueuedNames on every migrated test DB.
+// Repair assertions that count other dropped indexes have to look past those rows.
 func exceptPayloadGIN(owed []Dropped) []Dropped {
 	out := make([]Dropped, 0, len(owed))
 	for _, d := range owed {
