@@ -1,7 +1,9 @@
 package postgres
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -85,4 +87,21 @@ func TestBuildPoolConfigRejectsUnusableDSN(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, pgxCfg)
 	require.Nil(t, sink)
+}
+
+func TestBuildPoolConfigConnectionLifetime(t *testing.T) {
+	for _, seconds := range []int{0, -1, 1, 3600} {
+		t.Run(fmt.Sprintf("seconds_%d", seconds), func(t *testing.T) {
+			cfg := poolTestDBConfig()
+			cfg.SetConnMaxLifetime = seconds
+			poolCfg, _, err := buildPoolConfig(cfg, &captureLogger{})
+			require.NoError(t, err)
+			if seconds <= 0 {
+				require.Equal(t, time.Duration(1<<63-1), poolCfg.MaxConnLifetime)
+			} else {
+				require.Equal(t, time.Duration(seconds)*time.Second, poolCfg.MaxConnLifetime)
+			}
+			require.Equal(t, maxConnIdleTime, poolCfg.MaxConnIdleTime)
+		})
+	}
 }

@@ -193,6 +193,13 @@ func buildPoolConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, s
 	pgxCfg.MaxConnIdleTime = maxConnIdleTime
 
 	pgxCfg.MaxConnLifetime = time.Second * time.Duration(dbConfig.SetConnMaxLifetime)
+	if dbConfig.SetConnMaxLifetime <= 0 {
+		// database/sql treats nonpositive lifetimes as unlimited. pgx instead
+		// expires them immediately and has no unlimited sentinel. Use the
+		// largest duration (about 292 years) to preserve the SQL semantics in
+		// practice. Idle connections still obey MaxConnIdleTime.
+		pgxCfg.MaxConnLifetime = time.Duration(1<<63 - 1)
+	}
 	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName())
 	sink := &noticeSink{}
 	pgxCfg.ConnConfig.OnNotice = noticeHandler(logger, sink)
@@ -216,16 +223,11 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, logger log.Logger, src
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	db := sqlx.NewDb(sqlDB, "pgx")
 
-	maxOpenConns := maxConns
-	maxIdleConns := dbConfig.SetMaxIdleConnections
-	if maxIdleConns <= 0 {
-		maxIdleConns = maxOpenConns / 4
-		if maxIdleConns < 2 {
-			maxIdleConns = 2
-		}
-	}
-	db.SetMaxOpenConns(maxOpenConns)
-	db.SetMaxIdleConns(maxIdleConns)
+	db.SetMaxOpenConns(maxConns)
+	// OpenDBFromPool sets MaxIdleConns to zero: an idle database/sql
+	// connection still owns a slot in the shared pgx pool and can starve
+	// native callers. Keep that setting regardless of SetMaxIdleConnections;
+	// pgx owns connection reuse and idle reaping for both access paths.
 	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime))
 
 	return &Postgres{dbx: db, pool: pool, conn: pool, notices: sink}, nil

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 
@@ -42,9 +41,8 @@ func idleReapDBConfig(t *testing.T) config.DatabaseConfiguration {
 		Database: envOrDefault("TEST_DB_DATABASE", "convoy"),
 		Port:     port,
 		Options:  "sslmode=disable&application_name=" + idleReapAppName,
-		// Carried from the compiled default in config.DefaultConfiguration.
-		// Zero is not "no limit" to pgx: it sets every connection's max age to
-		// its creation time, so the pool destroys each one on first use.
+		// Use the compiled default; lifetime expiry must not affect these
+		// tests, which isolate the much shorter idle-reaping threshold.
 		SetConnMaxLifetime: 3600,
 	}
 }
@@ -139,11 +137,9 @@ func TestPoolReapsIdleConnections(t *testing.T) {
 // through, which is the one that decides whether the fix actually returns slots
 // to the server. database/sql keeps its own free list of connections it has
 // already acquired from pgx, and pgx counts an acquired connection as in use, so
-// MaxConnIdleTime cannot reap anything sitting on that free list. The bound that
-// matters there is SetMaxIdleConns: connections beyond it are released back to
-// pgx as soon as a query finishes, and pgx then reaps them on the idle timeout.
-// This test pins how far the pool actually drains, so a later change to either
-// bound cannot quietly strand connections again.
+// MaxConnIdleTime cannot reap anything sitting on that free list. The wrapper
+// must release every idle connection back to pgx so its idle timeout can reap
+// all of them.
 func TestSqlxWrapperReapsIdleConnections(t *testing.T) {
 	dbCfg := idleReapDBConfig(t)
 	dbCfg.SetMaxOpenConnections = 20
@@ -159,16 +155,12 @@ func TestSqlxWrapperReapsIdleConnections(t *testing.T) {
 	require.NoError(t, err)
 	defer pool.Close()
 
-	db := sqlx.NewDb(stdlib.OpenDBFromPool(pool), "pgx")
+	db := NewFromConnection(pool).GetDB()
 	defer func() {
 		require.NoError(t, db.Close())
 	}()
 
-	// Exactly what parseDBConfig applies to the wrapper, so the numbers below
-	// describe the shipped configuration and not a tuned-for-green one.
-	maxIdle := idleConnsFor(dbCfg.SetMaxOpenConnections)
 	db.SetMaxOpenConns(dbCfg.SetMaxOpenConnections)
-	db.SetMaxIdleConns(maxIdle)
 	db.SetConnMaxLifetime(time.Second * time.Duration(dbCfg.SetConnMaxLifetime))
 
 	require.Equal(t, 0, countBackends(t, dbCfg), "database must be quiet before the test opens anything")
@@ -179,12 +171,9 @@ func TestSqlxWrapperReapsIdleConnections(t *testing.T) {
 	peak := countBackends(t, dbCfg)
 	require.GreaterOrEqual(t, peak, want)
 
-	// The free list is what remains: pgx reaps everything the wrapper hands
-	// back, and holds the rest until SetConnMaxLifetime retires it.
-	got := waitForBackends(t, dbCfg, maxIdle, 30*time.Second)
-	require.LessOrEqual(t, got, maxIdle,
-		"everything above the sqlx free list should have been released to pgx and reaped")
-	t.Logf("sqlx wrapper (max idle %d): %d backends at peak, %d after idle reaping", maxIdle, peak, got)
+	got := waitForBackends(t, dbCfg, 0, 30*time.Second)
+	require.Zero(t, got, "all SQL-wrapper connections should return to pgx and be reaped")
+	t.Logf("sqlx wrapper: %d backends at peak, %d after idle reaping", peak, got)
 }
 
 // expandPool forces the pool to open n distinct connections by holding every
@@ -274,14 +263,4 @@ func expandSqlxPool(t *testing.T, db *sqlx.DB, n int) {
 	for err := range errs {
 		require.NoError(t, err)
 	}
-}
-
-// idleConnsFor mirrors the sqlx idle bound parseDBConfig derives when
-// max_idle_conn is unset, so the test exercises the shipped ratio.
-func idleConnsFor(maxOpen int) int {
-	idle := maxOpen / 4
-	if idle < 2 {
-		idle = 2
-	}
-	return idle
 }
