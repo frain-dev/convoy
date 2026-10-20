@@ -71,6 +71,17 @@ describe('HttpService', () => {
 		it('does not json-expand the query param', () => {
 			expect(service.buildRequestQuery({ query: '["only-one-term"]' })).toBe('query=%5B%22only-one-term%22%5D');
 		});
+
+		it('keeps exact idempotency identifiers as one opaque query value', () => {
+			for (const key of ['idempotencyKey', 'idempotencyValue']) {
+				for (const value of ['[]', '["abc"]', JSON.stringify(['quoted"value', '\\'])]) {
+					const encoded = service.buildRequestQuery({ [key]: value });
+					const params = new URLSearchParams(encoded);
+					expect(params.getAll(key)).toEqual([value]);
+					expect(encoded).toBe(key + '=' + encodeURIComponent(value));
+				}
+			}
+		});
 	});
 
 	describe('logUserOut', () => {
