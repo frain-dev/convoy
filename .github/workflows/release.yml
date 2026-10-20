@@ -91,10 +91,9 @@ jobs:
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         with:
           version: latest
-          args: -f .publisher.yml release --clean --release-notes /tmp/release-notes.md
+          args: -f .publisher.yml release --clean --skip=homebrew --release-notes /tmp/release-notes.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           REPO_NAME: ${{ github.repository }}
 
       - name: Release (Main Snapshot)
@@ -106,3 +105,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REPO_NAME: ${{ github.repository }}
+
+  homebrew:
+    needs: release-matrix
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/publish-homebrew.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit
