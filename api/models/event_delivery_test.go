@@ -79,3 +79,16 @@ func TestQueryListEventTransform_RejectsValueWithKey(t *testing.T) {
 	require.Equal(t, "abc", got.IdempotencyValue)
 	require.Equal(t, []string{"src_1"}, got.Filter.SourceIDs)
 }
+
+func TestQueryListEventTransform_QueryMode(t *testing.T) {
+	var q *QueryListEvent
+	r := httptest.NewRequest("GET", "/events?query=invoice.paid&queryMode=text", nil)
+	got, err := q.Transform(r)
+	require.NoError(t, err)
+	require.Equal(t, "text", got.Filter.QueryMode)
+	require.Equal(t, "invoice.paid", got.Filter.Query)
+
+	r = httptest.NewRequest("GET", "/events?queryMode=unknown", nil)
+	_, err = q.Transform(r)
+	require.ErrorContains(t, err, "queryMode must be text or omitted")
+}

@@ -4016,6 +4016,12 @@
           },
           {
             "type": "string",
+            "description": "Set to text to search metadata literally, without interpreting JSON in query.",
+            "name": "queryMode",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "ASC | DESC",
             "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
             "name": "sort",
@@ -4421,6 +4427,12 @@
           },
           {
             "type": "string",
+            "description": "Set to text to search metadata literally, without interpreting JSON in query.",
+            "name": "queryMode",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "ASC | DESC",
             "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
             "name": "sort",
@@ -4763,6 +4775,12 @@
             "type": "string",
             "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Set to text to search metadata literally, without interpreting JSON in query.",
+            "name": "queryMode",
             "in": "query"
           },
           {

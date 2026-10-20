@@ -61,8 +61,9 @@ Convoy provides several key features:
   process events, convoy disables the endpoint and sends out a notification.
   Email, Slack, and Microsoft Teams are supported.
 
-- **Search:** Find events by id, type, source, or idempotency key, or paste JSON
-  to search the payload. Results stay in the date range you already have open.
+- **Search:** Choose event metadata, JSON payload, idempotency key, or
+  idempotency value from the search icon menu. Results stay in the selected date range.
+  See [event search](docs/event-search.md) for matching rules and API parameters.
 
 - **Filters & Transforms:** Subscriptions can filter on body, headers, query,
   and path, and run a JS transform before delivery. Events that do not match

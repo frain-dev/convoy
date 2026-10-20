@@ -101,74 +101,70 @@
       <div class="border-b border-new.border" [class.bg-new.surface-muted]="!canSearchEvents">
         @if (canSearchEvents) {
           <div class="flex items-center gap-8px px-12px h-40px">
-            @if (isSearchingEvents) {
-              <img src="/assets/img/svg/deliveries-loading.svg" class="w-16px h-16px shrink-0 animate-spin" alt="" />
-            } @else {
-              <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0" alt="search" />
-            }
+            <div convoy-dropdown #searchDropdown size="md" position="left" class="shrink-0">
+              <button dropdownTrigger type="button" class="flex items-center gap-4px py-8px rounded-4px font-body text-[12px] text-new.text-secondary hover:bg-new.surface-muted" [attr.aria-label]="'Search type: ' + selectedSearchType.label" aria-haspopup="true" [attr.aria-expanded]="searchDropdown.show" [title]="'Search by ' + selectedSearchType.label">
+                @if (isSearchingEvents) {
+                  <img src="/assets/img/svg/deliveries-loading.svg" class="w-16px h-16px animate-spin" alt="" />
+                } @else {
+                  @switch (searchType) {
+                    @case ('payload') {
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M8 3H6v6l-3 3 3 3v6h2M16 3h2v6l3 3-3 3v6h-2" />
+                      </svg>
+                    }
+                    @case ('key') {
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="8" cy="8" r="5" />
+                        <path d="m12 12 9 9m-4-4 3-3m-6 0 3-3" />
+                      </svg>
+                    }
+                    @case ('value') {
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 9h16M3 15h16M10 3 6 21M18 3l-4 18" />
+                      </svg>
+                    }
+                    @default {
+                      <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px" alt="" />
+                    }
+                  }
+                }
+                <img src="/assets/img/svg/chevron-down-small.svg" class="w-12px h-12px" alt="" />
+              </button>
+              <ul dropdownOptions class="py-4px">
+                @for (option of searchTypes; track option.type) {
+                  <li>
+                    <button convoy-dropdown-option type="button" class="w-full text-left px-12px py-8px font-body text-[14px] text-new.text-primary hover:bg-new.surface-muted" [class.!font-medium]="searchType === option.type" [attr.aria-pressed]="searchType === option.type" (click)="selectSearchType(option.type)">{{ option.label }}</button>
+                  </li>
+                }
+              </ul>
+            </div>
             <input
               type="search"
-              placeholder="Search events..."
-              [(ngModel)]="searchString"
-              (input)="onSearch()"
+              [placeholder]="selectedSearchType.placeholder"
+              [(ngModel)]="searchInput"
+              (ngModelChange)="onSearch()"
               [ngModelOptions]="{ standalone: true }"
               spellcheck="false"
               [attr.aria-busy]="isSearchingEvents"
-              aria-label="Search events"
+              [attr.aria-label]="selectedSearchType.label"
+              [attr.aria-invalid]="!!searchValidationError"
+              [attr.aria-describedby]="searchValidationError ? 'event-search-error' : null"
               class="event-log-search-input flex-1 min-w-0 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
               />
-            <convoy-tooltip size="sm" position="bottom" class="shrink-0 ml-4px" className="!min-w-[300px] max-w-[340px] whitespace-normal !text-left !font-normal">
-              <p class="font-heading font-medium text-[13px] leading-[18px] text-new.text-primary mb-8px">How event search works</p>
-              <p class="mb-8px leading-[18px]">
-                <span class="font-medium text-new.text-primary">Text</span>
-                matches event ID, event type, source name, and idempotency key.
-              </p>
-              <p class="mb-8px leading-[18px]">
-                <span class="font-medium text-new.text-primary">Provider delivery ID</span>
-                looks up events by the raw value from a source idempotency location.
-              </p>
-              <p class="mb-8px leading-[18px]">
-                <span class="font-medium text-new.text-primary">JSON object</span>
-                filters the payload with exact JSON containment. Every key and value you include must match the stored body at the same path.
-              </p>
-              <p class="mb-8px leading-[18px] text-new.text-secondary">
-                Examples:
-                <span class="font-menlo text-[11px] text-new.text-primary">&#123;"status": "paid"&#125;</span>
-                or nested
-                <span class="font-menlo text-[11px] text-new.text-primary">&#123;"data": &#123;"status": "paid"&#125;&#125;</span>.
-                Relaxed input such as
-                <span class="font-menlo text-[11px] text-new.text-primary">&#123;status: "paid"&#125;</span>
-                or
-                <span class="font-menlo text-[11px] text-new.text-primary">data: &#123;status: "paid"&#125;</span>
-                is also accepted. Bare
-                <span class="font-menlo text-[11px] text-new.text-primary">status: "paid"</span>
-                is text search, not payload.
-              </p>
-              <p class="mb-8px leading-[18px] text-new.text-secondary">
-                Mix text and JSON to require both, for example
-                <span class="font-menlo text-[11px] text-new.text-primary">invoice.paid &#123;"status": "paid"&#125;</span>.
-              </p>
-              <p class="mb-8px leading-[18px] text-new.text-secondary">
-                Open an event and mirror the field paths shown in the payload panel. A nested field is not the same as a top-level field with the same name.
-              </p>
+            <convoy-tooltip size="sm" position="top-left" class="shrink-0 ml-4px" className="!min-w-[300px] max-w-[340px] whitespace-normal !text-left !font-normal">
+              <p class="font-heading font-medium text-[13px] leading-[18px] text-new.text-primary mb-8px">{{ selectedSearchType.label }}</p>
+              <p class="mb-8px leading-[18px]">{{ selectedSearchType.description }}</p>
               <p class="leading-[18px] text-new.text-secondary">
                 Search uses the date range above (default last 7 days).
               </p>
             </convoy-tooltip>
           </div>
-          <div class="flex items-center gap-8px px-12px h-40px border-t border-new.border">
-            <img src="/assets/img/svg/search-gray.svg" class="w-16px h-16px shrink-0" alt="" />
-            <input
-              type="search"
-              placeholder="Provider delivery ID"
-              [(ngModel)]="providerDeliveryId"
-              (input)="onProviderDeliveryIdChange()"
-              [ngModelOptions]="{ standalone: true }"
-              spellcheck="false"
-              aria-label="Provider delivery ID"
-              class="event-log-search-input flex-1 min-w-0 font-body font-normal text-[14px] text-new.text-primary placeholder:text-new.text-placeholder outline-none bg-transparent"
-              />
-          </div>
+          @if (searchValidationError) {
+            <p id="event-search-error" role="alert" class="px-12px pb-8px font-body text-[12px] text-new.error-700">{{ searchValidationError }} The previous results remain until the filter is valid.</p>
+          }
+          @for (filter of additionalSearchFilters; track filter.label) {
+            <p class="px-12px pb-8px font-body text-[12px] text-new.text-secondary break-all">Also filtering {{ filter.label }}: {{ filter.value }}</p>
+          }
         } @else {
           <div
             class="flex items-center gap-8px px-12px h-40px cursor-not-allowed select-none"
@@ -390,9 +386,16 @@
         }
 
         <!-- Idempotency key -->
-        <div class="flex items-center justify-between gap-16px pb-16px border-b border-new.border">
+        <div class="group flex items-center justify-between gap-16px pb-16px border-b border-new.border">
           <span class="font-body font-normal text-[13px] text-new.text-secondary shrink-0">Idempotency key</span>
-          <span class="font-body font-normal text-[13px] text-new.text-primary truncate">{{ eventsDetailsItem?.idempotency_key || '-' }}</span>
+          <div class="flex items-center justify-end gap-8px min-w-0">
+            <span class="font-body font-normal text-[13px] text-new.text-primary truncate" [title]="eventsDetailsItem?.idempotency_key || ''">{{ eventsDetailsItem?.idempotency_key || '-' }}</span>
+            @if (eventsDetailsItem?.idempotency_key) {
+              <convoy-copy-button [text]="eventsDetailsItem.idempotency_key" size="sm" notificationText="Idempotency key copied to clipboard" class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100" className="font-body text-[12px] text-new.text-secondary">
+                <span class="ml-4px">Copy</span>
+              </convoy-copy-button>
+            }
+          </div>
         </div>
 
         <!-- Duplicate events -->

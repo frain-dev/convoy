@@ -2436,6 +2436,12 @@ paths:
           name: query
           schema:
             type: string
+        - description: >-
+            Set to text to search metadata literally, without interpreting JSON in query.
+          in: query
+          name: queryMode
+          schema:
+            type: string
         - description: 'Sort order, values are `ASC` or `DESC`, defaults to `DESC`'
           example: ASC | DESC
           in: query
@@ -2702,6 +2708,12 @@ paths:
           name: query
           schema:
             type: string
+        - description: >-
+            Set to text to search metadata literally, without interpreting JSON in query.
+          in: query
+          name: queryMode
+          schema:
+            type: string
         - description: 'Sort order, values are `ASC` or `DESC`, defaults to `DESC`'
           example: ASC | DESC
           in: query
@@ -2934,6 +2946,12 @@ paths:
             A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
+          schema:
+            type: string
+        - description: >-
+            Set to text to search metadata literally, without interpreting JSON in query.
+          in: query
+          name: queryMode
           schema:
             type: string
         - description: 'Sort order, values are `ASC` or `DESC`, defaults to `DESC`'

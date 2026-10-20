@@ -33,8 +33,8 @@ type ListSearchSQL struct {
 //
 // Licensed users search list metadata and payload within the active date window.
 // Text in query matches metadata. A strict JSON object in query is promoted to
-// body containment. Mixed leftover text plus a JSON object (or query= with body=)
-// AND together. Unlicensed instances reject all search.
+// body containment unless queryMode=text. Mixed leftover text plus a JSON object
+// (or query= with body=) AND together. Unlicensed instances reject all search.
 func ApplyEventListSearch(filter *datastore.Filter, project *datastore.Project, licensed bool, now time.Time) error {
 	if filter == nil {
 		return nil
@@ -51,7 +51,7 @@ func ApplyEventListSearch(filter *datastore.Filter, project *datastore.Project, 
 		return ErrSearchUnlicensed
 	}
 
-	if hasQuery && !hasBody {
+	if hasQuery && !hasBody && filter.QueryMode != "text" {
 		if body, ok := queryAsPayloadBody(filter.Query); ok {
 			filter.Body = body
 			filter.Query = ""

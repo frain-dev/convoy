@@ -146,6 +146,9 @@ type QueryListEvent struct {
 	// A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
 	Query string `json:"query"`
 
+	// Set to text to search metadata literally, without interpreting JSON in query.
+	QueryMode string `json:"queryMode"`
+
 	// URL-encoded JSON object matched against the event payload.
 	// Combined with query as AND when both are set.
 	Body string `json:"body"`
@@ -175,6 +178,10 @@ type QueryListEventResponse struct {
 }
 
 func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, error) {
+	queryMode := r.URL.Query().Get("queryMode")
+	if queryMode != "" && queryMode != "text" {
+		return nil, errors.New("queryMode must be text or omitted")
+	}
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		return nil, err
@@ -195,6 +202,7 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 		Filter: &datastore.Filter{
 			OwnerID:         r.URL.Query().Get("ownerId"),
 			Query:           r.URL.Query().Get("query"),
+			QueryMode:       queryMode,
 			Body:            body,
 			IdempotencyKey:  idempotencyKey,
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
