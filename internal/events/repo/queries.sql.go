@@ -227,9 +227,6 @@ WHERE ev.deleted_at IS NULL
            WHEN $14::text = 'DESC' THEN ev.id > $15
            WHEN $14::text = 'ASC' THEN ev.id < $15
            ELSE ev.id > $15 END)
-           ) THEN 1
-           ELSE 0
-       END::bigint AS count
 `
 
 type CountPrevEventsSearchParams struct {

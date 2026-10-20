@@ -7,6 +7,7 @@ import (
 
 type Filter struct {
 	Query               string
+	QueryMode           string
 	Body                json.RawMessage
 	OwnerID             string
 	UserID              string

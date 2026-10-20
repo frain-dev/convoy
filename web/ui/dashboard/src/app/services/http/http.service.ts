@@ -68,8 +68,8 @@ export class HttpService {
 		Object.keys(cleanedQuery).forEach(q => {
 			const queryValue = safeQuery[q];
 			if (queryValue === undefined) return;
-			// Event search terms are opaque user text; never expand query/body via JSON.parse.
-			if (q === 'query' || q === 'body') {
+			// Search terms and exact identifiers are opaque text, including JSON-looking values.
+			if (q === 'query' || q === 'body' || q === 'idempotencyKey' || q === 'idempotencyValue') {
 				parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(queryValue))}`);
 				return;
 			}

@@ -122,6 +122,7 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 
 	lockDB, err := openJobLockDB(cfg.Database)
 	if err != nil {
+		_ = q.Close()
 		return nil, err
 	}
 
@@ -131,7 +132,7 @@ func newPostgres(cfg config.Configuration, db *sqlx.DB, logger log.Logger) (*Dep
 		Cache:               c,
 		RateLimiter:         pglimiter.New(db),
 		CircuitBreakerStore: circuit_breaker.NewPostgresStore(db),
-		JobLocker:           newPostgresJobLockerWithLimit(lockDB, logger, jobLockMaxConns),
+		JobLocker:           newPostgresJobLockerWithLimit(lockDB.db, logger, jobLockMaxConns),
 		Acker:               dynamiceventack.NewCacheAcker(c),
 		TrialEvents:         license.NewPostgresTrialEventLimiter(db, logger),
 		ConsumerBackend:     worker.NewPostgresConsumerBackend(q),

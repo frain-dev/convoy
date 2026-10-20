@@ -16,6 +16,7 @@ export class EventsService {
 		startDate?: string;
 		endDate?: string;
 		query?: string;
+		queryMode?: 'text';
 		body?: string;
 		sourceId?: string;
 		endpointId?: string;

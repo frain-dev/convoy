@@ -62,3 +62,25 @@ func TestLoadEventsPagedExistsInnerQueriesUsePlainOrderBy(t *testing.T) {
 
 	require.NotContains(t, sql, "-- name: LoadEventsPagedExists :many")
 }
+
+func TestPreviousPageGeneratedQueriesMatchSource(t *testing.T) {
+	canonical := readQueriesSQL(t)
+	comments := regexp.MustCompile(`(?m)--[^\n]*`)
+	parameters := regexp.MustCompile(`@[A-Za-z_][A-Za-z_0-9]*|\$[0-9]+`)
+	normalize := func(query string) string {
+		query = comments.ReplaceAllString(query, "")
+		query = parameters.ReplaceAllString(query, "?")
+		return strings.Join(strings.Fields(strings.TrimSuffix(strings.TrimSpace(query), ";")), " ")
+	}
+	for name, generated := range map[string]string{
+		"CountPrevEvents":       countPrevEvents,
+		"CountPrevEventsSearch": countPrevEventsSearch,
+	} {
+		t.Run(name, func(t *testing.T) {
+			source := extractNamedQuery(t, canonical, name)
+			// extractNamedQuery begins after the name and leaves its sqlc command.
+			source = source[strings.IndexByte(source, '\n')+1:]
+			require.Equal(t, normalize(source), normalize(generated))
+		})
+	}
+}

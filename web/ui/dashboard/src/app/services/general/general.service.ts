@@ -170,13 +170,13 @@ export class GeneralService {
 			const raw = data.trim();
 			if (!raw) return displayMessage;
 			try {
-				return JSON.stringify(JSON.parse(raw), null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+				return JSON.stringify(JSON.parse(raw), null, 4);
 			} catch {
 				return data;
 			}
 		}
 
-		if (data) return JSON.stringify(data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		if (data !== undefined && data !== null) return JSON.stringify(data, null, 4);
 		return displayMessage;
 	}
 

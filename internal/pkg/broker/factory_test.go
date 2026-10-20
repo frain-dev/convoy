@@ -71,8 +71,8 @@ func stubJobLockDB(t *testing.T, db *sqlx.DB) {
 	t.Helper()
 	original := openJobLockDB
 	t.Cleanup(func() { openJobLockDB = original })
-	openJobLockDB = func(config.DatabaseConfiguration) (*sqlx.DB, error) {
-		return db, nil
+	openJobLockDB = func(config.DatabaseConfiguration) (*ownedJobLockDB, error) {
+		return &ownedJobLockDB{db: db}, nil
 	}
 }
 
