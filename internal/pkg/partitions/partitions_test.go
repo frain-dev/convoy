@@ -117,7 +117,7 @@ func (r *blockingRebuilder) dropped(_ context.Context, name string) (indexes.Dro
 	if r.lookupErr != nil {
 		return indexes.Dropped{}, r.lookupErr
 	}
-	if r.index.Name != name {
+	if r.index.Name != name || r.done.Load() {
 		return indexes.Dropped{}, indexes.ErrNotDropped
 	}
 	return r.index, nil
@@ -149,12 +149,36 @@ func (r *blockingRebuilder) rebuild(context.Context, indexes.Dropped) error {
 	return r.rebuildErr
 }
 
-type multiRebuilder struct {
-	order  []string
-	byName map[string]*blockingRebuilder
+func TestBlockingRebuilderRejectsCompletedIndexes(t *testing.T) {
+	r := newBlockingRebuilder("events", indexes.PayloadGIN)
+	ctx := context.Background()
+
+	_, err := r.dropped(ctx, indexes.PayloadGIN)
+	require.NoError(t, err)
+
+	close(r.release)
+	require.NoError(t, r.rebuild(ctx, r.index))
+
+	_, err = r.dropped(ctx, indexes.PayloadGIN)
+	require.ErrorIs(t, err, indexes.ErrNotDropped)
+	owed, err := r.listDropped(ctx)
+	require.NoError(t, err)
+	require.Empty(t, owed)
 }
 
+type multiRebuilder struct {
+	order        []string
+	byName       map[string]*blockingRebuilder
+	scanFinished chan struct{}
+}
+
+const scanFinishedIndex = "__test_scan_finished__"
+
 func (m *multiRebuilder) dropped(ctx context.Context, name string) (indexes.Dropped, error) {
+	if name == scanFinishedIndex && m.scanFinished != nil {
+		m.scanFinished <- struct{}{}
+		return indexes.Dropped{}, indexes.ErrNotDropped
+	}
 	r, ok := m.byName[name]
 	if !ok {
 		return indexes.Dropped{}, indexes.ErrNotDropped
@@ -174,6 +198,11 @@ func (m *multiRebuilder) listDropped(ctx context.Context) ([]indexes.Dropped, er
 			return nil, err
 		}
 		out = append(out, d)
+	}
+	if m.scanFinished != nil {
+		// The final lookup marks that all real candidates in this scan have
+		// passed through the service's lookup, guard and slot checks.
+		out = append(out, indexes.Dropped{Name: scanFinishedIndex})
 	}
 	return out, nil
 }
@@ -437,8 +466,10 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	deliveries := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectCreated)
 	observed := newBlockingRebuilder("event_deliveries", indexes.EventDeliveriesProjectEventTypeCreated)
 	gin := newBlockingRebuilder("events", indexes.PayloadGIN)
+	scanFinished := make(chan struct{}, 1)
 	s := newRebuildService(t, db, &multiRebuilder{
-		order: []string{"idx_event_deliveries_usage", indexes.EventDeliveriesProjectCreated, indexes.EventDeliveriesProjectEventTypeCreated, indexes.PayloadGIN},
+		scanFinished: scanFinished,
+		order:        []string{"idx_event_deliveries_usage", indexes.EventDeliveriesProjectCreated, indexes.EventDeliveriesProjectEventTypeCreated, indexes.PayloadGIN},
 		byName: map[string]*blockingRebuilder{
 			"idx_event_deliveries_usage":                   usage,
 			indexes.EventDeliveriesProjectCreated:          deliveries,
@@ -448,6 +479,7 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	})
 
 	s.StartQueuedDroppedIndexes(ctx)
+	<-scanFinished
 	<-usage.started
 	select {
 	case <-deliveries.started:
@@ -461,6 +493,10 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 
 	close(usage.release)
 	<-deliveries.started
+	// Let the predecessor scan reject its remaining candidates while this
+	// rebuild still holds the slot. Otherwise an unrealistically immediate
+	// fake completion can race the predecessor's already-read candidates.
+	<-scanFinished
 	select {
 	case <-observed.started:
 		t.Fatal("observed-types index started while the list index rebuild held the slot")
@@ -471,6 +507,7 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 
 	close(deliveries.release)
 	<-observed.started
+	<-scanFinished
 	select {
 	case <-gin.started:
 		t.Fatal("payload GIN started while the observed-types rebuild held the slot")
@@ -479,6 +516,7 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 
 	close(observed.release)
 	<-gin.started
+	<-scanFinished
 	close(gin.release)
 
 	runs, err := s.List(ctx, 10)
@@ -494,6 +532,7 @@ func TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees(t *testing.T) {
 	require.Equal(t, bootTriggeredBy, names[indexes.EventDeliveriesProjectCreated])
 	require.Equal(t, bootTriggeredBy, names[indexes.EventDeliveriesProjectEventTypeCreated])
 	require.Equal(t, bootTriggeredBy, names[indexes.PayloadGIN])
+	<-scanFinished
 }
 
 func TestUserRebuildStartsTheNextOwedIndexWhenTheSlotFrees(t *testing.T) {
