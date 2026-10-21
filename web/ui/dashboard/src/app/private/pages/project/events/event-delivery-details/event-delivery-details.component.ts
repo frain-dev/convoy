@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
@@ -11,9 +11,16 @@ import { EventsService } from '../events.service';
     styleUrls: ['./event-delivery-details.component.scss'],
     standalone: false
 })
-export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
+export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 	@Output('onViewEndpoint') onViewEndpoint = new EventEmitter<any>();
 	@ViewChild('metaStrip') metaStrip?: ElementRef<HTMLDivElement>;
+	@ViewChild('olderAttempts') set olderAttempts(element: ElementRef<HTMLElement> | undefined) {
+		this.olderAttemptsElement = element?.nativeElement;
+		this.observeOlderAttempts();
+	}
+	private olderAttemptsElement?: HTMLElement;
+	private attemptsObserver?: IntersectionObserver;
+	private destroyed = false;
 	canScrollLeft = false;
 	canScrollRight = false;
 	private readonly stripFadeWidth = 64;
@@ -47,6 +54,22 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 
 	ngAfterViewInit(): void {
 		this.updateStripFade();
+	}
+
+	ngOnDestroy(): void {
+		this.destroyed = true;
+		this.attemptsObserver?.disconnect();
+	}
+
+	private observeOlderAttempts() {
+		this.attemptsObserver?.disconnect();
+		if (this.destroyed || !this.olderAttemptsElement || typeof IntersectionObserver === 'undefined') return;
+		this.attemptsObserver = new IntersectionObserver(entries => {
+			if (!this.destroyed && entries.some(entry => entry.isIntersecting) && !this.attemptsError) {
+				this.getEventDeliveryAttempts(this.eventDeliveryId, true);
+			}
+		}, { root: this.olderAttemptsElement.parentElement, rootMargin: '0px 0px 80px 0px' });
+		this.attemptsObserver.observe(this.olderAttemptsElement);
 	}
 
 	async getEventDeliveryDetails(id: string) {
@@ -116,6 +139,8 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 		} finally {
 			this.isloadingDeliveryAttempts = false;
 			this.isLoadingOlderAttempts = false;
+			// Recheck after rendering: another page may still fit inside the scroll area.
+			if (!this.attemptsError) setTimeout(() => this.observeOlderAttempts());
 		}
 	}
 

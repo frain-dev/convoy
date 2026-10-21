@@ -50,6 +50,34 @@ describe('EventDeliveryDetailsComponent', () => {
     expect(service.getEventDeliveryAttempts).not.toHaveBeenCalled();
   });
 
+  it('loads automatically when older history enters the scroll area and disconnects on destroy', () => {
+    let callback!: IntersectionObserverCallback;
+    const observer = jasmine.createSpyObj('IntersectionObserver', ['observe', 'disconnect']);
+    spyOn(window, 'IntersectionObserver').and.callFake(function (cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+      callback = cb;
+      expect(options?.root).toBe(root);
+      return observer;
+    });
+    const root = document.createElement('div');
+    const sentinel = document.createElement('button');
+    root.appendChild(sentinel);
+    const load = spyOn(component, 'getEventDeliveryAttempts').and.resolveTo();
+    component.olderAttempts = { nativeElement: sentinel };
+    expect(observer.observe).toHaveBeenCalledWith(sentinel);
+    callback([{ isIntersecting: false } as IntersectionObserverEntry], observer);
+    expect(load).not.toHaveBeenCalled();
+    callback([{ isIntersecting: true } as IntersectionObserverEntry], observer);
+    expect(load).toHaveBeenCalledOnceWith('delivery', true);
+    component.attemptsError = 'offline';
+    callback([{ isIntersecting: true } as IntersectionObserverEntry], observer);
+    expect(load).toHaveBeenCalledTimes(1);
+    component.ngOnDestroy();
+    expect(observer.disconnect).toHaveBeenCalled();
+    component.attemptsError = '';
+    callback([{ isIntersecting: true } as IntersectionObserverEntry], observer);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   describe('deliveredToUrl', () => {
     it('prefers delivery target_url over attempt url', () => {
       component.eventDelsDetails = { target_url: 'https://old.example/hook' } as any;
