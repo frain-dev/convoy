@@ -2145,6 +2145,16 @@ paths:
           required: true
           schema:
             type: string
+        - description: Return a page of ten attempts and next_cursor
+          in: query
+          name: paginated
+          schema:
+            type: boolean
+        - description: Exclusive attempt cursor from next_cursor; requires paginated=true
+          in: query
+          name: before
+          schema:
+            type: string
       responses:
         '200':
           content:
@@ -2202,7 +2212,10 @@ paths:
         - ApiKeyAuth: []
       tags:
         - Delivery Attempts
-      description: This endpoint fetches an app message's delivery attempts
+      description: >-
+        This endpoint fetches an app message's delivery attempts
+
+        Default: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.
       operationId: GetDeliveryAttempts
       summary: List delivery attempts
   '/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}':

@@ -14,8 +14,8 @@ type Querier interface {
 	// Delivery Attempts Queries
 	CreateDeliveryAttempt(ctx context.Context, arg CreateDeliveryAttemptParams) error
 	FindDeliveryAttemptById(ctx context.Context, arg FindDeliveryAttemptByIdParams) (FindDeliveryAttemptByIdRow, error)
-	// Fetch last 10 delivery attempts for an event delivery, ordered by created_at
-	FindDeliveryAttempts(ctx context.Context, eventDeliveryID pgtype.Text) ([]FindDeliveryAttemptsRow, error)
+	// Fetch a bounded page, with a stable tie-breaker for simultaneous attempts.
+	FindDeliveryAttempts(ctx context.Context, arg FindDeliveryAttemptsParams) ([]FindDeliveryAttemptsRow, error)
 	// Get failure and success counts for endpoints within the lookback duration
 	// This replaces the n+1 query pattern in the legacy implementation
 	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration pgtype.Int4) ([]GetFailureAndSuccessCountsRow, error)

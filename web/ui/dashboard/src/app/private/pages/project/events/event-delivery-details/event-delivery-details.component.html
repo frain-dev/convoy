@@ -280,7 +280,7 @@
 
     @if (!isloadingDeliveryAttempts) {
       <!-- empty state  -->
-      @if (eventDeliveryAtempts.length === 0) {
+      @if (eventDeliveryAtempts.length === 0 && !attemptsError) {
         <div class="flex items-center justify-center p-24px">
           <p class="font-body font-normal text-[14px] text-new.text-secondary">No event delivery attempt for this event yet.</p>
         </div>
@@ -288,7 +288,7 @@
       <!-- event delivery attempts  -->
       @if (eventDeliveryAtempts.length > 0) {
         <div class="flex flex-col md:flex-row justify-between gap-16px border-t border-new.border pt-16px">
-          <div class="w-full md:w-[380px] shrink-0 flex flex-col gap-4px">
+          <div class="w-full md:w-[380px] shrink-0 flex flex-col gap-4px max-h-[520px] overflow-y-auto" role="region" aria-label="Delivery attempt history" tabindex="0" [attr.aria-busy]="isLoadingOlderAttempts">
             @for (deliveryAttempt of eventDeliveryAtempts; track $index; let i = $index) {
               <button
                 type="button"
@@ -308,6 +308,12 @@
                   </span>
                 </div>
                 <img src="/assets/img/angle-arrow-right.svg" class="ml-6px h-16px transition-all duration-300" alt="link out" />
+              </button>
+            }
+            @if (nextAttemptsCursor) {
+              <button #olderAttempts type="button" class="px-12px py-10px rounded-8px border border-new.border text-[13px] disabled:opacity-50"
+                [disabled]="isLoadingOlderAttempts" (click)="getEventDeliveryAttempts(eventDeliveryId, true)">
+                {{ isLoadingOlderAttempts ? 'Loading…' : 'Load older attempts' }}
               </button>
             }
           </div>
@@ -357,6 +363,13 @@
           </div>
         </div>
       }
+    }
+
+    @if (attemptsError) {
+      <div role="alert" class="mt-12px text-[13px]">
+        <p>{{ attemptsError }}</p>
+        <button type="button" class="underline" (click)="getEventDeliveryAttempts(eventDeliveryId, eventDeliveryAtempts.length > 0)">Try again</button>
+      </div>
     }
 
     @if (isloadingDeliveryAttempts) {

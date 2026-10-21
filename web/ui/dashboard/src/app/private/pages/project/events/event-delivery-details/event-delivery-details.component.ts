@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, OnInit, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY, EVENT_DELIVERY_ATTEMPT } from 'src/app/models/event.model';
 import { EventDeliveryDetailsService } from './event-delivery-details.service';
@@ -11,9 +11,16 @@ import { EventsService } from '../events.service';
     styleUrls: ['./event-delivery-details.component.scss'],
     standalone: false
 })
-export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
+export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 	@Output('onViewEndpoint') onViewEndpoint = new EventEmitter<any>();
 	@ViewChild('metaStrip') metaStrip?: ElementRef<HTMLDivElement>;
+	@ViewChild('olderAttempts') set olderAttempts(element: ElementRef<HTMLElement> | undefined) {
+		this.olderAttemptsElement = element?.nativeElement;
+		this.observeOlderAttempts();
+	}
+	private olderAttemptsElement?: HTMLElement;
+	private attemptsObserver?: IntersectionObserver;
+	private destroyed = false;
 	canScrollLeft = false;
 	canScrollRight = false;
 	private readonly stripFadeWidth = 64;
@@ -23,6 +30,9 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 	selectedDeliveryAttempt?: EVENT_DELIVERY_ATTEMPT;
 	isLoadingDeliveryDetails = false;
 	isloadingDeliveryAttempts = false;
+	isLoadingOlderAttempts = false;
+	nextAttemptsCursor = '';
+	attemptsError = '';
 	isloadingEndpoint = false;
 	shouldRenderSmallSize = false;
 	eventDeliveryId = this.route.snapshot.params?.id;
@@ -44,6 +54,22 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 
 	ngAfterViewInit(): void {
 		this.updateStripFade();
+	}
+
+	ngOnDestroy(): void {
+		this.destroyed = true;
+		this.attemptsObserver?.disconnect();
+	}
+
+	private observeOlderAttempts() {
+		this.attemptsObserver?.disconnect();
+		if (this.destroyed || !this.olderAttemptsElement || typeof IntersectionObserver === 'undefined') return;
+		this.attemptsObserver = new IntersectionObserver(entries => {
+			if (!this.destroyed && entries.some(entry => entry.isIntersecting) && !this.attemptsError) {
+				this.getEventDeliveryAttempts(this.eventDeliveryId, true);
+			}
+		}, { root: this.olderAttemptsElement.parentElement, rootMargin: '0px 0px 80px 0px' });
+		this.attemptsObserver.observe(this.olderAttemptsElement);
 	}
 
 	async getEventDeliveryDetails(id: string) {
@@ -85,24 +111,36 @@ export class EventDeliveryDetailsComponent implements OnInit, AfterViewInit {
 		}
 	}
 
-	async getEventDeliveryAttempts(eventId: string) {
-		this.isloadingDeliveryAttempts = true;
+	async getEventDeliveryAttempts(eventId: string, loadOlder = false) {
+		if (this.isloadingDeliveryAttempts || this.isLoadingOlderAttempts) return;
+		if (loadOlder && !this.nextAttemptsCursor) return;
+		this.isloadingDeliveryAttempts = !loadOlder;
+		this.isLoadingOlderAttempts = loadOlder;
+		this.attemptsError = '';
 
 		try {
-			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts({ eventId });
-			const deliveries = response.data;
+			const response = await this.eventDeliveryDetailsService.getEventDeliveryAttempts({ eventId, before: loadOlder ? this.nextAttemptsCursor : undefined });
+			const deliveries: EVENT_DELIVERY_ATTEMPT[] = [...response.data.content].reverse();
+			this.nextAttemptsCursor = response.data.next_cursor;
 			// API returns attempts oldest -> newest; reverse so the strip renders newest first.
-			this.eventDeliveryAtempts = deliveries.reverse();
+			this.eventDeliveryAtempts = loadOlder ? [...this.eventDeliveryAtempts, ...deliveries] : deliveries;
 			// Newest attempt is now at index 0, so LATEST ATTEMPT must read the head, not the tail.
-			this.eventDeliveryAtempt = this.eventDeliveryAtempts[0];
-			this.selectedDeliveryAttempt = this.eventDeliveryAtempt;
+			if (!loadOlder) {
+				this.eventDeliveryAtempt = this.eventDeliveryAtempts[0];
+				this.selectedDeliveryAttempt = this.eventDeliveryAtempt;
+			}
 
 			this.isloadingDeliveryAttempts = false;
 			// Attempt data fills LATEST ATTEMPT / IP ADDRESS / API VERSION, so the strip width
 			// can change after this second response; recompute the scroll arrows and fade.
 			this.scheduleStripFadeUpdate();
 		} catch (error) {
+			this.attemptsError = 'Could not load delivery attempts. Please try again.';
+		} finally {
 			this.isloadingDeliveryAttempts = false;
+			this.isLoadingOlderAttempts = false;
+			// Recheck after rendering: another page may still fit inside the scroll area.
+			if (!this.attemptsError) setTimeout(() => this.observeOlderAttempts());
 		}
 	}
 
