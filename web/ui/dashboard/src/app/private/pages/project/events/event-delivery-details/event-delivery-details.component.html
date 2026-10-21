@@ -280,7 +280,7 @@
 
     @if (!isloadingDeliveryAttempts) {
       <!-- empty state  -->
-      @if (eventDeliveryAtempts.length === 0) {
+      @if (eventDeliveryAtempts.length === 0 && !attemptsError) {
         <div class="flex items-center justify-center p-24px">
           <p class="font-body font-normal text-[14px] text-new.text-secondary">No event delivery attempt for this event yet.</p>
         </div>
@@ -308,6 +308,12 @@
                   </span>
                 </div>
                 <img src="/assets/img/angle-arrow-right.svg" class="ml-6px h-16px transition-all duration-300" alt="link out" />
+              </button>
+            }
+            @if (nextAttemptsCursor) {
+              <button type="button" class="px-12px py-10px rounded-8px border border-new.border text-[13px] disabled:opacity-50"
+                [disabled]="isLoadingOlderAttempts" (click)="getEventDeliveryAttempts(eventDeliveryId, true)">
+                {{ isLoadingOlderAttempts ? 'Loading…' : 'Load older attempts' }}
               </button>
             }
           </div>
@@ -357,6 +363,13 @@
           </div>
         </div>
       }
+    }
+
+    @if (attemptsError) {
+      <div role="alert" class="mt-12px text-[13px]">
+        <p>{{ attemptsError }}</p>
+        <button type="button" class="underline" (click)="getEventDeliveryAttempts(eventDeliveryId, eventDeliveryAtempts.length > 0)">Try again</button>
+      </div>
     }
 
     @if (isloadingDeliveryAttempts) {

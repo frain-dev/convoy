@@ -68,12 +68,15 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		List delivery attempts
 //	@Description	This endpoint fetches an app message's delivery attempts
+//	@Description	Default: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.
 //	@Tags			Delivery Attempts
 //	@Id				GetDeliveryAttempts
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string	true	"Project ID"
 //	@Param			eventDeliveryID	path		string	true	"event delivery id"
+//	@Param			paginated		query		bool	false	"Return a page of ten attempts and next_cursor"
+//	@Param			before			query		string	false	"Exclusive attempt cursor from next_cursor; requires paginated=true"
 //	@Success		200				{object}	util.ServerResponse{data=[]datastore.DeliveryAttempt}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
@@ -91,6 +94,18 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	attemptsService := delivery_attempts.New(h.A.Logger, h.A.DB)
+	if r.URL.Query().Get("paginated") == "true" {
+		attempts, next, pageErr := attemptsService.FindDeliveryAttemptsPage(r.Context(), eventDelivery.UID, r.URL.Query().Get("before"), eventDelivery.DeliveryAttempts...)
+		if pageErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(pageErr))
+			return
+		}
+		page := models.DeliveryAttemptsPage{
+			Content: models.NewDeliveryAttemptResponses(attempts, h.canViewRawHeaders(authUser)), NextCursor: next,
+		}
+		_ = render.Render(w, r, util.NewServerResponse("Event delivery attempts fetched successfully", page, http.StatusOK))
+		return
+	}
 	attempts, err := attemptsService.FindDeliveryAttempts(r.Context(), eventDelivery.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

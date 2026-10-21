@@ -16,6 +16,12 @@ type DeliveryAttemptResponse struct {
 	showRawHeaders bool
 }
 
+// DeliveryAttemptsPage keeps pagination opt-in for existing array consumers.
+type DeliveryAttemptsPage struct {
+	Content    []DeliveryAttemptResponse `json:"content"`
+	NextCursor string                    `json:"next_cursor"`
+}
+
 // NewDeliveryAttemptResponse wraps a single delivery attempt for API
 // serialization. Pass showRawHeaders=true only for callers allowed to see
 // unredacted headers (API-key and authenticated dashboard callers).

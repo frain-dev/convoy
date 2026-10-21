@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -109,7 +110,76 @@ func (s *Service) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, 
 }
 
 func (s *Service) FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]datastore.DeliveryAttempt, error) {
-	rows, err := s.repo.FindDeliveryAttempts(ctx, common.StringToPgText(eventDeliveryId))
+	return s.findDeliveryAttempts(ctx, eventDeliveryId, nil, 10)
+}
+
+// FindDeliveryAttemptsPage returns ten attempts and an exclusive cursor for older history.
+func (s *Service) FindDeliveryAttemptsPage(ctx context.Context, eventDeliveryID, before string, embedded ...datastore.DeliveryAttempt) ([]datastore.DeliveryAttempt, string, error) {
+	var anchor *datastore.DeliveryAttempt
+	if before != "" {
+		for i := range embedded {
+			if embedded[i].UID == before && !embedded[i].DeletedAt.Valid {
+				anchor = &embedded[i]
+				break
+			}
+		}
+		if anchor == nil {
+			var err error
+			anchor, err = s.FindDeliveryAttemptById(ctx, eventDeliveryID, before)
+			if err != nil {
+				return nil, "", err
+			}
+		}
+	}
+	attempts, err := s.findDeliveryAttempts(ctx, eventDeliveryID, anchor, 11)
+	if err != nil {
+		return nil, "", err
+	}
+	attempts = mergeAttemptHistory(attempts, embedded, anchor)
+	next := ""
+	if len(attempts) > 10 {
+		attempts = attempts[len(attempts)-10:]
+		next = attempts[0].UID
+	}
+	return attempts, next, nil
+}
+
+func mergeAttemptHistory(attempts, embedded []datastore.DeliveryAttempt, anchor *datastore.DeliveryAttempt) []datastore.DeliveryAttempt {
+	seen := make(map[string]bool, len(attempts))
+	for _, attempt := range attempts {
+		seen[attempt.UID] = true
+	}
+	for _, attempt := range embedded {
+		if seen[attempt.UID] || attempt.DeletedAt.Valid {
+			continue
+		}
+		if anchor != nil && !attemptBefore(attempt, *anchor) {
+			continue
+		}
+		attempts = append(attempts, attempt)
+		seen[attempt.UID] = true
+	}
+	sort.Slice(attempts, func(i, j int) bool { return attemptBefore(attempts[i], attempts[j]) })
+	return attempts
+}
+
+func attemptBefore(a, b datastore.DeliveryAttempt) bool {
+	if a.CreatedAt.Equal(b.CreatedAt) {
+		return a.UID < b.UID
+	}
+	return a.CreatedAt.Before(b.CreatedAt)
+}
+
+func (s *Service) findDeliveryAttempts(ctx context.Context, eventDeliveryID string, anchor *datastore.DeliveryAttempt, limit int64) ([]datastore.DeliveryAttempt, error) {
+	params := repo.FindDeliveryAttemptsParams{
+		EventDeliveryID: common.StringToPgText(eventDeliveryID), BeforeID: common.StringToPgText(""),
+		PageLimit: pgtype.Int8{Int64: limit, Valid: true},
+	}
+	if anchor != nil {
+		params.BeforeID = common.StringToPgText(anchor.UID)
+		params.BeforeTime = pgtype.Timestamptz{Time: anchor.CreatedAt, Valid: true}
+	}
+	rows, err := s.repo.FindDeliveryAttempts(ctx, params)
 	if err != nil {
 		s.logger.Error("failed to find delivery attempts", "error", err)
 		return nil, util.NewServiceError(500, fmt.Errorf("failed to find delivery attempts: %w", err))
