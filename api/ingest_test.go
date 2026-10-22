@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,10 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", applicationJsonContentType)
 
-		payload, err := extractPayloadFromIngestEventReq(req, 1024)
+		rawPayload, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+		payload, err := extractPayloadFromIngestEventReq(req, rawPayload, 1024)
 		require.NoError(t, err)
 		require.Equal(t, jsonBody, payload)
 	})
@@ -36,7 +40,10 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", body)
 		req.Header.Set("Content-Type", fmt.Sprintf("%s; boundary=%s", multipartFormDataContentType, writer.Boundary()))
 
-		payload, err := extractPayloadFromIngestEventReq(req, 1024)
+		rawPayload, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+		payload, err := extractPayloadFromIngestEventReq(req, rawPayload, 1024)
 		require.NoError(t, err)
 
 		var form map[string]string
@@ -51,7 +58,10 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(jsonBody))
 
-		payload, err := extractPayloadFromIngestEventReq(req, 1024)
+		rawPayload, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+		payload, err := extractPayloadFromIngestEventReq(req, rawPayload, 1024)
 		require.NoError(t, err)
 		require.Equal(t, jsonBody, payload)
 	})
@@ -62,7 +72,10 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", body)
 		req.Header.Set("Content-Type", urlEncodedContentType)
 
-		payload, err := extractPayloadFromIngestEventReq(req, 1024)
+		rawPayload, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+		payload, err := extractPayloadFromIngestEventReq(req, rawPayload, 1024)
 		require.NoError(t, err)
 		require.Equal(t, []byte(`{"key1":"value1","key2":"value2"}`), payload)
 	})
@@ -73,7 +86,10 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(jsonBody))
 		req.Header.Set("Content-Type", "text/html")
 
-		payload, err := extractPayloadFromIngestEventReq(req, 1024)
+		rawPayload, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+		payload, err := extractPayloadFromIngestEventReq(req, rawPayload, 1024)
 		require.NoError(t, err)
 		require.Equal(t, jsonBody, payload)
 	})
