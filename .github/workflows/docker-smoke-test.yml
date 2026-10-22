@@ -59,6 +59,10 @@ jobs:
         env:
           CONVOY_IMAGE: convoy:smoke-test
 
+      - name: Delayed PgBouncer readiness regression
+        timeout-minutes: 3
+        run: bash ./configs/local/pgbouncer-readiness-test.sh
+
 
       - name: Installer smoke test (fresh install)
         run: |
