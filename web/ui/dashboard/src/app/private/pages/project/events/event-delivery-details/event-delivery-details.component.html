@@ -288,34 +288,36 @@
       <!-- event delivery attempts  -->
       @if (eventDeliveryAtempts.length > 0) {
         <div class="flex flex-col md:flex-row justify-between gap-16px border-t border-new.border pt-16px">
-          <div class="w-full md:w-[380px] shrink-0 flex flex-col gap-4px max-h-[520px] overflow-y-auto" role="region" aria-label="Delivery attempt history" tabindex="0" [attr.aria-busy]="isLoadingOlderAttempts">
-            @for (deliveryAttempt of eventDeliveryAtempts; track $index; let i = $index) {
-              <button
-                type="button"
-                class="flex justify-between items-center px-12px py-10px w-full rounded-8px transition-colors"
-                [class]="selectedDeliveryAttempt === deliveryAttempt ? 'bg-new.primary-25' : 'hover:bg-new.surface-subtle'"
-                (click)="selectedDeliveryAttempt = deliveryAttempt"
-                >
-                <div class="flex items-center gap-8px">
-                  @if (deliveryAttempt?.http_status) {
-                    <convoy-tag [color]="deliveryAttempt?.status ? 'success' : 'error'">{{ deliveryAttempt?.http_status }}</convoy-tag>
-                  }
-                  <span class="relative inline-flex group font-body text-[13px] text-new.text-primary" [title]="formatPreciseTimestamp(deliveryAttempt.created_at)">
-                    <span>{{ formatLocalTimestamp(deliveryAttempt.created_at) }}</span>
-                    <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                      {{ formatPreciseTimestamp(deliveryAttempt.created_at) }}
+          <div class="w-full md:w-[380px] shrink-0 md:relative overflow-y-auto" style="contain: size;">
+            <div class="md:absolute md:inset-0 flex flex-col gap-4px overflow-y-auto" role="region" aria-label="Delivery attempt history" tabindex="0" [attr.aria-busy]="isLoadingOlderAttempts">
+              @for (deliveryAttempt of eventDeliveryAtempts; track $index; let i = $index) {
+                <button
+                  type="button"
+                  class="flex justify-between items-center px-12px py-10px w-full rounded-8px transition-colors"
+                  [class]="selectedDeliveryAttempt === deliveryAttempt ? 'bg-new.primary-25' : 'hover:bg-new.surface-subtle'"
+                  (click)="selectedDeliveryAttempt = deliveryAttempt"
+                  >
+                  <div class="flex items-center gap-8px">
+                    @if (deliveryAttempt?.http_status) {
+                      <convoy-tag [color]="deliveryAttempt?.status ? 'success' : 'error'">{{ deliveryAttempt?.http_status }}</convoy-tag>
+                    }
+                    <span class="relative inline-flex group font-body text-[13px] text-new.text-primary" [title]="formatPreciseTimestamp(deliveryAttempt.created_at)">
+                      <span>{{ formatLocalTimestamp(deliveryAttempt.created_at) }}</span>
+                      <span class="pointer-events-none absolute left-1/2 bottom-[calc(100%+8px)] z-50 -translate-x-1/2 whitespace-nowrap rounded-6px bg-neutral-12 px-8px py-4px text-10 text-white-100 opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                        {{ formatPreciseTimestamp(deliveryAttempt.created_at) }}
+                      </span>
                     </span>
-                  </span>
-                </div>
-                <img src="/assets/img/angle-arrow-right.svg" class="ml-6px h-16px transition-all duration-300" alt="link out" />
-              </button>
-            }
-            @if (nextAttemptsCursor) {
-              <button #olderAttempts type="button" class="px-12px py-10px rounded-8px border border-new.border text-[13px] disabled:opacity-50"
-                [disabled]="isLoadingOlderAttempts" (click)="getEventDeliveryAttempts(eventDeliveryId, true)">
-                {{ isLoadingOlderAttempts ? 'Loading…' : 'Load older attempts' }}
-              </button>
-            }
+                  </div>
+                  <img src="/assets/img/angle-arrow-right.svg" class="ml-6px h-16px transition-all duration-300" alt="link out" />
+                </button>
+              }
+              @if (nextAttemptsCursor) {
+                <button #olderAttempts type="button" class="px-12px py-10px rounded-8px border border-new.border text-[13px] disabled:opacity-50"
+                  [disabled]="isLoadingOlderAttempts" (click)="getEventDeliveryAttempts(eventDeliveryId, true)">
+                  {{ isLoadingOlderAttempts ? 'Loading…' : 'Load older attempts' }}
+                </button>
+              }
+            </div>
           </div>
           <div class="hidden md:block w-[1px] bg-new.border"></div>
           <div class="w-full min-w-0 flex flex-col gap-12px">
