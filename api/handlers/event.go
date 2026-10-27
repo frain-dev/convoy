@@ -489,11 +489,6 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ep := datastore.Pageable{}
-	if data.Filter.Pageable == ep {
-		data.Filter.Pageable.PerPage = 2000000000
-	}
-
 	bs := services.BatchReplayEventService{
 		EndpointRepo:     endpoints.New(h.A.Logger, h.A.DB),
 		Queue:            h.A.Queue,
