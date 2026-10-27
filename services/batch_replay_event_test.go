@@ -67,6 +67,46 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 			wantErrMsg:    "",
 		},
 		{
+			name: "should_batch_replay_events_across_multiple_pages",
+			dbFn: func(br *BatchReplayEventService) {
+				e, _ := br.EventRepo.(*mocks.MockEventRepository)
+				// Page 1
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+					[]datastore.Event{
+						{UID: "event1", ProjectID: "proj0"},
+					},
+					datastore.PaginationData{
+						HasNextPage:    true,
+						NextPageCursor: "cursor_page2",
+					},
+					nil,
+				)
+				// Page 2
+				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
+					[]datastore.Event{
+						{UID: "event2", ProjectID: "proj1"},
+					},
+					datastore.PaginationData{
+						HasNextPage: false,
+					},
+					nil,
+				)
+
+				q, _ := br.Queue.(*mocks.MockQueuer)
+				q.EXPECT().Write(gomock.Any(), convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(2).Return(nil)
+			},
+			args: args{
+				ctx: ctx,
+				f: &datastore.Filter{
+					Project: &datastore.Project{UID: "1234"},
+				},
+			},
+			wantSuccesses: 2,
+			wantFailures:  0,
+			wantErr:       false,
+			wantErrMsg:    "",
+		},
+		{
 			name: "should_batch_replay_one_event",
 			dbFn: func(br *BatchReplayEventService) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)

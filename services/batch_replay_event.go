@@ -9,6 +9,8 @@ import (
 	"github.com/frain-dev/convoy/queue"
 )
 
+const batchReplayPageSize = 1000
+
 type BatchReplayEventService struct {
 	EndpointRepo datastore.EndpointRepository
 	Queue        queue.Queuer
@@ -23,36 +25,48 @@ type BatchReplayEventService struct {
 }
 
 func (e *BatchReplayEventService) Run(ctx context.Context) (int, int, error) {
-	events, _, err := e.EventRepo.LoadEventsPaged(ctx, e.Filter.Project.UID, e.Filter)
-	if err != nil {
-		e.Logger.ErrorContext(ctx, "failed to fetch events", "error", err)
-		return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}
-	}
-
 	rs := ReplayEventService{
 		EndpointRepo: e.EndpointRepo,
 		Queue:        e.Queue,
 		Logger:       e.Logger,
 	}
 
+	filter := *e.Filter
+	filter.Pageable.PerPage = batchReplayPageSize
+	filter.Pageable.Direction = datastore.Next
+
 	successes, failures := 0, 0
-	for _, ev := range events {
-		// Count ownership-skipped events as failures so the summary does not over-report
-		// successes: a partially foreign multi-endpoint event matches the owned-endpoint
-		// filter but must not be replayed (that would redeliver to foreign endpoints).
-		if len(e.OwnedEndpointIDs) > 0 && !e.eventFullyOwned(ev) {
-			failures++
-			e.Logger.WarnContext(ctx, "batch replay skipped event not fully owned by caller", "event_id", ev.UID)
-			continue
+
+	for {
+		events, page, err := e.EventRepo.LoadEventsPaged(ctx, e.Filter.Project.UID, &filter)
+		if err != nil {
+			e.Logger.ErrorContext(ctx, "failed to fetch events", "error", err)
+			return 0, 0, &ServiceError{ErrMsg: "failed to fetch event deliveries", Err: err}
 		}
 
-		rs.Event = &ev
-		if err = rs.Run(ctx); err != nil {
-			failures++
-			e.Logger.ErrorContext(ctx, "an item in the batch replay failed", "error", err)
-			continue
+		for _, ev := range events {
+			// Count ownership-skipped events as failures so the summary does not over-report
+			// successes: a partially foreign multi-endpoint event matches the owned-endpoint
+			// filter but must not be replayed (that would redeliver to foreign endpoints).
+			if len(e.OwnedEndpointIDs) > 0 && !e.eventFullyOwned(ev) {
+				failures++
+				e.Logger.WarnContext(ctx, "batch replay skipped event not fully owned by caller", "event_id", ev.UID)
+				continue
+			}
+
+			rs.Event = &ev
+			if err = rs.Run(ctx); err != nil {
+				failures++
+				e.Logger.ErrorContext(ctx, "an item in the batch replay failed", "error", err)
+				continue
+			}
+			successes++
 		}
-		successes++
+
+		if !page.HasNextPage || len(events) == 0 {
+			break
+		}
+		filter.Pageable.NextCursor = page.NextPageCursor
 	}
 
 	return successes, failures, nil
