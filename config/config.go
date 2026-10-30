@@ -49,11 +49,12 @@ var DefaultConfiguration = Configuration{
 
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
-			SSL:        false,
-			Port:       5005,
-			WorkerPort: 5006,
-			AgentPort:  5008,
-			IngestPort: 5009,
+			SSL:         false,
+			Port:        5005,
+			WorkerPort:  5006,
+			AgentPort:   5008,
+			IngestPort:  5009,
+			ReadTimeout: 30,
 		},
 	},
 	Database: DatabaseConfiguration{
@@ -465,6 +466,9 @@ type HTTPServerConfiguration struct {
 	DomainPort  uint32 `json:"domain_port" envconfig:"DOMAIN_PORT"`
 	HttpProxy   string `json:"proxy" envconfig:"HTTP_PROXY"`
 	NoProxy     string `json:"no_proxy" envconfig:"NO_PROXY"`
+	// ReadTimeout is the HTTP server read limit in seconds, including the request body.
+	// Zero uses 30 seconds. A body that does not finish within this limit is dropped.
+	ReadTimeout uint64 `json:"read_timeout" envconfig:"CONVOY_SERVER_READ_TIMEOUT"`
 }
 
 type PrometheusConfiguration struct {

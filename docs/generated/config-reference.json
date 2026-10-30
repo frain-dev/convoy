@@ -746,6 +746,12 @@
       "default": "0"
     },
     {
+      "json_path": "server.http.read_timeout",
+      "env_var": "CONVOY_SERVER_READ_TIMEOUT",
+      "go_type": "uint64",
+      "default": "30"
+    },
+    {
       "json_path": "auth.is_signup_enabled",
       "env_var": "CONVOY_SIGNUP_ENABLED",
       "go_type": "bool",

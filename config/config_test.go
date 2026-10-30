@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy"
@@ -87,6 +88,14 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 	}
 }
 
+func TestServerReadTimeoutFromEnv(t *testing.T) {
+	t.Setenv("CONVOY_SERVER_READ_TIMEOUT", "60")
+
+	c := DefaultConfiguration
+	require.NoError(t, envconfig.Process("convoy", &c))
+	require.Equal(t, uint64(60), c.Server.HTTP.ReadTimeout)
+}
+
 func TestEnsureJwtConfigRequiresSecrets(t *testing.T) {
 	t.Setenv("CONVOY_JWT_SECRET", "")
 	t.Setenv("CONVOY_JWT_REFRESH_SECRET", "")
@@ -157,10 +166,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						IngestPort: 5009,
-						AgentPort:  5008,
-						WorkerPort: 5006,
+						Port:        80,
+						IngestPort:  5009,
+						AgentPort:   5008,
+						WorkerPort:  5006,
+						ReadTimeout: 30,
 					},
 				},
 				Logger: LoggerConfiguration{
@@ -264,10 +274,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						AgentPort:  5008,
-						IngestPort: 5009,
-						WorkerPort: 5006,
+						Port:        80,
+						AgentPort:   5008,
+						IngestPort:  5009,
+						WorkerPort:  5006,
+						ReadTimeout: 30,
 					},
 				},
 				Logger: LoggerConfiguration{
@@ -370,10 +381,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						AgentPort:  5008,
-						IngestPort: 5009,
-						WorkerPort: 5006,
+						Port:        80,
+						AgentPort:   5008,
+						IngestPort:  5009,
+						WorkerPort:  5006,
+						ReadTimeout: 30,
 					},
 				},
 				Logger: LoggerConfiguration{
