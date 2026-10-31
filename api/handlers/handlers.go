@@ -12,9 +12,11 @@ import (
 	"github.com/subomi/requestmigrations/v2"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
@@ -32,8 +34,9 @@ import (
 )
 
 type Handler struct {
-	A          *types.APIOptions
-	Versioning *requestmigrations.RequestMigration
+	A           *types.APIOptions
+	Versioning  *requestmigrations.RequestMigration
+	loginUserFn func(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error)
 }
 
 // orgRepo returns the injected organisation repository, falling back to a freshly
@@ -43,6 +46,15 @@ func (h *Handler) orgRepo() datastore.OrganisationRepository {
 		return h.A.OrgRepo
 	}
 	return organisations.New(h.A.Logger, h.A.DB)
+}
+
+// orgMemberRepo returns the injected organisation member repository, falling back to a freshly
+// constructed one when none was wired (e.g. in tests).
+func (h *Handler) orgMemberRepo() datastore.OrganisationMemberRepository {
+	if h.A.OrgMemberRepo != nil {
+		return h.A.OrgMemberRepo
+	}
+	return organisation_members.New(h.A.Logger, h.A.DB)
 }
 
 // projectRepo returns the injected project repository, falling back to a freshly
