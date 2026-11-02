@@ -283,33 +283,46 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lu := services.NewLoginUserService(
-		users.New(h.A.Logger, h.A.DB),
-		organisation_members.New(h.A.Logger, h.A.DB),
-		h.A.Cache,
-		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		&newUser,
-		h.A.Licenser,
-	)
+	var user *datastore.User
+	var token *jwt.Token
+	if h.loginUserFn != nil {
+		user, token, err = h.loginUserFn(r.Context(), &newUser)
+	} else {
+		lu := services.NewLoginUserService(
+			users.New(h.A.Logger, h.A.DB),
+			organisation_members.New(h.A.Logger, h.A.DB),
+			h.A.Cache,
+			jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+			&newUser,
+			h.A.Licenser,
+		)
 
-	user, token, err := lu.Run(r.Context())
+		user, token, err = lu.Run(r.Context())
+	}
+
 	if err != nil {
 		h.A.Logger.Errorf("User login failed: %v", err)
+
+		var errMsg string
+		var statusCode = http.StatusForbidden
 
 		if se, ok := err.(*services.ServiceError); ok {
 			switch se.Code {
 			case services.ErrCodeLicenseExpired:
-				_ = render.Render(w, r, util.NewErrorResponse(se.ErrMsg, http.StatusForbidden))
-				return
+				errMsg = se.ErrMsg
 			case services.ErrCodeInternal:
 				// Server-side failures (DB, license lookup) return 5xx so a
 				// transient outage is not reported as invalid credentials.
-				_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
-				return
+				errMsg = "Service temporarily unavailable"
+				statusCode = http.StatusInternalServerError
+			default:
+				errMsg = "Invalid credentials"
 			}
+		} else {
+			errMsg = "Authentication failed"
 		}
 
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid credentials", http.StatusForbidden))
+		_ = render.Render(w, r, util.NewErrorResponse(errMsg, statusCode))
 
 		return
 	}

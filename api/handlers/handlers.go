@@ -12,9 +12,11 @@ import (
 	"github.com/subomi/requestmigrations/v2"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/datastore/cached"
@@ -32,8 +34,9 @@ import (
 )
 
 type Handler struct {
-	A          *types.APIOptions
-	Versioning *requestmigrations.RequestMigration
+	A           *types.APIOptions
+	Versioning  *requestmigrations.RequestMigration
+	loginUserFn func(ctx context.Context, data *models.LoginUser) (*datastore.User, *jwt.Token, error)
 }
 
 // orgRepo returns the injected organisation repository, falling back to a freshly
