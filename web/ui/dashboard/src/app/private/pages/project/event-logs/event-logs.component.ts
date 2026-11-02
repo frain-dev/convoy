@@ -18,8 +18,11 @@ import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { ProjectService } from '../project.service';
 import { classifyEventLogsFetchError } from './event-logs-fetch-error';
+import { EVENT_SEARCH_TYPES, EventSearchType, eventSearchFilter, legacyPayloadFilter } from './event-log-search';
+import axios from 'axios';
 
 @Component({
     selector: 'convoy-event-logs',
@@ -34,7 +37,8 @@ import { classifyEventLogsFetchError } from './event-logs-fetch-error';
         DatePickerComponent,
         DropdownComponent,
         DropdownOptionDirective,
-        TooltipComponent
+        TooltipComponent,
+        CopyButtonComponent
     ],
     templateUrl: './event-logs.component.html',
     styleUrls: ['./event-logs.component.scss']
@@ -66,6 +70,11 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	enableTailMode = false;
 	sortOrder: 'asc' | 'desc' | string = 'desc';
 	searchString = '';
+	providerDeliveryId = '';
+	readonly searchTypes = EVENT_SEARCH_TYPES;
+	searchType: EventSearchType = 'metadata';
+	searchInput = '';
+	searchValidationError = '';
 	currentPage = 1;
 	customDateRange = false;
 	payloadAutoScrollKey = '';
@@ -73,6 +82,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	private searchTimeout: any;
 	private eventsFetchId = 0;
 	private sidebarFetchId = 0;
+	private eventsAbort?: AbortController;
 	private sidebarLoadedForEventId = '';
 	private sidebarLoadedRange = '';
 
@@ -99,6 +109,8 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy() {
+		this.eventsFetchId++;
+		this.eventsAbort?.abort();
 		clearInterval(this.getEventsInterval);
 		clearTimeout(this.searchTimeout);
 	}
@@ -113,9 +125,21 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 	private syncFiltersFromRoute(params: FILTER_QUERY_PARAM) {
 		this.queryParams = { ...params };
-		const query = this.queryParamString(params.query);
-		const body = this.queryParamString(params.body);
+		let query = this.queryParamString(params.query);
+		let body = this.queryParamString(params.body);
+		if (!params.queryMode && !body) {
+			const legacy = legacyPayloadFilter(query);
+			if (legacy) {
+				query = legacy.query || '';
+				body = legacy.body!;
+				this.queryParams = { ...params, ...legacy };
+			}
+		}
 		this.searchString = query && body ? `${query} ${body}` : query || body || '';
+		this.providerDeliveryId = this.queryParamString(params.idempotencyValue);
+		const key = this.queryParamString(params.idempotencyKey);
+		this.searchType = this.providerDeliveryId ? 'value' : key ? 'key' : body ? 'payload' : 'metadata';
+		this.searchInput = this.providerDeliveryId || key || body || query;
 		this.sortOrder = params.sort || 'desc';
 		this.customDateRange = !!(params.startDate && params.endDate);
 	}
@@ -130,12 +154,12 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	}
 
 	get hasActiveSearch(): boolean {
-		return !!(this.queryParams.query || this.queryParams.body);
+		return !!(this.queryParams.query || this.queryParams.body || this.queryParams.idempotencyValue || this.queryParams.idempotencyKey);
 	}
 
 	get activeMetadataSearchTerm(): string {
 		const raw = (this.queryParams.query || '').trim();
-		if (!raw || raw.startsWith('{')) return '';
+		if (!raw || (this.queryParams.queryMode !== 'text' && raw.startsWith('{'))) return '';
 		return raw;
 	}
 
@@ -190,9 +214,14 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 				// body is not JSON; fall through to query
 			}
 		}
-		const raw = (this.queryParamString(this.queryParams.query) || this.searchString).trim();
-		if (!raw) return null;
-		return this.parseRelaxedJsonObject(raw);
+		if (this.queryParams.queryMode === 'text') return null;
+		const raw = this.queryParamString(this.queryParams.query).trim();
+		try {
+			const parsed = JSON.parse(raw);
+			return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+		} catch {
+			return null;
+		}
 	}
 
 	private collectJsonSearchHighlightTerms(value: unknown, keys: string[], values: string[], depth = 0): void {
@@ -250,58 +279,11 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		this.updatePayloadAutoScrollKey(event.uid);
 	}
 
-	private looksLikePayloadSearchInput(raw: string): boolean {
-		const trimmed = raw.trim();
-		if (!trimmed) return false;
-		if (trimmed.startsWith('{')) return true;
-		if (/^data\s*:/i.test(trimmed) && trimmed.includes('{')) return true;
-		return trimmed.includes('{') && trimmed.includes('}');
-	}
-
-	private normalizePayloadSearchQuery(raw: string): string | null {
-		const trimmed = raw.trim();
-		if (!trimmed) return null;
-
-		const dataLabelMatch = trimmed.match(/^data\s*:\s*([\s\S]+)$/i);
-		if (dataLabelMatch) {
-			const inner = this.parseRelaxedJsonObject(dataLabelMatch[1]);
-			if (inner) return JSON.stringify({ data: inner });
-		}
-
-		const obj = this.parseRelaxedJsonObject(trimmed);
-		if (!obj || Object.keys(obj).length === 0) return null;
-		return JSON.stringify(obj);
-	}
-
-	private parseRelaxedJsonObject(raw: string): Record<string, unknown> | null {
-		let candidate = raw.trim();
-		const start = candidate.indexOf('{');
-		const end = candidate.lastIndexOf('}');
-		if (start === -1 || end === -1 || end <= start) return null;
-		candidate = candidate.slice(start, end + 1);
-
-		const tryParse = (value: string): Record<string, unknown> | null => {
-			try {
-				const parsed = JSON.parse(value);
-				if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-					return parsed as Record<string, unknown>;
-				}
-			} catch {}
-			return null;
-		};
-
-		const strict = tryParse(candidate);
-		if (strict) return strict;
-
-		const quotedKeys = candidate.replace(/([{,]\s*)([A-Za-z_][\w]*)\s*:/g, '$1"$2":');
-		return tryParse(quotedKeys);
-	}
-
 	// ------- filters -------
 
 	get hasActiveFilters(): boolean {
 		const keys = Object.keys(this.queryParams || {}).filter(
-			k => !['sort', 'token', 'next_page_cursor', 'prev_page_cursor', 'direction', 'showLoader', 'startDate', 'endDate'].includes(k)
+			k => !['sort', 'token', 'next_page_cursor', 'prev_page_cursor', 'direction', 'showLoader', 'startDate', 'endDate', 'queryMode'].includes(k)
 		);
 		return keys.length > 0;
 	}
@@ -322,50 +304,54 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		this.getEventLogs({ showLoader: options?.showLoader === true, showSearchProgress: options?.showSearchProgress === true });
 	}
 
-	private payloadSearchLeftoverText(raw: string): string {
-		const trimmed = raw.trim();
-		const dataLabelMatch = trimmed.match(/^data\s*:\s*([\s\S]+)$/i);
-		if (dataLabelMatch && this.parseRelaxedJsonObject(dataLabelMatch[1])) {
-			return '';
-		}
-		const start = trimmed.indexOf('{');
-		const end = trimmed.lastIndexOf('}');
-		if (start === -1 || end === -1 || end <= start) return '';
-		return (trimmed.slice(0, start) + trimmed.slice(end + 1)).trim();
+	get selectedSearchType() {
+		return this.searchTypes.find(option => option.type === this.searchType)!;
+	}
+
+	get additionalSearchFilters(): { label: string; value: string }[] {
+		const filters = [
+			{ type: 'metadata', label: 'Event metadata', value: this.queryParamString(this.queryParams.query) },
+			{ type: 'payload', label: 'JSON payload', value: this.queryParamString(this.queryParams.body) },
+			{ type: 'value', label: 'Idempotency value', value: this.queryParamString(this.queryParams.idempotencyValue) },
+			{ type: 'key', label: 'Idempotency key', value: this.queryParamString(this.queryParams.idempotencyKey) }
+		];
+		return filters.filter(filter => filter.type !== this.searchType && filter.value);
+	}
+
+	selectSearchType(type: EventSearchType) {
+		if (type === this.searchType || !this.canSearchEvents) return;
+		clearTimeout(this.searchTimeout);
+		this.searchType = type;
+		this.searchInput = '';
+		this.searchValidationError = '';
+		this.applySearchFilter({});
 	}
 
 	onSearch() {
 		if (!this.canSearchEvents) return;
 		clearTimeout(this.searchTimeout);
-		this.searchTimeout = setTimeout(() => {
-			const raw = this.searchString.trim();
-			if (!raw) {
-				this.payloadAutoScrollKey = '';
-				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '', body: '' });
-				this.refreshEvents({ showSearchProgress: true });
-				return;
-			}
+		this.searchValidationError = '';
+		let filter: FILTER_QUERY_PARAM;
+		try {
+			filter = eventSearchFilter(this.searchType, this.searchInput);
+		} catch (error) {
+			this.searchValidationError = (error as Error).message;
+			return;
+		}
+		this.searchTimeout = setTimeout(() => this.applySearchFilter(filter), 400);
+	}
 
-			const payloadQuery = this.normalizePayloadSearchQuery(raw);
-			if (payloadQuery) {
-				const leftover = this.payloadSearchLeftoverText(raw);
-				this.updatePayloadAutoScrollKey();
-				this.queryParams = this.generalService.addFilterToURL({
-					...this.queryParams,
-					query: leftover || payloadQuery,
-					body: leftover ? payloadQuery : ''
-				});
-				this.refreshEvents({ showSearchProgress: true });
-				return;
-			}
-			if (this.looksLikePayloadSearchInput(raw)) {
-				return;
-			}
-
-			this.updatePayloadAutoScrollKey();
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: raw, body: '' });
-			this.refreshEvents({ showSearchProgress: true });
-		}, 400);
+	private applySearchFilter(filter: FILTER_QUERY_PARAM) {
+		this.queryParams = this.generalService.addFilterToURL({
+			...this.queryParams, query: '', queryMode: undefined, body: '', idempotencyValue: '', idempotencyKey: '', ...filter
+		});
+		for (const key of ['query', 'queryMode', 'body', 'idempotencyValue', 'idempotencyKey'] as const) {
+			if (!this.queryParams[key]) delete this.queryParams[key];
+		}
+		this.searchString = this.queryParams.query || this.queryParams.body || '';
+		this.providerDeliveryId = this.queryParams.idempotencyValue || '';
+		this.updatePayloadAutoScrollKey();
+		this.refreshEvents({ showSearchProgress: true });
 	}
 
 	getSelectedDateRange(dateRange?: { startDate: string; endDate: string }) {
@@ -410,7 +396,11 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 	}
 
 	clearAllFilters() {
+		clearTimeout(this.searchTimeout);
+		this.searchInput = '';
+		this.searchValidationError = '';
 		this.searchString = '';
+		this.providerDeliveryId = '';
 		this.payloadAutoScrollKey = '';
 		this.selectedSourceData = undefined;
 		this.datePicker?.clearDate();
@@ -418,13 +408,16 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		this.queryParams = this.generalService.addFilterToURL({
 			...this.queryParams,
 			query: '',
+			queryMode: undefined,
 			body: '',
 			sourceId: '',
 			startDate: '',
 			endDate: '',
 			eventId: '',
-			idempotencyKey: ''
+			idempotencyKey: '',
+			idempotencyValue: ''
 		});
+		delete this.queryParams.idempotencyValue;
 		this.refreshEvents();
 	}
 
@@ -455,6 +448,8 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 	async getEventLogs(requestDetails?: { showLoader?: boolean; showSearchProgress?: boolean }) {
 		const fetchId = ++this.eventsFetchId;
+		this.eventsAbort?.abort();
+		this.eventsAbort = new AbortController();
 		if (requestDetails?.showLoader) this.isloadingEvents = true;
 		if (requestDetails?.showSearchProgress) this.isSearchingEvents = true;
 		this.fetchError = false;
@@ -466,7 +461,11 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 			delete cleanedQuery.showLoader;
 			if (cleanedQuery.query) cleanedQuery.query = this.queryParamString(cleanedQuery.query);
 			if (cleanedQuery.body) cleanedQuery.body = this.queryParamString(cleanedQuery.body);
-			const eventsResponse = await this.eventsService.getEvents(this.eventsListQueryParams(cleanedQuery));
+			if (cleanedQuery.idempotencyValue) cleanedQuery.idempotencyValue = this.queryParamString(cleanedQuery.idempotencyValue);
+			const eventsResponse = await this.eventsService.getEvents({
+				...this.eventsListQueryParams(cleanedQuery),
+				signal: this.eventsAbort.signal
+			});
 			if (fetchId !== this.eventsFetchId) return eventsResponse;
 			this.events = eventsResponse.data;
 
@@ -495,7 +494,9 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
 			return eventsResponse;
 		} catch (error: unknown) {
-			if (fetchId !== this.eventsFetchId) return error;
+			if (fetchId !== this.eventsFetchId || axios.isCancel(error) || (error as { code?: string })?.code === 'ERR_CANCELED') {
+				return error;
+			}
 			this.isloadingEvents = false;
 			this.isSearchingEvents = false;
 			this.fetchError = true;

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { format, isAfter, isBefore, isFuture, isWithinInterval } from 'date-fns';
@@ -19,7 +19,7 @@ interface CALENDAR_DAY {
     templateUrl: './date-picker.component.html',
     styleUrls: ['./date-picker.component.scss']
 })
-export class DatePickerComponent implements OnInit {
+export class DatePickerComponent implements OnInit, OnChanges {
 	@Output() selectedDateRange = new EventEmitter<any>();
 	@Output() selectedDate = new EventEmitter<any>();
 	@Output() clearDates = new EventEmitter<any>();
@@ -70,21 +70,29 @@ export class DatePickerComponent implements OnInit {
 	constructor() {}
 
 	ngOnInit(): void {
-		if (this.dateRangeValue?.startDate && this.dateRangeValue?.endDate) {
-			const startDate = new Date(this.dateRangeValue?.startDate);
-			this.selectedStartDay = startDate.getTime();
-
-			const endDate = new Date(this.dateRangeValue.endDate);
-			this.selectedEndDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
-
-			this.selectedDates = { startDate: new Date(this.selectedStartDay!), endDate: new Date(this.selectedEndDay!) };
-		}
-
 		if (this.dateValue) this.selectedStartDay = new Date(this.dateValue).getTime();
-
 		this.initDatePicker();
-
 		if (this.show) this.showPicker = true;
+	}
+
+	ngOnChanges(changes: SimpleChanges): void {
+		if (!changes.dateRangeValue) return;
+		if (this.dateRangeValue?.startDate && this.dateRangeValue?.endDate) {
+			// Filter values are the UTC timestamps emitted by applyDate, without
+			// their trailing Z. Restore local picker times without shifting them again.
+			const pickerDate = (value: string | Date) => new Date(typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value) ? `${value}Z` : value);
+			const startDate = pickerDate(this.dateRangeValue.startDate);
+			const endDate = pickerDate(this.dateRangeValue.endDate);
+			this.selectedStartDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+			this.selectedEndDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+			this.filterStartHour = startDate.getHours();
+			this.filterStartMinute = startDate.getMinutes();
+			this.filterEndHour = endDate.getHours();
+			this.filterEndMinute = endDate.getMinutes();
+			this.selectedStartTime = format(startDate, 'HH:mm:ss');
+			this.selectedEndTime = format(endDate, 'HH:mm:ss');
+			this.applyDate();
+		}
 	}
 
 	initDatePicker() {

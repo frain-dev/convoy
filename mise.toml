@@ -161,11 +161,6 @@ CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW = 5
 CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD = 10
 CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP = false
 
-############################
-## Analytics configuration ##
-############################
-CONVOY_ANALYTICS_ENABLED = true
-
 #################################
 ## Storage Policy configuration ##
 #################################

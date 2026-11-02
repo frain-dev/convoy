@@ -38,7 +38,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/projects"
 	"github.com/frain-dev/convoy/internal/subscriptions"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/internal/users"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -136,12 +135,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 	rateLimiter := opts.Broker.RateLimiter
 
-	counter := &telemetry.EventsCounter{}
-	pb := telemetry.NewposthogBackend()
-	defer pb.Close()
-	mb := telemetry.NewmixpanelBackend()
-	defer mb.Close()
-
 	loadConfiguration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize configuration: %w", err)
@@ -163,10 +156,6 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	}
 
 	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-	newTelemetry := telemetry.NewTelemetry(lo, loadConfiguration,
-		telemetry.OptionTracker(counter),
-		telemetry.OptionBackend(pb),
-		telemetry.OptionBackend(mb))
 
 	caCertTLSCfg, err := config.GetCaCert()
 	if err != nil {
@@ -187,11 +176,14 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, fmt.Errorf("failed to create new net dispatcher: %w", err)
 	}
 
-	// Single source of truth for circuit-breaker enablement: env folded into the
-	// instance DB flag, with per-org overrides winning. Shared by the sampler gate,
-	// per-delivery enforcement, and dashboard display so they never disagree.
 	featureFlagFetcher := ffService
-	cbEnablement := cbenablement.NewResolver(featureFlag, featureFlagFetcher, clock.NewRealClock(), lo)
+	cbEnablement := cbenablement.NewResolver(
+		featureFlag,
+		featureFlagFetcher,
+		loadConfiguration.AdminManaged,
+		clock.NewRealClock(),
+		lo,
+	)
 
 	masterDefaults := cb.CircuitBreakerConfig{
 		SampleRate:                  cfg.CircuitBreaker.SampleRate,
@@ -253,6 +245,11 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 
 			endpoint, funcErr := endpointRepo.FindEndpointByID(ctx, endpointId, b.TenantId)
 			if funcErr != nil {
+				// A deleted endpoint cannot be disabled or notified. Its old
+				// failure samples may outlive the row for an observability window.
+				if errors.Is(funcErr, datastore.ErrEndpointNotFound) {
+					return false, nil
+				}
 				return false, funcErr
 			}
 
@@ -305,10 +302,12 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
 	// Retention is paid-only and partition-based; the license is the single
-	// gate (the delete-query retention system and its feature flag were
-	// removed). LicensedRetentionPolicy re-reads partition state at job time
-	// so `convoy utils partition` activates retention without a worker restart.
-	// Until tables are partitioned it deletes nothing and logs the action.
+	// install gate. DB retention_enabled is checked on each RetentionPolicies
+	// job (like webhook_archiving.enabled on export), so a dashboard disable
+	// does not wait for a worker restart. LicensedRetentionPolicy re-reads
+	// partition state at job time so `convoy utils partition` activates
+	// retention without a restart. Until tables are partitioned it deletes
+	// nothing and logs the action.
 	var ret retention.Retentioner
 	if opts.Licenser.RetentionPolicy() {
 		if _, pErr := retention.UnpartitionedTables(ctx, opts.DB); pErr != nil {
@@ -318,9 +317,13 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 			return nil, fmt.Errorf("failed to check retention partition state: %w", pErr)
 		}
 
-		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+		policyPeriod := strings.TrimSpace(loadConfiguration.GetRetentionPolicyConfig().Period)
+		if policyPeriod == "" {
+			policyPeriod = cfg.Retention.Period
+		}
+		policy, _err := time.ParseDuration(policyPeriod)
 		if _err != nil {
-			return nil, fmt.Errorf("failed to parse retention policy: %w", _err)
+			return nil, fmt.Errorf("failed to parse retention period: %w", _err)
 		}
 
 		ret = retention.NewLicensedRetentionPolicy(opts.DB, lo, policy)
@@ -371,7 +374,7 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Logger:                     lo,
 	}
 
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps))
 
 	eventProcessorDeps := task.EventProcessorDeps{
 		EndpointRepo:       endpointRepo,
@@ -389,19 +392,27 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Logger:             lo,
 	}
 
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
-	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps))
+	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps))
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps))
+	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps))
 
 	if opts.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, ret, lo), nil)
-		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo), nil)
-		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, lo), nil)
+		// RetentionPolicies re-reads DB retention_enabled and retention_period
+		// each run so dashboard toggles apply without a worker restart.
+		if ret != nil {
+			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(locker, configRepo, ret, lo))
+		}
+	}
+	if opts.Licenser.WebhookArchiving() {
+		consumer.RegisterHandlers(convoy.EnqueueBackupJobs, task.EnqueueBackupJobs(configRepo, backupJobRepo, lo))
+		consumer.RegisterHandlers(convoy.ProcessBackupJob, task.ProcessBackupJob(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, backupJobRepo, locker, lo))
 	}
 
-	// ManualBackupJob is always registered — it bypasses CDC and retention checks.
-	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, lo), nil)
+	// ManualBackupJob is always registered so instance-admin triggers work
+	// without a license gate on the handler path. The task still requires DB
+	// webhook_archiving.enabled and usable storage before exporting.
+	consumer.RegisterHandlers(convoy.ManualBackupJob, task.ManualBackup(configRepo, eventRepo, eventDeliveryRepo, attemptRepo, locker, lo))
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
 		Channels:                   channels,
@@ -420,24 +431,23 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		Acker:                      dynamicEventAcker,
 		Logger:                     lo,
 	}
-	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps))
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, locker, lo), nil)
-	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
-	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, opts.DB, locker), nil)
-	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker), nil)
-	consumer.RegisterHandlers(convoy.RefreshEventDeliveryDailyCounts, task.RefreshEventDeliveryDailyCounts(lo, opts.DB, locker), nil)
-	consumer.RegisterHandlers(convoy.RefreshQueueMetricsSnapshot, task.RefreshQueueMetricsSnapshot(lo, opts.DB, locker), nil)
-	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(opts.DB, opts.Queue, locker, lo))
+	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
+	consumer.RegisterHandlers(convoy.SnapshotUsage, task.SnapshotUsage(lo, opts.DB, opts.Cache, locker))
+	consumer.RegisterHandlers(convoy.RefreshEventDeliveryDailyCounts, task.RefreshEventDeliveryDailyCounts(lo, opts.DB, locker))
+	consumer.RegisterHandlers(convoy.RefreshQueueMetricsSnapshot, task.RefreshQueueMetricsSnapshot(lo, opts.DB, locker))
+	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
 
 	// events_search tokenization is legacy FTS copy; unified list search (PDE-1009) reads
 	// convoy.events directly and no longer enqueues TokenizeSearch jobs.
 
-	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, locker, lo), nil)
+	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc, dispatcher))
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, lo))
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(opts.Queue, locker, lo))
 
-	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo), nil)
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, opts.Queue, lo))
 
 	bulkOnboardDeps := task.BulkOnboardDeps{
 		EndpointRepo:               endpointRepo,
@@ -449,12 +459,12 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		EarlyAdopterFeatureFetcher: ffService,
 		Logger:                     lo,
 	}
-	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps), newTelemetry)
+	consumer.RegisterHandlers(convoy.BulkOnboardProcessor, task.ProcessBulkOnboard(bulkOnboardDeps))
 
 	var billingClient billing.Client
 	if cfg.UsesOrgBilling() {
 		billingClient = billing.NewClient(cfg.Billing)
-		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, locker, lo), nil)
+		consumer.RegisterHandlers(convoy.UpdateOrganisationStatus, task.UpdateOrganisationStatus(opts.DB, billingClient, locker, lo))
 	}
 
 	err = metrics.RegisterQueueMetrics(opts.Queue, opts.DB, circuitBreakerManager)
@@ -462,25 +472,52 @@ func NewWorker(ctx context.Context, opts RuntimeOpts, cfg config.Configuration) 
 		return nil, fmt.Errorf("failed to register queue metrics: %w", err)
 	}
 
-	// Optionally start the CDC-based backup collector
+	// Optionally start the CDC-based backup collector.
+	// CONVOY_CDC_BACKUP_ENABLED selects architecture (CDC vs cron). DB
+	// webhook_archiving.enabled gates uploads on every flush so a dashboard
+	// disable stops cold-storage export without a worker restart.
 	var collector *backup_collector.BackupCollector
-	lo.Info(fmt.Sprintf("CDC backup config: enabled=%v, retention=%v", cfg.RetentionPolicy.CDCBackupEnabled, cfg.RetentionPolicy.IsRetentionPolicyEnabled))
-	if cfg.RetentionPolicy.CDCBackupEnabled && cfg.RetentionPolicy.IsRetentionPolicyEnabled {
-		blobStoreClient, blobErr := blobstore.NewBlobStoreClient(loadConfiguration.StoragePolicy, lo)
-		if blobErr != nil {
-			return nil, fmt.Errorf("failed to create blob store for CDC backup: %w", blobErr)
+	dbArchivingEnabled := loadConfiguration.GetWebhookArchivingConfig().Enabled
+	lo.Info(fmt.Sprintf("CDC backup config: cdc=%v, webhook_archiving_db=%v", cfg.WebhookArchiving.CDCEnabled, dbArchivingEnabled))
+	if cfg.WebhookArchiving.CDCEnabled {
+		usableErr := blobstore.StoragePolicyUsable(loadConfiguration.StoragePolicy)
+		if usableErr != nil {
+			if dbArchivingEnabled {
+				return nil, fmt.Errorf("storage not usable for CDC backup: %w", usableErr)
+			}
+			// Archiving off: do not block worker boot on cold-storage config.
+			lo.Warn(fmt.Sprintf("CDC enabled but storage not usable; skipping collector until storage is fixed and worker restarts: %v", usableErr))
+		} else {
+			blobStoreClient, blobErr := blobstore.NewBlobStoreClient(loadConfiguration.StoragePolicy, lo)
+			if blobErr != nil {
+				return nil, fmt.Errorf("failed to create blob store for CDC backup: %w", blobErr)
+			}
+
+			flushInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
+
+			// ReplicationDSN connects directly to Postgres (bypassing pgbouncer)
+			// for the WAL replication protocol. Falls back to normal DSN if not set.
+			replDSN := cfg.WebhookArchiving.ReplicationDSN
+			if replDSN == "" {
+				replDSN = cfg.Database.BuildDsn()
+			}
+
+			collector = backup_collector.NewBackupCollector(opts.DB.GetConn(), replDSN, blobStoreClient, flushInterval, lo, func(ctx context.Context) (bool, error) {
+				dbCfg, err := configRepo.LoadConfiguration(ctx)
+				if err != nil {
+					return false, err
+				}
+				if !dbCfg.GetWebhookArchivingConfig().Enabled {
+					return false, nil
+				}
+				// Enabled but unusable: error so doFlush skips without discarding,
+				// keeping the buffer and LSN until storage is fixed.
+				if err := blobstore.StoragePolicyUsable(dbCfg.StoragePolicy); err != nil {
+					return false, err
+				}
+				return true, nil
+			})
 		}
-
-		flushInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
-
-		// ReplicationDSN connects directly to Postgres (bypassing pgbouncer)
-		// for the WAL replication protocol. Falls back to normal DSN if not set.
-		replDSN := cfg.RetentionPolicy.ReplicationDSN
-		if replDSN == "" {
-			replDSN = cfg.Database.BuildDsn()
-		}
-
-		collector = backup_collector.NewBackupCollector(opts.DB.GetConn(), replDSN, blobStoreClient, flushInterval, lo)
 	}
 
 	return &Worker{

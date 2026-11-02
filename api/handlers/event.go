@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -34,9 +33,10 @@ import (
 //	@Id				CreateEndpointEvent
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
-//	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID	path	string				true	"Project ID"
+//	@Param			event		body	models.CreateEvent	true	"Event Details"
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
@@ -137,7 +137,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		h.A.Logger.ErrorContext(r.Context(), fmt.Sprintf("Error occurred sending new event to the queue %s", err))
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Event queued successfully", models.NewEventQueuedResponse(id, newMessage.EventType, newMessage.IdempotencyKey), http.StatusCreated))
 }
 
 // CreateBroadcastEvent
@@ -148,9 +148,10 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Param			projectID	path	string					true	"Project ID"
+//	@Param			event		body	models.BroadcastEvent	true	"Broadcast Event Details"
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
@@ -200,7 +201,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Broadcast event created successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Broadcast event created successfully", models.NewEventQueuedResponse(cbe.BroadcastEvent.EventID, cbe.BroadcastEvent.EventType, cbe.BroadcastEvent.IdempotencyKey), http.StatusCreated))
 }
 
 // CreateEndpointFanoutEvent
@@ -211,9 +212,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
-//	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=Stub}
+//	@Param			projectID	path	string				true	"Project ID"
+//	@Param			event		body	models.FanoutEvent	true	"Event Details"
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
@@ -301,24 +303,26 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		"is_duplicate", event.IsDuplicateEvent,
 	)
 
+	receipt := models.NewEventQueuedResponse(event.UID, string(event.EventType), event.IdempotencyKey)
 	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", receipt, http.StatusCreated))
 	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", receipt, http.StatusCreated))
 	}
 }
 
 // CreateDynamicEvent
 //
 //	@Summary		Dynamic Events
-//	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+//	@Description	This endpoint creates a dynamic event without creating the endpoint and subscription ahead of time.
+//	@Description	The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
 //	@Id				CreateDynamicEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		201			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=models.EventQueuedResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
@@ -369,7 +373,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Dynamic event created successfully", nil, http.StatusCreated))
+	_ = render.Render(w, r, util.NewServerResponse("Dynamic event created successfully", models.NewEventQueuedResponse(cde.DynamicEvent.EventID, cde.DynamicEvent.EventType, cde.DynamicEvent.IdempotencyKey), http.StatusCreated))
 }
 
 // ReplayEndpointEvent
@@ -443,6 +447,11 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if data.IdempotencyValue != "" {
+		_ = render.Render(w, r, util.NewErrorResponse("batch replay does not support idempotencyValue", http.StatusBadRequest))
 		return
 	}
 
@@ -573,6 +582,23 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if data.IdempotencyValue != "" {
+		if err := h.rejectPortalIdempotencyValue(r, data.IdempotencyValue); err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		keys, err := h.idempotencyValueKeys(r.Context(), project.UID, data.IdempotencyValue, data.Filter.SourceIDs)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		if len(keys) > 1 {
+			_ = render.Render(w, r, util.NewErrorResponse("idempotencyValue matches more than one source; pass sourceId", http.StatusBadRequest))
+			return
+		}
+		data.Filter.IdempotencyKey = keys[0]
+	}
+
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if h.IsReqWithPortalLinkToken(authUser) {
 		portalLink, err := h.retrievePortalLinkFromToken(r)
@@ -607,17 +633,10 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	if events.NeedsSearchTimeout(data.Filter, project) {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, events.SearchTimeout)
-		defer cancel()
-	}
-
-	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(ctx, project.UID, data.Filter)
+	eventsPaged, paginationData, err := events.New(h.A.Logger, h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		if events.IsSearchTimeout(err) {
-			_ = render.Render(w, r, util.NewErrorResponse("Search took too long. Narrow the time range or search term.", http.StatusGatewayTimeout))
+			_ = render.Render(w, r, util.NewErrorResponse("Search took too long. Try again.", http.StatusGatewayTimeout))
 			return
 		}
 		h.A.Logger.ErrorContext(r.Context(), "failed to fetch events", "error", err)
@@ -657,6 +676,11 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	data, err := q.Transform(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if data.IdempotencyValue != "" {
+		_ = render.Render(w, r, util.NewErrorResponse("batch replay count does not support idempotencyValue", http.StatusBadRequest))
 		return
 	}
 

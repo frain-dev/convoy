@@ -25,7 +25,7 @@
       </div>
 
       <!-- Date range -->
-      <convoy-date-picker (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()">
+      <convoy-date-picker [dateRangeValue]="dateRangeValue" (selectedDateRange)="getSelectedDateRange($event)" (clearDates)="getSelectedDateRange()">
         <button dropdownTrigger type="button" class="h-44px flex items-center gap-12px px-12px bg-white-100 border border-new.border rounded-8px shadow-[0px_2px_2px_-1px_rgba(0,0,0,0.04)] font-body font-medium text-[14px] leading-[16px] text-new.text-primary transition-colors hover:bg-new.surface-muted">
           {{ dateRangeLabel }}
           <img src="/assets/img/svg/calendar-small.svg" class="w-16px h-16px" alt="" />

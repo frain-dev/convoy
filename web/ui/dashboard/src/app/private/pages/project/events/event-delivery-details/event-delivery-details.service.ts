@@ -24,11 +24,11 @@ export class EventDeliveryDetailsService {
 		});
 	}
 
-	getEventDeliveryAttempts(requestDetails: { eventId: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveryAttempts(requestDetails: { eventId: string; before?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/eventdeliveries/${requestDetails.eventId}/deliveryattempts`,
+					url: `/eventdeliveries/${requestDetails.eventId}/deliveryattempts?paginated=true${requestDetails.before ? '&before=' + encodeURIComponent(requestDetails.before) : ''}`,
 					method: 'get',
 					level: 'org_project'
 				});

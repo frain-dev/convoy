@@ -245,6 +245,28 @@ func (s *Service) FindFirstEventWithIdempotencyKey(ctx context.Context, projectI
 	return rowToEvent(row)
 }
 
+// FindEventIDsByIdempotencyKeys returns up to limit non-duplicate event IDs, oldest
+// first, whose idempotency key is any of keys.
+func (s *Service) FindEventIDsByIdempotencyKeys(ctx context.Context, projectID string, keys []string, limit int) ([]string, error) {
+	if len(keys) == 0 || limit <= 0 {
+		return nil, nil
+	}
+
+	rows, err := s.db.Query(ctx,
+		`SELECT id FROM convoy.events
+		WHERE project_id = $1 AND idempotency_key = ANY($2::TEXT[])
+		  AND is_duplicate_event IS FALSE AND deleted_at IS NULL
+		ORDER BY created_at
+		LIMIT $3`,
+		projectID, keys, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgx.CollectRows(rows, pgx.RowTo[string])
+}
+
 // UpdateEventEndpoints updates event endpoints with batch processing
 func (s *Service) UpdateEventEndpoints(ctx context.Context, event *datastore.Event, endpoints []string) error {
 	if err := requireEventEndpointIDs(endpoints); err != nil {
@@ -361,13 +383,13 @@ func (s *Service) LoadEventsPaged(ctx context.Context, projectID string, filter 
 		return nil, datastore.PaginationData{}, err
 	}
 
-	// Calculate PrevRowCount if not first page. Skip the COUNT when payload search
-	// is active so the timeout budget is spent on the page query, not a second scan.
+	// Calculate PrevRowCount if not first page. Payload containment search still
+	// skips the probe so a heavy body filter is not run twice.
 	var rowCount datastore.PrevRowCount
 	isFirstPage := util.IsStringEmpty(filter.Pageable.Cursor())
 	if len(events) > 0 && !isFirstPage {
 		if NeedsSearchTimeout(filter, filter.Project) {
-			rowCount = datastore.PrevRowCount{Count: 1}
+			rowCount = datastore.PrevRowCount{Exists: true}
 		} else {
 			first := events[0]
 			rowCount, err = s.countPrevEvents(ctx, projectID, filter, first.UID, startDate, endDate)
@@ -523,52 +545,6 @@ func (s *Service) loadEventsPagedExistsRows(ctx context.Context, base existsPage
 	return out, nil
 }
 
-// loadEventsPagedSearch handles CTE path pagination (with search query)
-func (s *Service) loadEventsPagedSearch(ctx context.Context, projectID string, filter *datastore.Filter, startDate, endDate time.Time) ([]datastore.Event, error) {
-	cursor := filter.Pageable.Cursor()
-	direction := "next"
-	if filter.Pageable.Direction == datastore.Prev {
-		direction = "prev"
-	}
-	sortOrder := filter.Pageable.SortOrder()
-
-	params := repo.LoadEventsPagedSearchParams{
-		ProjectID:          common.StringToPgTextNullable(projectID),
-		HasIdempotencyKey:  common.BoolToPgBool(!util.IsStringEmpty(filter.IdempotencyKey)),
-		IdempotencyKey:     common.StringToPgTextNullable(filter.IdempotencyKey),
-		StartDate:          common.TimeToPgTimestamptz(startDate),
-		EndDate:            common.TimeToPgTimestamptz(endDate),
-		HasSourceIds:       common.BoolToPgBool(len(filter.SourceIDs) > 0),
-		SourceIds:          filter.SourceIDs,
-		HasEndpointIds:     common.BoolToPgBool(len(filter.EndpointIDs) > 0),
-		EndpointIds:        filter.EndpointIDs,
-		HasBrokerMessageID: common.BoolToPgBool(!util.IsStringEmpty(filter.BrokerMessageId)),
-		BrokerMessageID:    common.StringToPgTextNullable(filter.BrokerMessageId),
-		HasQuery:           common.BoolToPgBool(!util.IsStringEmpty(filter.Query)),
-		Query:              common.StringToPgTextNullable(filter.Query),
-		Cursor:             common.StringToPgText(cursor),
-		Direction:          common.StringToPgText(direction),
-		SortOrder:          common.StringToPgText(sortOrder),
-		PageLimit:          pgtype.Int8{Int64: int64(filter.Pageable.Limit()), Valid: true},
-	}
-
-	rows, err := s.repo.LoadEventsPagedSearch(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	events := make([]datastore.Event, 0, len(rows))
-	for _, row := range rows {
-		event, err := rowToEvent(row)
-		if err != nil {
-			return nil, err
-		}
-		events = append(events, *event)
-	}
-
-	return events, nil
-}
-
 // countPrevEvents checks if there are events before cursor (for HasPrevPage)
 // "Previous" depends on sort order: DESC → id > cursor, ASC → id < cursor
 func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter *datastore.Filter, cursor string, startDate, endDate time.Time) (datastore.PrevRowCount, error) {
@@ -598,7 +574,7 @@ func (s *Service) countPrevEvents(ctx context.Context, projectID string, filter 
 	if err != nil {
 		return datastore.PrevRowCount{}, err
 	}
-	return datastore.PrevRowCount{Count: int(count.Int64)}, nil
+	return datastore.PrevRowCount{Exists: count.Int64 > 0}, nil
 }
 
 // CopyRows copies rows from events to events_search
@@ -646,6 +622,14 @@ func (s *Service) ExportRecords(ctx context.Context, start, end time.Time, w io.
 		return 0, fmt.Errorf("begin snapshot tx: %w", err)
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck
+
+	// Per-statement bound inside the snapshot tx (COUNT + each export batch),
+	// not the overall job deadline (backupExportDeadline). Keeps a stuck scan
+	// from holding the pool for the full export window while still allowing
+	// multi-minute batches on large payloads.
+	if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5min'"); err != nil {
+		return 0, fmt.Errorf("set statement_timeout: %w", err)
+	}
 
 	txRepo := repo.New(tx)
 

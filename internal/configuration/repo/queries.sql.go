@@ -12,6 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeAdminManagedMigration = `-- name: CompleteAdminManagedMigration :execresult
+UPDATE convoy.configurations
+SET
+	admin_managed = false,
+	retention_enabled = COALESCE(retention_enabled, $1),
+	updated_at = NOW()
+WHERE id = $2
+	AND admin_managed IS NULL
+	AND deleted_at IS NULL
+`
+
+type CompleteAdminManagedMigrationParams struct {
+	RetentionEnabled pgtype.Bool
+	ID               pgtype.Text
+}
+
+func (q *Queries) CompleteAdminManagedMigration(ctx context.Context, arg CompleteAdminManagedMigrationParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, completeAdminManagedMigration, arg.RetentionEnabled, arg.ID)
+}
+
 const createConfiguration = `-- name: CreateConfiguration :exec
 
 INSERT INTO convoy.configurations (
@@ -32,8 +52,10 @@ INSERT INTO convoy.configurations (
 	azure_container_name,
 	azure_endpoint,
 	azure_prefix,
-	retention_policy_policy,
-	retention_policy_enabled
+	retention_period,
+	retention_enabled,
+	webhook_archiving_enabled,
+	admin_managed
 ) VALUES (
 	$1,
 	$2,
@@ -53,30 +75,34 @@ INSERT INTO convoy.configurations (
 	$16,
 	$17,
 	$18,
-	$19
+	$19,
+	$20,
+	$21
 )
 `
 
 type CreateConfigurationParams struct {
-	ID                     pgtype.Text
-	IsAnalyticsEnabled     pgtype.Text
-	IsSignupEnabled        pgtype.Bool
-	StoragePolicyType      pgtype.Text
-	OnPremPath             pgtype.Text
-	S3Prefix               pgtype.Text
-	S3Bucket               pgtype.Text
-	S3AccessKey            pgtype.Text
-	S3SecretKey            pgtype.Text
-	S3Region               pgtype.Text
-	S3SessionToken         pgtype.Text
-	S3Endpoint             pgtype.Text
-	AzureAccountName       pgtype.Text
-	AzureAccountKey        pgtype.Text
-	AzureContainerName     pgtype.Text
-	AzureEndpoint          pgtype.Text
-	AzurePrefix            pgtype.Text
-	RetentionPolicyPolicy  pgtype.Text
-	RetentionPolicyEnabled pgtype.Bool
+	ID                      pgtype.Text
+	IsAnalyticsEnabled      pgtype.Text
+	IsSignupEnabled         pgtype.Bool
+	StoragePolicyType       pgtype.Text
+	OnPremPath              pgtype.Text
+	S3Prefix                pgtype.Text
+	S3Bucket                pgtype.Text
+	S3AccessKey             pgtype.Text
+	S3SecretKey             pgtype.Text
+	S3Region                pgtype.Text
+	S3SessionToken          pgtype.Text
+	S3Endpoint              pgtype.Text
+	AzureAccountName        pgtype.Text
+	AzureAccountKey         pgtype.Text
+	AzureContainerName      pgtype.Text
+	AzureEndpoint           pgtype.Text
+	AzurePrefix             pgtype.Text
+	RetentionPeriod         pgtype.Text
+	RetentionEnabled        pgtype.Bool
+	WebhookArchivingEnabled pgtype.Bool
+	AdminManaged            pgtype.Bool
 }
 
 // Configuration Queries
@@ -100,8 +126,10 @@ func (q *Queries) CreateConfiguration(ctx context.Context, arg CreateConfigurati
 		arg.AzureContainerName,
 		arg.AzureEndpoint,
 		arg.AzurePrefix,
-		arg.RetentionPolicyPolicy,
-		arg.RetentionPolicyEnabled,
+		arg.RetentionPeriod,
+		arg.RetentionEnabled,
+		arg.WebhookArchivingEnabled,
+		arg.AdminManaged,
 	)
 	return err
 }
@@ -125,39 +153,44 @@ SELECT
 	azure_container_name,
 	azure_endpoint,
 	azure_prefix,
-	retention_policy_policy,
-	retention_policy_enabled,
+	retention_period,
+	retention_enabled,
+	webhook_archiving_enabled,
+	admin_managed,
 	created_at,
 	updated_at,
 	deleted_at
 FROM convoy.configurations
 WHERE deleted_at IS NULL
+ORDER BY updated_at DESC NULLS LAST, id DESC
 LIMIT 1
 `
 
 type LoadConfigurationRow struct {
-	ID                     string
-	IsAnalyticsEnabled     string
-	IsSignupEnabled        bool
-	StoragePolicyType      string
-	OnPremPath             pgtype.Text
-	S3Prefix               pgtype.Text
-	S3Bucket               pgtype.Text
-	S3AccessKey            pgtype.Text
-	S3SecretKey            pgtype.Text
-	S3Region               pgtype.Text
-	S3SessionToken         pgtype.Text
-	S3Endpoint             pgtype.Text
-	AzureAccountName       pgtype.Text
-	AzureAccountKey        pgtype.Text
-	AzureContainerName     pgtype.Text
-	AzureEndpoint          pgtype.Text
-	AzurePrefix            pgtype.Text
-	RetentionPolicyPolicy  string
-	RetentionPolicyEnabled bool
-	CreatedAt              pgtype.Timestamptz
-	UpdatedAt              pgtype.Timestamptz
-	DeletedAt              pgtype.Timestamptz
+	ID                      string
+	IsAnalyticsEnabled      string
+	IsSignupEnabled         bool
+	StoragePolicyType       string
+	OnPremPath              pgtype.Text
+	S3Prefix                pgtype.Text
+	S3Bucket                pgtype.Text
+	S3AccessKey             pgtype.Text
+	S3SecretKey             pgtype.Text
+	S3Region                pgtype.Text
+	S3SessionToken          pgtype.Text
+	S3Endpoint              pgtype.Text
+	AzureAccountName        pgtype.Text
+	AzureAccountKey         pgtype.Text
+	AzureContainerName      pgtype.Text
+	AzureEndpoint           pgtype.Text
+	AzurePrefix             pgtype.Text
+	RetentionPeriod         string
+	RetentionEnabled        pgtype.Bool
+	WebhookArchivingEnabled bool
+	AdminManaged            pgtype.Bool
+	CreatedAt               pgtype.Timestamptz
+	UpdatedAt               pgtype.Timestamptz
+	DeletedAt               pgtype.Timestamptz
 }
 
 // Loads the single configuration (should only be one row)
@@ -182,8 +215,10 @@ func (q *Queries) LoadConfiguration(ctx context.Context) (LoadConfigurationRow, 
 		&i.AzureContainerName,
 		&i.AzureEndpoint,
 		&i.AzurePrefix,
-		&i.RetentionPolicyPolicy,
-		&i.RetentionPolicyEnabled,
+		&i.RetentionPeriod,
+		&i.RetentionEnabled,
+		&i.WebhookArchivingEnabled,
+		&i.AdminManaged,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -210,32 +245,36 @@ SET
 	azure_container_name = $14,
 	azure_endpoint = $15,
 	azure_prefix = $16,
-	retention_policy_policy = $17,
-	retention_policy_enabled = $18,
+	retention_period = $17,
+	retention_enabled = $18,
+	webhook_archiving_enabled = $19,
+	admin_managed = $20,
 	updated_at = NOW()
-WHERE id = $19 AND deleted_at IS NULL
+WHERE id = $21 AND deleted_at IS NULL
 `
 
 type UpdateConfigurationParams struct {
-	IsAnalyticsEnabled     pgtype.Text
-	IsSignupEnabled        pgtype.Bool
-	StoragePolicyType      pgtype.Text
-	OnPremPath             pgtype.Text
-	S3Prefix               pgtype.Text
-	S3Bucket               pgtype.Text
-	S3AccessKey            pgtype.Text
-	S3SecretKey            pgtype.Text
-	S3Region               pgtype.Text
-	S3SessionToken         pgtype.Text
-	S3Endpoint             pgtype.Text
-	AzureAccountName       pgtype.Text
-	AzureAccountKey        pgtype.Text
-	AzureContainerName     pgtype.Text
-	AzureEndpoint          pgtype.Text
-	AzurePrefix            pgtype.Text
-	RetentionPolicyPolicy  pgtype.Text
-	RetentionPolicyEnabled pgtype.Bool
-	ID                     pgtype.Text
+	IsAnalyticsEnabled      pgtype.Text
+	IsSignupEnabled         pgtype.Bool
+	StoragePolicyType       pgtype.Text
+	OnPremPath              pgtype.Text
+	S3Prefix                pgtype.Text
+	S3Bucket                pgtype.Text
+	S3AccessKey             pgtype.Text
+	S3SecretKey             pgtype.Text
+	S3Region                pgtype.Text
+	S3SessionToken          pgtype.Text
+	S3Endpoint              pgtype.Text
+	AzureAccountName        pgtype.Text
+	AzureAccountKey         pgtype.Text
+	AzureContainerName      pgtype.Text
+	AzureEndpoint           pgtype.Text
+	AzurePrefix             pgtype.Text
+	RetentionPeriod         pgtype.Text
+	RetentionEnabled        pgtype.Bool
+	WebhookArchivingEnabled pgtype.Bool
+	AdminManaged            pgtype.Bool
+	ID                      pgtype.Text
 }
 
 func (q *Queries) UpdateConfiguration(ctx context.Context, arg UpdateConfigurationParams) (pgconn.CommandTag, error) {
@@ -256,8 +295,10 @@ func (q *Queries) UpdateConfiguration(ctx context.Context, arg UpdateConfigurati
 		arg.AzureContainerName,
 		arg.AzureEndpoint,
 		arg.AzurePrefix,
-		arg.RetentionPolicyPolicy,
-		arg.RetentionPolicyEnabled,
+		arg.RetentionPeriod,
+		arg.RetentionEnabled,
+		arg.WebhookArchivingEnabled,
+		arg.AdminManaged,
 		arg.ID,
 	)
 }

@@ -79,10 +79,13 @@ func NewWithLocalReads(db *sqlx.DB, ttl time.Duration, size int) *PostgresCache 
 // stored row so a writer cannot read back what it just replaced.
 func (c *PostgresCache) forget(key string) {
 	if c.local != nil {
-		c.local.Remove(key)
-		// Bump after the remove: a reader that samples the stripe before this
-		// point and stores after it must see the change and skip its store.
+		// Bump first: a Get that sampled the stripe before this Add and stores
+		// after it will skip, whether or not Remove has run yet. The reverse
+		// order leaves a window between Remove and Add where that Get sees an
+		// unchanged stripe, stores the row it already read, and resurrects a
+		// deleted value for the rest of the entry's lifetime.
 		c.stripeFor(key).Add(1)
+		c.local.Remove(key)
 	}
 }
 

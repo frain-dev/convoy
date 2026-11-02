@@ -84,12 +84,24 @@ func FromFilterStruct(data Filter) RetryFilter {
 		}
 	}
 
-	// Only add SearchParams if it has valid values
-	if data.SearchParams.CreatedAtStart != 0 || data.SearchParams.CreatedAtEnd != 0 {
-		filter["SearchParams"] = map[string]any{
-			"created_at_start": data.SearchParams.CreatedAtStart,
-			"created_at_end":   data.SearchParams.CreatedAtEnd,
+	// Only add SearchParams if it has valid values. Every narrowing field must be kept:
+	// the worker replays this filter, and a dropped field widens the retry.
+	sp := data.SearchParams
+	if sp.CreatedAtStart != 0 || sp.CreatedAtEnd != 0 || sp.Query != "" || len(sp.EventIDs) > 0 || sp.MinTrials > 0 {
+		searchParams := map[string]any{
+			"created_at_start": sp.CreatedAtStart,
+			"created_at_end":   sp.CreatedAtEnd,
 		}
+		if sp.Query != "" {
+			searchParams["query"] = sp.Query
+		}
+		if len(sp.EventIDs) > 0 {
+			searchParams["event_ids"] = sp.EventIDs
+		}
+		if sp.MinTrials > 0 {
+			searchParams["min_trials"] = sp.MinTrials
+		}
+		filter["SearchParams"] = searchParams
 	}
 
 	return filter

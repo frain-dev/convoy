@@ -399,28 +399,62 @@ func (s *Service) UpdateSource(ctx context.Context, projectID string, source *da
 	}
 
 	// Update verifier if present
-	if !util.IsStringEmpty(string(source.Verifier.Type)) && source.Verifier.Type != datastore.NoopVerifier {
+	if source.Verifier != nil && !util.IsStringEmpty(string(source.Verifier.Type)) && source.Verifier.Type != datastore.NoopVerifier {
 		params := extractVerifierParams(source.Verifier)
 
-		result2, err := qtx.UpdateSourceVerifier(ctx, repo.UpdateSourceVerifierParams{
-			ID:                common.StringToPgText(source.VerifierID),
-			Type:              common.StringToPgText(string(source.Verifier.Type)),
-			BasicUsername:     common.StringToPgTextNullable(params.basicUser),
-			BasicPassword:     common.StringToPgTextNullable(params.basicPass),
-			ApiKeyHeaderName:  common.StringToPgTextNullable(params.apiKeyHeader),
-			ApiKeyHeaderValue: common.StringToPgTextNullable(params.apiKeyValue),
-			HmacHash:          common.StringToPgTextNullable(params.hmacHash),
-			HmacHeader:        common.StringToPgTextNullable(params.hmacHeader),
-			HmacSecret:        common.StringToPgTextNullable(params.hmacSecret),
-			HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
-		})
-		if err != nil {
-			s.logger.Error("failed to update source verifier", "error", err)
-			return &ServiceError{ErrMsg: "failed to update source verifier", Err: err}
+		var needsInsert bool
+		if util.IsStringEmpty(source.VerifierID) {
+			needsInsert = true
+		} else {
+			result2, err := qtx.UpdateSourceVerifier(ctx, repo.UpdateSourceVerifierParams{
+				ID:                common.StringToPgText(source.VerifierID),
+				Type:              common.StringToPgText(string(source.Verifier.Type)),
+				BasicUsername:     common.StringToPgTextNullable(params.basicUser),
+				BasicPassword:     common.StringToPgTextNullable(params.basicPass),
+				ApiKeyHeaderName:  common.StringToPgTextNullable(params.apiKeyHeader),
+				ApiKeyHeaderValue: common.StringToPgTextNullable(params.apiKeyValue),
+				HmacHash:          common.StringToPgTextNullable(params.hmacHash),
+				HmacHeader:        common.StringToPgTextNullable(params.hmacHeader),
+				HmacSecret:        common.StringToPgTextNullable(params.hmacSecret),
+				HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
+			})
+			if err != nil {
+				s.logger.Error("failed to update source verifier", "error", err)
+				return &ServiceError{ErrMsg: "failed to update source verifier", Err: err}
+			}
+
+			if result2.RowsAffected() == 0 {
+				needsInsert = true
+			}
 		}
 
-		if result2.RowsAffected() == 0 {
-			return &ServiceError{ErrMsg: "source verifier not found"}
+		if needsInsert {
+			verifierID := ulid.Make().String()
+
+			err = qtx.CreateSourceVerifier(ctx, repo.CreateSourceVerifierParams{
+				ID:                common.StringToPgText(verifierID),
+				Type:              common.StringToPgText(string(source.Verifier.Type)),
+				BasicUsername:     common.StringToPgTextNullable(params.basicUser),
+				BasicPassword:     common.StringToPgTextNullable(params.basicPass),
+				ApiKeyHeaderName:  common.StringToPgTextNullable(params.apiKeyHeader),
+				ApiKeyHeaderValue: common.StringToPgTextNullable(params.apiKeyValue),
+				HmacHash:          common.StringToPgTextNullable(params.hmacHash),
+				HmacHeader:        common.StringToPgTextNullable(params.hmacHeader),
+				HmacSecret:        common.StringToPgTextNullable(params.hmacSecret),
+				HmacEncoding:      common.StringToPgTextNullable(params.hmacEncoding),
+			})
+			if err != nil {
+				s.logger.Error("failed to create source verifier", "error", err)
+				return &ServiceError{ErrMsg: "failed to create source verifier", Err: err}
+			}
+
+			_, err = tx.Exec(ctx, "UPDATE convoy.sources SET source_verifier_id = $1, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL", verifierID, source.UID)
+			if err != nil {
+				s.logger.Error("failed to link source verifier to source", "error", err)
+				return &ServiceError{ErrMsg: "failed to link source verifier", Err: err}
+			}
+
+			source.VerifierID = verifierID
 		}
 	}
 

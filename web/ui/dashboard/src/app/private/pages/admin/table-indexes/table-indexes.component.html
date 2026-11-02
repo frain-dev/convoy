@@ -80,7 +80,11 @@
 
   @if (activeRun) {
     <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mb-24px">
-      A conversion or rebuild is already running. One runs at a time for the whole instance.
+      @if (activeRun.operation === 'rebuild_index') {
+        A rebuild is already running. One runs at a time for the whole instance.
+      } @else {
+        A conversion is already running. One runs at a time for the whole instance.
+      }
     </p>
   }
 }

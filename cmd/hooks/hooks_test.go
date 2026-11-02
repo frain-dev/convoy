@@ -1,13 +1,93 @@
 package hooks
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 )
+
+type migrationConfigurationStore struct {
+	completedID      string
+	managed          bool
+	retentionEnabled bool
+	retentionSeed    bool
+	err              error
+}
+
+func (s *migrationConfigurationStore) CompleteAdminManagedMigration(
+	_ context.Context,
+	id string,
+	retentionEnabled bool,
+) (bool, bool, error) {
+	s.completedID = id
+	s.retentionSeed = retentionEnabled
+	return s.managed, s.retentionEnabled, s.err
+}
+
+func TestCompleteAdminManagedMigration(t *testing.T) {
+	t.Run("marks legacy ownership as env-owned", func(t *testing.T) {
+		updatedAt := time.Date(2026, time.August, 27, 12, 0, 0, 0, time.UTC)
+		instanceConfig := &datastore.Configuration{
+			UID:             "config-1",
+			IsSignupEnabled: false,
+			StoragePolicy: &datastore.StoragePolicyConfiguration{
+				Type: datastore.OnPrem,
+			},
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{Period: "168h"},
+			UpdatedAt:       updatedAt,
+		}
+		envConfig := config.Configuration{}
+		envConfig.Auth.IsSignupEnabled = true
+		envConfig.Retention.Enabled = true
+		configStore := &migrationConfigurationStore{managed: false, retentionEnabled: true}
+
+		err := completeAdminManagedMigration(
+			context.Background(),
+			envConfig,
+			instanceConfig,
+			configStore,
+		)
+
+		require.NoError(t, err)
+		assert.Equal(t, "config-1", configStore.completedID)
+		assert.False(t, instanceConfig.AdminManaged)
+		assert.True(t, instanceConfig.AdminManagedKnown)
+		assert.False(t, instanceConfig.IsSignupEnabled)
+		assert.Equal(t, datastore.OnPrem, instanceConfig.StoragePolicy.Type)
+		assert.True(t, instanceConfig.RetentionPolicy.Enabled)
+		assert.True(t, instanceConfig.RetentionPolicy.EnabledKnown)
+		assert.True(t, configStore.retentionSeed)
+		assert.True(t, instanceConfig.UpdatedAt.After(updatedAt))
+	})
+
+	t.Run("does not change in-memory ownership when persistence fails", func(t *testing.T) {
+		instanceConfig := &datastore.Configuration{
+			UID:             "config-1",
+			RetentionPolicy: &datastore.RetentionPolicyConfiguration{},
+		}
+		configStore := &migrationConfigurationStore{
+			err: errors.New("database unavailable"),
+		}
+
+		err := completeAdminManagedMigration(
+			context.Background(),
+			config.Configuration{},
+			instanceConfig,
+			configStore,
+		)
+
+		require.EqualError(t, err, "database unavailable")
+		assert.False(t, instanceConfig.AdminManaged)
+		assert.False(t, instanceConfig.AdminManagedKnown)
+	})
+}
 
 func TestApplyLicensePrecedence(t *testing.T) {
 	t.Run("env license wins as effective without replacing the purchased checkout key", func(t *testing.T) {

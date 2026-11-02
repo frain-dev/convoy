@@ -221,7 +221,8 @@ type rebuilder interface {
 	// which table it is on so the run row names that table.
 	dropped(ctx context.Context, name string) (indexes.Dropped, error)
 	// listDropped is the owed rebuilds in ListDropped order: guard, unique,
-	// deliveries list index, then the rest by when they were dropped.
+	// deliveries list index, observed-types index, then the rest by when they
+	// were dropped.
 	listDropped(ctx context.Context) ([]indexes.Dropped, error)
 	rebuild(ctx context.Context, d indexes.Dropped) error
 }
@@ -293,8 +294,7 @@ func (s *Service) StartIndexRebuild(ctx context.Context, indexName, triggeredBy 
 
 	go func() {
 		detached := context.WithoutCancel(ctx)
-		err := s.rebuild(detached, run, d)
-		s.noteRebuildOutcome(detached, d.Name, err)
+		_ = s.rebuild(detached, run, d)
 		s.startQueuedDroppedIndexes(detached, d.Name)
 	}()
 
@@ -311,15 +311,14 @@ func (s *Service) RunIndexRebuild(ctx context.Context, indexName, triggeredBy st
 	if err != nil {
 		return err
 	}
-	err = s.rebuild(ctx, run, d)
-	s.noteRebuildOutcome(ctx, indexName, err)
-	return err
+	return s.rebuild(ctx, run, d)
 }
 
 const bootTriggeredBy = "boot"
 
 // StartQueuedDroppedIndexes starts the concurrent rebuild of every index still
-// owed, in ListDropped order (guard, unique, deliveries list, then the rest).
+// owed, in ListDropped order (guard, unique, deliveries list, observed types,
+// then the rest).
 // Failure policy: fail open. Queries seq-scan until an index is valid; ingest
 // and HTTP must not wait on the build. A replica that finds the slot taken, or
 // a name that is already rebuilt, is success. Any other error is logged and
@@ -674,7 +673,12 @@ func (s *Service) convert(ctx context.Context, run *Run) error {
 // here as it is for a conversion.
 func (s *Service) rebuild(ctx context.Context, run *Run, d indexes.Dropped) error {
 	return s.execute(ctx, run, func(ctx context.Context) error {
-		return s.rebuilder.rebuild(ctx, d)
+		err := s.rebuilder.rebuild(ctx, d)
+		// Record the skip before finish writes Failed. Callers that wait on
+		// status then read the map must see the same outcome, and a boot
+		// walker that starts after Failed must not retry this name.
+		s.noteRebuildOutcome(ctx, d.Name, err)
+		return err
 	})
 }
 
@@ -699,6 +703,8 @@ func bootIndexLogName(name string) string {
 		return "payload search index rebuild"
 	case indexes.EventDeliveriesProjectCreated:
 		return "event deliveries list index rebuild"
+	case indexes.EventDeliveriesProjectEventTypeCreated:
+		return "event deliveries observed-types index rebuild"
 	default:
 		return "index rebuild"
 	}

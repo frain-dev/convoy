@@ -78,6 +78,7 @@ export class CreateProjectComponent implements OnInit {
 				enforce_secure_endpoints: [true]
 			}),
 			disable_endpoint: [false, Validators.required],
+			add_event_id_trace_headers: [false],
 			multiple_endpoint_subscriptions: [false, Validators.required],
 			verify_dynamic_events: [false, Validators.required],
 			allow_unmatched_dynamic_urls: [false, Validators.required],
@@ -132,7 +133,7 @@ export class CreateProjectComponent implements OnInit {
 		{ label: 'circuit breaker', svg: 'stroke', icon: 'shield' }
 	];
 	activeTab = this.tabs[0];
-	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
+	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'eventdelivery.retrying', 'project.updated'];
 	eventTypes: EVENT_TYPE[] = [];
 	selectedEventType: EVENT_TYPE | null = null;
     rateLimitDeleted = false;
@@ -296,6 +297,7 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
+			this.projectForm.get('config.add_event_id_trace_headers')?.patchValue(!!this.projectDetails.config?.add_event_id_trace_headers);
 			this.projectForm.get('config.verify_dynamic_events')?.patchValue(!!this.projectDetails.config?.verify_dynamic_events);
 			this.projectForm.get('config.allow_unmatched_dynamic_urls')?.patchValue(!!this.projectDetails.config?.allow_unmatched_dynamic_urls);
 

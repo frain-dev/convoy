@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/configuration"
 	"github.com/frain-dev/convoy/internal/feature_flags"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/dataplanestats"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/indexes"
@@ -131,6 +132,10 @@ func StartConvoyServer(a *cli.App) error {
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 	featureFlagSvc := feature_flags.New(a.Logger, a.DB)
+	instanceConfig, err := configRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		return err
+	}
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -145,6 +150,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	apiOpts := &types.APIOptions{
 		FFlag:                      flag,
+		AdminManaged:               instanceConfig.AdminManaged,
 		FeatureFlagFetcher:         featureFlagSvc,
 		EarlyAdopterFeatureFetcher: featureFlagSvc,
 		FeatureFlagService:         featureFlagSvc,
@@ -154,6 +160,10 @@ func StartConvoyServer(a *cli.App) error {
 		Cfg:                        cfg,
 		TracerBackend:              a.TracerBackend,
 		ConfigRepo:                 configRepo,
+
+		// The control plane runs no data plane of its own, so it has no
+		// reporter. It reads what the replicas published.
+		DataPlaneMonitor: dataplanestats.StoreFrom(a.DB),
 	}
 	a.Broker.ApplyToAPIOptions(apiOpts)
 
@@ -175,19 +185,25 @@ func StartConvoyServer(a *cli.App) error {
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 
-	if a.Licenser.RetentionPolicy() {
-		// Register cron-based backup tasks only when CDC backup is not enabled.
-		// When CDC is active, the BackupCollector in the worker handles exports continuously.
-		if !cfg.RetentionPolicy.CDCBackupEnabled {
-			backupInterval := exporter.ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+	if a.Licenser.WebhookArchiving() {
+		// Register cron-based backup tasks when CDC backup is not enabled.
+		// When CDC is active, the BackupCollector in the worker handles exports.
+		// Do not gate registration on cfg.WebhookArchiving.Enabled (env): workers
+		// read DB webhook_archiving.enabled, so a dashboard toggle must not wait
+		// for an env change and server restart.
+		if !cfg.WebhookArchiving.CDCEnabled {
+			backupInterval := exporter.ParseBackupInterval(cfg.WebhookArchiving.Interval)
 			enqueueCron := exporter.DurationToCron(backupInterval)
 			processCron := exporter.DurationToCronOffset(backupInterval, 1) // +1 min offset so enqueue runs first
 
 			s.RegisterTask(enqueueCron, convoy.ScheduleQueue, convoy.EnqueueBackupJobs)
 			s.RegisterTask(processCron, convoy.ScheduleQueue, convoy.ProcessBackupJob)
 		}
+	}
 
-		// Retention always runs at 1am
+	if a.Licenser.RetentionPolicy() {
+		// Same pattern as backup: register when licensed; the job re-reads DB
+		// retention_enabled so a dashboard disable does not wait for restart.
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 

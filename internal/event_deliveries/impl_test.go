@@ -240,6 +240,10 @@ func seedSubscription(t *testing.T, db database.Database, projectID, endpointID,
 }
 
 func seedEvent(t *testing.T, db database.Database, projectID, endpointID, sourceID string) *datastore.Event {
+	return seedEventNamed(t, db, projectID, endpointID, sourceID, "test.event")
+}
+
+func seedEventNamed(t *testing.T, db database.Database, projectID, endpointID, sourceID, eventType string) *datastore.Event {
 	t.Helper()
 
 	logger := log.New("convoy", log.LevelInfo)
@@ -250,7 +254,7 @@ func seedEvent(t *testing.T, db database.Database, projectID, endpointID, source
 	now := time.Now()
 	event := &datastore.Event{
 		UID:            eventID,
-		EventType:      datastore.EventType("test.event"),
+		EventType:      datastore.EventType(eventType),
 		ProjectID:      projectID,
 		SourceID:       sourceID,
 		Endpoints:      []string{endpointID},
@@ -296,6 +300,56 @@ func defaultSearchParams() datastore.SearchParams {
 	return datastore.SearchParams{
 		CreatedAtStart: time.Now().Add(-24 * time.Hour).Unix(),
 		CreatedAtEnd:   time.Now().Add(1 * time.Hour).Unix(),
+	}
+}
+
+func TestDashboardRollupsRespectTimeFilters(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	day := time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC)
+	for _, hour := range []int{12, 18, 24} {
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+		delivery := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		delivery.Status = datastore.SuccessEventStatus
+		require.NoError(t, service.CreateEventDelivery(ctx, delivery))
+		at := day.Add(time.Duration(hour) * time.Hour)
+		_, err := db.GetDB().ExecContext(ctx, "UPDATE convoy.events SET created_at=$1, updated_at=$1 WHERE id=$2", at, event.UID)
+		require.NoError(t, err)
+		_, err = db.GetDB().ExecContext(ctx, "UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2", at, delivery.UID)
+		require.NoError(t, err)
+	}
+	for i := 0; i < 2; i++ {
+		require.NoError(t, service.RefreshDailyCounts(ctx, day, day.AddDate(0, 0, 2)))
+	}
+	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
+	require.NoError(t, service.markEventDailyCountsBackfillCompleted(ctx))
+	for _, period := range []datastore.Period{datastore.Daily, datastore.Weekly, datastore.Monthly, datastore.Yearly} {
+		for _, window := range []struct {
+			start, end time.Time
+			count      uint64
+		}{
+			{day, day.Add(13 * time.Hour), 1},
+			{day.Add(12 * time.Hour), day.Add(13 * time.Hour), 1},
+			{day.Add(-12 * time.Hour), day.Add(24 * time.Hour), 3},
+			{day.Add(12 * time.Hour), day.Add(48 * time.Hour), 3},
+		} {
+			params := datastore.SearchParams{CreatedAtStart: window.start.Unix(), CreatedAtEnd: window.end.Unix()}
+			for _, endpoints := range [][]string{nil, {endpoint.UID}} {
+				events, err := service.LoadEventIntervals(ctx, project.UID, params, period, endpoints)
+				require.NoError(t, err)
+				require.Equal(t, window.count, sumIntervalCounts(events), "chart time filter after backfill")
+				deliveries, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, params, period, endpoints)
+				require.NoError(t, err)
+				require.Equal(t, window.count, sumIntervalCounts(deliveries), "delivery time filter after backfill")
+				totals, _, err := service.StatusTotals(ctx, project.UID, params, endpoints)
+				require.NoError(t, err)
+				require.Equal(t, int64(window.count), totals[datastore.SuccessEventStatus], "card/table count time filter after backfill")
+			}
+		}
 	}
 }
 
@@ -798,6 +852,57 @@ func TestCountEventDeliveries(t *testing.T) {
 	})
 }
 
+func TestEventDeliveriesFilterByEventIDsAndMinTrials(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+	eventA := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	eventB := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+	other := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+	create := func(eventID string, trials uint64) *datastore.EventDelivery {
+		d := createTestEventDelivery(t, project.UID, eventID, endpoint.UID, sub.UID)
+		d.Metadata.NumTrials = trials
+		require.NoError(t, service.CreateEventDelivery(ctx, d))
+		return d
+	}
+
+	firstTry := create(eventA.UID, 1)
+	retried := create(eventA.UID, 3)
+	retriedB := create(eventB.UID, 2)
+	create(other.UID, 4)
+
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+	load := func(params datastore.SearchParams) []string {
+		deliveries, _, err := service.LoadEventDeliveriesPaged(ctx, project.UID, nil, "", "", nil, params, pageable, "", "", "")
+		require.NoError(t, err)
+		ids := make([]string, 0, len(deliveries))
+		for i := range deliveries {
+			ids = append(ids, deliveries[i].UID)
+		}
+		return ids
+	}
+
+	params := defaultSearchParams()
+	params.EventIDs = []string{eventA.UID, eventB.UID}
+	require.ElementsMatch(t, []string{firstTry.UID, retried.UID, retriedB.UID}, load(params))
+
+	count, err := service.CountEventDeliveries(ctx, project.UID, nil, "", nil, params)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), count)
+
+	params.MinTrials = 2
+	require.ElementsMatch(t, []string{retried.UID, retriedB.UID}, load(params))
+
+	count, err = service.CountEventDeliveries(ctx, project.UID, nil, "", nil, params)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), count)
+}
+
 func TestCountDeliveriesByEndpointAndStatus(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
@@ -947,11 +1052,12 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 		require.True(t, pagination1.HasNextPage)
 
 		pageable.NextCursor = pagination1.NextPageCursor
-		page2, _, err := service.LoadEventDeliveriesPaged(
+		page2, pagination2, err := service.LoadEventDeliveriesPaged(
 			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
 		require.Len(t, page2, 5)
+		require.True(t, pagination2.HasPreviousPage)
 
 		// No overlap
 		page1IDs := make(map[string]bool)
@@ -988,15 +1094,17 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
+		require.True(t, pagination2.HasPreviousPage)
 
 		// Go back
 		pageable.Direction = datastore.Prev
 		pageable.PrevCursor = pagination2.PrevPageCursor
-		pageBack, _, err := service.LoadEventDeliveriesPaged(
+		pageBack, paginationBack, err := service.LoadEventDeliveriesPaged(
 			ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
 		)
 		require.NoError(t, err)
 		require.Len(t, pageBack, 5)
+		require.False(t, paginationBack.HasPreviousPage)
 
 		for i := range page1 {
 			require.Equal(t, page1[i].UID, pageBack[i].UID)
@@ -1139,6 +1247,92 @@ func TestLoadEventDeliveriesPaged(t *testing.T) {
 		}
 	})
 
+	t.Run("StatusNextPage", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+		var successIDs []string
+		for i := 0; i < 3; i++ {
+			d := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+			d.Status = datastore.SuccessEventStatus
+			require.NoError(t, service.CreateEventDelivery(ctx, d))
+			successIDs = append(successIDs, d.UID)
+			time.Sleep(2 * time.Millisecond)
+		}
+
+		pageable := datastore.Pageable{PerPage: 1, Direction: datastore.Next, Sort: "DESC"}
+		page1, pagination1, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page1, 1)
+		require.Equal(t, successIDs[2], page1[0].UID)
+		require.True(t, pagination1.HasNextPage)
+
+		pageable.NextCursor = pagination1.NextPageCursor
+		page2, pagination2, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, defaultSearchParams(), pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, page2, 1)
+		require.True(t, pagination2.HasPreviousPage)
+		require.Equal(t, successIDs[1], page2[0].UID)
+		require.Equal(t, datastore.SuccessEventStatus, page2[0].Status)
+	})
+
+	t.Run("SearchByIDEventTypeAndEndpointName", func(t *testing.T) {
+		project := seedTestProject(t, db)
+		endpoint := seedTestEndpoint(t, db, project.UID)
+		source := seedTestSource(t, db, project.UID)
+		sub := seedSubscription(t, db, project.UID, endpoint.UID, source.UID)
+		event := seedEvent(t, db, project.UID, endpoint.UID, source.UID)
+
+		named := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		named.EventType = datastore.EventType("invoice.paid")
+		require.NoError(t, service.CreateEventDelivery(ctx, named))
+
+		other := createTestEventDelivery(t, project.UID, event.UID, endpoint.UID, sub.UID)
+		other.EventType = datastore.EventType("charge.failed")
+		require.NoError(t, service.CreateEventDelivery(ctx, other))
+
+		pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+
+		byID, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, datastore.SearchParams{
+				CreatedAtStart: defaultSearchParams().CreatedAtStart,
+				CreatedAtEnd:   defaultSearchParams().CreatedAtEnd,
+				Query:          named.UID,
+			}, pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, byID, 1)
+		require.Equal(t, named.UID, byID[0].UID)
+
+		byType, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, datastore.SearchParams{
+				CreatedAtStart: defaultSearchParams().CreatedAtStart,
+				CreatedAtEnd:   defaultSearchParams().CreatedAtEnd,
+				Query:          "invoice",
+			}, pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, byType, 1)
+		require.Equal(t, named.UID, byType[0].UID)
+
+		byEndpoint, _, err := service.LoadEventDeliveriesPaged(
+			ctx, project.UID, nil, "", "", nil, datastore.SearchParams{
+				CreatedAtStart: defaultSearchParams().CreatedAtStart,
+				CreatedAtEnd:   defaultSearchParams().CreatedAtEnd,
+				Query:          endpoint.Name,
+			}, pageable, "", "", "",
+		)
+		require.NoError(t, err)
+		require.Len(t, byEndpoint, 2)
+	})
+
 	t.Run("EmptyResult", func(t *testing.T) {
 		project := seedTestProject(t, db)
 
@@ -1172,25 +1366,29 @@ func TestLoadEventDeliveriesIntervals(t *testing.T) {
 	t.Run("Daily", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Daily, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 
 	t.Run("Weekly", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Weekly, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 
 	t.Run("Monthly", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Monthly, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 
 	t.Run("Yearly", func(t *testing.T) {
 		intervals, err := service.LoadEventDeliveriesIntervals(ctx, project.UID, defaultSearchParams(), datastore.Yearly, nil)
 		require.NoError(t, err)
-		require.GreaterOrEqual(t, len(intervals), minLen)
+		require.NotEmpty(t, intervals)
+		require.Equal(t, uint64(3), sumIntervalCounts(intervals))
 	})
 }
 
@@ -1773,6 +1971,7 @@ func TestAdvanceDailyCountsBackfillWalksHistoryToCompletion(t *testing.T) {
 func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
+	params := datastore.SearchParams{CreatedAtStart: utcDate(time.Now()).AddDate(0, 0, -1).Unix(), CreatedAtEnd: utcDate(time.Now()).AddDate(0, 0, 1).Unix()}
 
 	project := seedTestProject(t, db)
 	endpoint := seedTestEndpoint(t, db, project.UID)
@@ -1792,7 +1991,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 
 	// Until the backfill completes the totals come off a live scan, which is the
 	// number the rollup then has to match.
-	live, liveSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	live, liveSource, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, StatusTotalsFromLive, liveSource)
 	require.Equal(t, int64(3), live[datastore.SuccessEventStatus])
@@ -1810,7 +2009,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 	}
 	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
 
-	fromRollup, rollupSource, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	fromRollup, rollupSource, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, StatusTotalsFromRollup, rollupSource)
 	require.Equal(t, live, fromRollup, "rollup disagrees with the live scan")
@@ -1820,7 +2019,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 	seed(datastore.SuccessEventStatus, 1)
 	require.NoError(t, service.RefreshRecentDailyCounts(ctx))
 
-	updated, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	updated, _, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, int64(4), updated[datastore.SuccessEventStatus])
 	require.Equal(t, int64(2), updated[datastore.FailureEventStatus])
@@ -1829,6 +2028,7 @@ func TestStatusTotalsAgreePerStatusAcrossSources(t *testing.T) {
 func TestStatusTotalsScopeToEndpoint(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()
+	params := datastore.SearchParams{CreatedAtStart: utcDate(time.Now()).AddDate(0, 0, -1).Unix(), CreatedAtEnd: utcDate(time.Now()).AddDate(0, 0, 1).Unix()}
 
 	project := seedTestProject(t, db)
 	scoped := seedTestEndpoint(t, db, project.UID)
@@ -1852,12 +2052,12 @@ func TestStatusTotalsScopeToEndpoint(t *testing.T) {
 	}
 	require.NoError(t, service.markDailyCountsBackfillCompleted(ctx))
 
-	totals, source, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), []string{scoped.UID})
+	totals, source, err := service.StatusTotals(ctx, project.UID, params, []string{scoped.UID})
 	require.NoError(t, err)
 	require.Equal(t, StatusTotalsFromRollup, source)
 	require.Equal(t, int64(2), totals[datastore.SuccessEventStatus])
 
-	all, _, err := service.StatusTotals(ctx, project.UID, defaultSearchParams(), nil)
+	all, _, err := service.StatusTotals(ctx, project.UID, params, nil)
 	require.NoError(t, err)
 	require.Equal(t, int64(7), all[datastore.SuccessEventStatus])
 }
@@ -2300,4 +2500,138 @@ func TestPartitionEventDeliveriesTableNamesForRetention(t *testing.T) {
 
 	require.NoError(t, service.PartitionEventDeliveriesTable(ctx))
 	testenv.RequirePartitionsAddressableByRetention(t, db, "event_deliveries", project.UID)
+}
+
+func TestObservedEventTypes(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	other := seedTestProject(t, db)
+	ep1 := seedTestEndpoint(t, db, project.UID)
+	ep2 := seedTestEndpoint(t, db, project.UID)
+	otherEp := seedTestEndpoint(t, db, other.UID)
+	src := seedTestSource(t, db, project.UID)
+	otherSrc := seedTestSource(t, db, other.UID)
+	sub1 := seedSubscription(t, db, project.UID, ep1.UID, src.UID)
+	sub2 := seedSubscription(t, db, project.UID, ep2.UID, src.UID)
+	otherSub := seedSubscription(t, db, other.UID, otherEp.UID, otherSrc.UID)
+	eventPaid := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "invoice.paid")
+	eventOrder := seedEventNamed(t, db, project.UID, ep2.UID, src.UID, "order.created")
+	eventStar := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "*")
+	eventOld := seedEventNamed(t, db, project.UID, ep1.UID, src.UID, "old.event")
+	otherEvent := seedEventNamed(t, db, other.UID, otherEp.UID, otherSrc.UID, "webhook.received")
+
+	createFor := func(projectID, eventID, endpointID, subID string, eventType datastore.EventType) *datastore.EventDelivery {
+		t.Helper()
+		d := createTestEventDelivery(t, projectID, eventID, endpointID, subID)
+		d.EventType = eventType
+		require.NoError(t, service.CreateEventDelivery(ctx, d))
+		return d
+	}
+
+	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID, eventPaid.EventType)
+	createFor(project.UID, eventPaid.UID, ep1.UID, sub1.UID, eventPaid.EventType)
+	createFor(project.UID, eventStar.UID, ep1.UID, sub1.UID, eventStar.EventType)
+	createFor(project.UID, eventOrder.UID, ep2.UID, sub2.UID, eventOrder.EventType)
+	old := createFor(project.UID, eventOld.UID, ep1.UID, sub1.UID, eventOld.EventType)
+	createFor(other.UID, otherEvent.UID, otherEp.UID, otherSub.UID, otherEvent.EventType)
+
+	_, err := db.GetConn().Exec(ctx,
+		"UPDATE convoy.event_deliveries SET created_at=$1, updated_at=$1 WHERE id=$2",
+		time.Now().Add(-48*time.Hour), old.UID)
+	require.NoError(t, err)
+
+	names, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"invoice.paid", "order.created"}, names)
+
+	scoped, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), []string{ep1.UID})
+	require.NoError(t, err)
+	require.Equal(t, []string{"invoice.paid"}, scoped)
+
+	catalog, observed := GroupFilterEventTypes([]datastore.ProjectEventType{
+		{Name: "invoice.paid"},
+		{Name: "*"},
+	}, names)
+	require.Equal(t, []string{"invoice.paid"}, catalog)
+	require.Equal(t, []string{"order.created"}, observed)
+}
+
+func TestObservedEventTypesReadsDeliveryEventType(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	ep := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, ep.UID, src.UID)
+	event := seedEventNamed(t, db, project.UID, ep.UID, src.UID, "bench.event")
+
+	d := createTestEventDelivery(t, project.UID, event.UID, ep.UID, sub.UID)
+	d.EventType = event.EventType
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+	listed, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	require.Equal(t, "bench.event", string(listed[0].EventType))
+
+	observed, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"bench.event"}, observed)
+
+	observedAgain, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Equal(t, observed, observedAgain)
+
+	filtered, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "bench.event", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	require.Equal(t, d.UID, filtered[0].UID)
+
+	catalog, grouped := GroupFilterEventTypes(nil, observed)
+	require.Empty(t, catalog)
+	require.Equal(t, []string{"bench.event"}, grouped)
+}
+
+func TestObservedEventTypesSkipsBlankDeliveryType(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	ep := seedTestEndpoint(t, db, project.UID)
+	src := seedTestSource(t, db, project.UID)
+	sub := seedSubscription(t, db, project.UID, ep.UID, src.UID)
+	event := seedEventNamed(t, db, project.UID, ep.UID, src.UID, "bench.event")
+
+	d := createTestEventDelivery(t, project.UID, event.UID, ep.UID, sub.UID)
+	d.EventType = ""
+	require.NoError(t, service.CreateEventDelivery(ctx, d))
+
+	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, Sort: "DESC"}
+	listed, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, listed, 1)
+	require.NotNil(t, listed[0].Event)
+	require.Equal(t, "bench.event", string(listed[0].Event.EventType))
+	require.Empty(t, string(listed[0].EventType))
+
+	observed, err := service.ObservedEventTypes(ctx, project.UID, defaultSearchParams(), nil)
+	require.NoError(t, err)
+	require.Empty(t, observed)
+
+	filtered, _, err := service.LoadEventDeliveriesPaged(
+		ctx, project.UID, nil, "", "", nil, defaultSearchParams(), pageable, "", "bench.event", "",
+	)
+	require.NoError(t, err)
+	require.Len(t, filtered, 1)
+	require.Equal(t, d.UID, filtered[0].UID)
 }

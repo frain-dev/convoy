@@ -1,0 +1,2637 @@
+{
+  "kind": "historical-coding-agent-task-candidates",
+  "created_on": "2026-10-20",
+  "tasks": [
+    {
+      "id": "convoy-agent-001",
+      "title": "insert missing source verifier and persist provider",
+      "base_revision": "83874260b7b2f29720bf91065923e8f065b35753",
+      "reference_revision": "379a18c53302348fa894a4462af0bb3cc8fbad71",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: insert missing source verifier and persist provider. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestUpdateSource_Validate",
+        "TestUpdateSource_AddVerifierToNoopSource",
+        "TestUpdateSource_VerifierNotFound_InsertsAndLinks",
+        "TestUpdateSource_UpdateProvider",
+        "TestUpdateSourceService_RejectUnsupportedProviderLeavesExistingUnchanged"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/models/source_test.go",
+          "names": [
+            "TestUpdateSource_Validate"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/sources/update_source_test.go",
+          "names": [
+            "TestUpdateSource_AddVerifierToNoopSource",
+            "TestUpdateSource_VerifierNotFound_InsertsAndLinks",
+            "TestUpdateSource_UpdateProvider"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "services/update_source_test.go",
+          "names": [
+            "TestUpdateSourceService_RejectUnsupportedProviderLeavesExistingUnchanged"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/models/source.go",
+        "docs/docs.go",
+        "docs/swagger.json",
+        "docs/swagger.yaml",
+        "docs/v3/openapi3.json",
+        "docs/v3/openapi3.yaml",
+        "internal/sources/impl.go",
+        "services/update_source.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-002",
+      "title": "keep list filters from timing out under load",
+      "base_revision": "3bcbb10fa3dfa8663fcfa6742f88fa9b31a56fb3",
+      "reference_revision": "83874260b7b2f29720bf91065923e8f065b35753",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: keep list filters from timing out under load. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "Test_selectIngestVerifier_ProviderWithoutHMAC",
+        "Test_selectIngestVerifier_ProviderWithHMAC",
+        "Test_selectIngestVerifier_GenericMissingNestedConfig",
+        "Test_providerHMACSecret",
+        "TestListFilterIndexDefinitionsMatchMigration",
+        "TestListFilterIndexesAreBootQueued"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/ingest_test.go",
+          "names": [
+            "Test_selectIngestVerifier_ProviderWithoutHMAC",
+            "Test_selectIngestVerifier_ProviderWithHMAC",
+            "Test_selectIngestVerifier_GenericMissingNestedConfig",
+            "Test_providerHMACSecret"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/indexes/indexes_test.go",
+          "names": [
+            "TestListFilterIndexDefinitionsMatchMigration",
+            "TestListFilterIndexesAreBootQueued"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        ".gitignore",
+        "api/handlers/dashboard.go",
+        "api/handlers/event.go",
+        "api/handlers/event_delivery.go",
+        "api/ingest.go",
+        "docs/docs.go",
+        "internal/event_deliveries/paged_filter.go",
+        "internal/events/event_search.go",
+        "internal/events/impl.go",
+        "internal/events/queries.sql",
+        "internal/events/repo/queries.sql.go",
+        "internal/pkg/indexes/indexes.go",
+        "sql/1792500000.sql",
+        "web/ui/dashboard/package.json",
+        "web/ui/dashboard/src/app/models/event.model.ts",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs-fetch-error.ts",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.service.ts",
+        "web/ui/dashboard/src/app/services/http/http.service.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-003",
+      "title": "keep delivery ranges consistent and validate URLs promptly",
+      "base_revision": "c20cc4665b4fba1e148d7affd9487f012ffe7aff",
+      "reference_revision": "3a8473277df5e94ffc3155c76e6c55b1a2d4847c",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: keep delivery ranges consistent and validate URLs promptly. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestDashboardRollupsRespectTimeFilters",
+        "TestPadIntervalsRequestedWindow"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestDashboardRollupsRespectTimeFilters"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/intervals_test.go",
+          "names": [
+            "TestPadIntervalsRequestedWindow"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/models/event.go",
+        "api/testdata/TestDashboardIntegrationTestSuiteTest/TestGetDashboardSummary/should_fetch_daily_dashboard_summary.golden",
+        "api/testdata/TestDashboardIntegrationTestSuiteTest/TestGetDashboardSummary/should_fetch_monthly_dashboard_summary.golden",
+        "api/testdata/TestDashboardIntegrationTestSuiteTest/TestGetDashboardSummary/should_fetch_weekly_dashboard_summary.golden",
+        "api/testdata/TestDashboardIntegrationTestSuiteTest/TestGetDashboardSummary/should_fetch_yearly_dashboard_summary.golden",
+        "docs/docs.go",
+        "internal/event_deliveries/daily_counts.go",
+        "internal/event_deliveries/dashboard_window.go",
+        "internal/event_deliveries/event_daily_counts.go",
+        "internal/event_deliveries/helpers.go",
+        "internal/event_deliveries/impl.go",
+        "internal/event_deliveries/intervals.go",
+        "web/ui/dashboard/src/app/components/date-picker/date-picker.component.spec.ts",
+        "web/ui/dashboard/src/app/components/date-picker/date-picker.component.ts",
+        "web/ui/dashboard/src/app/portal/create-portal-endpoint/create-portal-endpoint.component.ts",
+        "web/ui/dashboard/src/app/portal/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/portal/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/components/create-endpoint/create-endpoint.component.ts",
+        "web/ui/dashboard/src/app/private/components/create-endpoint/url-validation-regression.spec.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/delivery-date-range.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/delivery-date-regression.spec.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.component.ts",
+        "web/ui/dashboard/src/app/services/general/general.service.ts",
+        "web/ui/dashboard/src/app/validators/http-url.validator.spec.ts",
+        "web/ui/dashboard/src/app/validators/http-url.validator.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-004",
+      "title": "correct missing-field and invalid-operand filtering",
+      "base_revision": "b6d07b77f4c377345f626d3fa87862852bcc447b",
+      "reference_revision": "c20cc4665b4fba1e148d7affd9487f012ffe7aff",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: correct missing-field and invalid-operand filtering. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestFilterMissingFieldsAndInvalidOperands"
+      ],
+      "oracle_tests": [
+        {
+          "file": "pkg/compare/filter_regression_test.go",
+          "names": [
+            "TestFilterMissingFieldsAndInvalidOperands"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "pkg/compare/compare.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-005",
+      "title": "default zero retry intervals and cap jitter",
+      "base_revision": "5efb3112e4c332c242b94eeb39c5c1c221c9fcc5",
+      "reference_revision": "f4cb8a2361726352fd27728bf26ada834f4cc55c",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: default zero retry intervals and cap jitter. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestExponentialBackoffRetryStrategy_NextDuration_NearZeroDelays",
+        "TestExponentialBackoffRetryStrategy_NextDuration_JitterNeverExceedsMax",
+        "TestExponentialBackoffRetryStrategy_NextDuration_ExponentialGrowth"
+      ],
+      "oracle_tests": [
+        {
+          "file": "retrystrategies/exponentialBackoff_test.go",
+          "names": [
+            "TestExponentialBackoffRetryStrategy_NextDuration_NearZeroDelays",
+            "TestExponentialBackoffRetryStrategy_NextDuration_JitterNeverExceedsMax",
+            "TestExponentialBackoffRetryStrategy_NextDuration_ExponentialGrowth"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "retrystrategies/exponentialBackoff.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-006",
+      "title": "skip endpoint probes when ping validation is disabled",
+      "base_revision": "ecd736b026122f9ae58b4a2e7460869b7fbf3d09",
+      "reference_revision": "6081a35a960c45028ddbcd3ccdf15c451f143d5f",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: skip endpoint probes when ping validation is disabled. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEndpointPingValidation",
+        "TestEndpointSkipPingPreservesURLValidation"
+      ],
+      "oracle_tests": [
+        {
+          "file": "services/endpoint_ping_test.go",
+          "names": [
+            "TestEndpointPingValidation",
+            "TestEndpointSkipPingPreservesURLValidation"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "config/config.go",
+        "convoy.env.example",
+        "services/create_endpoint.go",
+        "services/update_endpoint.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-007",
+      "title": "clarify endpoint discard and tooltip diagnostics",
+      "base_revision": "489294d7a2c39f7ae051550bcfb46ea3476470a8",
+      "reference_revision": "8402eb503e4ad46698c8f79c95c08720ec099d2e",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: clarify endpoint discard and tooltip diagnostics. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestQueueMatchingPersistsDiscardReason"
+      ],
+      "oracle_tests": [
+        {
+          "file": "worker/task/process_event_discard_test.go",
+          "names": [
+            "TestQueueMatchingPersistsDiscardReason"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "web/ui/dashboard/src/app/components/tooltip/tooltip.component.spec.ts",
+        "web/ui/dashboard/src/app/components/tooltip/tooltip.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.component.ts",
+        "worker/task/process_event_creation.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-008",
+      "title": "reload dynamic routing metadata before matching",
+      "base_revision": "82b3174ff7a1ccbcb1f660d3562c010f899df180",
+      "reference_revision": "5b48df0bde00e1161c2e30db1c5fa1259f1c85ed",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: reload dynamic routing metadata before matching. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEventForMatchReloadsDynamicMetadataAfterSerialization",
+        "TestEventForMatchPropagatesDynamicReloadFailure"
+      ],
+      "oracle_tests": [
+        {
+          "file": "worker/task/event_for_match_test.go",
+          "names": [
+            "TestEventForMatchReloadsDynamicMetadataAfterSerialization",
+            "TestEventForMatchPropagatesDynamicReloadFailure"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "worker/task/process_event_channel.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-009",
+      "title": "separate retention and archiving entitlements",
+      "base_revision": "b84e9572abc64569bab028a8d5d880e181002d9d",
+      "reference_revision": "82b3174ff7a1ccbcb1f660d3562c010f899df180",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: separate retention and archiving entitlements. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestFeatureListRetentionUsesRetentionEntitlement",
+        "TestRetentionAndArchivingEntitlementsAreIndependent"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/license/features_test.go",
+          "names": [
+            "TestFeatureListRetentionUsesRetentionEntitlement"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/license/service/licenser_test.go",
+          "names": [
+            "TestRetentionAndArchivingEntitlementsAreIndependent"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/retention_run.go",
+        "cmd/server/server.go",
+        "docs/docs.go",
+        "internal/dataplane/worker.go",
+        "internal/pkg/license/features.go",
+        "internal/pkg/license/license.go",
+        "internal/pkg/license/noop/noop.go",
+        "internal/pkg/license/service/licenser.go",
+        "mocks/license.go",
+        "scripts/stress-test-backup.sh",
+        "testenv/minio.go",
+        "web/ui/dashboard/src/app/private/pages/admin/retention-drops/retention-drops.component.html"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-010",
+      "title": "bound retention row counts so they cannot block drops",
+      "base_revision": "72328d8888a65aea5fbb0709019e48df69e370ee",
+      "reference_revision": "b84e9572abc64569bab028a8d5d880e181002d9d",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: bound retention row counts so they cannot block drops. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestDropAdoptedPartitionStillDropsWhenCountBudgetIsGone",
+        "TestRowCountContextDetachesFromJobCancel",
+        "TestRowCountContextSkipsWhenJobHasNoBudget",
+        "TestRowCountContextSkipsWhenJobAlreadyCancelled",
+        "TestCountExpiredPartitionRowCountsSkipsCancelledJob"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/retention/retention_test.go",
+          "names": [
+            "TestDropAdoptedPartitionStillDropsWhenCountBudgetIsGone"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/retention/runs_test.go",
+          "names": [
+            "TestRowCountContextDetachesFromJobCancel",
+            "TestRowCountContextSkipsWhenJobHasNoBudget",
+            "TestRowCountContextSkipsWhenJobAlreadyCancelled",
+            "TestCountExpiredPartitionRowCountsSkipsCancelledJob"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/pkg/retention/retention.go",
+        "internal/pkg/retention/runs.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-011",
+      "title": "require the invitee session to accept an organisation invite",
+      "base_revision": "7970594d6d2cf410ba70704bd477b80974bc798b",
+      "reference_revision": "1f19a12856b0f00e4cbcd845a3d2bc761ab38315",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: require the invitee session to accept an organisation invite. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestInviteEmailsMatch"
+      ],
+      "oracle_tests": [
+        {
+          "file": "services/process_invite_test.go",
+          "names": [
+            "TestInviteEmailsMatch"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/organisation_invite.go",
+        "services/process_invite.go",
+        "web/ui/dashboard/src/app/public/accept-invite/accept-invite.component.html",
+        "web/ui/dashboard/src/app/public/accept-invite/accept-invite.component.ts",
+        "web/ui/dashboard/src/app/public/accept-invite/invite-redirect.spec.ts",
+        "web/ui/dashboard/src/app/public/accept-invite/invite-redirect.ts",
+        "web/ui/dashboard/src/app/public/login/login.component.ts",
+        "web/ui/dashboard/src/app/public/saml/saml.component.ts",
+        "web/ui/dashboard/src/app/services/http/http.service.spec.ts",
+        "web/ui/dashboard/src/app/services/http/http.service.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-012",
+      "title": "align retry preview count and gate event type mutations",
+      "base_revision": "5dddd1e84c5e30e802b5244310e1206863f2cb43",
+      "reference_revision": "7970594d6d2cf410ba70704bd477b80974bc798b",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: align retry preview count and gate event type mutations. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestCountRetryCandidates_EmptyProjectIDsIsZero",
+        "TestCountRetryCandidates_AllStatusCombos",
+        "TestCountRetryCandidates_Lookback",
+        "TestCountRetryCandidates_EventIDFilter",
+        "TestCountRetryCandidates_SingleRowWalkTerminates",
+        "TestCountRetryCandidates_OneProjectScope"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/retry_count_test.go",
+          "names": [
+            "TestCountRetryCandidates_EmptyProjectIDsIsZero",
+            "TestCountRetryCandidates_AllStatusCombos",
+            "TestCountRetryCandidates_Lookback",
+            "TestCountRetryCandidates_EventIDFilter",
+            "TestCountRetryCandidates_SingleRowWalkTerminates",
+            "TestCountRetryCandidates_OneProjectScope"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/event_types.go",
+        "api/handlers/organisation.go",
+        "docs/docs.go",
+        "internal/event_deliveries/retry_count.go",
+        "internal/projects/impl.go",
+        "web/ui/dashboard/src/app/private/components/create-project-component/create-project-component.component.html",
+        "worker/task/retry_event_deliveries.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-013",
+      "title": "bump postgres cache epoch before dropping a local entry",
+      "base_revision": "28adea56667829c7045b508db0a33b7a39130bf1",
+      "reference_revision": "6029c504c63bd301396b3120c8039d1271734c2c",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: bump postgres cache epoch before dropping a local entry. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestForgetAdvancesStripeBeforeDroppingLocal"
+      ],
+      "oracle_tests": [
+        {
+          "file": "cache/postgres/client_test.go",
+          "names": [
+            "TestForgetAdvancesStripeBeforeDroppingLocal"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "cache/postgres/client.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-014",
+      "title": "block private networks on oauth2 connection test",
+      "base_revision": "c0a26db4c9e7660c56d102be1087e87acb5db504",
+      "reference_revision": "ed6970fca7d43b2b2f1c42de9056bfc420df5f57",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: block private networks on oauth2 connection test. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestOAuth2TokenService_NotificationClientBlocksPrivateByDefault"
+      ],
+      "oracle_tests": [
+        {
+          "file": "services/oauth2_token_service_test.go",
+          "names": [
+            "TestOAuth2TokenService_NotificationClientBlocksPrivateByDefault"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/endpoint.go",
+        "docs/docs.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-015",
+      "title": "require verified email for cloud subscribe",
+      "base_revision": "bd1f66614704f04e3fde6cfcdaaf33633151cf2e",
+      "reference_revision": "23b261ddb779911dd11612768662db99a7bc5707",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: require verified email for cloud subscribe. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestCloudBillingEmailVerified"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/billing_start_trial_verify_test.go",
+          "names": [
+            "TestCloudBillingEmailVerified"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/billing_cloud.go",
+        "docs/docs.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-016",
+      "title": "skip-scan observed delivery types",
+      "base_revision": "74d28dea1c3599bd087215ee1da6de3573e81012",
+      "reference_revision": "de709ed72d9aa619652f33da6c75ed5c6d300484",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: skip-scan observed delivery types. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestObservedEventTypesReadsDeliveryEventType",
+        "TestObservedEventTypesSkipsBlankDeliveryType",
+        "TestEventDeliveriesProjectEventTypeCreatedDefinitionIsRebuildable",
+        "TestEventDeliveriesProjectEventTypeCreatedDefinitionMatchesMigration"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestObservedEventTypesReadsDeliveryEventType",
+            "TestObservedEventTypesSkipsBlankDeliveryType"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/indexes/indexes_test.go",
+          "names": [
+            "TestEventDeliveriesProjectEventTypeCreatedDefinitionIsRebuildable",
+            "TestEventDeliveriesProjectEventTypeCreatedDefinitionMatchesMigration"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/event_deliveries/filter_event_types.go",
+        "internal/pkg/indexes/indexes.go",
+        "internal/pkg/partitions/partitions.go",
+        "sql/1787702400.sql"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-017",
+      "title": "list observed delivery types from the event",
+      "base_revision": "2251438fd54dbc897437da5febad5fbca2d71c21",
+      "reference_revision": "74d28dea1c3599bd087215ee1da6de3573e81012",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: list observed delivery types from the event. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestObservedEventTypesReadsEventMetadataWhenDeliveryTypeBlank",
+        "TestListFilterEventTypeUsesDisplayExpr"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestObservedEventTypesReadsEventMetadataWhenDeliveryTypeBlank"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/paged_filter_test.go",
+          "names": [
+            "TestListFilterEventTypeUsesDisplayExpr"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/testdb/seed.go",
+        "docs/docs.go",
+        "internal/event_deliveries/filter_event_types.go",
+        "internal/event_deliveries/paged_filter.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-018",
+      "title": "page filtered deliveries and list observed event types",
+      "base_revision": "b2c8c1682c696e18410a663da3dface74d3cf390",
+      "reference_revision": "2251438fd54dbc897437da5febad5fbca2d71c21",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: page filtered deliveries and list observed event types. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestCatalogFilterNamesOmitsWildcardDeprecatedAndEmpty",
+        "TestGroupFilterEventTypesPutsOverlapInCatalogOnly",
+        "TestGroupFilterEventTypesKeepsDeprecatedOutOfObserved",
+        "TestGroupFilterEventTypesEmptyInputsAreEmptySlices",
+        "TestObservedEventTypesSQLOmitsEndpointPredicateWhenUnscoped",
+        "TestObservedEventTypesSQLUsesRealEndpointAny",
+        "TestObservedEventTypes",
+        "TestListFilterExistsUsesPerStatusPage"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/filter_event_types_test.go",
+          "names": [
+            "TestCatalogFilterNamesOmitsWildcardDeprecatedAndEmpty",
+            "TestGroupFilterEventTypesPutsOverlapInCatalogOnly",
+            "TestGroupFilterEventTypesKeepsDeprecatedOutOfObserved",
+            "TestGroupFilterEventTypesEmptyInputsAreEmptySlices",
+            "TestObservedEventTypesSQLOmitsEndpointPredicateWhenUnscoped",
+            "TestObservedEventTypesSQLUsesRealEndpointAny"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestObservedEventTypes"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/paged_filter_test.go",
+          "names": [
+            "TestListFilterExistsUsesPerStatusPage"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/event_delivery.go",
+        "api/models/event.go",
+        "docs/docs.go",
+        "internal/event_deliveries/filter_event_types.go",
+        "internal/event_deliveries/impl.go",
+        "internal/event_deliveries/paged_filter.go",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.service.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-019",
+      "title": "page filtered deliveries and search the list",
+      "base_revision": "a6ecb2c9297c54573bd32fa830c997671d1c0472",
+      "reference_revision": "932663a0e05e5206a6d39f1874803c888d6b8b55",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: page filtered deliveries and search the list. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestFromFilterStruct_PersistsSearchQuery",
+        "TestFromFilterStruct_SearchQueryWithoutDates",
+        "TestListFilterOmitsOptionalPredicates",
+        "TestListFilterEmitsRealStatusAndKeyset",
+        "TestListFilterSearchIsExactIDOrTypeOrEndpoint",
+        "TestListFilterCountUsesSameWhere",
+        "TestLooksLikeID",
+        "TestEscapeLike"
+      ],
+      "oracle_tests": [
+        {
+          "file": "datastore/batch_retry_test.go",
+          "names": [
+            "TestFromFilterStruct_PersistsSearchQuery",
+            "TestFromFilterStruct_SearchQueryWithoutDates"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/paged_filter_test.go",
+          "names": [
+            "TestListFilterOmitsOptionalPredicates",
+            "TestListFilterEmitsRealStatusAndKeyset",
+            "TestListFilterSearchIsExactIDOrTypeOrEndpoint",
+            "TestListFilterCountUsesSameWhere",
+            "TestLooksLikeID",
+            "TestEscapeLike"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/models/event.go",
+        "api/models/event_delivery.go",
+        "datastore/batch_retry.go",
+        "datastore/models.go",
+        "docs/docs.go",
+        "docs/swagger.json",
+        "docs/swagger.yaml",
+        "docs/v3/openapi3.json",
+        "docs/v3/openapi3.yaml",
+        "internal/event_deliveries/helpers.go",
+        "internal/event_deliveries/impl.go",
+        "internal/event_deliveries/paged_filter.go",
+        "internal/event_deliveries/queries.sql",
+        "internal/event_deliveries/repo/querier.go",
+        "internal/event_deliveries/repo/queries.sql.go",
+        "web/ui/dashboard/src/app/portal/endpoints/endpoints.component.html",
+        "web/ui/dashboard/src/app/portal/subscriptions/subscriptions.component.html",
+        "web/ui/dashboard/src/app/private/components/create-project-component/create-project-component.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.service.ts",
+        "web/ui/dashboard/src/app/private/pages/project/meta-events/meta-events.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/portal-links/portal-links.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/project.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/sources/sources.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/subscriptions/subscriptions.component.html",
+        "web/ui/dashboard/src/app/private/pages/projects/projects.component.html",
+        "web/ui/dashboard/src/app/private/pages/settings/billing/billing-invoices.component.html",
+        "web/ui/dashboard/src/app/private/pages/settings/billing/billing-usage.component.html",
+        "web/ui/dashboard/src/app/private/pages/settings/teams/teams.component.html",
+        "web/ui/dashboard/src/app/private/private.component.html",
+        "worker/task/process_batch_retry.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-020",
+      "title": "count dashboard events sent from event rows",
+      "base_revision": "078fe79d538ef3691b8e20aaa2793eb79e7fd348",
+      "reference_revision": "b84299245334597dacc8921dec5e0b293f4e9627",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: count dashboard events sent from event rows. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestLoadEventIntervalsCountsEventsNotDeliveries",
+        "TestMaybePruneEventDailyCountsRunsWhenDeliveryPruneSkips",
+        "TestAdvanceEventDailyCountsBackfillDoesNotRewriteDeliveries"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestLoadEventIntervalsCountsEventsNotDeliveries",
+            "TestMaybePruneEventDailyCountsRunsWhenDeliveryPruneSkips",
+            "TestAdvanceEventDailyCountsBackfillDoesNotRewriteDeliveries"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/dashboard.go",
+        "docs/docs.go",
+        "internal/event_deliveries/daily_counts.go",
+        "internal/event_deliveries/event_daily_counts.go",
+        "internal/events/impl.go",
+        "sql/1787622400.sql",
+        "worker/task/refresh_daily_counts.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-021",
+      "title": "reconcile stored partition retention with config",
+      "base_revision": "2b60cc652e1d4babc1857280d5911817960e83e7",
+      "reference_revision": "d15e278bc03a49d095f42b88439e04df05605849",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: reconcile stored partition retention with config. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestRegisterParentsReconcilesStoredRetentionPeriod",
+        "TestRegisterParentsReconcilesStoredPremake",
+        "TestDropAdoptedPartitionUsesStoredRetentionPeriod"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/retention/retention_test.go",
+          "names": [
+            "TestRegisterParentsReconcilesStoredRetentionPeriod",
+            "TestRegisterParentsReconcilesStoredPremake",
+            "TestDropAdoptedPartitionUsesStoredRetentionPeriod"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/pkg/retention/retention.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-022",
+      "title": "give the concurrent index build its own lock budget",
+      "base_revision": "e199fd9e0bb8f80c617de9d8eeab5b84055a3daa",
+      "reference_revision": "2b60cc652e1d4babc1857280d5911817960e83e7",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: give the concurrent index build its own lock budget. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestRebuildWaitsForAnOpenTransactionInsteadOfBeingCancelled",
+        "TestRebuildGivesUpQuicklyOnALockedTable"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/indexes/repair_test.go",
+          "names": [
+            "TestRebuildWaitsForAnOpenTransactionInsteadOfBeingCancelled",
+            "TestRebuildGivesUpQuicklyOnALockedTable"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/pkg/indexes/adopt.go",
+        "internal/pkg/indexes/indexes.go",
+        "web/ui/dashboard/src/app/portal/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.component.html"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-023",
+      "title": "serve delivery status totals from a status-aware rollup",
+      "base_revision": "6f19f69bdc6952ec961bcda8cf605c69777cde80",
+      "reference_revision": "f3907e56173fc4c06afec849753bdbb6a85f9c0f",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: serve delivery status totals from a status-aware rollup. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestStatusTotalsAgreePerStatusAcrossSources",
+        "TestStatusTotalsScopeToEndpoint",
+        "TestStatusTotalsFollowARetryOnAClosedDay",
+        "TestForceResendFlagsEveryClosedDayItTouches",
+        "TestStatusChangeInsideTheWindowFlagsNothing",
+        "TestStaleDayDrainIsBoundedAndResumes",
+        "TestRefreshCatchesUpDaysTheWindowSkipped",
+        "TestRefreshWatermarkStaysUntilRefreshSucceeds"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestStatusTotalsAgreePerStatusAcrossSources",
+            "TestStatusTotalsScopeToEndpoint",
+            "TestStatusTotalsFollowARetryOnAClosedDay",
+            "TestForceResendFlagsEveryClosedDayItTouches",
+            "TestStatusChangeInsideTheWindowFlagsNothing",
+            "TestStaleDayDrainIsBoundedAndResumes",
+            "TestRefreshCatchesUpDaysTheWindowSkipped",
+            "TestRefreshWatermarkStaysUntilRefreshSucceeds"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/event_delivery.go",
+        "api/models/event.go",
+        "docs/docs.go",
+        "internal/event_deliveries/daily_counts.go",
+        "internal/event_deliveries/queries.sql",
+        "internal/event_deliveries/repo/querier.go",
+        "internal/event_deliveries/repo/queries.sql.go",
+        "sql/1787366400.sql",
+        "sql/1787452800.sql",
+        "web/ui/dashboard/src/app/portal/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/portal/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.service.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-024",
+      "title": "rewrite rollup days that already hold rows",
+      "base_revision": "46a3e29656d2cc7a59950d1abcde2ad2cea8f9ef",
+      "reference_revision": "6f19f69bdc6952ec961bcda8cf605c69777cde80",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: rewrite rollup days that already hold rows. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestE2E_DailyCounts_SummaryMatchesLiveAcrossRepeatedRefreshes",
+        "TestE2E_DailyCounts_BackfillCompletesAndPrunes",
+        "TestE2E_EventSearch_ExactJSONFilterReadsThroughAPI",
+        "TestE2E_EventSearch_RejectsMalformedFilter",
+        "TestE2E_IndexRebuild_BootDrainsEveryOwedIndex",
+        "TestE2E_IndexRebuild_SlotHoldsOneRunAtATime",
+        "TestE2E_Metrics_ServedFromSnapshotGenerations",
+        "TestE2E_Metrics_ClosedUnlessEnabled",
+        "TestE2E_PostgresQueue_DeliversAndDrainsAcrossBatches",
+        "TestRefreshDailyCountsRewritesADayThatAlreadyHasRows",
+        "TestRefreshDailyCountsDropsKeysThatNoLongerAggregate",
+        "TestRefreshRecentDailyCountsRepeatsLikeTheWorker",
+        "TestAdvanceDailyCountsBackfillWalksHistoryToCompletion"
+      ],
+      "oracle_tests": [
+        {
+          "file": "e2e/daily_counts_e2e_test.go",
+          "names": [
+            "TestE2E_DailyCounts_SummaryMatchesLiveAcrossRepeatedRefreshes",
+            "TestE2E_DailyCounts_BackfillCompletesAndPrunes"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "e2e/event_search_e2e_test.go",
+          "names": [
+            "TestE2E_EventSearch_ExactJSONFilterReadsThroughAPI",
+            "TestE2E_EventSearch_RejectsMalformedFilter"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "e2e/index_rebuild_e2e_test.go",
+          "names": [
+            "TestE2E_IndexRebuild_BootDrainsEveryOwedIndex",
+            "TestE2E_IndexRebuild_SlotHoldsOneRunAtATime"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "e2e/metrics_e2e_test.go",
+          "names": [
+            "TestE2E_Metrics_ServedFromSnapshotGenerations",
+            "TestE2E_Metrics_ClosedUnlessEnabled"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "e2e/postgres_queue_e2e_test.go",
+          "names": [
+            "TestE2E_PostgresQueue_DeliversAndDrainsAcrossBatches"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestRefreshDailyCountsRewritesADayThatAlreadyHasRows",
+            "TestRefreshDailyCountsDropsKeysThatNoLongerAggregate",
+            "TestRefreshRecentDailyCountsRepeatsLikeTheWorker",
+            "TestAdvanceDailyCountsBackfillWalksHistoryToCompletion"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        ".github/workflows/nightly-admin-e2e-tests.yml",
+        "Makefile",
+        "docs/docs.go",
+        "internal/event_deliveries/daily_counts.go",
+        "testenv/job_tracker.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-025",
+      "title": "rebuild every owed index at boot",
+      "base_revision": "b5017e0eea85efc8b45137e912e4080f869bae69",
+      "reference_revision": "46a3e29656d2cc7a59950d1abcde2ad2cea8f9ef",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: rebuild every owed index at boot. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestDroppedIndexesOfferTheDeliveriesListIndexAheadOfOlderNonUniqueIndexes",
+        "TestStartQueuedDroppedIndexesStartsTheFirstOwed",
+        "TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees",
+        "TestUserRebuildStartsTheNextOwedIndexWhenTheSlotFrees",
+        "TestFailedRebuildStartsTheNextOwedIndexOnce",
+        "TestTwoFailedRebuildsDoNotAlternate",
+        "TestConversionOnANewRunnerDoesNotRetryAFailedIndex",
+        "TestDashboardRebuildRetriesANameThatFailedOnAnotherRunner",
+        "TestConversionFinishStartsOwedIndexRebuilds",
+        "TestStartQueuedDroppedIndexesNoopsWhenNothingOwed",
+        "TestStartQueuedDroppedIndexesNoopsWhenTheSlotIsTaken",
+        "TestStartQueuedDroppedIndexesFailsOpenOnLookupError"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/indexes/repair_test.go",
+          "names": [
+            "TestDroppedIndexesOfferTheDeliveriesListIndexAheadOfOlderNonUniqueIndexes"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/partitions/partitions_test.go",
+          "names": [
+            "TestStartQueuedDroppedIndexesStartsTheFirstOwed",
+            "TestBootRebuildStartsEveryOwedIndexWhenTheSlotFrees",
+            "TestUserRebuildStartsTheNextOwedIndexWhenTheSlotFrees",
+            "TestFailedRebuildStartsTheNextOwedIndexOnce",
+            "TestTwoFailedRebuildsDoNotAlternate",
+            "TestConversionOnANewRunnerDoesNotRetryAFailedIndex",
+            "TestDashboardRebuildRetriesANameThatFailedOnAnotherRunner",
+            "TestConversionFinishStartsOwedIndexRebuilds",
+            "TestStartQueuedDroppedIndexesNoopsWhenNothingOwed",
+            "TestStartQueuedDroppedIndexesNoopsWhenTheSlotIsTaken",
+            "TestStartQueuedDroppedIndexesFailsOpenOnLookupError"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "cmd/server/server.go",
+        "cmd/utils/indexes.go",
+        "internal/dataplane/runtime.go",
+        "internal/pkg/indexes/indexes.go",
+        "internal/pkg/partitions/partitions.go",
+        "web/ui/dashboard/src/app/private/pages/admin/table-indexes/table-indexes.component.html"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-026",
+      "title": "stop prometheus register from scanning event_deliveries",
+      "base_revision": "c587dd51899ec959287f992f79e583dd4ebbff6b",
+      "reference_revision": "cb026108efd8258233a50c703385fd5a23408642",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: stop prometheus register from scanning event_deliveries. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestDescribeDoesNotQuery",
+        "TestCollectDoesNotQueryOnTheCaller",
+        "TestStartMetricsCollectionDoesNotQueryOnTheCaller",
+        "TestPrometheusRegisterDoesNotQueryOnTheCaller",
+        "TestCollectRespectsSampleWindowAfterFailedRefresh",
+        "TestCollectIsNoopWhenMetricsDisabled",
+        "TestCollectServesCachedMetricsWithinSampleWindow",
+        "TestDescribeDoesNotCollect"
+      ],
+      "oracle_tests": [
+        {
+          "file": "database/postgres/postgres_collector_test.go",
+          "names": [
+            "TestDescribeDoesNotQuery",
+            "TestCollectDoesNotQueryOnTheCaller",
+            "TestStartMetricsCollectionDoesNotQueryOnTheCaller",
+            "TestPrometheusRegisterDoesNotQueryOnTheCaller",
+            "TestCollectRespectsSampleWindowAfterFailedRefresh",
+            "TestCollectIsNoopWhenMetricsDisabled"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "pkg/circuit_breaker/circuit_breaker_collector_test.go",
+          "names": [
+            "TestCollectServesCachedMetricsWithinSampleWindow",
+            "TestDescribeDoesNotCollect"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "database/postgres/postgres_collector.go",
+        "internal/pkg/metrics/metrics.go",
+        "internal/pkg/tracer/conventions.go",
+        "pkg/circuit_breaker/circuit_breaker_collector.go",
+        "queue/postgres/queue_collector.go",
+        "queue/redis/queue_collector.go",
+        "type.go",
+        "worker/task/refresh_metrics_mv.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-027",
+      "title": "range-scan event deliveries by project and created_at",
+      "base_revision": "441878eda3686b84d31548743059eb00508b43b4",
+      "reference_revision": "865d8e5170e0231f2f1c8a65386cf4b2ad2f7665",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: range-scan event deliveries by project and created_at. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestRenderEventDeliveriesTimeout",
+        "TestEventDeliveriesPagedInnerDesc",
+        "TestEventDeliveriesProjectCreatedDefinitionIsRebuildable",
+        "TestEventDeliveriesProjectCreatedDefinitionMatchesMigration",
+        "TestStartQueuedEventDeliveriesProjectCreatedStartsTheNamedIndex",
+        "TestBootRebuildStartsTheNextQueuedIndexWhenTheSlotFrees",
+        "TestStartQueuedEventDeliveriesProjectCreatedNoopsWhenNotQueued",
+        "TestRetryProjectIDsUsesCallerProject"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/event_delivery_timeout_test.go",
+          "names": [
+            "TestRenderEventDeliveriesTimeout"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/pagination_routing_test.go",
+          "names": [
+            "TestEventDeliveriesPagedInnerDesc"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/indexes/indexes_test.go",
+          "names": [
+            "TestEventDeliveriesProjectCreatedDefinitionIsRebuildable",
+            "TestEventDeliveriesProjectCreatedDefinitionMatchesMigration"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/partitions/partitions_test.go",
+          "names": [
+            "TestStartQueuedEventDeliveriesProjectCreatedStartsTheNamedIndex",
+            "TestBootRebuildStartsTheNextQueuedIndexWhenTheSlotFrees",
+            "TestStartQueuedEventDeliveriesProjectCreatedNoopsWhenNotQueued"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "worker/task/retry_event_deliveries_test.go",
+          "names": [
+            "TestRetryProjectIDsUsesCallerProject"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/dashboard.go",
+        "api/handlers/event_delivery.go",
+        "cmd/server/server.go",
+        "docs/docs.go",
+        "docs/swagger.json",
+        "docs/swagger.yaml",
+        "docs/v3/openapi3.json",
+        "docs/v3/openapi3.yaml",
+        "internal/dataplane/runtime.go",
+        "internal/event_deliveries/helpers.go",
+        "internal/event_deliveries/impl.go",
+        "internal/event_deliveries/queries.sql",
+        "internal/event_deliveries/repo/querier.go",
+        "internal/event_deliveries/repo/queries.sql.go",
+        "internal/pkg/indexes/indexes.go",
+        "internal/pkg/partitions/partitions.go",
+        "sql/1787251200.sql",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs-fetch-error.spec.ts",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs-fetch-error.ts",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.ts",
+        "worker/task/retry_event_deliveries.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-028",
+      "title": "mark event payload jsonb function parallel unsafe",
+      "base_revision": "97d974d4332da249fc95d5a869798b37abd526ad",
+      "reference_revision": "441878eda3686b84d31548743059eb00508b43b4",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: mark event payload jsonb function parallel unsafe. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEventPayloadJsonbIsParallelUnsafe"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/indexes/indexes_test.go",
+          "names": [
+            "TestEventPayloadJsonbIsParallelUnsafe"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        ".gitignore",
+        "sql/1787200000.sql",
+        "sql/1787200002.sql"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-029",
+      "title": "sweep orphaned events_endpoints after partition retention",
+      "base_revision": "160474bb4ff65759e6844050842ba7dcc52c061e",
+      "reference_revision": "dd850ecc63e8086e1d0af77e6608009b458866d1",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: sweep orphaned events_endpoints after partition retention. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestSweepRemovesEventEndpointsWhoseEventIsGone",
+        "TestSweepKeepsEventEndpointsWhoseEventSurvives",
+        "TestSweepRemovesAnExpiredEventsWholeFanOutAndKeepsALiveOnes",
+        "TestSweepKeepsEventEndpointsWhoseEventSurvivesOnlyInSearch",
+        "TestOneSweepBatchRemovesAtMostTheBatchBound",
+        "TestOneSweepBatchNeverLeavesPartOfAFanOut",
+        "TestSweepIsANoopOnACleanTable",
+        "TestSweepStopsWhenSettlementBecomesFalseMidRun",
+        "TestSweepSkipsWhileADetachHasNotDrained",
+        "TestSweepRemovesOrphansOnAPartitionedEventsTable",
+        "TestSweepReportsACancelledRunAsTheClock",
+        "TestPerformSweepsOrphanedEventEndpoints"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/retention/events_endpoints_test.go",
+          "names": [
+            "TestSweepRemovesEventEndpointsWhoseEventIsGone",
+            "TestSweepKeepsEventEndpointsWhoseEventSurvives",
+            "TestSweepRemovesAnExpiredEventsWholeFanOutAndKeepsALiveOnes",
+            "TestSweepKeepsEventEndpointsWhoseEventSurvivesOnlyInSearch",
+            "TestOneSweepBatchRemovesAtMostTheBatchBound",
+            "TestOneSweepBatchNeverLeavesPartOfAFanOut",
+            "TestSweepIsANoopOnACleanTable",
+            "TestSweepStopsWhenSettlementBecomesFalseMidRun",
+            "TestSweepSkipsWhileADetachHasNotDrained",
+            "TestSweepRemovesOrphansOnAPartitionedEventsTable",
+            "TestSweepReportsACancelledRunAsTheClock",
+            "TestPerformSweepsOrphanedEventEndpoints"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/pkg/attach/convert.go",
+        "internal/pkg/attach/spec.go",
+        "internal/pkg/retention/events_endpoints.go",
+        "internal/pkg/retention/retention.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-030",
+      "title": "repair indexes postgres left invalid, rebuild them on demand",
+      "base_revision": "d310f23b09bd3fc21b14eb24923f03aa259d2690",
+      "reference_revision": "0cf9def5c35df3e1043390c63d4a2569ac9e10bd",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: repair indexes postgres left invalid, rebuild them on demand. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestConcurrently",
+        "TestConcurrentlyKeepsUnique",
+        "TestUniqueIsReadFromTheDefinition",
+        "TestConcurrentlyRejectsUnreadableDefinition",
+        "TestParentStatementCoversNoRowsYet",
+        "TestChildStatementsBuildConcurrentlyThenAttach",
+        "TestChildStatementsCarryUnique",
+        "TestChildNameFitsAnIdentifier",
+        "TestChildNameSeparatesPartitionsThatShareAPrefix",
+        "TestChildNameIsStable",
+        "TestIndexShapeRejectsUnreadableDefinition",
+        "TestInvalidIndexIsReportedDroppedAndRebuilt",
+        "TestRebuildOnPartitionedTableAttachesEveryPartition",
+        "TestRebuildCoversPartitionsAddedLater",
+        "TestARebuildIsNotDoneWhileTheIndexIsStillInvalid",
+        "TestAPartitionsCopyIsNotQueuedAsItsOwnDebt",
+        "TestDroppedIndexesAreOfferedUniqueFirst",
+        "TestRebuildLeavesNoLockTimeoutOnThePool",
+        "TestRebuildRejectsAMissingTable"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/indexes/indexes_test.go",
+          "names": [
+            "TestConcurrently",
+            "TestConcurrentlyKeepsUnique",
+            "TestUniqueIsReadFromTheDefinition",
+            "TestConcurrentlyRejectsUnreadableDefinition",
+            "TestParentStatementCoversNoRowsYet",
+            "TestChildStatementsBuildConcurrentlyThenAttach",
+            "TestChildStatementsCarryUnique",
+            "TestChildNameFitsAnIdentifier",
+            "TestChildNameSeparatesPartitionsThatShareAPrefix",
+            "TestChildNameIsStable",
+            "TestIndexShapeRejectsUnreadableDefinition"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/indexes/repair_test.go",
+          "names": [
+            "TestInvalidIndexIsReportedDroppedAndRebuilt",
+            "TestRebuildOnPartitionedTableAttachesEveryPartition",
+            "TestRebuildCoversPartitionsAddedLater",
+            "TestARebuildIsNotDoneWhileTheIndexIsStillInvalid",
+            "TestAPartitionsCopyIsNotQueuedAsItsOwnDebt",
+            "TestDroppedIndexesAreOfferedUniqueFirst",
+            "TestRebuildLeavesNoLockTimeoutOnThePool",
+            "TestRebuildRejectsAMissingTable"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "cmd/utils/indexes.go",
+        "cmd/utils/utils.go",
+        "internal/pkg/indexes/indexes.go",
+        "sql/1787153561.sql",
+        "sql/1787153562.sql"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-031",
+      "title": "use plain inner order by for paged exists scans",
+      "base_revision": "b6aa65ddbd70fd13fa553c4a2418ee9657b6e461",
+      "reference_revision": "d706576b3e66d7053c150a7d1071a62800bade9e",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: use plain inner order by for paged exists scans. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEventsPagedInnerDesc",
+        "TestLoadEventsPagedExistsRowsRouting",
+        "TestLoadEventsPagedExistsInnerQueriesUsePlainOrderBy"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/events/impl_test.go",
+          "names": [
+            "TestEventsPagedInnerDesc"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/events/pagination_routing_test.go",
+          "names": [
+            "TestLoadEventsPagedExistsRowsRouting"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/events/repo/queries_pagination_test.go",
+          "names": [
+            "TestLoadEventsPagedExistsInnerQueriesUsePlainOrderBy"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/events/impl.go",
+        "internal/events/queries.sql",
+        "internal/events/repo/querier.go",
+        "internal/events/repo/queries.sql.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-032",
+      "title": "invalidate endpoint caches on api writes",
+      "base_revision": "5916bc3dd6c3f394a1d7a78dc1349b946a6df88a",
+      "reference_revision": "327971068faddc01d84d0ff75ed055a8441631e7",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: invalidate endpoint caches on api writes. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEndpointWriteRepo_InvalidatesWhenCacheAvailable",
+        "TestEndpointWriteRepo_PlainRepoWithoutCache",
+        "TestCachedEndpointRepo_DeleteEndpoint_InvalidatesSubscriptionList",
+        "TestInvalidatingEndpointRepo_ReadsBypassCache",
+        "TestInvalidatingEndpointRepo_WritesStillInvalidate",
+        "TestCachedEndpointRepo_DeleteEndpoint_NoInvalidationOnError"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/repositories_test.go",
+          "names": [
+            "TestEndpointWriteRepo_InvalidatesWhenCacheAvailable",
+            "TestEndpointWriteRepo_PlainRepoWithoutCache"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "datastore/cached/repos_test.go",
+          "names": [
+            "TestCachedEndpointRepo_DeleteEndpoint_InvalidatesSubscriptionList",
+            "TestInvalidatingEndpointRepo_ReadsBypassCache",
+            "TestInvalidatingEndpointRepo_WritesStillInvalidate",
+            "TestCachedEndpointRepo_DeleteEndpoint_NoInvalidationOnError"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/endpoint.go",
+        "api/handlers/handlers.go",
+        "datastore/cached/repos.go",
+        "docs/docs.go",
+        "internal/dataplane/worker.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-033",
+      "title": "invalidate subscription and filter caches on api writes",
+      "base_revision": "765950e4e0d0db7b4ecd19f89a151983ba8a4c60",
+      "reference_revision": "5916bc3dd6c3f394a1d7a78dc1349b946a6df88a",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: invalidate subscription and filter caches on api writes. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestSubscriptionRepo_InvalidatesWhenCacheAvailable",
+        "TestSubscriptionRepo_PlainRepoWithoutCache",
+        "TestFilterWriteRepo_InvalidatesWhenCacheAvailable",
+        "TestFilterWriteRepo_PlainRepoWithoutCache"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/repositories_test.go",
+          "names": [
+            "TestSubscriptionRepo_InvalidatesWhenCacheAvailable",
+            "TestSubscriptionRepo_PlainRepoWithoutCache",
+            "TestFilterWriteRepo_InvalidatesWhenCacheAvailable",
+            "TestFilterWriteRepo_PlainRepoWithoutCache"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/filter.go",
+        "api/handlers/handlers.go",
+        "api/handlers/subscription.go",
+        "datastore/cached/repos.go",
+        "docs/docs.go",
+        "internal/dataplane/worker.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-034",
+      "title": "reject empty endpoint_id on event match",
+      "base_revision": "96252dc29d2a2bfa2ee4f6a229853552a8679831",
+      "reference_revision": "765950e4e0d0db7b4ecd19f89a151983ba8a4c60",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: reject empty endpoint_id on event match. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestRequireEventEndpointIDs",
+        "TestMatchSubscriptionsWritesEndpointsAndSucceeds",
+        "TestMatchSubscriptionsMissingEndpointIDFailsClosed"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/events/impl_test.go",
+          "names": [
+            "TestRequireEventEndpointIDs"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "worker/task/process_event_channel_test.go",
+          "names": [
+            "TestMatchSubscriptionsWritesEndpointsAndSucceeds",
+            "TestMatchSubscriptionsMissingEndpointIDFailsClosed"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "datastore/models.go",
+        "docs/docs.go",
+        "internal/events/impl.go",
+        "worker/task/process_event_channel.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-035",
+      "title": "restore fks after copy unpartition of a partitioned sibling",
+      "base_revision": "44bd748a7f1d2b650391d3578fc026e2ffebb670",
+      "reference_revision": "96252dc29d2a2bfa2ee4f6a229853552a8679831",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: restore fks after copy unpartition of a partitioned sibling. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestUnPartitionEventDeliveriesTableCopyWhileAttemptsArePartitioned",
+        "TestUnPartitionDeliveryAttemptsTableCopyRestoresEnforcement",
+        "TestUnPartitionEventsTableCopyWhileDeliveriesArePartitioned",
+        "TestUnPartitionEventsTableCopyRestoresEventFK"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/event_deliveries/partition_test.go",
+          "names": [
+            "TestUnPartitionEventDeliveriesTableCopyWhileAttemptsArePartitioned",
+            "TestUnPartitionDeliveryAttemptsTableCopyRestoresEnforcement"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/events/impl_test.go",
+          "names": [
+            "TestUnPartitionEventsTableCopyWhileDeliveriesArePartitioned",
+            "TestUnPartitionEventsTableCopyRestoresEventFK"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/delivery_attempts/impl.go",
+        "internal/delivery_attempts/partition.go",
+        "internal/event_deliveries/impl.go",
+        "internal/event_deliveries/partition.go",
+        "internal/events/impl.go",
+        "internal/events/partition.go",
+        "internal/pkg/attach/detach.go",
+        "internal/pkg/attach/triggers.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-036",
+      "title": "drop leftover pk after copy unpartition",
+      "base_revision": "7560b5d467385e91c3a2ee9ccc2ed4ac38909009",
+      "reference_revision": "44bd748a7f1d2b650391d3578fc026e2ffebb670",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: drop leftover pk after copy unpartition. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestPartitionEventsSearchTableDropsCopyUnpartitionPrimaryKey",
+        "TestDropExistingPrimaryKeySQLLooksUpTheConstraint"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/events/impl_test.go",
+          "names": [
+            "TestPartitionEventsSearchTableDropsCopyUnpartitionPrimaryKey"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/attach/spec_test.go",
+          "names": [
+            "TestDropExistingPrimaryKeySQLLooksUpTheConstraint"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "CHANGELOG.md",
+        "internal/pkg/attach/convert.go",
+        "web/ui/dashboard/src/app/guards/instance-admin.guard.ts",
+        "web/ui/dashboard/src/app/private/pages/admin/table-partitions/table-partitions.component.html",
+        "web/ui/dashboard/src/app/private/pages/admin/table-partitions/table-partitions.component.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-037",
+      "title": "load endpoint failure rates after the list",
+      "base_revision": "aa481f4a64429d47ccade5e4c80ac326a429697f",
+      "reference_revision": "068ebbfbc16bfb1a9adc6611460a5951b410bab1",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: load endpoint failure rates after the list. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestParseEndpointIDs",
+        "TestIntersectIDs"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/endpoint_test.go",
+          "names": [
+            "TestParseEndpointIDs",
+            "TestIntersectIDs"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/endpoint.go",
+        "api/models/endpoint.go",
+        "docs/docs.go",
+        "docs/swagger.json",
+        "docs/swagger.yaml",
+        "docs/v3/openapi3.json",
+        "docs/v3/openapi3.yaml",
+        "web/ui/dashboard/src/app/models/endpoint.model.ts",
+        "web/ui/dashboard/src/app/portal/endpoints/endpoints.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/events.service.ts",
+        "web/ui/dashboard/src/app/private/private.service.ts",
+        "web/ui/dashboard/src/app/services/general/general.service.ts",
+        "web/ui/dashboard/src/app/services/http/http.service.ts"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-038",
+      "title": "fit transactional emails to mobile and move the footer inside the card",
+      "base_revision": "e371a0d910192da3dc9b912adc14064609f03302",
+      "reference_revision": "6b5392546f5af68bc61227455d35a9e25a6f8457",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: fit transactional emails to mobile and move the footer inside the card. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "Test_Build_FooterRendersCurrentYear",
+        "Test_Build_LayoutIsFluid"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/email/email_test.go",
+          "names": [
+            "Test_Build_FooterRendersCurrentYear",
+            "Test_Build_LayoutIsFluid"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/email/email.go",
+        "internal/email/templates/_layout.html",
+        "internal/email/templates/endpoint.update.html",
+        "internal/email/templates/organisation.invite.html",
+        "internal/email/templates/reset.password.html",
+        "internal/email/templates/twitter.source.html",
+        "internal/email/templates/user.verify.email.html"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-039",
+      "title": "correct partition naming, retention adoption and event-id enforcement",
+      "base_revision": "758f4ab94fbf5ba6486e6d23804bf3e10d1992c6",
+      "reference_revision": "e371a0d910192da3dc9b912adc14064609f03302",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: correct partition naming, retention adoption and event-id enforcement. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestPartitionDeliveryAttemptsTableNamesForRetention",
+        "TestPartitionEventDeliveriesTableKeepsEventIDEnforcement",
+        "TestUnPartitionEventDeliveriesTableKeepsEventIDEnforcement",
+        "TestPartitionEventDeliveriesTableNamesForRetention",
+        "TestUnPartitionEventsTableRemovesTheStandInTrigger",
+        "TestPartitionEventsTablesNameForRetention",
+        "TestRegisterParentsAdoptsExistingPartitions",
+        "TestRegisterParentsAdoptsFoldedPartitionNames"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/delivery_attempts/create_delivery_attempt_test.go",
+          "names": [
+            "TestPartitionDeliveryAttemptsTableNamesForRetention"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/event_deliveries/impl_test.go",
+          "names": [
+            "TestPartitionEventDeliveriesTableKeepsEventIDEnforcement",
+            "TestUnPartitionEventDeliveriesTableKeepsEventIDEnforcement",
+            "TestPartitionEventDeliveriesTableNamesForRetention"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/events/impl_test.go",
+          "names": [
+            "TestUnPartitionEventsTableRemovesTheStandInTrigger",
+            "TestPartitionEventsTablesNameForRetention"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/retention/retention_test.go",
+          "names": [
+            "TestRegisterParentsAdoptsExistingPartitions",
+            "TestRegisterParentsAdoptsFoldedPartitionNames"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "go.mod",
+        "go.sum",
+        "internal/dataplane/worker.go",
+        "internal/delivery_attempts/impl.go",
+        "internal/event_deliveries/impl.go",
+        "internal/events/impl.go",
+        "internal/pkg/retention/retention.go",
+        "testenv/partitions.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-040",
+      "title": "bound endpoint list failure-rate count",
+      "base_revision": "690359f40f5d88d813da2addcec4c300930913d3",
+      "reference_revision": "758f4ab94fbf5ba6486e6d23804bf3e10d1992c6",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: bound endpoint list failure-rate count. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestLoadPeriodFailureRates_CancelledContextFailOpen",
+        "TestLoadPeriodFailureRates_DeadlineFailOpen",
+        "TestLoadPeriodFailureRates_SuccessAppliesRates"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/endpoint_test.go",
+          "names": [
+            "TestLoadPeriodFailureRates_CancelledContextFailOpen",
+            "TestLoadPeriodFailureRates_DeadlineFailOpen",
+            "TestLoadPeriodFailureRates_SuccessAppliesRates"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/endpoint.go",
+        "docs/docs.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-041",
+      "title": "surface dynamic url template failures without leaking event metadata",
+      "base_revision": "19dfbc53fdad7c013c9666f3aca1f7d645e299ce",
+      "reference_revision": "c9c2e65a0a845f766dc56f98ee896353bf927b34",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: surface dynamic url template failures without leaking event metadata. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEvent_MetadataIsNeverSerialized",
+        "TestEvent_FailureReasonIsSerialized",
+        "TestPartitionEventsTableRoundTripsFailureReason",
+        "TestPartitionEventsSearchTableRoundTripsMirroredColumns",
+        "TestResolveEarlyAdopterFeature",
+        "TestCanAccessOrgFeatureFailsClosedOnLookupError",
+        "TestDynamicURLTemplateFailureReason"
+      ],
+      "oracle_tests": [
+        {
+          "file": "datastore/models_test.go",
+          "names": [
+            "TestEvent_MetadataIsNeverSerialized",
+            "TestEvent_FailureReasonIsSerialized"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/events/impl_test.go",
+          "names": [
+            "TestPartitionEventsTableRoundTripsFailureReason",
+            "TestPartitionEventsSearchTableRoundTripsMirroredColumns"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/fflag/fflag_test.go",
+          "names": [
+            "TestResolveEarlyAdopterFeature",
+            "TestCanAccessOrgFeatureFailsClosedOnLookupError"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "worker/task/process_dynamic_event_creation_test.go",
+          "names": [
+            "TestDynamicURLTemplateFailureReason"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "database/postgres/early_adopter_feature_fetcher.go",
+        "datastore/models.go",
+        "datastore/repository.go",
+        "docs/docs.go",
+        "docs/swagger.json",
+        "docs/swagger.yaml",
+        "docs/v3/openapi3.json",
+        "docs/v3/openapi3.yaml",
+        "internal/events/helpers.go",
+        "internal/events/impl.go",
+        "internal/events/queries.sql",
+        "internal/events/repo/querier.go",
+        "internal/events/repo/queries.sql.go",
+        "internal/pkg/fflag/fflag.go",
+        "mocks/fflag.go",
+        "mocks/repository.go",
+        "sql/1785867800.sql",
+        "web/ui/dashboard/src/app/models/event.model.ts",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/event-logs/event-logs.component.ts",
+        "worker/task/process_broadcast_event_creation.go",
+        "worker/task/process_dynamic_event_creation.go",
+        "worker/task/process_event_channel.go",
+        "worker/task/process_event_creation.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-042",
+      "title": "harden ingest verifier fallback, retry scoping, bulk onboard and billing update",
+      "base_revision": "053cd446582a946b7448535c2970291b22d017ae",
+      "reference_revision": "f7038a8326c8e245e9c6c7b1839bdf63ad9a37f8",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: harden ingest verifier fallback, retry scoping, bulk onboard and billing update. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestValidateOnboardItemURL"
+      ],
+      "oracle_tests": [
+        {
+          "file": "worker/task/process_bulk_onboard_test.go",
+          "names": [
+            "TestValidateOnboardItemURL"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/billing_cloud.go",
+        "api/handlers/organisation.go",
+        "api/ingest.go",
+        "cmd/retry/retry.go",
+        "pkg/url/url_template.go",
+        "pkg/verifier/verifier.go",
+        "services/create_endpoint.go",
+        "services/errors.go",
+        "worker/task/process_bulk_onboard.go",
+        "worker/task/retry_event_deliveries.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-043",
+      "title": "scope portal-link and org authorization to close cross-tenant access",
+      "base_revision": "0515d94461d0aaf1c4e7fa6f17cd4d4cac29a41f",
+      "reference_revision": "dbf1db26e9274deb7a7818d63d02ffcb0311e169",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: scope portal-link and org authorization to close cross-tenant access. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEventTypeMutations_RejectPortalLinkToken",
+        "TestEventTypeMutations_AllowNonPortalCallers",
+        "TestCachedPortalLinkRepo_RevokePortalLink_InvalidatesMaskCache",
+        "TestCachedPortalLinkRepo_RevokePortalLink_LookupError_StillRevokes",
+        "TestFindPortalLinkByMaskId_RevokedLinkRejected",
+        "TestPreserveStoragePolicySecrets"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/event_types_portal_test.go",
+          "names": [
+            "TestEventTypeMutations_RejectPortalLinkToken",
+            "TestEventTypeMutations_AllowNonPortalCallers"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "datastore/cached/repos_test.go",
+          "names": [
+            "TestCachedPortalLinkRepo_RevokePortalLink_InvalidatesMaskCache",
+            "TestCachedPortalLinkRepo_RevokePortalLink_LookupError_StillRevokes"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/portal_links/find_portal_link_by_mask_id_test.go",
+          "names": [
+            "TestFindPortalLinkByMaskId_RevokedLinkRejected"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "services/update_configuration_test.go",
+          "names": [
+            "TestPreserveStoragePolicySecrets"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/configuration.go",
+        "api/handlers/event_types.go",
+        "api/handlers/middleware.go",
+        "api/handlers/organisation_invite.go",
+        "api/handlers/portal_link.go",
+        "api/handlers/project.go",
+        "api/handlers/subscription.go",
+        "datastore/cached/repos.go",
+        "datastore/repository.go",
+        "docs/docs.go",
+        "internal/portal_links/impl.go",
+        "internal/portal_links/queries.sql",
+        "internal/portal_links/repo/querier.go",
+        "internal/portal_links/repo/queries.sql.go",
+        "mocks/repository.go",
+        "services/cancel_invite.go",
+        "services/resend_invite.go",
+        "services/update_configuration.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-044",
+      "title": "block cloud metadata and link-local targets on default webhook egress",
+      "base_revision": "1cc67cd16fb1f8890cc83a3998d3f92dceb7fd06",
+      "reference_revision": "0515d94461d0aaf1c4e7fa6f17cd4d4cac29a41f",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: block cloud metadata and link-local targets on default webhook egress. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestBlockMetadataEndpoints",
+        "TestDeliveryTransport_BlocksMetadataButAllowsPrivate"
+      ],
+      "oracle_tests": [
+        {
+          "file": "net/dispatcher_test.go",
+          "names": [
+            "TestBlockMetadataEndpoints",
+            "TestDeliveryTransport_BlocksMetadataButAllowsPrivate"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "net/dispatcher.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-045",
+      "title": "scope source lookups by project and canonicalize jwt blacklist keys",
+      "base_revision": "8c38a84fb8e649a5ca500349ef6bc4e8b3bf6be6",
+      "reference_revision": "1cc67cd16fb1f8890cc83a3998d3f92dceb7fd06",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: scope source lookups by project and canonicalize jwt blacklist keys. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestJwt_BlacklistToken_AlternateSpellingBypass"
+      ],
+      "oracle_tests": [
+        {
+          "file": "auth/realm/jwt/jwt_test.go",
+          "names": [
+            "TestJwt_BlacklistToken_AlternateSpellingBypass"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "auth/realm/jwt/jwt.go",
+        "internal/sources/impl.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-046",
+      "title": "close jul 20-21 vulnerability audit findings",
+      "base_revision": "4fc76f7b069f759140415998b8220014fec41149",
+      "reference_revision": "7bee3006c0fe5ee16f4c9550132859625b8845ac",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: close jul 20-21 vulnerability audit findings. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestNewFromBytes_RejectsExternalRefs"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/openapi/converter_test.go",
+          "names": [
+            "TestNewFromBytes_RejectsExternalRefs"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/billing_cloud.go",
+        "api/handlers/event.go",
+        "api/handlers/event_types.go",
+        "api/handlers/handlers.go",
+        "api/handlers/onboard.go",
+        "api/handlers/portal_link.go",
+        "api/handlers/security.go",
+        "docs/docs.go",
+        "internal/pkg/openapi/converter.go",
+        "internal/pkg/pubsub/ingest.go",
+        "internal/portal_links/queries.sql",
+        "internal/portal_links/repo/queries.sql.go",
+        "services/verify_user_email.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-047",
+      "title": "reject events without a delivery target and honor app_id fanout",
+      "base_revision": "74c063a10e51a0a4b01225ba106e8909a66a501b",
+      "reference_revision": "4b50de9526f29151b4970ca0e0ba0cb0e93a31ec",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: reject events without a delivery target and honor app_id fanout. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestCreateEventValidateRequiresDeliveryTarget",
+        "TestFindSubscriptionsProvisionsCatchAllForEveryEndpoint"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/models/event_test.go",
+          "names": [
+            "TestCreateEventValidateRequiresDeliveryTarget"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "worker/task/process_event_creation_test.go",
+          "names": [
+            "TestFindSubscriptionsProvisionsCatchAllForEveryEndpoint"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/event.go",
+        "api/models/event.go",
+        "docs/docs.go",
+        "docs/swagger.json",
+        "docs/swagger.yaml",
+        "docs/v3/openapi3.json",
+        "docs/v3/openapi3.yaml",
+        "worker/task/process_event_creation.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-048",
+      "title": "close jul 16 vuln review bundle",
+      "base_revision": "0e60768200e40d625bc250c97b6845d24e825fc3",
+      "reference_revision": "c2242f2b82603157402661a621d06bb86ebbc364",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: close jul 16 vuln review bundle. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestValidateSSOAdminPortalRedirectURL_SelfHostedAcceptsCustomerOrigin",
+        "TestValidateSSOAdminPortalRedirectURL_CloudRejectsForeignHost",
+        "TestValidateSSOAdminPortalRedirectURL_CloudAcceptsInstanceHost",
+        "TestValidateSSOAdminPortalRedirectURL_CloudAcceptsBareInstanceHost",
+        "TestValidateSSOAdminPortalRedirectURL_RejectsPath",
+        "TestDispatcherIdempotencyKeyHeaderOverridesCustomHeaders",
+        "Test_MergeHeaders_SkipsCaseInsensitiveDuplicates",
+        "TestValidateHTTPHeaderToken",
+        "TestValidateRequestIDHeaderForProject_RejectsInvalidToken",
+        "TestApplyProjectConfigPatch_PreservesUnsetFields",
+        "TestApplyProjectConfigPatch_PreservesBooleansOnRateLimitOnlyPatch",
+        "TestApplyProjectConfigPatch_AppliesExplicitBooleanToggles",
+        "TestApplyProjectConfigPatch_ClearsRequestIDHeaderWhenPresent"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/sso_redirect_test.go",
+          "names": [
+            "TestValidateSSOAdminPortalRedirectURL_SelfHostedAcceptsCustomerOrigin",
+            "TestValidateSSOAdminPortalRedirectURL_CloudRejectsForeignHost",
+            "TestValidateSSOAdminPortalRedirectURL_CloudAcceptsInstanceHost",
+            "TestValidateSSOAdminPortalRedirectURL_CloudAcceptsBareInstanceHost",
+            "TestValidateSSOAdminPortalRedirectURL_RejectsPath"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "net/dispatcher_test.go",
+          "names": [
+            "TestDispatcherIdempotencyKeyHeaderOverridesCustomHeaders"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "pkg/httpheader/httpheader_test.go",
+          "names": [
+            "Test_MergeHeaders_SkipsCaseInsensitiveDuplicates"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "services/project_service_request_id_test.go",
+          "names": [
+            "TestValidateHTTPHeaderToken",
+            "TestValidateRequestIDHeaderForProject_RejectsInvalidToken",
+            "TestApplyProjectConfigPatch_PreservesUnsetFields",
+            "TestApplyProjectConfigPatch_PreservesBooleansOnRateLimitOnlyPatch",
+            "TestApplyProjectConfigPatch_AppliesExplicitBooleanToggles",
+            "TestApplyProjectConfigPatch_ClearsRequestIDHeaderWhenPresent"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/auth.go",
+        "api/handlers/configuration.go",
+        "api/handlers/sso_redirect.go",
+        "api/models/project.go",
+        "docs/docs.go",
+        "internal/pkg/middleware/workspace_slug.go",
+        "internal/projects/queries.sql",
+        "internal/projects/repo/queries.sql.go",
+        "net/dispatcher.go",
+        "pkg/httpheader/httpheader.go",
+        "services/project_service.go",
+        "services/workspace_slug.go",
+        "worker/task/endpoint_auth.go",
+        "worker/task/process_event_creation.go",
+        "worker/task/process_event_delivery.go",
+        "worker/task/process_retry_event_delivery.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-049",
+      "title": "delete retention attempts by delivery cutoff",
+      "base_revision": "555dc197e4ade76cc6ee8f0bed8652290333fdad",
+      "reference_revision": "108f0f9d37b2392e861809262ea19fe63610719b",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: delete retention attempts by delivery cutoff. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestDeleteProjectDeliveriesAttempts_HardDeleteByDeliveryCutoffClearsRetryAttempts"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/delivery_attempts/delete_delivery_attempts_test.go",
+          "names": [
+            "TestDeleteProjectDeliveriesAttempts_HardDeleteByDeliveryCutoffClearsRetryAttempts"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/delivery_attempts/impl.go",
+        "internal/delivery_attempts/queries.sql",
+        "internal/delivery_attempts/repo/querier.go",
+        "internal/delivery_attempts/repo/queries.sql.go",
+        "internal/pkg/retention/retention.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-050",
+      "title": "capture delivery attempt timestamps around the dispatch call",
+      "base_revision": "bc0b5ec8d8d34a2d53cec0f3dfc0f6198cc58a92",
+      "reference_revision": "baa83e6be9e1edda36bbc7e3b1a6f03f98216e09",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: capture delivery attempt timestamps around the dispatch call. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestProcessEventDelivery_AttemptTimingReflectsWireDelay",
+        "TestProcessRetryEventDelivery_AttemptTimingReflectsWireDelay"
+      ],
+      "oracle_tests": [
+        {
+          "file": "worker/task/process_event_delivery_test.go",
+          "names": [
+            "TestProcessEventDelivery_AttemptTimingReflectsWireDelay"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "worker/task/process_retry_event_delivery_test.go",
+          "names": [
+            "TestProcessRetryEventDelivery_AttemptTimingReflectsWireDelay"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "worker/task/process_event_delivery.go",
+        "worker/task/process_retry_event_delivery.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-051",
+      "title": "redact secrets and close SSRF gaps across config, delivery, and notifications",
+      "base_revision": "ae707672c056e0ccd5b6031fe442a7ebe2d2651d",
+      "reference_revision": "bc0b5ec8d8d34a2d53cec0f3dfc0f6198cc58a92",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: redact secrets and close SSRF gaps across config, delivery, and notifications. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestRedactConfigurationSecrets",
+        "TestDeliveryAttemptResponse_MarshalJSON_RedactsRequestHeaders",
+        "TestDeliveryAttemptResponse_MarshalJSON_RawHeadersForTrustedCaller",
+        "TestNewDeliveryAttemptResponses_RedactsByPortalTrust",
+        "TestDeliveryAttemptResponse_MarshalJSON_NilIsNull",
+        "TestEventDeliveryResponse_MarshalJSON_RedactsHeaders",
+        "TestEventDeliveryResponse_MarshalJSON_RawHeadersForTrustedCaller",
+        "TestEventDeliveryResponse_MarshalJSON_NilIsNull",
+        "TestRedactSensitiveHeaders",
+        "TestRedactSensitiveMultiHeaders",
+        "TestBlockPrivateNetworks",
+        "TestNotificationTransport_SSRFGuardBlocksPrivate",
+        "TestHardenNotificationTLS",
+        "TestNotificationRoundTripper_BypassesGuardForProxyHopOnly"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/configuration_test.go",
+          "names": [
+            "TestRedactConfigurationSecrets"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "api/models/delivery_attempt_test.go",
+          "names": [
+            "TestDeliveryAttemptResponse_MarshalJSON_RedactsRequestHeaders",
+            "TestDeliveryAttemptResponse_MarshalJSON_RawHeadersForTrustedCaller",
+            "TestNewDeliveryAttemptResponses_RedactsByPortalTrust",
+            "TestDeliveryAttemptResponse_MarshalJSON_NilIsNull",
+            "TestEventDeliveryResponse_MarshalJSON_RedactsHeaders",
+            "TestEventDeliveryResponse_MarshalJSON_RawHeadersForTrustedCaller",
+            "TestEventDeliveryResponse_MarshalJSON_NilIsNull"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/middleware/middleware_test.go",
+          "names": [
+            "TestRedactSensitiveHeaders",
+            "TestRedactSensitiveMultiHeaders"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "net/dispatcher_test.go",
+          "names": [
+            "TestBlockPrivateNetworks",
+            "TestNotificationTransport_SSRFGuardBlocksPrivate",
+            "TestHardenNotificationTLS",
+            "TestNotificationRoundTripper_BypassesGuardForProxyHopOnly"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/auth.go",
+        "api/handlers/configuration.go",
+        "api/handlers/delivery_attempt.go",
+        "api/handlers/event_delivery.go",
+        "api/handlers/handlers.go",
+        "api/models/delivery_attempt.go",
+        "api/models/event_delivery.go",
+        "docs/docs.go",
+        "internal/dataplane/worker.go",
+        "internal/pkg/middleware/middleware.go",
+        "net/dispatcher.go",
+        "services/create_endpoint.go",
+        "services/errors.go",
+        "services/instance_admin.go",
+        "services/login_user.go",
+        "services/project_service.go",
+        "services/refresh_user_login_token.go",
+        "services/update_endpoint.go",
+        "util/endpoint.go",
+        "worker/task/process_notifications.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-052",
+      "title": "enforce cache-invalidating project repo and wire bootstrap licenser",
+      "base_revision": "1f1a2be85b51f14fbe817ea367a0e9557d2319a5",
+      "reference_revision": "5c771be4a6a55a39fe1093f2dae6f0f4e1637b25",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: enforce cache-invalidating project repo and wire bootstrap licenser. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestEnsureAPIRepositories_wrapsProjectRepoInCacheWhenAvailable",
+        "TestEnsureAPIRepositories_plainProjectRepoWithoutCache",
+        "TestCreateProjectService_UsesSharedProjectRepo",
+        "TestCreateOrganisationService_Run_NilLicenserErrors"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/api_options_repositories_test.go",
+          "names": [
+            "TestEnsureAPIRepositories_wrapsProjectRepoInCacheWhenAvailable",
+            "TestEnsureAPIRepositories_plainProjectRepoWithoutCache"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "api/handlers/project_test.go",
+          "names": [
+            "TestCreateProjectService_UsesSharedProjectRepo"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "services/create_organisation_test.go",
+          "names": [
+            "TestCreateOrganisationService_Run_NilLicenserErrors"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api_options_repositories.go",
+        "api/handlers/endpoint.go",
+        "api/handlers/handlers.go",
+        "api/handlers/organisation.go",
+        "api/handlers/project.go",
+        "api/handlers/security.go",
+        "api/handlers/subscription.go",
+        "api/ingest.go",
+        "cmd/bootstrap/bootstrap.go",
+        "cmd/utils/circuit_breakers.go",
+        "datastore/cached/repos.go",
+        "docs/docs.go",
+        "internal/dataplane/worker.go",
+        "services/create_organisation.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-053",
+      "title": "share queue monitoring cookie signing key across replicas",
+      "base_revision": "5e1f8021b2d1055c27b4454a6c329656f430f63d",
+      "reference_revision": "99d4dc9dc062aab524368507e4ee6a72be5b746f",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: share queue monitoring cookie signing key across replicas. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestQueueSessionCookie_SignAndVerifyRoundtrip",
+        "TestQueueSessionCookie_RejectsDifferentKey",
+        "TestQueueSessionCookie_RejectsTamperedSignature",
+        "TestQueueSessionCookie_RejectsExpired",
+        "TestQueueSessionCookie_RejectsMalformed",
+        "TestDecodeSigningKey"
+      ],
+      "oracle_tests": [
+        {
+          "file": "api/handlers/queue_monitoring_test.go",
+          "names": [
+            "TestQueueSessionCookie_SignAndVerifyRoundtrip",
+            "TestQueueSessionCookie_RejectsDifferentKey",
+            "TestQueueSessionCookie_RejectsTamperedSignature",
+            "TestQueueSessionCookie_RejectsExpired",
+            "TestQueueSessionCookie_RejectsMalformed",
+            "TestDecodeSigningKey"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "api/handlers/queue_monitoring.go",
+        "docs/docs.go",
+        "internal/pkg/middleware/middleware.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-054",
+      "title": "route templated endpoint test events through dynamic api",
+      "base_revision": "071c58faa2aa109872a002dc96bc3ef02c6ddad1",
+      "reference_revision": "99b60f8c4d2f6aecb64f8fea5b256def17505750",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: route templated endpoint test events through dynamic api. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestFindDynamicSubscription_PreservesExistingFilterWhenNoEventTypes",
+        "TestFindDynamicSubscription_NewSubscriptionDefaultsToCatchAllWhenNoEventTypes"
+      ],
+      "oracle_tests": [
+        {
+          "file": "worker/task/process_dynamic_event_creation_test.go",
+          "names": [
+            "TestFindDynamicSubscription_PreservesExistingFilterWhenNoEventTypes",
+            "TestFindDynamicSubscription_NewSubscriptionDefaultsToCatchAllWhenNoEventTypes"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "services/create_dynamic_event.go",
+        "web/ui/dashboard/src/app/models/event.model.ts",
+        "web/ui/dashboard/src/app/pipes/url-template-parts/url-template-parts.pipe.ts",
+        "web/ui/dashboard/src/app/private/components/create-endpoint/create-endpoint.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/endpoints/endpoints.service.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-delivery-details/event-delivery-details.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-delivery-details/event-delivery-details.module.ts",
+        "worker/task/process_dynamic_event_creation.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-055",
+      "title": "resolve community enabled projects from db",
+      "base_revision": "21c556bc2cde9255990a59e841feed69bbd190c7",
+      "reference_revision": "2c68acdce6be9c1db34a07615f63e5128bcfc988",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: resolve community enabled projects from db. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestCommunityProjectEnabledRefreshesFromDB",
+        "TestCommunityProjectEnabledEnforcesLimit",
+        "TestCommunityProjectEnabledKeepsCacheOnRefreshError",
+        "TestCommunityProjectEnabledRefreshDoesNotClobberConcurrentMutation"
+      ],
+      "oracle_tests": [
+        {
+          "file": "internal/pkg/license/service/licenser_test.go",
+          "names": [
+            "TestCommunityProjectEnabledRefreshesFromDB",
+            "TestCommunityProjectEnabledEnforcesLimit",
+            "TestCommunityProjectEnabledKeepsCacheOnRefreshError",
+            "TestCommunityProjectEnabledRefreshDoesNotClobberConcurrentMutation"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "internal/pkg/license/service/licenser.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-056",
+      "title": "default self-hosted billing service to prod overwatch",
+      "base_revision": "b7202a58206ecfd1ef32142606291177520920ef",
+      "reference_revision": "b23ebc4210f1f4255a103743559cea27eb4bb6b4",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: default self-hosted billing service to prod overwatch. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestBillingServiceURL"
+      ],
+      "oracle_tests": [
+        {
+          "file": "config/config_test.go",
+          "names": [
+            "TestBillingServiceURL"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/api.go",
+        "config/config.go",
+        "docs/docs.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-057",
+      "title": "show accurate event delivery metadata",
+      "base_revision": "baa95d30c3840f6f06af42575a72b9e7992933a9",
+      "reference_revision": "d365de1bd7f3539e50908f8f8d3e8bb70231e8fd",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: show accurate event delivery metadata. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestMatchSubscriptionsSkipsDuplicateBeforeEmptySubscriptions"
+      ],
+      "oracle_tests": [
+        {
+          "file": "worker/task/process_event_channel_test.go",
+          "names": [
+            "TestMatchSubscriptionsSkipsDuplicateBeforeEmptySubscriptions"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "docs/docs.go",
+        "internal/event_deliveries/helpers.go",
+        "internal/event_deliveries/impl.go",
+        "internal/event_deliveries/queries.sql",
+        "internal/event_deliveries/repo/queries.sql.go",
+        "web/ui/dashboard/src/app/models/endpoint.model.ts",
+        "web/ui/dashboard/src/app/models/event.model.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.component.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-deliveries/event-deliveries.module.ts",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-delivery-details/event-delivery-details.component.html",
+        "web/ui/dashboard/src/app/private/pages/project/events/event-delivery-details/event-delivery-details.component.ts",
+        "worker/task/process_event_channel.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-058",
+      "title": "address overwatch with env license for self-hosted billing view",
+      "base_revision": "fcd6b6c34fa7fb753c50b208a404258c448a31d7",
+      "reference_revision": "efda2d5e297c62c469c86aa097b61d1b43d00c17",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: address overwatch with env license for self-hosted billing view. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestResolveBillingLicenseKey"
+      ],
+      "oracle_tests": [
+        {
+          "file": "config/config_test.go",
+          "names": [
+            "TestResolveBillingLicenseKey"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "api/handlers/billing_selfhosted.go",
+        "config/license.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-059",
+      "title": "allow idempotency header overrides",
+      "base_revision": "a11814921139659fcc7ace6cb73ca9f908c01910",
+      "reference_revision": "df056599b9dad5535ac8d79d08ca6fc2461d8f9b",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: allow idempotency header overrides. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders",
+        "TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty"
+      ],
+      "oracle_tests": [
+        {
+          "file": "net/dispatcher_test.go",
+          "names": [
+            "TestDispatcherIdempotencyKeyHeaderCanBeOverriddenByCustomHeaders",
+            "TestDispatcherDoesNotSetIdempotencyKeyHeaderWhenEmpty"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        "net/dispatcher.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    },
+    {
+      "id": "convoy-agent-060",
+      "title": "harden vulnerable auth and outbound paths",
+      "base_revision": "d2f6dfb6ff5344a7c7a1537be0c5dded037c06f4",
+      "reference_revision": "a11814921139659fcc7ace6cb73ca9f908c01910",
+      "status": "candidate-uncalibrated",
+      "prompt": "Fix this Convoy behavior: harden vulnerable auth and outbound paths. Work from the supplied checkout. Preserve unrelated behavior and public compatibility. Add your own regression tests. The acceptance scenarios listed below must work without weakening validation or authorization. Explain the change and report only checks actually executed.",
+      "acceptance_scenarios": [
+        "TestNewJwt_DoesNotUseDefaultSecrets",
+        "TestPortalRealmAuthenticateRejectsOwnerIDFallback",
+        "TestPortalRealmAuthenticateAcceptsExactStaticToken",
+        "TestEnsureJwtConfigRequiresSecrets",
+        "TestProjectIDForInstrumentationUsesContextProject",
+        "TestProjectIDForInstrumentationFallsBackToURLProject",
+        "TestTransformDoesNotLoadFilesWithRequire",
+        "TestOAuth2TokenService_RedactsNonOKResponseBody",
+        "TestOAuth2TokenService_UsesNetJailRules",
+        "TestGenerateRandomString",
+        "TestGenerateRandomStringZeroLength"
+      ],
+      "oracle_tests": [
+        {
+          "file": "auth/realm/jwt/jwt_test.go",
+          "names": [
+            "TestNewJwt_DoesNotUseDefaultSecrets"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "auth/realm/portal/portal_realm_test.go",
+          "names": [
+            "TestPortalRealmAuthenticateRejectsOwnerIDFallback",
+            "TestPortalRealmAuthenticateAcceptsExactStaticToken"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "config/config_test.go",
+          "names": [
+            "TestEnsureJwtConfigRequiresSecrets"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "internal/pkg/middleware/middleware_test.go",
+          "names": [
+            "TestProjectIDForInstrumentationUsesContextProject",
+            "TestProjectIDForInstrumentationFallsBackToURLProject"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "pkg/transform/transform_test.go",
+          "names": [
+            "TestTransformDoesNotLoadFilesWithRequire"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "services/oauth2_token_service_test.go",
+          "names": [
+            "TestOAuth2TokenService_RedactsNonOKResponseBody",
+            "TestOAuth2TokenService_UsesNetJailRules"
+          ],
+          "tags": ""
+        },
+        {
+          "file": "util/strings_test.go",
+          "names": [
+            "TestGenerateRandomString",
+            "TestGenerateRandomStringZeroLength"
+          ],
+          "tags": ""
+        }
+      ],
+      "allowed_paths": [
+        ".github/workflows/google-pubsub-tests.yml",
+        ".github/workflows/integration-tests.yml",
+        ".github/workflows/kafka-pubsub-tests.yml",
+        ".github/workflows/rabbitmq-pubsub-tests.yml",
+        ".github/workflows/redis-sentinel-e2e-tests.yml",
+        ".github/workflows/sqs-pubsub-tests.yml",
+        ".github/workflows/vanilla-e2e-tests.yml",
+        "api/api.go",
+        "api/handlers/endpoint.go",
+        "api/handlers/event.go",
+        "api/handlers/handlers.go",
+        "api/handlers/source.go",
+        "api/testdata/Auth_Config/full-convoy-with-all-realms.json",
+        "api/testdata/Auth_Config/full-convoy-with-jwt-realm-billing.json",
+        "api/testdata/Auth_Config/full-convoy-with-jwt-realm.json",
+        "api/testdata/Auth_Config/full-convoy.json",
+        "api/testdata/Auth_Config/jwt-convoy-signup-disabled.json",
+        "api/testdata/Auth_Config/jwt-convoy-signup-enabled.json",
+        "api/testdata/Auth_Config/jwt-convoy.json",
+        "auth/realm/jwt/jwt.go",
+        "auth/realm/portal/portal_realm.go",
+        "config/config.go",
+        "config/testdata/Config/no-port-convoy.json",
+        "config/testdata/Config/valid-convoy-redis-cluster.json",
+        "config/testdata/Config/valid-convoy.json",
+        "config/testdata/Config/zero-max-response-size-convoy.json",
+        "config/testdata/Test_ConfigurationFromEnvironment/convoy.json",
+        "configs/local/convoy.json",
+        "convoy.env.example",
+        "internal/pkg/middleware/middleware.go",
+        "mise.toml",
+        "net/dispatcher.go",
+        "pkg/transform/transform.go",
+        "services/oauth2_token_service.go",
+        "services/testdata/basic-config.json",
+        "services/testdata/basic-convoy.json",
+        "util/strings.go"
+      ],
+      "prerequisites": "Inspect historical CI and test setup; use disposable services. E2E cases require Docker. Never use production data."
+    }
+  ]
+}

@@ -6,25 +6,26 @@ import (
 )
 
 type Filter struct {
-	Query           string
-	Body            json.RawMessage
-	OwnerID         string
-	UserID          string
-	KeyType         KeyType
-	Project         *Project
-	ProjectID       string
-	EndpointID      string
-	EndpointIDs     []string
-	SubscriptionID  string
-	EventID         string
-	EventType       string
-	SourceID        string
-	SourceIDs       []string
-	Pageable        Pageable
-	IdempotencyKey  string
-	BrokerMessageId string
-	Status          []EventDeliveryStatus
-	SearchParams    SearchParams
+	Query               string
+	QueryMode           string
+	Body                json.RawMessage
+	OwnerID             string
+	UserID              string
+	KeyType             KeyType
+	Project             *Project
+	ProjectID           string
+	EndpointID          string
+	EndpointIDs         []string
+	SubscriptionID      string
+	EventID             string
+	EventType           string
+	SourceID            string
+	SourceIDs           []string
+	Pageable            Pageable
+	IdempotencyKey      string
+	BrokerMessageId     string
+	Status              []EventDeliveryStatus
+	SearchParams        SearchParams
 	EventSearchLicensed bool `json:"-"`
 }
 

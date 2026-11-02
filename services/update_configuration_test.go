@@ -41,14 +41,14 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			name: "should_update_configuration",
 			args: args{
 				ctx: ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true), StoragePolicy: &models.StoragePolicyConfiguration{
+				newConfig: &models.Configuration{StoragePolicy: &models.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &models.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
 					},
 				}},
 			},
-			wantConfig: &datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
+			wantConfig: &datastore.Configuration{StoragePolicy: &datastore.StoragePolicyConfiguration{
 				Type: datastore.OnPrem,
 				OnPrem: &datastore.OnPremStorage{
 					Path: null.NewString("/tmp/", true),
@@ -56,7 +56,7 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			}},
 			dbFn: func(c *UpdateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
-				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{IsAnalyticsEnabled: true, StoragePolicy: &datastore.StoragePolicyConfiguration{
+				co.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{StoragePolicy: &datastore.StoragePolicyConfiguration{
 					Type: datastore.OnPrem,
 					OnPrem: &datastore.OnPremStorage{
 						Path: null.NewString("/tmp/", true),
@@ -69,7 +69,7 @@ func TestUpdateConfigService_Run(t *testing.T) {
 			name: "should_fail_to_update_configuration",
 			args: args{
 				ctx:       ctx,
-				newConfig: &models.Configuration{IsAnalyticsEnabled: boolPtr(true)},
+				newConfig: &models.Configuration{},
 			},
 			dbFn: func(c *UpdateConfigService) {
 				co, _ := c.ConfigRepo.(*mocks.MockConfigurationRepository)
@@ -107,6 +107,54 @@ func TestUpdateConfigService_Run(t *testing.T) {
 	}
 }
 
+func TestUpdateConfigService_RetentionPartialPreservesPeriod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	off := false
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{
+		RetentionPolicy: &models.RetentionPolicyConfiguration{Enabled: &off},
+	})
+
+	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	co.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{
+		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+			Period:  "720h",
+			Enabled: true,
+		},
+	}, nil)
+	co.EXPECT().UpdateConfiguration(gomock.Any(), gomock.AssignableToTypeOf(&datastore.Configuration{})).
+		DoAndReturn(func(_ context.Context, cfg *datastore.Configuration) error {
+			require.Equal(t, "720h", cfg.RetentionPolicy.Period)
+			require.False(t, cfg.RetentionPolicy.Enabled)
+			return nil
+		})
+
+	got, err := svc.Run(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, "720h", got.RetentionPolicy.Period)
+	require.False(t, got.RetentionPolicy.Enabled)
+}
+
+func TestUpdateConfigService_AdminManaged(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	enabled := true
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{AdminManaged: &enabled})
+	repo := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	repo.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{}, nil)
+	repo.EXPECT().UpdateConfiguration(gomock.Any(), gomock.AssignableToTypeOf(&datastore.Configuration{})).
+		DoAndReturn(func(_ context.Context, cfg *datastore.Configuration) error {
+			require.True(t, cfg.AdminManaged)
+			return nil
+		})
+
+	cfg, err := svc.Run(context.Background())
+	require.NoError(t, err)
+	require.True(t, cfg.AdminManaged)
+}
+
 func TestPreserveStoragePolicySecrets(t *testing.T) {
 	t.Run("blank incoming secrets are preserved from previous within the same type", func(t *testing.T) {
 		prev := &datastore.StoragePolicyConfiguration{
@@ -116,15 +164,17 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 				AccessKey:    null.StringFrom("stored-access"),
 				SecretKey:    null.StringFrom("stored-secret"),
 				SessionToken: null.StringFrom("stored-session"),
+				Endpoint:     null.StringFrom("https://minio.example"),
+				Prefix:       null.StringFrom("archives/"),
 			},
-			AzureBlob: &datastore.AzureBlobStorage{AccountKey: null.StringFrom("stored-azure")},
-			OnPrem:    &datastore.OnPremStorage{Path: null.StringFrom("/stored/path")},
 		}
 		next := &datastore.StoragePolicyConfiguration{
-			Type:      datastore.S3,
-			S3:        &datastore.S3Storage{Bucket: null.StringFrom("bucket")},
-			AzureBlob: &datastore.AzureBlobStorage{},
-			OnPrem:    &datastore.OnPremStorage{},
+			Type: datastore.S3,
+			S3: &datastore.S3Storage{
+				Bucket:   null.StringFrom("bucket"),
+				Endpoint: null.StringFrom("https://minio.example"),
+				Prefix:   null.StringFrom("archives/"),
+			},
 		}
 
 		preserveStoragePolicySecrets(next, prev)
@@ -132,8 +182,50 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 		require.Equal(t, "stored-access", next.S3.AccessKey.String)
 		require.Equal(t, "stored-secret", next.S3.SecretKey.String)
 		require.Equal(t, "stored-session", next.S3.SessionToken.String)
+		require.Equal(t, "https://minio.example", next.S3.Endpoint.String)
+		require.Equal(t, "archives/", next.S3.Prefix.String)
+	})
+
+	t.Run("blank endpoint and prefix clear rather than restore", func(t *testing.T) {
+		prev := &datastore.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3: &datastore.S3Storage{
+				Bucket:    null.StringFrom("bucket"),
+				AccessKey: null.StringFrom("stored-access"),
+				SecretKey: null.StringFrom("stored-secret"),
+				Endpoint:  null.StringFrom("https://minio.example"),
+				Prefix:    null.StringFrom("archives/"),
+			},
+		}
+		next := &datastore.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3:   &datastore.S3Storage{Bucket: null.StringFrom("bucket")},
+		}
+
+		preserveStoragePolicySecrets(next, prev)
+
+		require.Equal(t, "stored-access", next.S3.AccessKey.String)
+		require.Equal(t, "stored-secret", next.S3.SecretKey.String)
+		require.Empty(t, next.S3.Endpoint.String)
+		require.Empty(t, next.S3.Prefix.String)
+	})
+
+	t.Run("nil azure subtree is restored when type is unchanged", func(t *testing.T) {
+		prev := &datastore.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			AzureBlob: &datastore.AzureBlobStorage{
+				AccountName:   null.StringFrom("acct"),
+				AccountKey:    null.StringFrom("stored-azure"),
+				ContainerName: null.StringFrom("container"),
+			},
+		}
+		next := &datastore.StoragePolicyConfiguration{Type: datastore.AzureBlob}
+
+		preserveStoragePolicySecrets(next, prev)
+
+		require.NotNil(t, next.AzureBlob)
 		require.Equal(t, "stored-azure", next.AzureBlob.AccountKey.String)
-		require.Equal(t, "/stored/path", next.OnPrem.Path.String)
+		require.Equal(t, "acct", next.AzureBlob.AccountName.String)
 	})
 
 	t.Run("provided incoming secrets override previous", func(t *testing.T) {
@@ -174,4 +266,75 @@ func TestPreserveStoragePolicySecrets(t *testing.T) {
 			preserveStoragePolicySecrets(&datastore.StoragePolicyConfiguration{}, nil)
 		})
 	})
+}
+
+func TestUpdateConfigService_AzureTypeWithoutNestedKeepsPrevious(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{
+		StoragePolicy: &models.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			// Transform leaves AzureBlob nil on a type-only payload.
+		},
+	})
+	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	co.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{
+		StoragePolicy: &datastore.StoragePolicyConfiguration{
+			Type: datastore.AzureBlob,
+			AzureBlob: &datastore.AzureBlobStorage{
+				AccountName:   null.StringFrom("acct"),
+				AccountKey:    null.StringFrom("key"),
+				ContainerName: null.StringFrom("c"),
+			},
+		},
+	}, nil)
+	co.EXPECT().UpdateConfiguration(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(_ context.Context, cfg *datastore.Configuration) error {
+			require.Equal(t, datastore.AzureBlob, cfg.StoragePolicy.Type)
+			require.Equal(t, "key", cfg.StoragePolicy.AzureBlob.AccountKey.String)
+			return nil
+		},
+	)
+
+	_, err := svc.Run(context.Background())
+	require.NoError(t, err)
+}
+
+func TestUpdateConfigService_RejectsTypeSwitchWithoutTargetCredentials(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	svc := provideUpdateConfigService(ctrl, &models.Configuration{
+		StoragePolicy: &models.StoragePolicyConfiguration{
+			Type: datastore.S3,
+			S3: &models.S3Storage{
+				Bucket: null.StringFrom("new-bucket"),
+				// blank secrets; previous was on_prem so preserve cannot help
+			},
+		},
+	})
+	co := svc.ConfigRepo.(*mocks.MockConfigurationRepository)
+	co.EXPECT().LoadConfiguration(gomock.Any()).Return(&datastore.Configuration{
+		StoragePolicy: &datastore.StoragePolicyConfiguration{
+			Type:   datastore.OnPrem,
+			OnPrem: &datastore.OnPremStorage{Path: null.StringFrom("/old")},
+		},
+	}, nil)
+
+	_, err := svc.Run(context.Background())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "access_key and secret_key")
+}
+
+func TestAssertStoragePolicyFields(t *testing.T) {
+	require.NoError(t, assertStoragePolicyFields(nil))
+	require.NoError(t, assertStoragePolicyFields(&datastore.StoragePolicyConfiguration{
+		Type:   datastore.OnPrem,
+		OnPrem: &datastore.OnPremStorage{Path: null.StringFrom("/dev/null")},
+	}))
+	require.Error(t, assertStoragePolicyFields(&datastore.StoragePolicyConfiguration{
+		Type: datastore.S3,
+		S3:   &datastore.S3Storage{Bucket: null.StringFrom("b"), AccessKey: null.StringFrom("a")},
+	}))
 }

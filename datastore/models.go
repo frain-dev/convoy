@@ -149,6 +149,14 @@ func IsValidPeriod(period string) bool {
 type SearchParams struct {
 	CreatedAtStart int64 `json:"created_at_start" bson:"created_at_start"`
 	CreatedAtEnd   int64 `json:"created_at_end" bson:"created_at_end"`
+	// Query is the event-deliveries table search (id, event type prefix, endpoint name).
+	Query string `json:"query,omitempty"`
+	// EventIDs keeps event deliveries of any of these events. An empty slice means no
+	// filter, so callers that resolved zero events must not run the query.
+	EventIDs []string `json:"event_ids,omitempty"`
+	// MinTrials keeps event deliveries with at least this many attempts. It is
+	// evaluated per row without an index, so the API requires a narrowing filter.
+	MinTrials int64 `json:"min_trials,omitempty"`
 }
 
 type (
@@ -182,13 +190,14 @@ const (
 )
 
 const (
-	ProjectUpdated       HookEventType = "project.updated"
-	EndpointCreated      HookEventType = "endpoint.created"
-	EndpointUpdated      HookEventType = "endpoint.updated"
-	EndpointDeleted      HookEventType = "endpoint.deleted"
-	EventDeliveryUpdated HookEventType = "eventdelivery.updated"
-	EventDeliverySuccess HookEventType = "eventdelivery.success"
-	EventDeliveryFailed  HookEventType = "eventdelivery.failed"
+	ProjectUpdated        HookEventType = "project.updated"
+	EndpointCreated       HookEventType = "endpoint.created"
+	EndpointUpdated       HookEventType = "endpoint.updated"
+	EndpointDeleted       HookEventType = "endpoint.deleted"
+	EventDeliveryUpdated  HookEventType = "eventdelivery.updated"
+	EventDeliverySuccess  HookEventType = "eventdelivery.success"
+	EventDeliveryFailed   HookEventType = "eventdelivery.failed"
+	EventDeliveryRetrying HookEventType = "eventdelivery.retrying"
 )
 
 const (
@@ -347,8 +356,12 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		IsRetentionPolicyEnabled: false,
-		Policy:                   "720h",
+		Period:       "720h",
+		Enabled:      true,
+		EnabledKnown: true,
+	}
+	DefaultWebhookArchiving = WebhookArchivingConfiguration{
+		Enabled: false,
 	}
 	// DefaultCircuitBreakerConfiguration holds the non-zero defaults for
 	// project-level circuit breaker settings.
@@ -768,9 +781,19 @@ type CircuitBreakerConfiguration struct {
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
+// RetentionPolicyConfiguration is partition drop only (enable + keep window).
+// Cold-storage archive enable lives on WebhookArchivingConfiguration.
 type RetentionPolicyConfiguration struct {
-	Policy                   string `json:"policy" db:"policy"`
-	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
+	Period  string `json:"period" db:"period"`
+	Enabled bool   `json:"enabled" db:"enabled"`
+	// EnabledKnown is false when convoy.configurations.retention_enabled is NULL
+	// (pre-seed upgrade). Not serialized; boot seeds Enabled from env once.
+	EnabledKnown bool `json:"-"`
+}
+
+// WebhookArchivingConfiguration gates export of webhook data to cold storage.
+type WebhookArchivingConfiguration struct {
+	Enabled bool `json:"enabled" db:"enabled"`
 }
 
 type ProjectStatistics struct {
@@ -818,6 +841,7 @@ var (
 	ErrPortalLinkNotFound                            = errors.New("portal link not found")
 	ErrNotAuthorisedToAccessDocument                 = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                                = errors.New("config not found")
+	ErrConfigAlreadyExists                           = errors.New("configuration already exists")
 	ErrDuplicateProjectName                          = errors.New("a project with this name already exists")
 	ErrDuplicateEmail                                = errors.New("a user with this email already exists")
 	ErrNoActiveSecret                                = errors.New("no active secret found")
@@ -1741,10 +1765,11 @@ type FeatureFlag struct {
 	Enabled    bool      `json:"enabled" db:"enabled"`
 	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	// EnvEnabled is transient (not persisted): whether this flag is forced on
-	// instance-wide via CONVOY_ENABLE_FEATURE_FLAG. Surfaced to the admin UI so it
-	// can show which source is authoritative for the instance default.
+	// EnvEnabled is transient (not persisted): whether this flag is listed in
+	// CONVOY_ENABLE_FEATURE_FLAG.
 	EnvEnabled bool `json:"env_enabled" db:"-"`
+	// AdminManaged is transient and only used by the Admin feature-flags UI.
+	AdminManaged bool `json:"admin_managed" db:"-"`
 }
 
 type FeatureFlagOverride struct {
@@ -1798,11 +1823,14 @@ type UsageMetrics struct {
 
 type Configuration struct {
 	UID                string `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsAnalyticsEnabled bool   `json:"-" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
+	AdminManaged       bool   `json:"admin_managed" db:"admin_managed"`
+	AdminManagedKnown  bool   `json:"-" db:"-"`
 
-	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
-	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
+	StoragePolicy    *StoragePolicyConfiguration    `json:"storage_policy" db:"storage_policy" extensions:"x-nullable"`
+	RetentionPolicy  *RetentionPolicyConfiguration  `json:"retention_policy" db:"retention_policy" extensions:"x-nullable"`
+	WebhookArchiving *WebhookArchivingConfiguration `json:"webhook_archiving" db:"webhook_archiving" extensions:"x-nullable"`
 
 	LicenseKey              string                               `json:"license_key,omitempty" db:"license_key"`
 	CheckoutLicenseKey      string                               `json:"checkout_license_key,omitempty" db:"checkout_license_key"`
@@ -1840,6 +1868,13 @@ func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 		return *c.RetentionPolicy
 	}
 	return RetentionPolicyConfiguration{}
+}
+
+func (c *Configuration) GetWebhookArchivingConfig() WebhookArchivingConfiguration {
+	if c.WebhookArchiving != nil {
+		return *c.WebhookArchiving
+	}
+	return WebhookArchivingConfiguration{}
 }
 
 type StoragePolicyConfiguration struct {

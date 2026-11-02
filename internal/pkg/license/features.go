@@ -26,7 +26,7 @@ var featureKeys = []struct {
 	{"read_replica", "ReadReplica"},
 	{"credential_encryption", "CredentialEncryption"},
 	{"ip_rules", "IpRules"},
-	{"webhook_archiving", "RetentionPolicy"},
+	{"retention_policy", "RetentionPolicy"},
 	{"mutual_tls", "MutualTLS"},
 	{"datadog_tracing", "DatadogTracing"},
 	{"custom_certificate_authority", "CustomCertificateAuthority"},

@@ -38,6 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
       - name: Build Artifact
         run: "make ui_install type=ce"
 
@@ -87,10 +91,9 @@ jobs:
         uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6
         with:
           version: latest
-          args: -f .publisher.yml release --clean --release-notes /tmp/release-notes.md
+          args: -f .publisher.yml release --clean --skip=homebrew --release-notes /tmp/release-notes.md
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           REPO_NAME: ${{ github.repository }}
 
       - name: Release (Main Snapshot)
@@ -102,3 +105,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           REPO_NAME: ${{ github.repository }}
+
+  homebrew:
+    needs: release-matrix
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/publish-homebrew.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

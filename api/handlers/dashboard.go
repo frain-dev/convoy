@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	endpointsvc "github.com/frain-dev/convoy/internal/endpoints"
 	"github.com/frain-dev/convoy/internal/event_deliveries"
-	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 )
@@ -116,10 +115,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		endpoints = int64(len(endpointIDs))
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), events.SearchTimeout)
-	defer cancel()
-
-	eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p, endpointIDs)
+	eventsSent, messages, err := h.computeDashboardMessages(r.Context(), project.UID, searchParams, p, endpointIDs)
 	if err != nil {
 		if renderEventDeliveriesTimeout(w, r, err) {
 			return

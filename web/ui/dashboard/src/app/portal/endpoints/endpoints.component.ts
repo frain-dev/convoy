@@ -2,7 +2,7 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import { DatePipe, Location } from '@angular/common';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
-import {ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE, PORTAL_LINK} from 'src/app/models/endpoint.model';
+import type {ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE, PORTAL_LINK} from 'src/app/models/endpoint.model';
 import {SUBSCRIPTION} from 'src/app/models/subscription';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {EndpointsService} from 'src/app/private/pages/project/endpoints/endpoints.service';

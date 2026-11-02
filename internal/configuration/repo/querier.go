@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CompleteAdminManagedMigration(ctx context.Context, arg CompleteAdminManagedMigrationParams) (pgconn.CommandTag, error)
 	// Configuration Queries
 	// SQLc queries for Configuration repository operations
 	CreateConfiguration(ctx context.Context, arg CreateConfigurationParams) error

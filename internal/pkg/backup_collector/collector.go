@@ -25,6 +25,11 @@ const (
 	receiveTimeout        = 5 * time.Second
 )
 
+// FlushGate decides whether a flush may upload to cold storage.
+// Return false to discard the buffer without uploading (archiving disabled).
+// A nil gate always allows upload. Lookup errors should fail closed (false, err).
+type FlushGate func(ctx context.Context) (allowed bool, err error)
+
 // BackupCollector streams WAL changes from PostgreSQL for the backup tables
 // and periodically flushes them as gzip-compressed JSONL to a BlobStore.
 type BackupCollector struct {
@@ -42,6 +47,7 @@ type BackupCollector struct {
 	store  blobstore.BlobStore
 
 	flushInterval time.Duration
+	flushGate     FlushGate
 
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -49,12 +55,15 @@ type BackupCollector struct {
 }
 
 // NewBackupCollector creates a new CDC-based backup collector.
+// flushGate may be nil (always upload). Prefer a DB webhook_archiving.enabled
+// check so dashboard disable stops uploads without a worker restart.
 func NewBackupCollector(
 	pool *pgxpool.Pool,
 	dsn string,
 	store blobstore.BlobStore,
 	flushInterval time.Duration,
 	logger log.Logger,
+	flushGate FlushGate,
 ) *BackupCollector {
 	return &BackupCollector{
 		pool:          pool,
@@ -65,6 +74,7 @@ func NewBackupCollector(
 		buffer:        NewBuffer(),
 		store:         store,
 		flushInterval: flushInterval,
+		flushGate:     flushGate,
 		logger:        logger,
 	}
 }

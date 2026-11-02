@@ -105,6 +105,9 @@ func ProcessBatchRetry(
 				Status:         f.Status,
 				SearchParams:   f.SearchParams,
 			}
+			if filter.SearchParams.Query == "" {
+				filter.SearchParams.Query = filter.Query
+			}
 
 			lo.Info("start of loop", "next_page_cursor", filter)
 

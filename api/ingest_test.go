@@ -245,3 +245,88 @@ func TestSourceUsesPayloadSignature(t *testing.T) {
 		})
 	}
 }
+
+func Test_selectIngestVerifier_ProviderWithoutHMAC(t *testing.T) {
+	providers := []datastore.SourceProvider{
+		datastore.GithubSourceProvider,
+		datastore.TwitterSourceProvider,
+		datastore.ShopifySourceProvider,
+	}
+
+	for _, provider := range providers {
+		t.Run(string(provider)+"_nil_verifier", func(t *testing.T) {
+			_, err := selectIngestVerifier(&datastore.Source{Provider: provider})
+			require.ErrorIs(t, err, errIngestVerifierMissing)
+		})
+		t.Run(string(provider)+"_noop_without_hmac", func(t *testing.T) {
+			_, err := selectIngestVerifier(&datastore.Source{
+				Provider: provider,
+				Verifier: &datastore.VerifierConfig{Type: datastore.NoopVerifier},
+			})
+			require.ErrorIs(t, err, errIngestVerifierMissing)
+		})
+		t.Run(string(provider)+"_empty_secret", func(t *testing.T) {
+			_, err := selectIngestVerifier(&datastore.Source{
+				Provider: provider,
+				Verifier: &datastore.VerifierConfig{
+					Type: datastore.HMacVerifier,
+					HMac: &datastore.HMac{Secret: ""},
+				},
+			})
+			require.ErrorIs(t, err, errIngestVerifierMissing)
+		})
+	}
+}
+
+func Test_selectIngestVerifier_ProviderWithHMAC(t *testing.T) {
+	hmac := &datastore.HMac{Secret: "convoy-secret"}
+	cfg := &datastore.VerifierConfig{Type: datastore.HMacVerifier, HMac: hmac}
+
+	for _, provider := range []datastore.SourceProvider{
+		datastore.GithubSourceProvider,
+		datastore.TwitterSourceProvider,
+		datastore.ShopifySourceProvider,
+	} {
+		v, err := selectIngestVerifier(&datastore.Source{Provider: provider, Verifier: cfg})
+		require.NoError(t, err)
+		require.NotNil(t, v)
+	}
+}
+
+func Test_selectIngestVerifier_GenericMissingNestedConfig(t *testing.T) {
+	cases := []struct {
+		name   string
+		source *datastore.Source
+	}{
+		{
+			name:   "hmac without hmac block",
+			source: &datastore.Source{Verifier: &datastore.VerifierConfig{Type: datastore.HMacVerifier}},
+		},
+		{
+			name:   "basic without basic block",
+			source: &datastore.Source{Verifier: &datastore.VerifierConfig{Type: datastore.BasicAuthVerifier}},
+		},
+		{
+			name:   "api key without api key block",
+			source: &datastore.Source{Verifier: &datastore.VerifierConfig{Type: datastore.APIKeyVerifier}},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := selectIngestVerifier(tc.source)
+			require.ErrorIs(t, err, errIngestVerifierMissing)
+		})
+	}
+}
+
+func Test_providerHMACSecret(t *testing.T) {
+	_, err := providerHMACSecret(nil)
+	require.ErrorIs(t, err, errIngestVerifierMissing)
+
+	secret, err := providerHMACSecret(&datastore.Source{
+		Verifier: &datastore.VerifierConfig{HMac: &datastore.HMac{Secret: "s3cret"}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "s3cret", secret)
+}

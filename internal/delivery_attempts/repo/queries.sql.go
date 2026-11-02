@@ -166,17 +166,25 @@ WITH att AS (
         created_at,
         updated_at,
         deleted_at
-    FROM convoy.delivery_attempts
-    WHERE event_delivery_id = $1 AND deleted_at IS NULL
-    ORDER BY created_at DESC
-    LIMIT 10
+    FROM convoy.delivery_attempts a
+    WHERE a.event_delivery_id = $1 AND a.deleted_at IS NULL
+      AND ($2::text = '' OR (a.created_at, a.id) < ($3::timestamptz, $2))
+    ORDER BY created_at DESC, id DESC
+    LIMIT $4
 )
 SELECT
     id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
     ip_address, request_http_header, response_http_header, http_status,
     response_data, error, status, requested_at, responded_at, created_at, updated_at, deleted_at
-FROM att ORDER BY created_at ASC
+FROM att ORDER BY created_at ASC, id ASC
 `
+
+type FindDeliveryAttemptsParams struct {
+	EventDeliveryID pgtype.Text
+	BeforeID        pgtype.Text
+	BeforeTime      pgtype.Timestamptz
+	PageLimit       pgtype.Int8
+}
 
 type FindDeliveryAttemptsRow struct {
 	ID                 string
@@ -200,9 +208,14 @@ type FindDeliveryAttemptsRow struct {
 	DeletedAt          pgtype.Timestamptz
 }
 
-// Fetch last 10 delivery attempts for an event delivery, ordered by created_at
-func (q *Queries) FindDeliveryAttempts(ctx context.Context, eventDeliveryID pgtype.Text) ([]FindDeliveryAttemptsRow, error) {
-	rows, err := q.db.Query(ctx, findDeliveryAttempts, eventDeliveryID)
+// Fetch a bounded page, with a stable tie-breaker for simultaneous attempts.
+func (q *Queries) FindDeliveryAttempts(ctx context.Context, arg FindDeliveryAttemptsParams) ([]FindDeliveryAttemptsRow, error) {
+	rows, err := q.db.Query(ctx, findDeliveryAttempts,
+		arg.EventDeliveryID,
+		arg.BeforeID,
+		arg.BeforeTime,
+		arg.PageLimit,
+	)
 	if err != nil {
 		return nil, err
 	}

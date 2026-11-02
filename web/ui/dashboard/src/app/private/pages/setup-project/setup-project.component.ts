@@ -10,7 +10,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
 import { SOURCE } from 'src/app/models/source.model';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
 import { CreateSourceComponent } from '../../components/create-source/create-source.component';
 import { CreateSubscriptionComponent } from '../../components/create-subscription/create-subscription.component';
 import { CreateSubscriptionService } from '../../components/create-subscription/create-subscription.service';

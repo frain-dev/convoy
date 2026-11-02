@@ -409,6 +409,78 @@ func TestFindDeliveryAttempts_MultipleAttempts(t *testing.T) {
 	require.Len(t, attempts, 5)
 }
 
+func TestFindDeliveryAttemptsPage(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+	project := seedTestData(t, db, ctx)
+	endpoint := seedEndpoint(t, db, ctx, project)
+	delivery := seedEventDelivery(t, db, ctx, project, endpoint)
+	other := seedEventDelivery(t, db, ctx, project, endpoint)
+	service := New(log.New("convoy", log.LevelError), db)
+	var ids []string
+	for i := 0; i < 21; i++ {
+		id := ulid.Make().String()
+		ids = append(ids, id)
+		require.NoError(t, service.CreateDeliveryAttempt(ctx, &datastore.DeliveryAttempt{
+			UID: id, URL: "https://example.com", Method: "POST", APIVersion: "2023.12.25",
+			EndpointID: endpoint.UID, ProjectId: project.UID, EventDeliveryId: delivery.UID,
+		}))
+	}
+	// Equal timestamps must neither repeat nor skip rows between pages.
+	_, err := db.GetConn().Exec(ctx, "UPDATE convoy.delivery_attempts SET created_at = '2026-01-01T00:00:00Z' WHERE event_delivery_id = $1", delivery.UID)
+	require.NoError(t, err)
+	first, cursor, err := service.FindDeliveryAttemptsPage(ctx, delivery.UID, "")
+	require.NoError(t, err)
+	require.Len(t, first, 10)
+	require.Equal(t, ids[11], cursor)
+	// A new retry after page one cannot shift the older-history cursor.
+	require.NoError(t, service.CreateDeliveryAttempt(ctx, &datastore.DeliveryAttempt{
+		UID: ulid.Make().String(), URL: "https://example.com", Method: "POST", APIVersion: "2023.12.25",
+		EndpointID: endpoint.UID, ProjectId: project.UID, EventDeliveryId: delivery.UID,
+	}))
+	second, cursor, err := service.FindDeliveryAttemptsPage(ctx, delivery.UID, cursor)
+	require.NoError(t, err)
+	require.Len(t, second, 10)
+	require.Equal(t, ids[1], cursor)
+	last, cursor, err := service.FindDeliveryAttemptsPage(ctx, delivery.UID, cursor)
+	require.NoError(t, err)
+	require.Len(t, last, 1)
+	require.Empty(t, cursor)
+	legacyAttempt := datastore.DeliveryAttempt{UID: ulid.Make().String(), CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)}
+	older, cursor, err := service.FindDeliveryAttemptsPage(ctx, delivery.UID, ids[1], legacyAttempt)
+	require.NoError(t, err)
+	require.Len(t, older, 2)
+	require.Equal(t, legacyAttempt.UID, older[0].UID)
+	require.Empty(t, cursor)
+	older, cursor, err = service.FindDeliveryAttemptsPage(ctx, delivery.UID, legacyAttempt.UID, legacyAttempt)
+	require.NoError(t, err)
+	require.Empty(t, older)
+	require.Empty(t, cursor)
+	all := append(append(last, second...), first...)
+	for i, attempt := range all {
+		require.Equal(t, ids[i], attempt.UID)
+	}
+	_, _, err = service.FindDeliveryAttemptsPage(ctx, other.UID, ids[1])
+	require.Error(t, err, "cursor must belong to the requested delivery")
+	empty, cursor, err := service.FindDeliveryAttemptsPage(ctx, other.UID, "")
+	require.NoError(t, err)
+	require.Empty(t, empty)
+	require.Empty(t, cursor)
+	legacy, err := service.FindDeliveryAttempts(ctx, delivery.UID)
+	require.NoError(t, err)
+	require.Len(t, legacy, 10)
+	_, err = db.GetConn().Exec(ctx, "UPDATE convoy.delivery_attempts SET deleted_at = NOW() WHERE id = ANY($1)", ids[:2])
+	require.NoError(t, err)
+	first, cursor, err = service.FindDeliveryAttemptsPage(ctx, delivery.UID, "")
+	require.NoError(t, err)
+	require.Len(t, first, 10)
+	require.NotEmpty(t, cursor)
+	second, cursor, err = service.FindDeliveryAttemptsPage(ctx, delivery.UID, cursor)
+	require.NoError(t, err)
+	require.Len(t, second, 10)
+	require.Empty(t, cursor, "exactly twenty retained attempts require two pages")
+}
+
 func TestFindDeliveryAttemptById_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()

@@ -42,7 +42,33 @@ func (c *BackupCollector) flushLoop(ctx context.Context) {
 // On restart, the WAL replays from the last good LSN, re-exporting all tables
 // (including ones that succeeded). This is simpler and safer than re-queuing
 // failed entries, which risks unbounded memory growth.
+//
+// When flushGate denies upload (archiving disabled), the buffer is discarded
+// and the LSN is still advanced so the replication slot does not retain WAL
+// forever while cold storage is intentionally off.
 func (c *BackupCollector) doFlush(ctx context.Context) {
+	if c.flushGate != nil {
+		allowed, err := c.flushGate(ctx)
+		if err != nil {
+			c.logger.Error(fmt.Sprintf("flush gate error (skipping flush): %v", err))
+			return
+		}
+		if !allowed {
+			records, swapLSN := c.buffer.Swap()
+			total := 0
+			for _, entries := range records {
+				total += len(entries)
+			}
+			if total > 0 {
+				c.logger.Warn(fmt.Sprintf("webhook archiving disabled; discarded %d buffered records without upload", total))
+			}
+			if swapLSN > 0 {
+				c.flushedLSN.Store(uint64(swapLSN))
+			}
+			return
+		}
+	}
+
 	records, swapLSN := c.buffer.Swap()
 	if len(records) == 0 {
 		return
@@ -114,13 +140,16 @@ func (c *BackupCollector) flushTable(ctx context.Context, tableName string, entr
 	// but Upload blocks on pr — so we must read both.
 	// Upload returns when pw is closed (by goroutine).
 	uploadErr := c.store.Upload(ctx, blobKey, pr)
+	// An uploader can return before consuming the stream. Release the encoder
+	// before waiting for it, otherwise maintenance can hang on a failed upload.
+	_ = pr.CloseWithError(uploadErr)
 	encodeErr := <-errCh
 
-	if encodeErr != nil {
-		return fmt.Errorf("encode: %w", encodeErr)
-	}
 	if uploadErr != nil {
 		return fmt.Errorf("upload: %w", uploadErr)
+	}
+	if encodeErr != nil {
+		return fmt.Errorf("encode: %w", encodeErr)
 	}
 
 	c.logger.Info(fmt.Sprintf("uploaded %d records to %s", len(entries), blobKey))

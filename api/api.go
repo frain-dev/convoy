@@ -30,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/queue/inventory"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -193,6 +194,13 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, fmt.Errorf("api options is required")
 	}
 	ensureAPIRepositories(a)
+	if a.QueueInventory == nil && a.DB != nil {
+		var err error
+		a.QueueInventory, err = inventory.Configured(a.Cfg, a.DB.GetDB())
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	appHandler := &ApplicationHandler{A: a}
 
@@ -515,7 +523,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
 		uiRouter.Post("/users/verify_email", handler.VerifyEmail)
 		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/users/resend_verification_email", handler.ResendVerificationEmail)
-		uiRouter.Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
+		uiRouter.With(middleware.OptionalAuth(handler.A.Logger)).Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
@@ -576,6 +584,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/indexes", handler.ListIndexes)
 			adminRouter.Post("/indexes/rebuild", handler.StartIndexRebuild)
 			adminRouter.Get("/partitions/{runID}", handler.GetPartitionRun)
+			adminRouter.Get("/retention/runs", handler.ListRetentionRuns)
+			adminRouter.Get("/retention/runs/{runID}", handler.GetRetentionRun)
 
 			// Queue monitoring for the dashboard's native page. Both brokers
 			// implement the inspector, so these routes are provider-neutral.
@@ -584,6 +594,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Route("/queue", func(queueRouter chi.Router) {
 				queueRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
 				queueRouter.Get("/stats", handler.GetQueueStats)
+				queueRouter.Get("/stores", handler.GetQueueStores)
 				queueRouter.Get("/scheduler", handler.GetQueueSchedulerEntries)
 				queueRouter.Get("/{queueName}/history", handler.GetQueueHistory)
 				queueRouter.Get("/{queueName}/tasks", handler.GetQueueTasks)
@@ -594,6 +605,15 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				queueRouter.Post("/{queueName}/tasks/{taskID}/delete", handler.DeleteQueueTask)
 				queueRouter.Post("/{queueName}/pause", handler.PauseQueue)
 				queueRouter.Post("/{queueName}/resume", handler.UnpauseQueue)
+			})
+
+			// Data plane monitoring for the same page. It carries the queue
+			// group's two gates because it answers the same question about the
+			// same instance-wide work, for deployments whose event path does not
+			// run on the queue.
+			adminRouter.Route("/dataplane", func(dataPlaneRouter chi.Router) {
+				dataPlaneRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+				dataPlaneRouter.Get("/status", handler.GetDataPlaneStatus)
 			})
 		})
 
@@ -691,6 +711,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 							eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 							eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+							eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -767,6 +788,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
+			// Instance-admin only: dashboard Admin → Configurations writes the
+			// instance configurations row (retention / archiving / storage).
+			configRouter.With(handler.RequireInstanceAdmin()).Put("/", handler.UpdateConfiguration)
 			configRouter.With(middleware.WorkspaceSlugProbeRateLimit(a.A.Rate)).Get("/auth", handler.GetAuthConfiguration)
 		})
 
@@ -896,6 +920,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			eventDeliveryRouter.With(handler.RequireEnabledProject(), handler.RequireEnabledOrganisation()).Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 			eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+			eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -1084,6 +1109,15 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
 
+		// This replica's own live snapshot. It carries the same two gates as the
+		// control plane's /ui/admin/dataplane/status, because it answers the same
+		// question about the same instance-wide work; it exists separately so a
+		// reader does not have to wait out a publish interval.
+		uiRouter.Route("/admin/dataplane", func(dataPlaneRouter chi.Router) {
+			dataPlaneRouter.Use(middleware.RequireAsynqMonitoring(func() license.Licenser { return a.A.Licenser }, handler.A.Logger))
+			dataPlaneRouter.Get("/snapshot", handler.GetDataPlaneSnapshot)
+		})
+
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
@@ -1107,6 +1141,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 							eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 							eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+							eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
@@ -1151,6 +1186,7 @@ func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *ha
 			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
 			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 			eventDeliveryRouter.Get("/statustotals", handler.EventDeliveryStatusTotals)
+			eventDeliveryRouter.Get("/eventtypes", handler.EventDeliveryFilterEventTypes)
 
 			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)

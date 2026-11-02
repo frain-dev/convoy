@@ -2,7 +2,7 @@ import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE } from 'src/app/models/endpoint.model';
+import type { ENDPOINT, ENDPOINT_PERIOD_FAILURE_RATE } from 'src/app/models/endpoint.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
@@ -58,6 +58,7 @@ export class EndpointsComponent implements OnInit, OnDestroy {
 	// panel grows to the right; a centered/right-anchored panel overflows this
 	// left-hugging column off the viewport.
 	readonly statusTooltipClass = '!min-w-[280px] !left-0 !translate-x-0 after:!left-[24px] after:!translate-x-0';
+	readonly failureRateTooltipClass = '!min-w-[240px] !left-auto !right-0 !translate-x-0 after:!left-auto after:!right-[12px] after:!translate-x-0';
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
 	isLoadingEndpoints = true;

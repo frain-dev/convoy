@@ -326,6 +326,20 @@ export class AdminService {
 		});
 	}
 
+	listRetentionRuns(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/retention/runs`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	listIndexes(): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
@@ -353,6 +367,10 @@ export class AdminService {
 				return reject(error);
 			}
 		});
+	}
+
+ getQueueStores(): Promise<HTTP_RESPONSE> {
+		return this.http.request({ url: `/admin/queue/stores`, method: 'get', hideNotification: true });
 	}
 
 	getQueueStats(): Promise<HTTP_RESPONSE> {
@@ -451,6 +469,27 @@ export class AdminService {
 				const response = await this.http.request({
 					url: `/admin/queue/${encodeURIComponent(queueName)}/${paused ? 'pause' : 'resume'}`,
 					method: 'post'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	// The full error is returned rather than a message, because 501 here is the
+	// server saying this deployment runs no reporting data plane, which is a
+	// definitive answer the caller must tell apart from a failed read. Silent
+	// because this is polled: a queue-only instance would otherwise raise a
+	// toast on every refresh.
+	getDataPlaneStatus(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/dataplane/status`,
+					method: 'get',
+					hideNotification: true,
+					returnFullError: true
 				});
 				return resolve(response);
 			} catch (error) {

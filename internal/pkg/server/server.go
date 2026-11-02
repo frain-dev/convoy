@@ -30,32 +30,52 @@ func NewServer(port uint32, stopFn func()) *Server {
 }
 
 func NewServerWithLogger(port uint32, stopFn func(), logger log.Logger) *Server {
-	// WriteTimeout covers the entire handler. Sync-ack waits on POST /events/dynamic
-	// must finish with room to write the response, so raise above the wait when needed.
-	// Match CreateDynamicEventService: zero/negative timeout falls back to 30s.
+	// The write deadline starts when the request headers are done, before the
+	// handler reads the body, and the response still has to be written after
+	// the body. Sync-ack waits on POST /events/dynamic need the same headroom.
+	readTimeout := 30 * time.Second
 	writeTimeout := 30 * time.Second
 	if cfg, err := config.Get(); err == nil {
-		ackSecs := cfg.VerifyDynamicEventsTimeout
-		if ackSecs == 0 {
-			ackSecs = 30
-		}
-		ackWait := time.Duration(ackSecs) * time.Second
-		if needed := ackWait + 15*time.Second; needed > writeTimeout {
-			writeTimeout = needed
-		}
+		readTimeout, writeTimeout = httpServerTimeouts(cfg.Server.HTTP.ReadTimeout, cfg.VerifyDynamicEventsTimeout)
+	}
+	headerTimeout := 30 * time.Second
+	if readTimeout < headerTimeout {
+		headerTimeout = readTimeout
 	}
 
 	srv := &Server{
 		s: &http.Server{
-			ReadTimeout:  time.Second * 30,
-			WriteTimeout: writeTimeout,
-			Addr:         fmt.Sprintf(":%d", port),
+			ReadTimeout: readTimeout,
+			// A longer body limit must not extend the header wait. A shorter one
+			// caps headers too, so that wait cannot outlive the request.
+			ReadHeaderTimeout: headerTimeout,
+			WriteTimeout:      writeTimeout,
+			// Keep-alive wait stays at the previous 30s instead of following ReadTimeout.
+			IdleTimeout: 30 * time.Second,
+			Addr:        fmt.Sprintf(":%d", port),
 		},
 		StopFn: stopFn,
 		logger: logger,
 	}
 
 	return srv
+}
+
+func httpServerTimeouts(readSeconds, ackSeconds uint64) (time.Duration, time.Duration) {
+	if readSeconds == 0 {
+		readSeconds = 30
+	}
+	if ackSeconds == 0 {
+		ackSeconds = 30
+	}
+	readTimeout := time.Duration(readSeconds) * time.Second
+	// The write deadline is already running while the body is read, and the
+	// response still has to be written after that.
+	writeTimeout := readTimeout + 15*time.Second
+	if needed := time.Duration(ackSeconds)*time.Second + 15*time.Second; needed > writeTimeout {
+		writeTimeout = needed
+	}
+	return readTimeout, writeTimeout
 }
 
 func (s *Server) SetHandler(handler http.Handler) {

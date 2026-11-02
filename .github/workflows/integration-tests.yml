@@ -160,6 +160,19 @@ jobs:
                   CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
                   CONVOY_TEST_QUEUE_PROVIDER: ${{ matrix.provider }}
 
+            - name: Fetch history for coding-agent task definitions
+              if: ${{ matrix.group == 'unit' && matrix.shard == 1 }}
+              run: |
+                  if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+                      git fetch --unshallow --no-tags origin
+                  fi
+
+            - name: Validate coding-agent eval harness and task definitions
+              if: ${{ matrix.group == 'unit' && matrix.shard == 1 }}
+              run: |
+                  python3 -B evals/harness.py check
+                  python3 -B -m unittest discover -s evals -p 'test_*.py'
+
     # Stable, single required status check. Branch protection should require
     # `test`. Fail closed: the only green-without-running-tests case is a genuine
     # docs/UI-only change (has_backend == 'false'). If the changes gate itself

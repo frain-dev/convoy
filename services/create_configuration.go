@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -18,6 +19,12 @@ type CreateConfigService struct {
 }
 
 func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration, error) {
+	if _, err := c.ConfigRepo.LoadConfiguration(ctx); err == nil {
+		return nil, util.NewServiceError(http.StatusConflict, datastore.ErrConfigAlreadyExists)
+	} else if !errors.Is(err, datastore.ErrConfigNotFound) {
+		return nil, err
+	}
+
 	storagePolicy := c.NewConfig.StoragePolicy.Transform()
 	if storagePolicy == nil {
 		storagePolicy = &datastore.DefaultStoragePolicy
@@ -28,11 +35,18 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		rc = &datastore.DefaultRetentionPolicy
 	}
 
+	wa := c.NewConfig.WebhookArchiving.Transform()
+	if wa == nil {
+		wa = &datastore.DefaultWebhookArchiving
+	}
+
 	config := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		StoragePolicy:      storagePolicy,
 		IsAnalyticsEnabled: true,
+		AdminManagedKnown:  true,
 		RetentionPolicy:    rc,
+		WebhookArchiving:   wa,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}
@@ -40,9 +54,16 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 	if c.NewConfig.IsSignupEnabled != nil {
 		config.IsSignupEnabled = *c.NewConfig.IsSignupEnabled
 	}
+	if c.NewConfig.AdminManaged != nil {
+		config.AdminManaged = *c.NewConfig.AdminManaged
+	}
 
 	err := c.ConfigRepo.CreateConfiguration(ctx, config)
 	if err != nil {
+		var se *util.ServiceError
+		if errors.As(err, &se) && se.ErrCode() == http.StatusConflict {
+			return nil, se
+		}
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
 	}
 

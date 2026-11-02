@@ -36,8 +36,48 @@ type CreateEvent struct {
 	IdempotencyKey string `json:"idempotency_key"`
 }
 
+// requiredField pairs the emptiness of one field with the error util.Validate
+// would have produced for it, as "<json name>:<message>".
+//
+// Emptiness is govalidator's: a zero length value, untrimmed. A whitespace-only
+// event type is therefore still accepted here, as it always has been.
+type requiredField struct {
+	empty   bool
+	message string
+}
+
+// requiredFieldsError reports every empty required field in one error, joined
+// with ", " as util.Validate joins govalidator's. A single missing field
+// produces the string it always did; several now come out in field declaration
+// order, where util.Validate ranged over a map and so ordered them at random.
+//
+// The ingest event structs below validate through this rather than through
+// util.Validate because govalidator's slice branch runs the whole validator
+// machinery once per element, and a json.RawMessage payload is a byte slice, so
+// the cost of validating two required fields grew with the size of the webhook
+// body. TestIngestEventValidateEnforcesEveryValidTag keeps these checks in step
+// with the valid: tags, which stay on the fields as the declaration.
+func requiredFieldsError(fields ...requiredField) error {
+	var messages []string
+
+	for _, field := range fields {
+		if field.empty {
+			messages = append(messages, field.message)
+		}
+	}
+
+	if len(messages) == 0 {
+		return nil
+	}
+
+	return errors.New(strings.Join(messages, ", "))
+}
+
 func (e *CreateEvent) Validate() error {
-	if err := util.Validate(e); err != nil {
+	if err := requiredFieldsError(
+		requiredField{len(e.Data) == 0, "data:please provide your data"},
+		requiredField{len(e.EventType) == 0, "event_type:please provide an event type"},
+	); err != nil {
 		return err
 	}
 
@@ -87,7 +127,11 @@ type DynamicEvent struct {
 }
 
 func (de *DynamicEvent) Validate() error {
-	return util.Validate(de)
+	return requiredFieldsError(
+		requiredField{len(de.URL) == 0, "url:please provide an endpoint url"},
+		requiredField{len(de.Data) == 0, "data:please provide your webhook event data"},
+		requiredField{len(de.EventType) == 0, "event_type:please provide an event type"},
+	)
 }
 
 type SearchParams struct {
@@ -102,6 +146,9 @@ type QueryListEvent struct {
 	// A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
 	Query string `json:"query"`
 
+	// Set to text to search metadata literally, without interpreting JSON in query.
+	QueryMode string `json:"queryMode"`
+
 	// URL-encoded JSON object matched against the event payload.
 	// Combined with query as AND when both are set.
 	Body string `json:"body"`
@@ -112,6 +159,10 @@ type QueryListEvent struct {
 	// IdempotencyKey to filter by
 	IdempotencyKey string `json:"idempotencyKey"`
 
+	// Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+	// List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+	IdempotencyValue string `json:"idempotencyValue"`
+
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
 
@@ -121,9 +172,16 @@ type QueryListEvent struct {
 
 type QueryListEventResponse struct {
 	*datastore.Filter
+
+	// IdempotencyValue is resolved to IdempotencyKey by the handler before querying.
+	IdempotencyValue string
 }
 
 func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, error) {
+	queryMode := r.URL.Query().Get("queryMode")
+	if queryMode != "" && queryMode != "text" {
+		return nil, errors.New("queryMode must be text or omitted")
+	}
 	searchParams, err := getSearchParams(r)
 	if err != nil {
 		return nil, err
@@ -134,18 +192,26 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 		body = json.RawMessage(raw)
 	}
 
+	idempotencyKey := r.URL.Query().Get("idempotencyKey")
+	idempotencyValue := strings.TrimSpace(r.URL.Query().Get("idempotencyValue"))
+	if idempotencyValue != "" && idempotencyKey != "" {
+		return nil, errors.New("idempotencyValue cannot be combined with idempotencyKey")
+	}
+
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
 			OwnerID:         r.URL.Query().Get("ownerId"),
 			Query:           r.URL.Query().Get("query"),
+			QueryMode:       queryMode,
 			Body:            body,
-			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
+			IdempotencyKey:  idempotencyKey,
 			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
 			EndpointIDs:     getEndpointIDs(r),
 			SourceIDs:       getSourceIDs(r),
 			SearchParams:    searchParams,
 			Pageable:        m.GetPageableFromContext(r.Context()),
 		},
+		IdempotencyValue: idempotencyValue,
 	}, nil
 }
 
@@ -159,7 +225,10 @@ type DynamicEventStub struct {
 }
 
 func (ds *DynamicEventStub) Validate() error {
-	return util.Validate(ds)
+	return requiredFieldsError(
+		requiredField{len(ds.EventType) == 0, "event_type:please provide an event type"},
+		requiredField{len(ds.Data) == 0, "data:please provide your data"},
+	)
 }
 
 type BroadcastEvent struct {
@@ -186,7 +255,10 @@ type BroadcastEvent struct {
 }
 
 func (bs *BroadcastEvent) Validate() error {
-	return util.Validate(bs)
+	return requiredFieldsError(
+		requiredField{len(bs.EventType) == 0, "event_type:please provide an event type"},
+		requiredField{len(bs.Data) == 0, "data:please provide your data"},
+	)
 }
 
 type FanoutEvent struct {
@@ -208,11 +280,37 @@ type FanoutEvent struct {
 }
 
 func (fe *FanoutEvent) Validate() error {
-	return util.Validate(fe)
+	return requiredFieldsError(
+		requiredField{len(fe.OwnerID) == 0, "owner_id:please provide an owner id"},
+		requiredField{len(fe.EventType) == 0, "event_type:please provide an event type"},
+		requiredField{len(fe.Data) == 0, "data:please provide your data"},
+	)
 }
 
 type EventResponse struct {
 	*datastore.Event
+}
+
+// EventQueuedResponse is the 201 body from create, broadcast, fan-out, and
+// dynamic ingest. The event id is assigned before the worker persists the
+// row. Use UID to retrieve the event or list its deliveries. Get and retry
+// a delivery need an event delivery id from that list; this receipt does
+// not include one.
+type EventQueuedResponse struct {
+	// UID is the event id.
+	UID string `json:"uid"`
+
+	EventType string `json:"event_type,omitempty"`
+
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+}
+
+func NewEventQueuedResponse(uid, eventType, idempotencyKey string) EventQueuedResponse {
+	return EventQueuedResponse{
+		UID:            uid,
+		EventType:      eventType,
+		IdempotencyKey: idempotencyKey,
+	}
 }
 
 type QueryCountAffectedEvents struct {
@@ -233,10 +331,20 @@ type CountResponse struct {
 // DeliveryStatusTotalsResponse carries per-status delivery totals for a window.
 // A status with no deliveries is absent from Totals rather than present as zero,
 // so a client can tell an empty window from a failed request. Source names the
-// table that answered, either the daily rollup or a live scan.
+// read strategy: daily rollups with exact live boundary reads, or a live scan.
 type DeliveryStatusTotalsResponse struct {
 	Totals map[string]int64 `json:"totals"`
 	Source string           `json:"source"`
+}
+
+// DeliveryFilterEventTypesResponse is the Event Deliveries type dropdown.
+// Catalog is declared names (minus "*", deprecated). Observed is distinct
+// event_deliveries.event_type values in the date window that are not already
+// declared, including names that are declared but deprecated. Ingest does
+// not write catalog rows.
+type DeliveryFilterEventTypesResponse struct {
+	Catalog  []string `json:"catalog"`
+	Observed []string `json:"observed"`
 }
 
 func (qc *QueryCountAffectedEvents) Transform(r *http.Request) (*QueryCountAffectedEventsResponse, error) {
@@ -323,7 +431,16 @@ func getSearchParams(r *http.Request) (datastore.SearchParams, error) {
 	searchParams = datastore.SearchParams{
 		CreatedAtStart: startT.Unix(),
 		CreatedAtEnd:   endT.Unix(),
+		Query:          listSearchQuery(r),
 	}
 
 	return searchParams, nil
+}
+
+func listSearchQuery(r *http.Request) string {
+	q := strings.TrimSpace(r.URL.Query().Get("query"))
+	if q == "" {
+		q = strings.TrimSpace(r.URL.Query().Get("q"))
+	}
+	return q
 }

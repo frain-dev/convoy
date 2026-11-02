@@ -14,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/queue/tracectx"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	log "github.com/frain-dev/convoy/pkg/logger"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
@@ -129,8 +128,8 @@ func (c *Consumer) Start() error {
 	return c.runner.Start()
 }
 
-func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(context.Context, *asynq.Task) error, tel *telemetry.Telemetry) {
-	c.mux.HandleFunc(string(taskName), c.loggingMiddleware(asynq.HandlerFunc(handlerFn), tel).ProcessTask)
+func (c *Consumer) RegisterHandlers(taskName convoy.TaskName, handlerFn func(context.Context, *asynq.Task) error) {
+	c.mux.HandleFunc(string(taskName), c.loggingMiddleware(asynq.HandlerFunc(handlerFn)).ProcessTask)
 }
 
 func (c *Consumer) Stop() {
@@ -142,7 +141,7 @@ func (c *Consumer) SetJobTracker(tracker JobTracker) {
 	c.jobTracker = tracker
 }
 
-func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) asynq.Handler {
+func (c *Consumer) loggingMiddleware(h asynq.Handler) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
 		if c.jobTracker != nil {
 			c.jobTracker.RecordJob(t)
@@ -163,17 +162,17 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 		// and the runLegacy branch on or after 2026-06-01 — by then every
 		// envelope-wrapped payload from the prior deploy has drained.
 		if env := tryUnwrapLegacyEnvelope(t.Payload()); env != nil {
-			return c.runWithSpan(ctx, h, asynq.NewTask(t.Type(), env.payload), env.headers, tel)
+			return c.runWithSpan(ctx, h, asynq.NewTask(t.Type(), env.payload), env.headers)
 		}
 
-		return c.runWithSpan(ctx, h, t, headers, tel)
+		return c.runWithSpan(ctx, h, t, headers)
 	})
 }
 
 // runWithSpan extracts trace context from headers, opens a worker.task.* span,
 // and dispatches to the handler. Shared between the headers-native path and
 // the transitional legacy-envelope path.
-func (c *Consumer) runWithSpan(ctx context.Context, h asynq.Handler, t *asynq.Task, headers map[string]string, tel *telemetry.Telemetry) error {
+func (c *Consumer) runWithSpan(ctx context.Context, h asynq.Handler, t *asynq.Task, headers map[string]string) error {
 	ctx = tracectx.ExtractContext(ctx, headers)
 
 	tr := otel.GetTracerProvider().Tracer(tracer.TracerNameWorker)
@@ -188,13 +187,6 @@ func (c *Consumer) runWithSpan(ctx context.Context, h asynq.Handler, t *asynq.Ta
 		c.log.Error("job failed", "error", err, "job", t.Type())
 		tracer.RecordError(span, err)
 		return err
-	}
-
-	if tel != nil {
-		switch convoy.TaskName(t.Type()) {
-		case convoy.EventProcessor, convoy.CreateEventProcessor, convoy.CreateDynamicEventProcessor:
-			_ = tel.Capture(newCtx)
-		}
 	}
 
 	return nil

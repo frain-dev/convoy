@@ -50,7 +50,6 @@ const (
 	SpanWorkerTaskEnqueueBackupJobs             = "worker.task.enqueue_backup_jobs"
 	SpanWorkerTaskProcessBackupJob              = "worker.task.process_backup_job"
 	SpanWorkerTaskManualBackupJob               = "worker.task.manual_backup_job"
-	SpanWorkerTaskDailyAnalytics                = "worker.task.daily_analytics"
 	SpanWorkerTaskSnapshotUsage                 = "worker.task.snapshot_usage"
 	SpanWorkerTaskRefreshDailyCounts            = "worker.task.refresh_event_delivery_daily_counts"
 	SpanWorkerTaskRefreshQueueMetrics           = "worker.task.refresh_queue_metrics_snapshot"
@@ -83,7 +82,6 @@ var taskNameSpans = map[convoy.TaskName]string{
 	convoy.EnqueueBackupJobs:                SpanWorkerTaskEnqueueBackupJobs,
 	convoy.ProcessBackupJob:                 SpanWorkerTaskProcessBackupJob,
 	convoy.ManualBackupJob:                  SpanWorkerTaskManualBackupJob,
-	convoy.DailyAnalytics:                   SpanWorkerTaskDailyAnalytics,
 	convoy.SnapshotUsage:                    SpanWorkerTaskSnapshotUsage,
 	convoy.RefreshEventDeliveryDailyCounts:  SpanWorkerTaskRefreshDailyCounts,
 	convoy.RefreshQueueMetricsSnapshot:      SpanWorkerTaskRefreshQueueMetrics,

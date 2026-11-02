@@ -265,7 +265,7 @@ services:
             postgres:
                 condition: service_healthy
             pgbouncer:
-                condition: service_started
+                condition: service_healthy
             redis_server:
                 condition: service_started
 
@@ -342,6 +342,12 @@ services:
         image: bitnamilegacy/pgbouncer
         hostname: pgbouncer
         restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "PGCONNECT_TIMEOUT=2 PGPASSWORD=\"$${POSTGRESQL_PASSWORD}\" psql -h 127.0.0.1 -p 6432 -U \"$${POSTGRESQL_USER}\" -d \"$${POSTGRESQL_DATABASE}\" -w -tAc 'SELECT 1' >/dev/null"]
+            interval: 2s
+            timeout: 5s
+            retries: 30
+            start_period: 5s
         ports:
             - "6432:6432"
         depends_on:

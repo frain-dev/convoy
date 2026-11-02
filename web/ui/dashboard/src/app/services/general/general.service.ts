@@ -127,8 +127,8 @@ export class GeneralService {
 		return displayedItems;
 	}
 
-	addFilterToURL(params?: FILTER_QUERY_PARAM) {
-		const queryParams = { ...this.route.snapshot.queryParams, ...params };
+	addFilterToURL(params?: FILTER_QUERY_PARAM, replace = false) {
+		const queryParams = replace ? { ...params } : { ...this.route.snapshot.queryParams, ...params };
 
 		if (!params?.next_page_cursor) delete queryParams.next_page_cursor;
 		if (!params?.prev_page_cursor) delete queryParams.prev_page_cursor;
@@ -170,13 +170,13 @@ export class GeneralService {
 			const raw = data.trim();
 			if (!raw) return displayMessage;
 			try {
-				return JSON.stringify(JSON.parse(raw), null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+				return JSON.stringify(JSON.parse(raw), null, 4);
 			} catch {
 				return data;
 			}
 		}
 
-		if (data) return JSON.stringify(data, null, 4).replaceAll(/"([^"]+)":/g, '$1:');
+		if (data !== undefined && data !== null) return JSON.stringify(data, null, 4);
 		return displayMessage;
 	}
 

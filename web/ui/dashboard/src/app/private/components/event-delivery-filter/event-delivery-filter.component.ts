@@ -10,7 +10,7 @@ import {SkeletonLoaderComponent} from 'src/app/components/skeleton-loader/skelet
 import {ProjectService} from '../../pages/project/project.service';
 import {SOURCE} from 'src/app/models/source.model';
 import {PrivateService} from '../../private.service';
-import {ENDPOINT} from 'src/app/models/endpoint.model';
+import type {ENDPOINT} from 'src/app/models/endpoint.model';
 import {FormsModule} from '@angular/forms';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';

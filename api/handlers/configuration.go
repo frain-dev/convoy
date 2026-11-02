@@ -25,7 +25,10 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 
 	var configResponse []*models.ConfigurationResponse
 	if configuration != nil {
-		redactConfigurationSecrets(configuration)
+		// Instance admins need the on-prem path to edit storage in Admin →
+		// Configurations. Credentials stay redacted; blank secrets on PUT mean keep
+		// (preserveStoragePolicySecrets). Non-admins still get a fully redacted path.
+		redactConfigurationSecrets(configuration, h.isInstanceAdmin(r))
 
 		c := &models.ConfigurationResponse{
 			Configuration: configuration,
@@ -46,7 +49,10 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 // license/checkout fields via their own gated endpoints, so redacting here removes
 // a license-key, checkout-nonce, and blob-storage credential leak without breaking
 // any current caller.
-func redactConfigurationSecrets(c *datastore.Configuration) {
+//
+// keepOnPremPath is true for instance admins so Admin → Configurations can show
+// and edit the backup directory; non-admins still get an empty path.
+func redactConfigurationSecrets(c *datastore.Configuration, keepOnPremPath bool) {
 	if c == nil {
 		return
 	}
@@ -59,14 +65,14 @@ func redactConfigurationSecrets(c *datastore.Configuration) {
 	c.CheckoutID = ""
 	c.ExternalID = ""
 
-	redactStoragePolicySecrets(c)
+	redactStoragePolicySecrets(c, keepOnPremPath)
 }
 
 // redactStoragePolicySecrets clears blob-storage credentials from the storage
 // policy, keeping only the non-sensitive location metadata the config UI renders.
 // Stripping is keyed on struct presence rather than StoragePolicy.Type so a
 // misconfigured Type cannot leak a populated credential set.
-func redactStoragePolicySecrets(c *datastore.Configuration) {
+func redactStoragePolicySecrets(c *datastore.Configuration, keepOnPremPath bool) {
 	if c.StoragePolicy == nil {
 		return
 	}
@@ -76,6 +82,7 @@ func redactStoragePolicySecrets(c *datastore.Configuration) {
 			Bucket:   s3.Bucket,
 			Endpoint: s3.Endpoint,
 			Region:   s3.Region,
+			Prefix:   s3.Prefix,
 		}
 	}
 
@@ -89,9 +96,13 @@ func redactStoragePolicySecrets(c *datastore.Configuration) {
 	}
 
 	if c.StoragePolicy.OnPrem != nil {
-		// The on-prem path points at the host filesystem backing instance
-		// backups; it is not needed by any config reader and must not leak.
-		c.StoragePolicy.OnPrem = &datastore.OnPremStorage{}
+		if keepOnPremPath {
+			c.StoragePolicy.OnPrem = &datastore.OnPremStorage{Path: c.StoragePolicy.OnPrem.Path}
+		} else {
+			// The on-prem path points at the host filesystem backing instance
+			// backups; it is not needed by non-admin readers and must not leak.
+			c.StoragePolicy.OnPrem = &datastore.OnPremStorage{}
+		}
 	}
 }
 
@@ -136,7 +147,7 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := newConfig.Validate(); err != nil {
+	if err := newConfig.ValidateForUpdate(); err != nil {
 		h.A.Logger.Errorf("Configuration update validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
@@ -153,6 +164,8 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	redactConfigurationSecrets(configuration, true)
 
 	c := &models.ConfigurationResponse{
 		Configuration: configuration,
@@ -203,9 +216,19 @@ func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 		ssoEnabled = result.SSOAvailable
 	}
 
+	authSignupEnabled := cfg.Auth.IsSignupEnabled
+	// Prefer DB: register/oauth gate on IsSignupEnabled from configurations.
+	// Env is only the bootstrap seed; Admin owns the live value. On missing row
+	// or load error, keep env so this pre-login surface still answers.
+	if dbCfg, dbErr := h.A.ConfigRepo.LoadConfiguration(r.Context()); dbErr == nil && dbCfg != nil {
+		authSignupEnabled = dbCfg.IsSignupEnabled
+	} else if dbErr != nil && !errors.Is(dbErr, datastore.ErrConfigNotFound) {
+		h.A.Logger.ErrorContext(r.Context(), "failed to load instance config for signup flag", "error", dbErr)
+	}
+
 	authConfig := map[string]interface{}{
 		"billing_strategy":  string(cfg.BillingMode(instanceLicenseKey)),
-		"is_signup_enabled": cfg.Auth.IsSignupEnabled,
+		"is_signup_enabled": authSignupEnabled,
 		"google_oauth": map[string]interface{}{
 			"enabled":      cfg.Auth.GoogleOAuth.Enabled && h.A.Licenser.GoogleOAuth(),
 			"client_id":    cfg.Auth.GoogleOAuth.ClientID,

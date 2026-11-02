@@ -1,5 +1,5 @@
 import {EventEmitter, Injectable} from '@angular/core';
-import {ENDPOINT} from 'src/app/models/endpoint.model';
+import type {ENDPOINT} from 'src/app/models/endpoint.model';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
 import {HttpService} from 'src/app/services/http/http.service';
 import {FLIPT_API_RESPONSE} from '../models/flipt.model';

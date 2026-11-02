@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -200,16 +201,22 @@ func (q *RedisQueue) DeleteArchived(_ context.Context) error {
 func (q *RedisQueue) DeleteEventDeliveriesFromQueue(queueName convoy.QueueName, ids []string) error {
 	for _, id := range ids {
 		taskInfo, err := q.inspector.GetTaskInfo(string(queueName), id)
+		if errors.Is(err, asynq.ErrTaskNotFound) || errors.Is(err, asynq.ErrQueueNotFound) {
+			continue // An already completed job needs no removal before replacement.
+		}
 		if err != nil {
 			return err
 		}
 		if taskInfo.State == asynq.TaskStateActive {
 			err = q.inspector.CancelProcessing(id)
-			if err != nil {
+			if err != nil && !errors.Is(err, asynq.ErrTaskNotFound) && !errors.Is(err, asynq.ErrQueueNotFound) {
 				return err
 			}
 		}
 		err = q.inspector.DeleteTask(string(queueName), id)
+		if errors.Is(err, asynq.ErrTaskNotFound) || errors.Is(err, asynq.ErrQueueNotFound) {
+			continue
+		}
 		if err != nil {
 			return err
 		}

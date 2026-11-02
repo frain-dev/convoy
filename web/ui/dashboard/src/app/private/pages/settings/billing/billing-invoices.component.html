@@ -19,6 +19,8 @@
 				</div>
 			</div>
 		} @else {
+			<div class="overflow-x-auto">
+			<div class="min-w-[680px]">
 			<div class="grid w-full grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_48px] bg-new.surface-subtle border-b border-new.border">
 				@for (head of tableHead; track $index; let i = $index) {
 					<div class="flex items-center h-36px" [class]="i === 0 ? 'px-20px' : i === tableHead.length - 1 ? 'px-4px' : 'px-12px'">
@@ -64,6 +66,8 @@
 					</div>
 				</div>
 			}
+			</div>
+			</div>
 		}
 	</div>
 </div>

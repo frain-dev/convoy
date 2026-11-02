@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/oklog/ulid/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
@@ -257,6 +258,21 @@ func parseResponse(t *testing.T, w *http.Response, object interface{}) {
 	err = json.Unmarshal(sR.Data, object)
 	if err != nil {
 		t.Fatalf("err: %s", err)
+	}
+}
+
+func requireQueuedEventUID(t *testing.T, w *httptest.ResponseRecorder, eventType, idempotencyKey string) {
+	t.Helper()
+	var queued models.EventQueuedResponse
+	parseResponse(t, w.Result(), &queued)
+	require.NotEmpty(t, queued.UID)
+	_, err := ulid.Parse(queued.UID)
+	require.NoError(t, err)
+	if eventType != "" {
+		require.Equal(t, eventType, queued.EventType)
+	}
+	if idempotencyKey != "" {
+		require.Equal(t, idempotencyKey, queued.IdempotencyKey)
 	}
 }
 

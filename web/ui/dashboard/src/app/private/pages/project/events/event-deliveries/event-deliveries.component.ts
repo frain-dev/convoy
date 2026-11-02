@@ -2,14 +2,15 @@ import { Component, ElementRef, EventEmitter, Input, OnInit, OnDestroy, Output, 
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { format } from 'date-fns';
-import { EVENT_DELIVERY, EVENT_TYPE, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
+import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { ProjectService } from '../../project.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
+import axios from 'axios';
 
 @Component({
     selector: 'app-event-deliveries',
@@ -45,15 +46,23 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	loadingFilterEndpoints = false;
 	endpointSearchString = '';
 	private endpointSearchTimeout: any;
-	eventTypes: EVENT_TYPE[] = [];
+	private tableSearchTimeout: any;
+	catalogEventTypes: string[] = [];
+	observedEventTypes: string[] = [];
+	private eventTypesFetchId = 0;
 	sortOrder: 'asc' | 'desc' | string = 'desc';
 	searchString = '';
+	providerDeliveryId = '';
+	private providerDeliveryIdTimeout: any;
 	enableTailMode = false;
 
 	// Client-side page tracking for the "1-10 of 50" pagination label; the API is
 	// cursor-based so the absolute position is derived from prev/next navigation.
 	currentPage = 1;
 	totalCount?: number;
+	private totalCountFetchId = 0;
+	private deliveriesFetchId = 0;
+	private deliveriesAbort?: AbortController;
 	selectedDeliveries = new Set<string>();
 	batchRetryParams?: FILTER_QUERY_PARAM;
 	batchRetryDate = '';
@@ -69,8 +78,11 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	ngOnInit() {
 		this.getFiltersFromURL();
-		if (this.dateRange?.startDate && this.dateRange?.endDate && !this.queryParams.startDate) {
+		if (this.dateRange?.startDate && this.dateRange?.endDate) {
 			this.queryParams = { ...this.queryParams, ...this.dateRange };
+			// Pin the effective initial window in the existing history entry.
+			// Back/reload must not reinterpret it using a subsequently saved default.
+			this._location.replaceState(this._location.path().split('?')[0], new URLSearchParams(this.queryParams as Record<string, string>).toString());
 		}
 		this.refreshDeliveries(false);
 		if (this.checkIfTailModeIsEnabled()) this.getEventDeliveriesAtInterval();
@@ -80,8 +92,14 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy() {
+		this.deliveriesFetchId++;
+		this.totalCountFetchId++;
+		this.eventTypesFetchId++;
+		this.deliveriesAbort?.abort();
 		clearInterval(this.getEventDeliveriesInterval);
 		clearTimeout(this.endpointSearchTimeout);
+		clearTimeout(this.tableSearchTimeout);
+		clearTimeout(this.providerDeliveryIdTimeout);
 	}
 
 	get isOutgoingProject(): boolean {
@@ -92,11 +110,22 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		return this.isOutgoingProject || !!this.portalToken;
 	}
 
-	getFiltersFromURL() {
-		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
+	getFiltersFromURL(params = this.route.snapshot.queryParams) {
+		this.queryParams = { ...params };
 		this.statusFilter = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
 		this.statusDraft = [...this.statusFilter];
 		this.sortOrder = this.queryParams?.sort || 'desc';
+		this.searchString = this.queryParams.query || '';
+		this.providerDeliveryId = this.queryParams.idempotencyValue || '';
+	}
+
+	restoreFiltersFromURL(params: FILTER_QUERY_PARAM) {
+		this.getFiltersFromURL(params);
+		this.dateRange = { startDate: params.startDate!, endDate: params.endDate! };
+		this.selectedEndpointData = undefined;
+		if (this.queryParams.endpointId) this.getSelectedEndpointData();
+		this.getEventTypesForFilter();
+		this.refreshDeliveries();
 	}
 
 	formatPreciseTimestamp(value?: string): string {
@@ -116,7 +145,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	applyStatusFilter() {
 		this.statusFilter = [...this.statusDraft];
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, status: this.statusFilter.length ? JSON.stringify(this.statusFilter) : '' });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, status: this.statusFilter.length ? JSON.stringify(this.statusFilter) : '' }, true);
 		if (!this.statusFilter.length) delete this.queryParams.status;
 		this.refreshDeliveries();
 	}
@@ -144,41 +173,48 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 
 	updateEndpointFilter(endpoint: ENDPOINT) {
 		this.selectedEndpointData = endpoint;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: endpoint.uid });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: endpoint.uid }, true);
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
 	clearEndpointFilter() {
 		this.selectedEndpointData = undefined;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' }, true);
 		delete this.queryParams.endpointId;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
 	setEventType(eventType?: string) {
-		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType });
+		if (eventType) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType }, true);
 		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: '' }, true);
 			delete this.queryParams.eventType;
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		}
 		this.refreshDeliveries();
 	}
 
 	setSortOrder(order: 'asc' | 'desc') {
 		this.sortOrder = order;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: order });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, sort: order }, true);
 		this.refreshDeliveries();
 	}
 
 	// Called by the parent page when the summary date range changes; the range
 	// scopes the delivery table too.
-	applyDateFilter(dateRange?: { startDate: string; endDate: string }) {
-		if (dateRange) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...dateRange });
+	applyDateFilter(dateRange?: { startDate: string; endDate: string }, updateURL = true) {
+		if (dateRange) {
+			this.dateRange = dateRange;
+			const params = { ...this.queryParams, ...dateRange };
+			this.queryParams = updateURL ? this.generalService.addFilterToURL(params, true) : params;
+		}
 		else {
+			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, startDate: '', endDate: '' }, true);
 			delete this.queryParams.startDate;
 			delete this.queryParams.endDate;
-			this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams });
 		}
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
@@ -187,11 +223,20 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		this.statusDraft = [];
 		this.selectedEndpointData = undefined;
 		this.searchString = '';
+		this.providerDeliveryId = '';
 		this.endpointSearchString = '';
 
 		const sort = this.queryParams?.sort;
-		this.queryParams = sort ? { sort } : {};
-		this._location.go(`${location.pathname}${this.portalToken ? `?token=${this.portalToken}` : ''}`);
+		this.queryParams = {
+			...this.dateRange,
+			...(sort ? { sort } : {}),
+			...(this.portalToken ? { token: this.portalToken } : {})
+		};
+		delete this.queryParams.query;
+		delete this.queryParams.idempotencyValue;
+		const query = new URLSearchParams(this.queryParams as Record<string, string>).toString();
+		this._location.go(`${location.pathname}${query ? `?${query}` : ''}`);
+		this.getEventTypesForFilter();
 		this.refreshDeliveries();
 	}
 
@@ -200,19 +245,31 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		return keys.length > 0 || !!this.searchString.trim();
 	}
 
-	// ------- search (client-side over the loaded page) -------
-
 	onSearch() {
-		if (this.eventDeliveries?.content) this.displayedEventDeliveries = this.setEventDeliveriesContent(this.eventDeliveries.content);
+		clearTimeout(this.tableSearchTimeout);
+		this.tableSearchTimeout = setTimeout(() => {
+			const query = this.searchString.trim();
+			if (query) this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query }, true);
+			else {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: '' }, true);
+				delete this.queryParams.query;
+			}
+			this.refreshDeliveries();
+		}, 300);
 	}
 
-	private applySearch(eventDeliveriesData: EVENT_DELIVERY[]): EVENT_DELIVERY[] {
-		const searchTerm = this.searchString.trim().toLowerCase();
-		if (!searchTerm) return eventDeliveriesData;
-
-		return eventDeliveriesData.filter(delivery =>
-			[delivery.uid, delivery.event_metadata?.event_type, delivery.endpoint_metadata?.title, delivery.endpoint_metadata?.name, delivery.source_metadata?.name].some(value => value?.toLowerCase().includes(searchTerm))
-		);
+	onProviderDeliveryIdChange() {
+		clearTimeout(this.providerDeliveryIdTimeout);
+		this.providerDeliveryIdTimeout = setTimeout(() => {
+			const idempotencyValue = this.providerDeliveryId.trim();
+			if (idempotencyValue) {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, idempotencyValue }, true);
+			} else {
+				this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, idempotencyValue: '' }, true);
+				delete this.queryParams.idempotencyValue;
+			}
+			this.refreshDeliveries();
+		}, 300);
 	}
 
 	// ------- tail mode -------
@@ -257,10 +314,17 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	async getEventDeliveries(requestDetails?: FILTER_QUERY_PARAM): Promise<HTTP_RESPONSE> {
+		const fetchId = ++this.deliveriesFetchId;
+		this.deliveriesAbort?.abort();
+		this.deliveriesAbort = new AbortController();
 		if (requestDetails?.showLoader) this.isloadingEventDeliveries = true;
 
 		try {
-			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries(requestDetails);
+			const eventDeliveriesResponse = await this.eventsService.getEventDeliveries({
+				...requestDetails,
+				signal: this.deliveriesAbort.signal
+			});
+			if (fetchId !== this.deliveriesFetchId) return eventDeliveriesResponse;
 			this.eventDeliveries = eventDeliveriesResponse.data;
 			this.displayedEventDeliveries = this.setEventDeliveriesContent(eventDeliveriesResponse.data.content);
 
@@ -268,6 +332,9 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 			this.isloadingEventDeliveries = false;
 			return eventDeliveriesResponse;
 		} catch (error: any) {
+			if (fetchId !== this.deliveriesFetchId || axios.isCancel(error) || error?.code === 'ERR_CANCELED') {
+				return error;
+			}
 			this.loadError = true;
 			this.isloadingEventDeliveries = false;
 			return error;
@@ -280,28 +347,39 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	}
 
 	setEventDeliveriesContent(eventDeliveriesData: EVENT_DELIVERY[]): { date: string; content: EVENT_DELIVERY[] }[] {
-		return this.generalService.setContentDisplayed(this.applySearch(eventDeliveriesData) as any, this.queryParams?.sort || 'desc');
+		return this.generalService.setContentDisplayed(eventDeliveriesData as any, this.queryParams?.sort || 'desc');
 	}
 
 	async refreshTotalCount() {
 		const countParams = this.queryParamsForCount(this.queryParams);
+		const fetchId = ++this.totalCountFetchId;
 
-		try {
-			const response = await this.eventsService.getRetryCount(countParams);
-			this.totalCount = response.data.num;
-		} catch (error) {
-			this.totalCount = undefined;
+		if (!rollupCanServeDisplayCount(countParams)) {
+			if (fetchId === this.totalCountFetchId) this.totalCount = undefined;
+			return;
 		}
+
+		const totals = await this.eventsService.getStatusTotals({
+			startDate: countParams.startDate,
+			endDate: countParams.endDate,
+			endpointId: countParams.endpointId
+		});
+
+		if (fetchId !== this.totalCountFetchId) return;
+		this.totalCount = totals ? sumRollupDisplayCount(totals, this.statusFilter) : undefined;
 	}
 
 	async getEventTypesForFilter() {
 		if (!this.isOutgoingProject) return;
-		try {
-			const response = await this.privateService.getEventTypes();
-			// Older backends return { event_types: [...] }, newer ones return the array directly.
-			const types: EVENT_TYPE[] = Array.isArray(response.data) ? response.data : response.data?.event_types || [];
-			this.eventTypes = types.filter(type => !type.deprecated_at);
-		} catch (error) {}
+		const fetchId = ++this.eventTypesFetchId;
+		const types = await this.eventsService.getFilterEventTypes({
+			startDate: this.queryParams.startDate,
+			endDate: this.queryParams.endDate,
+			endpointId: this.queryParams.endpointId
+		});
+		if (fetchId !== this.eventTypesFetchId || !types) return;
+		this.catalogEventTypes = types.catalog;
+		this.observedEventTypes = types.observed;
 	}
 
 	async getSelectedEndpointData() {
@@ -320,7 +398,7 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		const cursor =
 			direction === 'next' ? { next_page_cursor: pagination.next_page_cursor, prev_page_cursor: '', direction: 'next' as const } : { prev_page_cursor: pagination.prev_page_cursor, next_page_cursor: '', direction: 'prev' as const };
 
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...cursor });
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...cursor }, true);
 		this.currentPage = Math.max(1, this.currentPage + (direction === 'next' ? 1 : -1));
 		this.getEventDeliveries({ ...this.queryParams, showLoader: true });
 	}
@@ -451,4 +529,16 @@ export class EventDeliveriesComponent implements OnInit, OnDestroy {
 		const { next_page_cursor: _next, prev_page_cursor: _prev, direction: _direction, sort: _sort, showLoader: _showLoader, ...filters } = params || {};
 		return filters;
 	}
+}
+
+// Rollup is date + optional endpoint. Search, event id, and event type are
+// live-only filters, so the table omits N rather than showing a wrong total.
+export function rollupCanServeDisplayCount(params: { query?: string; eventId?: string; eventType?: string }): boolean {
+	const present = (value?: string) => typeof value === 'string' && value.trim().length > 0;
+	return !present(params.query) && !present(params.eventId) && !present(params.eventType);
+}
+
+export function sumRollupDisplayCount(totals: Record<string, number>, statuses: string[]): number {
+	const keys = statuses.length > 0 ? statuses : Object.keys(totals);
+	return keys.reduce((n, key) => n + (Number(totals[key]) || 0), 0);
 }

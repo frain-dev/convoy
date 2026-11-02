@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+build=""
 
 helpFunc() {
 	echo ""

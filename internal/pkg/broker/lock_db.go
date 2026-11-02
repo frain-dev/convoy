@@ -37,7 +37,21 @@ func newPostgresJobLockerWithLimit(db *sqlx.DB, logger log.Logger, maxConns int)
 // openJobLockDB opens a dedicated pool used only for session advisory locks.
 var openJobLockDB = defaultOpenJobLockDB
 
-func defaultOpenJobLockDB(cfg config.DatabaseConfiguration) (*sqlx.DB, error) {
+type ownedJobLockDB struct {
+	db   *sqlx.DB
+	pool *pgxpool.Pool
+}
+
+func (d *ownedJobLockDB) Close() error {
+	// Return SQL-wrapper leases before waiting for the native pool to close.
+	err := d.db.Close()
+	if d.pool != nil {
+		d.pool.Close()
+	}
+	return err
+}
+
+func defaultOpenJobLockDB(cfg config.DatabaseConfiguration) (*ownedJobLockDB, error) {
 	dsn := cfg.BuildDsn()
 	if dsn == "" {
 		return nil, fmt.Errorf("postgres job locker requires a database dsn")
@@ -56,5 +70,5 @@ func defaultOpenJobLockDB(cfg config.DatabaseConfiguration) (*sqlx.DB, error) {
 	db.SetMaxOpenConns(jobLockMaxConns)
 	db.SetMaxIdleConns(jobLockMaxConns)
 	db.SetConnMaxLifetime(time.Second * time.Duration(cfg.SetConnMaxLifetime))
-	return db, nil
+	return &ownedJobLockDB{db: db, pool: pool}, nil
 }

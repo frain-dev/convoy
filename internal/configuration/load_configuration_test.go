@@ -85,6 +85,76 @@ func TestLoadConfiguration_NotFound(t *testing.T) {
 	require.Equal(t, datastore.ErrConfigNotFound, err)
 }
 
+func TestCompleteAdminManagedMigration(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.OnPrem)
+	_, err := db.GetConn().Exec(
+		ctx,
+		"UPDATE convoy.configurations SET admin_managed = NULL, retention_enabled = NULL WHERE id = $1",
+		seeded.UID,
+	)
+	require.NoError(t, err)
+
+	legacy, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.False(t, legacy.AdminManagedKnown)
+	require.False(t, legacy.RetentionPolicy.EnabledKnown)
+
+	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
+	require.NoError(t, err)
+	require.False(t, adminManaged)
+	require.False(t, retentionEnabled)
+	adminManaged, retentionEnabled, err = service.CompleteAdminManagedMigration(ctx, seeded.UID, true)
+	require.NoError(t, err)
+	require.False(t, adminManaged)
+	require.False(t, retentionEnabled)
+
+	migrated, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.False(t, migrated.AdminManaged)
+	require.True(t, migrated.AdminManagedKnown)
+	require.False(t, migrated.RetentionPolicy.Enabled)
+	require.True(t, migrated.RetentionPolicy.EnabledKnown)
+	require.Equal(t, seeded.StoragePolicy, migrated.StoragePolicy)
+	require.Equal(t, seeded.IsSignupEnabled, migrated.IsSignupEnabled)
+	require.Equal(t, seeded.IsAnalyticsEnabled, migrated.IsAnalyticsEnabled)
+}
+
+func TestCompleteAdminManagedMigration_ReturnsExistingMode(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.OnPrem)
+
+	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
+	require.NoError(t, err)
+	require.False(t, adminManaged)
+	require.True(t, retentionEnabled)
+}
+
+func TestCompleteAdminManagedMigration_PreservesKnownRetention(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.OnPrem)
+	_, err := db.GetConn().Exec(
+		ctx,
+		"UPDATE convoy.configurations SET admin_managed = NULL WHERE id = $1",
+		seeded.UID,
+	)
+	require.NoError(t, err)
+
+	adminManaged, retentionEnabled, err := service.CompleteAdminManagedMigration(ctx, seeded.UID, false)
+	require.NoError(t, err)
+	require.False(t, adminManaged)
+	require.True(t, retentionEnabled)
+}
+
 func TestLoadConfiguration_VerifyRetentionPolicy(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
@@ -98,8 +168,8 @@ func TestLoadConfiguration_VerifyRetentionPolicy(t *testing.T) {
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, loaded.RetentionPolicy)
-	require.Equal(t, seeded.RetentionPolicy.Policy, loaded.RetentionPolicy.Policy)
-	require.Equal(t, seeded.RetentionPolicy.IsRetentionPolicyEnabled, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
+	require.Equal(t, seeded.WebhookArchiving.Enabled, loaded.WebhookArchiving.Enabled)
 }
 
 func TestLoadConfiguration_VerifyS3FieldsReconstructed(t *testing.T) {
@@ -176,18 +246,16 @@ func TestLoadConfiguration_OnlyOneConfiguration(t *testing.T) {
 
 	service := New(log.New("convoy", log.LevelInfo), db)
 
-	// Seed multiple configurations (only last one should be loadable due to LIMIT 1)
+	// Seed, soft-delete, seed again so the unique live-row index still holds.
 	cfg1 := seedConfiguration(t, db, datastore.S3)
+	_, err := db.GetConn().Exec(ctx, `UPDATE convoy.configurations SET deleted_at = NOW() WHERE id = $1`, cfg1.UID)
+	require.NoError(t, err)
 	cfg2 := seedConfiguration(t, db, datastore.OnPrem)
 
-	// Load configuration - should return one (most recent based on query)
 	loaded, err := service.LoadConfiguration(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, loaded)
-
-	// Should match one of the seeded configs
-	isValidConfig := loaded.UID == cfg1.UID || loaded.UID == cfg2.UID
-	require.True(t, isValidConfig, "Loaded config should match one of the seeded configs")
+	require.Equal(t, cfg2.UID, loaded.UID)
 }
 
 func TestLoadConfiguration_VerifyTimestamps(t *testing.T) {
@@ -228,6 +296,23 @@ func TestLoadConfiguration_CompleteDataIntegrity(t *testing.T) {
 	require.Equal(t, seeded.StoragePolicy.S3.Bucket.String, loaded.StoragePolicy.S3.Bucket.String)
 	require.Equal(t, seeded.StoragePolicy.S3.AccessKey.String, loaded.StoragePolicy.S3.AccessKey.String)
 	require.Equal(t, seeded.StoragePolicy.S3.Region.String, loaded.StoragePolicy.S3.Region.String)
-	require.Equal(t, seeded.RetentionPolicy.Policy, loaded.RetentionPolicy.Policy)
-	require.Equal(t, seeded.RetentionPolicy.IsRetentionPolicyEnabled, loaded.RetentionPolicy.IsRetentionPolicyEnabled)
+	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
+	require.Equal(t, seeded.WebhookArchiving.Enabled, loaded.WebhookArchiving.Enabled)
+}
+
+func TestLoadConfiguration_RetentionEnabledNull(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.New("convoy", log.LevelInfo), db)
+	seeded := seedConfiguration(t, db, datastore.S3)
+
+	_, err := db.GetConn().Exec(ctx, `UPDATE convoy.configurations SET retention_enabled = NULL WHERE id = $1`, seeded.UID)
+	require.NoError(t, err)
+
+	loaded, err := service.LoadConfiguration(ctx)
+	require.NoError(t, err)
+	require.False(t, loaded.RetentionPolicy.EnabledKnown)
+	require.False(t, loaded.RetentionPolicy.Enabled)
+	require.Equal(t, seeded.RetentionPolicy.Period, loaded.RetentionPolicy.Period)
 }

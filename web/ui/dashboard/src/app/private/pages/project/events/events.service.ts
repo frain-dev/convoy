@@ -9,14 +9,31 @@ import { GeneralService } from 'src/app/services/general/general.service';
 export class EventsService {
 	constructor(private http: HttpService, private generalService: GeneralService) {}
 
-	getEvents(requestDetails?: { page?: number; idempotencyKey?: string; startDate?: string; endDate?: string; query?: string; body?: string; sourceId?: string; endpointId?: string; next_page_cursor?: string; prev_page_cursor?: string; direction?: 'next' | 'prev' }): Promise<HTTP_RESPONSE> {
+	getEvents(requestDetails?: {
+		page?: number;
+		idempotencyKey?: string;
+		idempotencyValue?: string;
+		startDate?: string;
+		endDate?: string;
+		query?: string;
+		queryMode?: 'text';
+		body?: string;
+		sourceId?: string;
+		endpointId?: string;
+		next_page_cursor?: string;
+		prev_page_cursor?: string;
+		direction?: 'next' | 'prev';
+		signal?: AbortSignal;
+	}): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const { signal, ...query } = requestDetails || {};
 				const response = await this.http.request({
 					url: `/events`,
 					method: 'get',
-					query: requestDetails,
-					level: 'org_project'
+					query,
+					level: 'org_project',
+					signal
 				});
 
 				return resolve(response);
@@ -26,14 +43,29 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; next_page_cursor?: string; sort?: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails?: {
+		page?: any;
+		startDate?: string;
+		endDate?: string;
+		endpointId?: string;
+		eventId?: string;
+		sourceId?: string;
+		status?: any;
+		query?: string;
+		idempotencyValue?: string;
+		next_page_cursor?: string;
+		sort?: string;
+		signal?: AbortSignal;
+	}): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
+				const { signal, ...query } = requestDetails || {};
 				const response = await this.http.request({
 					url: `/eventdeliveries`,
 					method: 'get',
-					query: requestDetails,
-					level: 'org_project'
+					query,
+					level: 'org_project',
+					signal
 				});
 
 				return resolve(response);
@@ -59,7 +91,7 @@ export class EventsService {
 				const raw = typeof error === 'string' ? error : '';
 				const timedOut = /took too long|timed out|timeout|504/i.test(raw);
 				this.generalService.showNotification({
-					message: timedOut ? "Couldn't load the chart in time. Try a shorter date range." : raw || 'Could not load the chart. Try again.',
+					message: timedOut ? "Couldn't load the chart in time. Try again." : raw || 'Could not load the chart. Try again.',
 					style: 'error'
 				});
 				return reject(error);
@@ -118,6 +150,7 @@ export class EventsService {
 		});
 	}
 
+	// Exact live count for Retry All. Do not use this for the table label.
 	getRetryCount(requestDetails: { endpointId?: string; eventId?: string; startDate?: string; endDate?: string; status?: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
@@ -135,27 +168,56 @@ export class EventsService {
 		});
 	}
 
-	// Success/failure totals for the summary cards, served from the daily rollup
-	// rather than the batch retry count endpoint's live scan of event_deliveries.
+	// Per-status totals from /eventdeliveries/statustotals (daily rollup once
+	// backfill has completed). Display-only: hideNotification, and null on
+	// transport/timeout so a failed read cannot render as zero.
 	//
-	// null means the total could not be determined. A status missing from a
-	// successful response had no deliveries in the window and is a real 0, but a
-	// failed request must not render as "no successful deliveries", so the caller
-	// shows a dash. Shared by the project and portal delivery screens, which
-	// display the same cards.
-	async getSummaryDeliveryCounts(requestDetails: { startDate?: string; endDate?: string; endpointId?: string }): Promise<{ success: number | null; failure: number | null }> {
+	// Do not use this for Retry All. That path must stay on getRetryCount.
+	async getStatusTotals(requestDetails: { startDate?: string; endDate?: string; endpointId?: string }): Promise<Record<string, number> | null> {
 		try {
 			const response = await this.http.request({
 				url: `/eventdeliveries/statustotals`,
 				method: 'get',
 				level: 'org_project',
-				query: requestDetails
+				query: requestDetails,
+				hideNotification: true
 			});
 
-			const totals = response?.data?.totals || {};
-			return { success: totals['Success'] ?? 0, failure: totals['Failure'] ?? 0 };
+			return response?.data?.totals || {};
 		} catch (error) {
-			return { success: null, failure: null };
+			return null;
 		}
+	}
+
+	// Grouped Event Deliveries type filter. Catalog is declared names;
+	// observed is traffic in the date window that is not already in catalog.
+	// hideNotification, and null on transport/timeout so a failed read leaves
+	// the previous dropdown in place.
+	async getFilterEventTypes(requestDetails: { startDate?: string; endDate?: string; endpointId?: string }): Promise<{ catalog: string[]; observed: string[] } | null> {
+		try {
+			const response = await this.http.request({
+				url: `/eventdeliveries/eventtypes`,
+				method: 'get',
+				level: 'org_project',
+				query: requestDetails,
+				hideNotification: true
+			});
+
+			return {
+				catalog: Array.isArray(response?.data?.catalog) ? response.data.catalog : [],
+				observed: Array.isArray(response?.data?.observed) ? response.data.observed : []
+			};
+		} catch (error) {
+			return null;
+		}
+	}
+
+	// Success/failure totals for the summary cards. Shared by the project and
+	// portal delivery screens. A missing status on a successful response is 0;
+	// a failed request is null so the caller shows a dash.
+	async getSummaryDeliveryCounts(requestDetails: { startDate?: string; endDate?: string; endpointId?: string }): Promise<{ success: number | null; failure: number | null }> {
+		const totals = await this.getStatusTotals(requestDetails);
+		if (!totals) return { success: null, failure: null };
+		return { success: totals['Success'] ?? 0, failure: totals['Failure'] ?? 0 };
 	}
 }

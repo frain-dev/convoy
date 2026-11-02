@@ -21,4 +21,17 @@ describe('DatePickerComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('restores dates and times when the parent range changes without shifting the emitted UTC range', () => {
+    const range = { startDate: '2026-09-01T10:15:00', endDate: '2026-09-02T12:30:59' };
+    fixture.componentRef.setInput('dateRangeValue', range);
+    fixture.detectChanges();
+    const start = new Date(range.startDate + 'Z');
+    expect(component.selectedStartDay).toBe(new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime());
+    expect(component.filterStartHour).toBe(start.getHours());
+    expect(component.filterStartMinute).toBe(15);
+    spyOn(component.selectedDateRange, 'emit');
+    component.applyDate(true);
+    expect(component.selectedDateRange.emit).toHaveBeenCalledWith(range);
+  });
 });

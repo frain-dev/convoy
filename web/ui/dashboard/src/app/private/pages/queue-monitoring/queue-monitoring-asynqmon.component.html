@@ -1,4 +1,4 @@
-@if (!hasAsynqLicense()) {
+@if (licenseKnown && !hasAsynqLicense()) {
   <div class="p-20px border border-warning-100 bg-warning-a3 rounded-12px mb-16px">
     <p class="font-body font-normal text-[14px] leading-normal text-new.text-primary">Your license does not include Asynq monitoring.</p>
   </div>
@@ -13,7 +13,7 @@
   <div class="qm-layout" [class.qm-layout--fullscreen]="iframeFullscreen && iframeVisible">
     <div class="qm-card bg-white-100 border border-new.border rounded-12px p-0 overflow-hidden flex flex-col">
       <div class="qm-main">
-        @if (sessionStatus === 'minting' && !iframeVisible) {
+        @if ((isLoadingSession || sessionStatus === 'minting') && !iframeVisible) {
           <div class="qm-loading">
             <convoy-loader position="relative"></convoy-loader>
           </div>
@@ -36,7 +36,7 @@
           >
           {{ iframeFullscreen ? 'Exit Fullscreen' : 'Expand Fullscreen' }}
         </button>
-        <button type="button" class="px-12px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none" [disabled]="sessionStatus === 'minting'" (click)="mintSessionAndLoad()">
+        <button type="button" class="px-12px py-8px rounded-full bg-new.primary-400 font-body font-medium text-[13px] leading-[16px] text-white-100 transition-all hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none" [disabled]="isLoadingSession || sessionStatus === 'minting'" (click)="mintSessionAndLoad()">
           {{ sessionStatus === 'minting' ? 'Refreshing…' : sessionStatus === 'ready' ? 'Refresh' : 'Retry' }}
         </button>
       </div>

@@ -57,6 +57,21 @@ func TestApplyEventListSearch(t *testing.T) {
 		require.JSONEq(t, `{"status":"paid"}`, string(filter.Body))
 	})
 
+	t.Run("explicit text mode never promotes json to payload", func(t *testing.T) {
+		for _, query := range []string{`{"status":"paid"}`, `invoice.paid {"status":"paid"}`} {
+			filter := &datastore.Filter{Query: query, QueryMode: "text"}
+			require.NoError(t, ApplyEventListSearch(filter, nil, true, now))
+			require.Equal(t, query, filter.Query)
+			require.Empty(t, filter.Body)
+			require.True(t, ListSearchSQLFromFilter(filter, nil).HasQuery)
+		}
+	})
+
+	t.Run("explicit text mode still requires a license", func(t *testing.T) {
+		filter := &datastore.Filter{Query: `{"status":"paid"}`, QueryMode: "text"}
+		require.ErrorIs(t, ApplyEventListSearch(filter, nil, false, now), ErrSearchUnlicensed)
+	})
+
 	t.Run("json object query allowed when licensed without search period", func(t *testing.T) {
 		filter := &datastore.Filter{Query: `{"status":"paid"}`}
 		require.NoError(t, ApplyEventListSearch(filter, &datastore.Project{Config: &datastore.ProjectConfig{}}, true, now))

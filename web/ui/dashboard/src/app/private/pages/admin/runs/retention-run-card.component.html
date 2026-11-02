@@ -1,0 +1,86 @@
+<div class="bg-white-100 border border-new.border rounded-12px p-16px">
+  <div class="flex items-start justify-between gap-12px">
+    <div class="min-w-0">
+      <p class="font-body font-medium text-[14px] leading-[20px] text-new.text-primary">{{ title }}</p>
+      <p class="font-body font-normal text-[12px] leading-normal text-new.text-secondary mt-4px">
+        {{ run.started_at | date: 'd MMM y, HH:mm' }} · {{ elapsed }}
+        @if (run.status === 'completed') {
+          · {{ runTotalDropped() }} partition{{ runTotalDropped() === 1 ? '' : 's' }} dropped
+          @if (runTotalRowsDropped() > 0) {
+            · {{ formatCount(runTotalRowsDropped()) }} row{{ runTotalRowsDropped() === 1 ? '' : 's' }} removed
+          }
+        } @else if (run.status === 'skipped' && notPartitionedCount() > 0) {
+          · {{ notPartitionedCount() }} table{{ notPartitionedCount() === 1 ? '' : 's' }} not partitioned
+        }
+      </p>
+      @if (run.status === 'skipped') {
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.text-secondary mt-8px">
+          Retention did not run. Partition every table marked below on Table partitions before nightly drops can proceed.
+        </p>
+      }
+      @if (run.error) {
+        <p class="font-body font-normal text-[13px] leading-[20px] text-new.error-500 mt-8px">{{ run.error }}</p>
+      }
+    </div>
+
+    <div class="flex items-center gap-8px shrink-0">
+      <span class="inline-flex items-center h-22px px-8px rounded-full font-body font-medium text-[12px] capitalize"
+        [class.bg-new.surface-muted]="run.status === 'completed' || run.status === 'skipped'"
+        [class.text-new.text-secondary]="run.status === 'completed' || run.status === 'skipped'"
+        [class.bg-new.primary-400/10]="run.status === 'running'"
+        [class.text-new.primary-400]="run.status === 'running'"
+        [class.bg-new.error-500/10]="run.status === 'failed'"
+        [class.text-new.error-500]="run.status === 'failed'">
+        {{ run.status }}
+      </span>
+      @if (run.status !== 'running' && (run.details?.length ?? 0) > 0) {
+        <button type="button" class="font-body text-[13px] text-new.primary-400" (click)="toggleDetails()">
+          {{ showsDetails ? 'Hide' : 'Show' }} details
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (showsDetails) {
+    <div class="mt-12px pt-12px border-t border-new.border flex flex-col gap-10px">
+      @for (table of run.details; track table.table) {
+        <div>
+          <p class="font-body font-medium text-[13px] text-new.text-primary">{{ table.table }}</p>
+          @if (run.status === 'skipped') {
+            @if (isTableNotPartitioned(table)) {
+              <p class="font-body text-[12px] text-new.error-500 mt-2px">Not partitioned</p>
+            } @else {
+              <p class="font-body text-[12px] text-new.text-secondary mt-2px">Partitioned</p>
+            }
+          } @else {
+            @if (table.maintain_error) {
+              <p class="font-body text-[12px] text-new.error-500 mt-2px">{{ table.maintain_error }}</p>
+            }
+            @if (totalDropped(table) === 0) {
+              <p class="font-body text-[12px] text-new.text-secondary mt-2px">No partitions dropped</p>
+            } @else {
+              <ul class="mt-4px list-disc pl-16px">
+                @for (name of partitionsDropped(table); track name) {
+                  <li class="font-body text-[12px] text-new.text-secondary break-all">
+                    {{ name }}
+                    @if (hasPartitionRowCount(table, name)) {
+                      <span> · {{ formatCount(partitionRowsDropped(table, name)) }} row{{ partitionRowsDropped(table, name) === 1 ? '' : 's' }}</span>
+                    }
+                  </li>
+                }
+                @if (table.dropped_default) {
+                  <li class="font-body text-[12px] text-new.text-secondary">
+                    {{ table.table }}_default (history partition)
+                    @if (table.dropped_default_rows != null) {
+                      <span> · {{ formatCount(table.dropped_default_rows) }} row{{ table.dropped_default_rows === 1 ? '' : 's' }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

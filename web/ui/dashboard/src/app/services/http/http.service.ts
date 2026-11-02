@@ -5,6 +5,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {GeneralService} from '../general/general.service';
 import {ProjectService} from 'src/app/private/pages/project/project.service';
 import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import {rememberInviteRedirect} from 'src/app/public/accept-invite/invite-redirect';
 
 function axiosErrorMessage(error: AxiosError): string {
 	const data = error.response?.data as { message?: unknown } | string | undefined;
@@ -67,8 +68,8 @@ export class HttpService {
 		Object.keys(cleanedQuery).forEach(q => {
 			const queryValue = safeQuery[q];
 			if (queryValue === undefined) return;
-			// Event search terms are opaque user text; never expand query/body via JSON.parse.
-			if (q === 'query' || q === 'body') {
+			// Search terms and exact identifiers are opaque text, including JSON-looking values.
+			if (q === 'query' || q === 'body' || q === 'idempotencyKey' || q === 'idempotencyValue') {
 				parts.push(`${encodeURIComponent(q)}=${encodeURIComponent(String(queryValue))}`);
 				return;
 			}
@@ -198,6 +199,7 @@ export class HttpService {
 		level?: 'org' | 'org_project';
 		isOut?: boolean;
 		returnFullError?: boolean;
+		signal?: AbortSignal;
 	}): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
@@ -234,25 +236,29 @@ export class HttpService {
 				const url = this.buildURL(requestDetails);
 				if (url === 'error') return;
 
-                // make request
+				// make request; signal cancels in-flight work when filters change
 				const { data } = await http.request({
-                    method: requestDetails.method,
-                    headers: requestHeader,
-                    url,
-                    data: requestDetails.body
-                });
-                resolve(data);
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    const msg = axiosErrorMessage(error);
-                    if ('project not found' === error.response?.data?.message) {
-                        localStorage.removeItem('CONVOY_PROJECT');
-                    }
-                    if (requestDetails.returnFullError) {
-                        return reject(error);
-                    } else {
-                        return reject(msg);
-                    }
+					method: requestDetails.method,
+					headers: requestHeader,
+					url,
+					data: requestDetails.body,
+					signal: requestDetails.signal
+				});
+				resolve(data);
+			} catch (error) {
+				if (axios.isCancel(error) || (axios.isAxiosError(error) && error.code === 'ERR_CANCELED')) {
+					return reject(error);
+				}
+				if (axios.isAxiosError(error)) {
+					const msg = axiosErrorMessage(error);
+					if ('project not found' === error.response?.data?.message) {
+						localStorage.removeItem('CONVOY_PROJECT');
+					}
+					if (requestDetails.returnFullError) {
+						return reject(error);
+					} else {
+						return reject(msg);
+					}
 				} else {
 					console.log('unexpected error: ', error);
 					return reject('An unexpected error occurred');
@@ -301,6 +307,9 @@ export class HttpService {
 	}
 
 	logUserOut() {
+		// accept-invite 401 must keep the token so login can return; CONVOY_LAST_AUTH_LOCATION is never read
+		rememberInviteRedirect(this.router.url);
+
 		// save previous location before session timeout
 		if (this.router.url.split('/')[1] !== 'login') localStorage.setItem('CONVOY_LAST_AUTH_LOCATION', location.href);
 

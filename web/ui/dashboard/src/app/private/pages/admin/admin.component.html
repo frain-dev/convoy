@@ -3,14 +3,14 @@
 <div class="mt-24px mx-auto w-full max-w-[1000px] pb-60px desktop:px-24px">
   <!-- Page header -->
   <div class="flex items-center gap-12px">
-    <a routerLink="/projects" class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-white-100 transition-colors hover:bg-new.surface-muted">
+    <a [attr.href]="projectsHref" (click)="leaveAdmin($event)" class="w-28px h-28px flex items-center justify-center rounded-[6px] border border-new.border bg-white-100 transition-colors hover:bg-new.surface-muted">
       <svg width="20" height="20" class="fill-new.text-secondary scale-75">
         <use xlink:href="#arrow-left-icon"></use>
       </svg>
     </a>
     <div class="flex flex-col gap-2px">
       <h2 class="font-heading font-medium text-[20px] leading-[28px] text-new.text-primary">Admin</h2>
-      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Instance-wide tools for feature flags, circuit breakers and queues</p>
+      <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">Instance-wide tools for configurations, feature flags, circuit breakers and queues</p>
     </div>
   </div>
 
@@ -39,6 +39,10 @@
     </div>
 
     <div class="min-h-[60vh] w-full min-w-0">
+      @if (activePage === 'configurations') {
+        <configurations></configurations>
+      }
+
       @if (activePage === 'feature flags') {
         <app-feature-flags></app-feature-flags>
       }
@@ -57,6 +61,10 @@
 
       @if (activePage === 'table partitions') {
         <app-table-partitions></app-table-partitions>
+      }
+
+      @if (activePage === 'retention drops') {
+        <app-retention-drops></app-retention-drops>
       }
 
       @if (activePage === 'table indexes') {

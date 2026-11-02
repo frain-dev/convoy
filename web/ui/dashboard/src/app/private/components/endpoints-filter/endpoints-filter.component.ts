@@ -3,7 +3,7 @@ import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild }
 import { Observable, fromEvent, merge, of, from } from 'rxjs';
 import { map, debounceTime, distinctUntilChanged, switchMap, tap, finalize } from 'rxjs/operators';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
+import type { ENDPOINT } from 'src/app/models/endpoint.model';
 import { PrivateService } from '../../private.service';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';

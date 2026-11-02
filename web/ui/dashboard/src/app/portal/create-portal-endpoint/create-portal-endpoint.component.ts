@@ -18,6 +18,7 @@ import {
     Validators
 } from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
+import {httpUrlValidator} from 'src/app/validators/http-url.validator';
 
 import {GeneralService} from '../../services/general/general.service';
 import {FilterService} from '../../private/components/create-subscription/filter.service';
@@ -285,10 +286,10 @@ function transform(payload) {
         // Initialize form here in constructor
         this.endpointForm = this.formBuilder.group({
             name: ['', Validators.required],
-            url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)])],
+            url: ['', [Validators.required, httpUrlValidator]],
             support_email: ['', Validators.email],
-            slack_webhook_url: ['', Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
-            teams_webhook_url: ['', Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
+            slack_webhook_url: ['', httpUrlValidator],
+            teams_webhook_url: ['', httpUrlValidator],
             secret: [null],
             http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
             description: [null],

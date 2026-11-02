@@ -66,11 +66,17 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
 	span.SetAttributes(tracer.AttrProjectID.String(e.Project.UID))
-	if e.NewMessage != nil {
-		span.SetAttributes(tracer.AttrOwnerID.String(e.NewMessage.OwnerID))
-	}
 
-	if err = util.Validate(e.NewMessage); err != nil {
+	// Rejected before the dereferences below, as util.Validate used to do by
+	// failing on a nil struct.
+	if e.NewMessage == nil {
+		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid event"}
+	}
+	span.SetAttributes(tracer.AttrOwnerID.String(e.NewMessage.OwnerID))
+
+	// The model's own Validate, not util.Validate: the latter walks the payload
+	// byte by byte.
+	if err = e.NewMessage.Validate(); err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 

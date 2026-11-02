@@ -16,7 +16,7 @@ import {PrivateService} from '../../private.service';
 import {FormLoaderComponent} from 'src/app/components/form-loader/form-loader.component';
 import {PermissionDirective} from '../permission/permission.directive';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
-import {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
+import type {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
 import {EndpointsService} from '../../pages/project/endpoints/endpoints.service';
 import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
 import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
@@ -24,6 +24,7 @@ import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {TagComponent} from 'src/app/components/tag/tag.component';
 import {SelectComponent} from 'src/app/components/select/select.component';
 import {SettingsService} from '../../pages/settings/settings.service';
+import {httpUrlValidator} from 'src/app/validators/http-url.validator';
 
 // Custom validators that skip validation for [REDACTED] placeholder
 function mtlsCertValidator(): ValidatorFn {
@@ -89,10 +90,10 @@ export class CreateEndpointComponent implements OnInit {
 	selectedKeyType: string = 'EC';
 	addNewEndpointForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
-		url: ['', Validators.compose([Validators.required, Validators.pattern(`^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%{}]*)?$`)])],
+		url: ['', [Validators.required, httpUrlValidator]],
 		support_email: ['', Validators.email],
-		slack_webhook_url: ['', Validators.pattern(`^$|^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
-		teams_webhook_url: ['', Validators.pattern(`^$|^(?:https?|ftp)://[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)+(?::[0-9]+)?/?(?:[a-zA-Z0-9-_.~!$&'()*+,;=:@/?#%]*)?$`)],
+		slack_webhook_url: ['', httpUrlValidator],
+		teams_webhook_url: ['', httpUrlValidator],
 		secret: [null],
 		http_timeout: [null, Validators.pattern('^[-+]?[0-9]+$')],
 		description: [null],

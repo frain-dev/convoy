@@ -1,6 +1,9 @@
 package models
 
 import (
+	"errors"
+	"time"
+
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -8,29 +11,77 @@ import (
 )
 
 type Configuration struct {
-	// Determines whether your convoy instance sends us analytical data e.g event count
-	IsAnalyticsEnabled *bool `json:"is_analytics_enabled"`
-
 	// Allow or disallow user signups on your instance
 	IsSignupEnabled *bool `json:"is_signup_enabled"`
+
+	// Selects Admin/DB values instead of environment values after restart.
+	AdminManaged *bool `json:"admin_managed"`
 
 	// Used to configure where events removed by retention policies are stored
 	StoragePolicy *StoragePolicyConfiguration `json:"storage_policy"`
 
-	// Used to configure whether the retention policy job runs and at what intervals
-	RetentionPolicy *RetentionPolicyConfiguration
+	// Keep window for partition drop (period only).
+	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy"`
+
+	// Cold-storage archive/export enable.
+	WebhookArchiving *WebhookArchivingConfiguration `json:"webhook_archiving"`
 }
 
 func (c *Configuration) Validate() error {
-	return util.Validate(c)
+	if err := util.Validate(c); err != nil {
+		return err
+	}
+	return c.validateRetentionPeriod()
+}
+
+// ValidateForUpdate is for PUT /ui/configuration. GetConfiguration redacts
+// storage secrets and the Admin form resubmits the redacted shape, so blank
+// access keys / on-prem paths mean "keep stored values" (see
+// preserveStoragePolicySecrets), not "clear". Full Validate would reject those
+// blanks via required tags meant for create.
+//
+// When storage_policy is present, type must be a concrete supported value.
+// An empty type still replaces the stored policy in UpdateConfigService and
+// clears every storage column on write.
+func (c *Configuration) ValidateForUpdate() error {
+	if c.StoragePolicy != nil {
+		switch c.StoragePolicy.Type {
+		case datastore.OnPrem, datastore.S3, datastore.AzureBlob:
+			// ok
+		default:
+			return errors.New("please provide a valid storage type")
+		}
+	}
+	return c.validateRetentionPeriod()
+}
+
+func (c *Configuration) validateRetentionPeriod() error {
+	if c.RetentionPolicy == nil {
+		return nil
+	}
+	period := c.RetentionPolicy.Period
+	if util.IsStringEmpty(period) {
+		period = c.RetentionPolicy.Policy
+	}
+	if util.IsStringEmpty(period) {
+		return nil
+	}
+	if _, err := time.ParseDuration(period); err != nil {
+		return errors.New("please provide a valid retention period duration")
+	}
+	return nil
 }
 
 type RetentionPolicyConfiguration struct {
-	// Controls whether the retention policy is active on this instance.
-	IsRetentionPolicyEnabled bool `json:"retention_policy_enabled"`
+	// Keep window for licensed partition drop (e.g. 720h).
+	Period string `json:"period" valid:"duration~please provide a valid retention period duration"`
 
-	// Specify the number of hours the policy job should go back before deleting events and deliveries.
-	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+	// Deprecated: use Period.
+	Policy string `json:"policy"`
+
+	// Gates licensed 01:00 partition drop. Pointer so omitted JSON keeps the
+	// stored value on update (period-only clients must not force-disable).
+	Enabled *bool `json:"enabled"`
 }
 
 func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyConfiguration {
@@ -38,7 +89,31 @@ func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyCon
 		return nil
 	}
 
-	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy, IsRetentionPolicyEnabled: r.IsRetentionPolicyEnabled}
+	period := r.Period
+	if util.IsStringEmpty(period) {
+		period = r.Policy
+	}
+
+	out := &datastore.RetentionPolicyConfiguration{
+		Period:  period,
+		Enabled: true,
+	}
+	if r.Enabled != nil {
+		out.Enabled = *r.Enabled
+	}
+	return out
+}
+
+type WebhookArchivingConfiguration struct {
+	Enabled bool `json:"enabled"`
+}
+
+func (w *WebhookArchivingConfiguration) Transform() *datastore.WebhookArchivingConfiguration {
+	if w == nil {
+		return nil
+	}
+
+	return &datastore.WebhookArchivingConfiguration{Enabled: w.Enabled}
 }
 
 type ConfigurationResponse struct {

@@ -103,7 +103,6 @@ const (
 	NotificationProcessor            TaskName = "NotificationProcessor"
 	TokenizeSearch                   TaskName = "TokenizeSearch"
 	TokenizeSearchForProject         TaskName = "TokenizeProjectSearch"
-	DailyAnalytics                   TaskName = "DailyAnalytics"
 	SnapshotUsage                    TaskName = "SnapshotUsage"
 	RefreshEventDeliveryDailyCounts  TaskName = "RefreshEventDeliveryDailyCounts"
 	RefreshQueueMetricsSnapshot      TaskName = "RefreshQueueMetricsSnapshot"

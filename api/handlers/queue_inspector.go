@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -313,4 +315,23 @@ func (h *Handler) failQueueRequest(w http.ResponseWriter, r *http.Request, gener
 		h.A.Logger.ErrorContext(r.Context(), generic, "error", err)
 		_ = render.Render(w, r, util.NewErrorResponse(generic, http.StatusInternalServerError))
 	}
+}
+
+// GetQueueStores inspects configured stores under the same instance-admin and
+// route license gates as the existing queue monitor. No request controls the
+// connections, and no inspection result offers a queue mutation.
+func (h *Handler) GetQueueStores(w http.ResponseWriter, r *http.Request) {
+	if !h.requireStrictInstanceAdmin(w, r) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	r = r.WithContext(ctx)
+	if h.A.QueueInventory == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("queue inventory is unavailable", http.StatusNotImplemented))
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	stores := h.A.QueueInventory.Inspect(r.Context())
+	_ = render.Render(w, r, util.NewServerResponse("queue stores fetched successfully", stores, http.StatusOK))
 }

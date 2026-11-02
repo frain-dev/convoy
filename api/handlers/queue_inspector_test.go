@@ -178,6 +178,7 @@ func TestQueueEndpointsRequireInstanceAdmin(t *testing.T) {
 
 	endpoints := map[string]func(*Handler) http.HandlerFunc{
 		"stats":     func(h *Handler) http.HandlerFunc { return h.GetQueueStats },
+		"stores":    func(h *Handler) http.HandlerFunc { return h.GetQueueStores },
 		"history":   func(h *Handler) http.HandlerFunc { return h.GetQueueHistory },
 		"scheduler": func(h *Handler) http.HandlerFunc { return h.GetQueueSchedulerEntries },
 		"tasks":     func(h *Handler) http.HandlerFunc { return h.GetQueueTasks },

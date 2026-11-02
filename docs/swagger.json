@@ -2796,13 +2796,25 @@
           {
             "type": "string",
             "description": "EventType to filter by",
-            "name": "event_type",
+            "name": "eventType",
             "in": "query"
           },
           {
             "type": "string",
             "description": "IdempotencyKey to filter by",
             "name": "idempotencyKey",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nMatches deliveries of events ingested with it. Not combinable with idempotencyKey.",
+            "name": "idempotencyValue",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Only return deliveries with at least this many attempts; 2 or more means retried.\nRequires idempotencyValue, eventId, or endpointId.",
+            "name": "minTrials",
             "in": "query"
           },
           {
@@ -2828,9 +2840,25 @@
           },
           {
             "type": "string",
+            "description": "Matches delivery id, event id, event type prefix, and endpoint name.",
+            "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "ASC | DESC",
             "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
             "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv",
+            "description": "Limits idempotencyValue matching to these source IDs.",
+            "name": "sourceId",
             "in": "query"
           },
           {
@@ -3052,13 +3080,25 @@
           {
             "type": "string",
             "description": "EventType to filter by",
-            "name": "event_type",
+            "name": "eventType",
             "in": "query"
           },
           {
             "type": "string",
             "description": "IdempotencyKey to filter by",
             "name": "idempotencyKey",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nMatches deliveries of events ingested with it. Not combinable with idempotencyKey.",
+            "name": "idempotencyValue",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "Only return deliveries with at least this many attempts; 2 or more means retried.\nRequires idempotencyValue, eventId, or endpointId.",
+            "name": "minTrials",
             "in": "query"
           },
           {
@@ -3084,9 +3124,25 @@
           },
           {
             "type": "string",
+            "description": "Matches delivery id, event id, event type prefix, and endpoint name.",
+            "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "ASC | DESC",
             "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
             "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv",
+            "description": "Limits idempotencyValue matching to these source IDs.",
+            "name": "sourceId",
             "in": "query"
           },
           {
@@ -3475,7 +3531,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint fetches an app message's delivery attempts",
+        "description": "This endpoint fetches an app message's delivery attempts\nDefault: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.",
         "consumes": [
           "application/json"
         ],
@@ -3501,6 +3557,18 @@
             "name": "eventDeliveryID",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "boolean",
+            "description": "Return a page of ten attempts and next_cursor",
+            "name": "paginated",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Exclusive attempt cursor from next_cursor; requires paginated=true",
+            "name": "before",
+            "in": "query"
           }
         ],
         "responses": {
@@ -3927,6 +3995,12 @@
           },
           {
             "type": "string",
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nList only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.",
+            "name": "idempotencyValue",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "01H0JA5MEES38RRK3HTEJC647K",
             "description": "A pagination cursor to fetch the next page of a list",
             "name": "next_page_cursor",
@@ -3950,6 +4024,12 @@
             "type": "string",
             "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Set to text to search metadata literally, without interpreting JSON in query.",
+            "name": "queryMode",
             "in": "query"
           },
           {
@@ -4134,7 +4214,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint creates an endpoint event",
+        "description": "This endpoint creates an endpoint event\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -4176,12 +4256,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/definitions/handlers.Stub"
-                        }
-                      ],
-                      "x-nullable": true
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -4331,6 +4406,12 @@
           },
           {
             "type": "string",
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nList only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.",
+            "name": "idempotencyValue",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "01H0JA5MEES38RRK3HTEJC647K",
             "description": "A pagination cursor to fetch the next page of a list",
             "name": "next_page_cursor",
@@ -4354,6 +4435,12 @@
             "type": "string",
             "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Set to text to search metadata literally, without interpreting JSON in query.",
+            "name": "queryMode",
             "in": "query"
           },
           {
@@ -4502,7 +4589,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.",
+        "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -4544,7 +4631,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/definitions/models.EventResponse"
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -4694,6 +4781,12 @@
           },
           {
             "type": "string",
+            "description": "Raw value of a source's single idempotency key location, e.g. a provider delivery ID.\nList only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.",
+            "name": "idempotencyValue",
+            "in": "query"
+          },
+          {
+            "type": "string",
             "example": "01H0JA5MEES38RRK3HTEJC647K",
             "description": "A pagination cursor to fetch the next page of a list",
             "name": "next_page_cursor",
@@ -4717,6 +4810,12 @@
             "type": "string",
             "description": "Matches event id prefix, idempotency key, event type, and source name.\nA JSON object uses payload containment, same as body. Text plus JSON ANDs both.",
             "name": "query",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Set to text to search metadata literally, without interpreting JSON in query.",
+            "name": "queryMode",
             "in": "query"
           },
           {
@@ -4842,7 +4941,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events",
+        "description": "This endpoint creates a dynamic event without creating the endpoint and subscription ahead of time.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -4884,12 +4983,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/definitions/handlers.Stub"
-                        }
-                      ],
-                      "x-nullable": true
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -4975,7 +5069,7 @@
             "ApiKeyAuth": []
           }
         ],
-        "description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
+        "description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.\nThe 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.",
         "consumes": [
           "application/json"
         ],
@@ -5017,12 +5111,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "allOf": [
-                        {
-                          "$ref": "#/definitions/handlers.Stub"
-                        }
-                      ],
-                      "x-nullable": true
+                      "$ref": "#/definitions/models.EventQueuedResponse"
                     }
                   }
                 }
@@ -12427,6 +12516,21 @@
         }
       }
     },
+    "models.EventQueuedResponse": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string"
+        },
+        "idempotency_key": {
+          "type": "string"
+        },
+        "uid": {
+          "description": "UID is the event id.",
+          "type": "string"
+        }
+      }
+    },
     "models.EventResponse": {
       "type": "object",
       "properties": {
@@ -13836,6 +13940,14 @@
         "name": {
           "description": "Source name.",
           "type": "string"
+        },
+        "provider": {
+          "description": "Use this to specify one of our predefined source types.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/datastore.SourceProvider"
+            }
+          ]
         },
         "pub_sub": {
           "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to specify this when the source type is `pub_sub`.",

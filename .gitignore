@@ -60,3 +60,4 @@ convoy-ce
 
 mise.local.toml
 api/ui/*
+scripts/qa/

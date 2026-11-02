@@ -52,7 +52,11 @@ type CreateSource struct {
 }
 
 func (cs *CreateSource) Validate() error {
-	if cs.Provider.IsValid() {
+	if !util.IsStringEmpty(string(cs.Provider)) {
+		if !cs.Provider.IsValid() {
+			return errors.New("please provide a valid source provider")
+		}
+
 		if err := validateSourceForProvider(cs); err != nil {
 			return err
 		}
@@ -186,11 +190,18 @@ func validateSourceForProvider(newSource *CreateSource) error {
 		return errors.New("please provide a valid source type")
 	}
 
+	if !newSource.Provider.IsValid() {
+		return errors.New("please provide a valid source provider")
+	}
+
 	switch newSource.Provider {
 	case datastore.GithubSourceProvider,
 		datastore.ShopifySourceProvider,
 		datastore.TwitterSourceProvider:
 		verifierConfig := newSource.Verifier
+		if verifierConfig.Type != datastore.HMacVerifier {
+			return fmt.Errorf("hmac verifier is required for %s source", newSource.Provider)
+		}
 		if verifierConfig.HMac == nil || verifierConfig.HMac.Secret == "" {
 			return fmt.Errorf("hmac secret is required for %s source", newSource.Provider)
 		}
@@ -205,6 +216,9 @@ type UpdateSource struct {
 
 	// Source Type.
 	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+
+	// Use this to specify one of our predefined source types.
+	Provider datastore.SourceProvider `json:"provider"`
 
 	// This is used to manually enable/disable the source.
 	IsDisabled *bool `json:"is_disabled"`
@@ -243,6 +257,26 @@ type UpdateSource struct {
 }
 
 func (us *UpdateSource) Validate() error {
+	if !util.IsStringEmpty(string(us.Provider)) {
+		if !us.Provider.IsValid() {
+			return errors.New("please provide a valid source provider")
+		}
+
+		var name string
+		if us.Name != nil {
+			name = *us.Name
+		}
+
+		if err := validateSourceForProvider(&CreateSource{
+			Name:     name,
+			Type:     us.Type,
+			Provider: us.Provider,
+			Verifier: us.Verifier,
+		}); err != nil {
+			return err
+		}
+	}
+
 	if err := util.Validate(us); err != nil {
 		return err
 	}
@@ -260,7 +294,7 @@ func (us *UpdateSource) Validate() error {
 			return err
 		}
 
-		if err := validateEventTypeLocationVerifierTypeCompatibility(us.Verifier.Type, *us.EventTypeLocation); err != nil {
+		if err := validateEventTypeLocationVerifierCompatibility(us.Provider, us.Verifier.Type, *us.EventTypeLocation); err != nil {
 			return err
 		}
 	}

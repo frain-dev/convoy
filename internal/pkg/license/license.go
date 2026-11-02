@@ -39,6 +39,7 @@ type Licenser interface {
 	StaticIP() bool
 
 	RetentionPolicy() bool
+	WebhookArchiving() bool
 	WebhookAnalytics() bool
 	MutualTLS() bool
 	OAuth2EndpointAuth() bool

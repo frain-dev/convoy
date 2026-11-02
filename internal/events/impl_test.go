@@ -477,6 +477,47 @@ func TestFindFirstEventWithIdempotencyKey(t *testing.T) {
 	})
 }
 
+func TestFindEventIDsByIdempotencyKeys(t *testing.T) {
+	service, db := setupTestDB(t)
+	ctx := context.Background()
+
+	project := seedTestProject(t, db)
+	endpoint := seedTestEndpoint(t, db, project.UID)
+	source := seedTestSource(t, db, project.UID)
+	otherProject := seedTestProject(t, db)
+	otherEndpoint := seedTestEndpoint(t, db, otherProject.UID)
+	otherSource := seedTestSource(t, db, otherProject.UID)
+
+	keyA := fmt.Sprintf("key-a-%s", ulid.Make().String())
+	keyB := fmt.Sprintf("key-b-%s", ulid.Make().String())
+
+	create := func(projectID, endpointID, sourceID, key string, duplicate bool) *datastore.Event {
+		event := createTestEvent(t, projectID, []string{endpointID}, sourceID)
+		event.IdempotencyKey = key
+		event.IsDuplicateEvent = duplicate
+		require.NoError(t, service.CreateEvent(ctx, event))
+		return event
+	}
+
+	first := create(project.UID, endpoint.UID, source.UID, keyA, false)
+	create(project.UID, endpoint.UID, source.UID, keyA, true)
+	second := create(project.UID, endpoint.UID, source.UID, keyB, false)
+	create(project.UID, endpoint.UID, source.UID, "unrelated-"+ulid.Make().String(), false)
+	create(otherProject.UID, otherEndpoint.UID, otherSource.UID, keyA, false)
+
+	ids, err := service.FindEventIDsByIdempotencyKeys(ctx, project.UID, []string{keyA, keyB}, 10)
+	require.NoError(t, err)
+	require.Equal(t, []string{first.UID, second.UID}, ids)
+
+	ids, err = service.FindEventIDsByIdempotencyKeys(ctx, project.UID, []string{keyA, keyB}, 1)
+	require.NoError(t, err)
+	require.Equal(t, []string{first.UID}, ids)
+
+	ids, err = service.FindEventIDsByIdempotencyKeys(ctx, project.UID, nil, 10)
+	require.NoError(t, err)
+	require.Empty(t, ids)
+}
+
 func TestCreateEventIdempotencyClaim(t *testing.T) {
 	service, db := setupTestDB(t)
 	ctx := context.Background()

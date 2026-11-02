@@ -44,9 +44,9 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 	// for hours, so it should not be one misplaced click away.
 	partitionForm: FormGroup;
 
-	// Every maintenance run, conversions and index rebuilds alike. They share the
-	// server's single-active slot, so a rebuild in flight has to count as an
-	// active run here or the form would offer a start the server refuses.
+	// Full maintenance history from the server. Display filters to conversions;
+	// rebuilds stay on the indexes page. The unfiltered list still drives
+	// activeRun / canStart because any run holds the instance-wide slot.
 	runs: MaintenanceRun[] = [];
 	tableStates: PartitionTable[] = [];
 	// Distinguishes "fetch failed" from "fetch returned no rows". Clearing
@@ -61,6 +61,11 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 	isStarting = false;
 	isLoadingRuns = false;
 	hasRetentionLicense = false;
+	// Whether the license read has been attempted, not that it succeeded:
+	// loadAllLicenses swallows transport errors, so a failed read falls back to
+	// the cache and reads as unlicensed on a cold one. What it buys is that
+	// "requires a license key" waits for the read, not the initial false.
+	licenseKnown = false;
 
 	private pollInterval: any;
 	private tableChanges: Subscription;
@@ -133,6 +138,7 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 		// deployment licenser alone, same as the CLI, and partitioning is an
 		// instance-wide operation like queue monitoring.
 		this.hasRetentionLicense = this.licenseService.hasInstanceLicense('RetentionPolicy');
+		this.licenseKnown = true;
 		if (!this.hasRetentionLicense) return;
 
 		await this.loadTableStates();
@@ -190,6 +196,11 @@ export class TablePartitionsComponent implements OnInit, OnDestroy {
 
 	get activeRun(): MaintenanceRun | undefined {
 		return this.runs.find(run => run.status === 'running');
+	}
+
+	// Only partition / unpartition rows. Rebuild history is the indexes page's.
+	get conversionRuns(): MaintenanceRun[] {
+		return this.runs.filter(run => run.operation === 'partition' || run.operation === 'unpartition');
 	}
 
 	// runsKnown is part of the gate, not decoration: the slot is instance-wide and a

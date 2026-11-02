@@ -121,9 +121,9 @@ func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator 
 	}
 
 	// Register handlers for all event processor types
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, tw.handleCreateEvent, nil)
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, tw.handleCreateEvent, nil)
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, tw.handleCreateEvent, nil)
+	consumer.RegisterHandlers(convoy.CreateEventProcessor, tw.handleCreateEvent)
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, tw.handleCreateEvent)
+	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, tw.handleCreateEvent)
 
 	return tw
 }

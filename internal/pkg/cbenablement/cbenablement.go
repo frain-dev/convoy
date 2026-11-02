@@ -1,11 +1,10 @@
 // Package cbenablement resolves whether circuit breaking is enabled, as a single
 // source of truth shared by the sampler, enforcement and the dashboard display.
 //
-// Semantics (mode-safe across cloud, licensed self-hosted, and unlicensed self-hosted):
-//   - instanceBase = env (CONVOY_ENABLE_FEATURE_FLAG, static) OR the DB instance flag (live).
-//     The env flag is folded into the instance default, not a blanket per-org force-on.
+// Semantics:
+//   - admin_managed=false: env is the instance default.
+//   - admin_managed=true: the DB instance flag is the instance default.
 //   - A per-org override always wins over instanceBase, including a disabled override.
-//     This preserves an operator's per-org scoping even when the platform sets the env flag.
 //   - The global sampler must run when enabled anywhere: instanceBase OR any enabled override.
 //
 // Reads are cached with a short TTL and refreshed lazily on read, so toggling the
@@ -36,32 +35,33 @@ type cacheEntry struct {
 
 // Resolver resolves circuit-breaker enablement with a TTL cache.
 type Resolver struct {
-	fflag   *fflag.FFlag
-	fetcher fflag.FeatureFlagFetcher
-	clock   clock.Clock
-	logger  log.Logger
-	ttl     time.Duration
+	fflag        *fflag.FFlag
+	fetcher      fflag.FeatureFlagFetcher
+	adminManaged bool
+	clock        clock.Clock
+	logger       log.Logger
+	ttl          time.Duration
 
 	mu       sync.Mutex
 	orgCache map[string]cacheEntry
 	anyCache *cacheEntry
 }
 
-// NewResolver builds a resolver. fetcher and logger must not be nil in production;
-// fflag carries the static env state.
-func NewResolver(f *fflag.FFlag, fetcher fflag.FeatureFlagFetcher, c clock.Clock, logger log.Logger) *Resolver {
+// NewResolver builds a resolver. adminManaged is read once at process start.
+func NewResolver(f *fflag.FFlag, fetcher fflag.FeatureFlagFetcher, adminManaged bool, c clock.Clock, logger log.Logger) *Resolver {
 	return &Resolver{
-		fflag:    f,
-		fetcher:  fetcher,
-		clock:    c,
-		logger:   logger,
-		ttl:      defaultTTL,
-		orgCache: make(map[string]cacheEntry),
+		fflag:        f,
+		fetcher:      fetcher,
+		adminManaged: adminManaged,
+		clock:        c,
+		logger:       logger,
+		ttl:          defaultTTL,
+		orgCache:     make(map[string]cacheEntry),
 	}
 }
 
 // EnabledForOrg reports whether circuit breaking is enabled for the given org:
-// override wins, else instanceBase (env OR instance DB flag). TTL-cached per org.
+// override wins, else the instance default selected by adminManaged. TTL-cached per org.
 func (r *Resolver) EnabledForOrg(ctx context.Context, orgID string) bool {
 	now := r.clock.Now()
 
@@ -82,7 +82,7 @@ func (r *Resolver) EnabledForOrg(ctx context.Context, orgID string) bool {
 }
 
 // EnabledAnywhere reports whether circuit breaking is enabled anywhere on the
-// instance (instanceBase OR any enabled org override). Used to gate the sampler.
+// instance (selected instance default OR any enabled org override). Used to gate the sampler.
 func (r *Resolver) EnabledAnywhere(ctx context.Context) bool {
 	now := r.clock.Now()
 
@@ -111,25 +111,23 @@ func (r *Resolver) envOn() bool {
 }
 
 func (r *Resolver) resolveForOrg(ctx context.Context, orgID string) bool {
-	return EnabledForOrg(ctx, r.fflag, r.fetcher, orgID)
+	return EnabledForOrg(ctx, r.fflag, r.fetcher, r.adminManaged, orgID)
 }
 
 // EnabledForOrg resolves per-org circuit-breaker enablement without caching, for
 // callers off the hot path (e.g. the dashboard display gate and the org feature-flag
 // map). Same semantics as Resolver.EnabledForOrg: a per-org override always wins
-// (including a disabled one); otherwise the instance base = env OR the DB instance flag.
-func EnabledForOrg(ctx context.Context, f *fflag.FFlag, fetcher fflag.FeatureFlagFetcher, orgID string) bool {
+// (including a disabled one); otherwise the selected instance default applies.
+func EnabledForOrg(ctx context.Context, f *fflag.FFlag, fetcher fflag.FeatureFlagFetcher, adminManaged bool, orgID string) bool {
 	envOn := f != nil && f.CanAccessFeature(fflag.CircuitBreaker)
 
 	if fetcher == nil {
-		return envOn
+		return !adminManaged && envOn
 	}
 
 	info, err := fetcher.FetchFeatureFlag(ctx, string(fflag.CircuitBreaker))
 	if err != nil || info == nil {
-		// Flag row missing or DB error: the instance base reduces to the env flag.
-		// Fail closed beyond env (a flaky read does not flip behavior on by itself).
-		return envOn
+		return !adminManaged && envOn
 	}
 
 	// A per-org override always wins, including a disabled one. We mirror the
@@ -139,22 +137,26 @@ func EnabledForOrg(ctx context.Context, f *fflag.FFlag, fetcher fflag.FeatureFla
 		return override.Enabled
 	}
 
-	// No override: instance base = env OR the DB instance flag.
-	return envOn || info.Enabled
+	if adminManaged {
+		return info.Enabled
+	}
+	return envOn
 }
 
 func (r *Resolver) resolveAnywhere(ctx context.Context) bool {
-	if r.envOn() {
-		// env is the instance-wide default; if set, the sampler must run.
+	if !r.adminManaged && r.envOn() {
 		return true
+	}
+	if r.fetcher == nil {
+		return false
 	}
 
 	info, err := r.fetcher.FetchFeatureFlag(ctx, string(fflag.CircuitBreaker))
 	if err != nil || info == nil {
-		// env already false and the instance flag is unreadable: fail closed.
+		// Env mode is already false; Admin mode cannot read its source.
 		return false
 	}
-	if info.Enabled {
+	if r.adminManaged && info.Enabled {
 		return true
 	}
 

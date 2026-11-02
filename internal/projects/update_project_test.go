@@ -297,6 +297,40 @@ func TestUpdateProject_DisableEndpoint(t *testing.T) {
 	_ = endpoint
 }
 
+func TestProject_AddEventIDTraceHeadersPersists(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(testLogger, db)
+	org := seedOrganisation(t, db)
+
+	project := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "Trace Headers Project",
+		Type:           datastore.OutgoingProject,
+		OrganisationID: org.UID,
+		Config:         getDefaultProjectConfig(),
+	}
+	project.Config.AddEventIDTraceHeaders = true
+	require.NoError(t, service.CreateProject(ctx, project))
+
+	fetched, err := service.FetchProjectByID(ctx, project.UID)
+	require.NoError(t, err)
+	require.True(t, fetched.Config.AddEventIDTraceHeaders)
+
+	loaded, err := service.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: org.UID})
+	require.NoError(t, err)
+	require.Len(t, loaded, 1)
+	require.True(t, loaded[0].Config.AddEventIDTraceHeaders)
+
+	fetched.Config.AddEventIDTraceHeaders = false
+	require.NoError(t, service.UpdateProject(ctx, fetched))
+
+	updated, err := service.FetchProjectByID(ctx, project.UID)
+	require.NoError(t, err)
+	require.False(t, updated.Config.AddEventIDTraceHeaders)
+}
+
 func TestUpdateProject_AllFieldsCombined(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()

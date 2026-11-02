@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCloudTrialEmailVerified(t *testing.T) {
+func TestCloudBillingEmailVerified(t *testing.T) {
 	cloudCfg := config.Configuration{
 		Billing: config.BillingConfiguration{APIKey: "cloud-key", URL: "http://billing.test"},
 	}
@@ -69,7 +69,7 @@ func TestCloudTrialEmailVerified(t *testing.T) {
 					User: tc.user,
 				}))
 			}
-			require.Equal(t, tc.wantOK, h.cloudTrialEmailVerified(req))
+			require.Equal(t, tc.wantOK, h.cloudBillingEmailVerified(req))
 		})
 	}
 }

@@ -58,6 +58,18 @@ func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interfa
 		return
 	}
 
+	var hookType datastore.HookEventType
+	switch eventDelivery.Status {
+	case datastore.SuccessEventStatus:
+		hookType = datastore.EventDeliverySuccess
+	case datastore.FailureEventStatus:
+		hookType = datastore.EventDeliveryFailed
+	case datastore.RetryEventStatus:
+		hookType = datastore.EventDeliveryRetrying
+	default:
+		return
+	}
+
 	mEventDelivery := getMetaEventDelivery(eventDelivery)
 	attempts, err := e.attemptsRepo.FindDeliveryAttempts(ctx, mEventDelivery.UID)
 	if err != nil {
@@ -68,18 +80,8 @@ func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interfa
 		mEventDelivery.DeliveryAttempt = attempts[len(attempts)-1]
 	}
 
-	if eventDelivery.Status == datastore.SuccessEventStatus {
-		err = e.mEvent.Run(ctx, string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
-		if err != nil {
-			e.logger.Error("event delivery meta event failed", "error", err)
-		}
-	}
-
-	if eventDelivery.Status == datastore.FailureEventStatus {
-		err = e.mEvent.Run(ctx, string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
-		if err != nil {
-			e.logger.Error("event delivery meta event failed", "error", err)
-		}
+	if err = e.mEvent.Run(ctx, string(hookType), eventDelivery.ProjectID, mEventDelivery); err != nil {
+		e.logger.Error("event delivery meta event failed", "error", err)
 	}
 }
 

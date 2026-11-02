@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy"
@@ -87,6 +88,14 @@ func Test_NilEnvironmentVariablesDontOverride(t *testing.T) {
 	}
 }
 
+func TestServerReadTimeoutFromEnv(t *testing.T) {
+	t.Setenv("CONVOY_SERVER_READ_TIMEOUT", "60")
+
+	c := DefaultConfiguration
+	require.NoError(t, envconfig.Process("convoy", &c))
+	require.Equal(t, uint64(60), c.Server.HTTP.ReadTimeout)
+}
+
 func TestEnsureJwtConfigRequiresSecrets(t *testing.T) {
 	t.Setenv("CONVOY_JWT_SECRET", "")
 	t.Setenv("CONVOY_JWT_REFRESH_SECRET", "")
@@ -138,10 +147,13 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
-				RetentionPolicy: RetentionPolicyConfiguration{
-					Policy:                   "720h",
-					IsRetentionPolicyEnabled: true,
-					BackupInterval:           "1h",
+				Retention: RetentionConfiguration{
+					Enabled: true,
+					Period:  "720h",
+				},
+				WebhookArchiving: WebhookArchivingConfiguration{
+					Enabled:  true,
+					Interval: "1h",
 				},
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
@@ -154,10 +166,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						IngestPort: 5009,
-						AgentPort:  5008,
-						WorkerPort: 5006,
+						Port:        80,
+						IngestPort:  5009,
+						AgentPort:   5008,
+						WorkerPort:  5006,
+						ReadTimeout: 30,
 					},
 				},
 				Logger: LoggerConfiguration{
@@ -181,9 +194,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Billing: BillingConfiguration{
 					UsageSource: BillingUsageSourcePostgres,
-				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
 				},
 				StoragePolicy: StoragePolicyConfiguration{
 					Type: "on-prem",
@@ -234,7 +244,8 @@ func TestLoadConfig(t *testing.T) {
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
 				QueueProvider:    RedisQueueProvider,
-				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
+				Retention:        DefaultConfiguration.Retention,
+				WebhookArchiving: DefaultConfiguration.WebhookArchiving,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -263,10 +274,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						AgentPort:  5008,
-						IngestPort: 5009,
-						WorkerPort: 5006,
+						Port:        80,
+						AgentPort:   5008,
+						IngestPort:  5009,
+						WorkerPort:  5006,
+						ReadTimeout: 30,
 					},
 				},
 				Logger: LoggerConfiguration{
@@ -290,9 +302,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Billing: BillingConfiguration{
 					UsageSource: BillingUsageSourcePostgres,
-				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
 				},
 				StoragePolicy: StoragePolicyConfiguration{
 					Type: "on-prem",
@@ -341,7 +350,8 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
-				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h", BackupInterval: "1h"},
+				Retention:        DefaultConfiguration.Retention,
+				WebhookArchiving: DefaultConfiguration.WebhookArchiving,
 				ConsumerPoolSize: 100,
 				QueueProvider:    RedisQueueProvider,
 				CircuitBreaker: CircuitBreakerConfiguration{
@@ -371,10 +381,11 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
-						Port:       80,
-						AgentPort:  5008,
-						IngestPort: 5009,
-						WorkerPort: 5006,
+						Port:        80,
+						AgentPort:   5008,
+						IngestPort:  5009,
+						WorkerPort:  5006,
+						ReadTimeout: 30,
 					},
 				},
 				Logger: LoggerConfiguration{
@@ -398,9 +409,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Billing: BillingConfiguration{
 					UsageSource: BillingUsageSourcePostgres,
-				},
-				Analytics: AnalyticsConfiguration{
-					IsEnabled: true,
 				},
 				StoragePolicy: StoragePolicyConfiguration{
 					Type: "on-prem",

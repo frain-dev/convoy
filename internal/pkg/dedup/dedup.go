@@ -32,6 +32,12 @@ func NewDeDuper(ctx context.Context, request *http.Request, eventRepo datastore.
 	return &DeDuper{ctx, request, eventRepo}
 }
 
+// ChecksumForValue returns the idempotency key GenerateChecksum stores for a source
+// whose idempotency key comes from a single request location holding value.
+func ChecksumForValue(source, value string) string {
+	return GenerateChecksum(source + value)
+}
+
 // GenerateChecksum generates a checksum using the provided request input fields
 func (d *DeDuper) GenerateChecksum(source string, input []string) (string, error) {
 	parts, err := d.extractDataFromRequest(input)

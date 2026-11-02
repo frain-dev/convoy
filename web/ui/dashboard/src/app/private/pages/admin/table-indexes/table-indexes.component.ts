@@ -160,8 +160,8 @@ export class TableIndexesComponent implements OnInit, OnDestroy {
 		this.pollInterval = null;
 	}
 
-	// Only the rebuilds are shown here; conversions belong to the partitions page,
-	// and this list is what the buttons above act on.
+	// Only the rebuilds are shown here; conversions belong to the partitions page.
+	// The unfiltered list still drives activeRun / canStart: any run holds the slot.
 	get rebuildRuns(): MaintenanceRun[] {
 		return this.runs.filter(run => run.operation === 'rebuild_index');
 	}

@@ -229,45 +229,12 @@ GROUP BY endpoint_id, status;
 -- Group 4: Pagination
 -- ============================================================================
 
--- Page ids first (no JSONB, no joins), then hydrate. Inner ORDER BY is plain
--- created_at/id so generic plans can range-scan
--- idx_event_deliveries_project_created_id_deleted and stop at LIMIT. ORDER BY
--- CASE or ORDER BY id on the PK walks the whole table when the date window is
--- empty. Split Desc/Asc for the same reason as LoadEventsPagedExistsInner*.
--- Cursor is the delivery id; keyset uses that row's (created_at, id). An
--- empty cursor, or one that does not resolve (SetCursors' first-page
--- sentinel), applies no keyset.
--- name: LoadEventDeliveriesPagedInnerDesc :many
-WITH cursor_row AS (
-    SELECT created_at, id
-    FROM convoy.event_deliveries
-    WHERE id = @cursor AND project_id = @project_id AND deleted_at IS NULL
-),
-page AS (
-    SELECT ed.id
-    FROM convoy.event_deliveries ed
-    WHERE ed.deleted_at IS NULL
-      AND ed.project_id = @project_id
-      AND (ed.event_id = @event_id OR @event_id = '')
-      AND (ed.event_type = @event_type OR @event_type = '')
-      AND ed.created_at >= @start_date
-      AND ed.created_at <= @end_date
-      AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN ed.endpoint_id = ANY(@endpoint_ids::TEXT[]) ELSE true END)
-      AND (CASE WHEN @has_status::BOOLEAN THEN ed.status = ANY(@statuses::TEXT[]) ELSE true END)
-      AND (CASE WHEN @has_subscription_id::BOOLEAN THEN ed.subscription_id = @subscription_id ELSE true END)
-      -- TODO(perf): consider GIN index on metadata->>'broker_message_id' (cross-cutting concern across 9+ files)
-      AND (CASE WHEN @has_broker_message_id::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id ELSE true END)
-      AND (CASE WHEN @has_idempotency_key::BOOLEAN THEN ed.idempotency_key = @idempotency_key ELSE true END)
-      AND (
-        CASE
-            WHEN @cursor = '' THEN true
-            WHEN NOT EXISTS (SELECT 1 FROM cursor_row) THEN true
-            ELSE (ed.created_at, ed.id) <= (SELECT cr.created_at, cr.id FROM cursor_row cr)
-        END
-      )
-    ORDER BY ed.created_at DESC, ed.id DESC
-    LIMIT @page_limit
-)
+-- Hydrate a page of delivery ids. The id scan lives in Go (listFilter) so
+-- status, cursor, and other optional filters are real predicates, not CASE
+-- wrappers. Generic plans of the old InnerDesc/InnerAsc queries timed out on
+-- rare-status page 2 because those CASE clauses kept status and the keyset
+-- out of index cond. ORDER BY here is only the ~page of already-chosen ids.
+-- name: HydrateEventDeliveriesPage :many
 SELECT
     ed.id, ed.project_id, ed.event_id, ed.subscription_id,
     ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
@@ -297,114 +264,14 @@ SELECT
     COALESCE(s.id, '') AS "source_metadata.id",
     COALESCE(s.name, '') AS "source_metadata.name",
     COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
-FROM page
-JOIN convoy.event_deliveries ed ON ed.id = page.id AND ed.project_id = @project_id
-LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
-LEFT JOIN convoy.devices d ON ed.device_id = d.id
-LEFT JOIN convoy.sources s ON s.id = ev.source_id
-ORDER BY
-    CASE WHEN @sort_order::text = 'DESC' THEN ed.created_at END DESC,
-    CASE WHEN @sort_order::text = 'DESC' THEN ed.id END DESC,
-    CASE WHEN @sort_order::text = 'ASC' THEN ed.created_at END ASC,
-    CASE WHEN @sort_order::text = 'ASC' THEN ed.id END ASC;
-
--- name: LoadEventDeliveriesPagedInnerAsc :many
--- Same as LoadEventDeliveriesPagedInnerDesc but inner scan uses ORDER BY created_at ASC, id ASC.
-WITH cursor_row AS (
-    SELECT created_at, id
-    FROM convoy.event_deliveries
-    WHERE id = @cursor AND project_id = @project_id AND deleted_at IS NULL
-),
-page AS (
-    SELECT ed.id
-    FROM convoy.event_deliveries ed
-    WHERE ed.deleted_at IS NULL
-      AND ed.project_id = @project_id
-      AND (ed.event_id = @event_id OR @event_id = '')
-      AND (ed.event_type = @event_type OR @event_type = '')
-      AND ed.created_at >= @start_date
-      AND ed.created_at <= @end_date
-      AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN ed.endpoint_id = ANY(@endpoint_ids::TEXT[]) ELSE true END)
-      AND (CASE WHEN @has_status::BOOLEAN THEN ed.status = ANY(@statuses::TEXT[]) ELSE true END)
-      AND (CASE WHEN @has_subscription_id::BOOLEAN THEN ed.subscription_id = @subscription_id ELSE true END)
-      AND (CASE WHEN @has_broker_message_id::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id ELSE true END)
-      AND (CASE WHEN @has_idempotency_key::BOOLEAN THEN ed.idempotency_key = @idempotency_key ELSE true END)
-      AND (
-        CASE
-            WHEN @cursor = '' THEN true
-            WHEN NOT EXISTS (SELECT 1 FROM cursor_row) THEN true
-            ELSE (ed.created_at, ed.id) >= (SELECT cr.created_at, cr.id FROM cursor_row cr)
-        END
-      )
-    ORDER BY ed.created_at ASC, ed.id ASC
-    LIMIT @page_limit
-)
-SELECT
-    ed.id, ed.project_id, ed.event_id, ed.subscription_id,
-    ed.headers, ed.attempts, ed.status, ed.metadata, ed.cli_metadata,
-    COALESCE(ed.target_url, '') AS target_url,
-    COALESCE(ed.url_query_params, '') AS url_query_params,
-    COALESCE(ed.idempotency_key, '') AS idempotency_key,
-    ed.description, ed.created_at, ed.updated_at, ed.acknowledged_at,
-    COALESCE(ed.event_type, '') AS event_type,
-    COALESCE(ed.device_id, '') AS device_id,
-    COALESCE(ed.endpoint_id, '') AS endpoint_id,
-    COALESCE(ed.delivery_mode, 'at_least_once')::TEXT AS delivery_mode,
-    COALESCE(ed.latency_seconds, 0) AS latency_seconds,
-    COALESCE(ep.id, '') AS "endpoint_metadata.id",
-    COALESCE(ep.name, '') AS "endpoint_metadata.name",
-    COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
-    COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
-    COALESCE(ep.url, '') AS "endpoint_metadata.url",
-    COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
-    COALESCE(ep.status, '') AS "endpoint_metadata.status",
-    ep.deleted_at AS "endpoint_metadata.deleted_at",
-    ev.id AS "event_metadata.id",
-    ev.event_type AS "event_metadata.event_type",
-    ev.created_at AS "event_metadata.created_at",
-    COALESCE(d.id, '') AS "device_metadata.id",
-    COALESCE(d.status, '') AS "device_metadata.status",
-    COALESCE(d.host_name, '') AS "device_metadata.host_name",
-    COALESCE(s.id, '') AS "source_metadata.id",
-    COALESCE(s.name, '') AS "source_metadata.name",
-    COALESCE(s.idempotency_keys, '{}') AS "source_metadata.idempotency_keys"
-FROM page
-JOIN convoy.event_deliveries ed ON ed.id = page.id AND ed.project_id = @project_id
-LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
-LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
-LEFT JOIN convoy.devices d ON ed.device_id = d.id
-LEFT JOIN convoy.sources s ON s.id = ev.source_id
-ORDER BY
-    CASE WHEN @sort_order::text = 'DESC' THEN ed.created_at END DESC,
-    CASE WHEN @sort_order::text = 'DESC' THEN ed.id END DESC,
-    CASE WHEN @sort_order::text = 'ASC' THEN ed.created_at END ASC,
-    CASE WHEN @sort_order::text = 'ASC' THEN ed.id END ASC;
-
--- name: CountPrevEventDeliveries :one
-WITH cursor_row AS (
-    SELECT created_at, id
-    FROM convoy.event_deliveries
-    WHERE id = @cursor AND project_id = @project_id AND deleted_at IS NULL
-)
-SELECT COALESCE(COUNT(*), 0) AS count
 FROM convoy.event_deliveries ed
-WHERE ed.deleted_at IS NULL
-  AND ed.project_id = @project_id
-  AND (ed.event_id = @event_id OR @event_id = '')
-  AND (ed.event_type = @event_type OR @event_type = '')
-  AND ed.created_at >= @start_date
-  AND ed.created_at <= @end_date
-  AND (CASE WHEN @has_endpoint_ids::BOOLEAN THEN ed.endpoint_id = ANY(@endpoint_ids::TEXT[]) ELSE true END)
-  AND (CASE WHEN @has_status::BOOLEAN THEN ed.status = ANY(@statuses::TEXT[]) ELSE true END)
-  AND (CASE WHEN @has_subscription_id::BOOLEAN THEN ed.subscription_id = @subscription_id ELSE true END)
-  AND (CASE WHEN @has_broker_message_id::BOOLEAN THEN ed.headers -> 'x-broker-message-id' ->> 0 = @broker_message_id ELSE true END)
-  AND (CASE WHEN @has_idempotency_key::BOOLEAN THEN ed.idempotency_key = @idempotency_key ELSE true END)
-  AND EXISTS (SELECT 1 FROM cursor_row)
-  AND (CASE
-           WHEN @sort_order::text = 'DESC' THEN (ed.created_at, ed.id) > (SELECT cr.created_at, cr.id FROM cursor_row cr)
-           WHEN @sort_order::text = 'ASC' THEN (ed.created_at, ed.id) < (SELECT cr.created_at, cr.id FROM cursor_row cr)
-           ELSE (ed.created_at, ed.id) > (SELECT cr.created_at, cr.id FROM cursor_row cr) END);
+LEFT JOIN convoy.endpoints ep ON ed.endpoint_id = ep.id
+LEFT JOIN convoy.events ev ON ed.event_id = ev.id AND ev.project_id = ed.project_id
+LEFT JOIN convoy.devices d ON ed.device_id = d.id
+LEFT JOIN convoy.sources s ON s.id = ev.source_id
+WHERE ed.project_id = @project_id
+  AND ed.id = ANY(@ids::TEXT[])
+  AND ed.deleted_at IS NULL;
 
 -- ============================================================================
 -- Group 5: Intervals

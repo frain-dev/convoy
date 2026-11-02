@@ -144,6 +144,7 @@ func projectConfigToCreateParams(id string, config *datastore.ProjectConfig) rep
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
 		RequestIDHeader:                common.StringToPgTextNullable(requestIDHeader),
 		DisableEndpoint:                pgtype.Bool{Bool: config.DisableEndpoint, Valid: true},
+		AddEventIDTraceHeaders:         pgtype.Bool{Bool: config.AddEventIDTraceHeaders, Valid: true},
 		MetaEventsEnabled:              pgtype.Bool{Bool: me.IsEnabled, Valid: true},
 		MetaEventsType:                 common.StringToPgTextNullable(string(me.Type)),
 		MetaEventsEventType:            sliceToPgText(me.EventType),
@@ -191,6 +192,7 @@ func projectConfigToUpdateParams(id string, config *datastore.ProjectConfig) rep
 		SignatureVersions:              signatureVersionsToJSON(sgc.Versions),
 		RequestIDHeader:                common.StringToPgTextNullable(requestIDHeader),
 		DisableEndpoint:                pgtype.Bool{Bool: config.DisableEndpoint, Valid: true},
+		AddEventIDTraceHeaders:         pgtype.Bool{Bool: config.AddEventIDTraceHeaders, Valid: true},
 		MetaEventsEnabled:              pgtype.Bool{Bool: me.IsEnabled, Valid: true},
 		MetaEventsType:                 common.StringToPgTextNullable(string(me.Type)),
 		MetaEventsEventType:            sliceToPgText(me.EventType),
@@ -237,6 +239,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		strategyDuration                               int32
 		strategyRetryCount                             int32
 		disableEndpoint                                bool
+		addEventIDTraceHeaders                         bool
 		sslEnforceSecureEndpoints                      pgtype.Bool
 		metaEventsEnabled                              bool
 		metaEventsType, metaEventsEventType            pgtype.Text
@@ -273,6 +276,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		signatureVersions = r.ConfigSignatureVersions
 		requestIDHeader = r.ConfigRequestIDHeader
 		disableEndpoint = r.ConfigDisableEndpoint
+		addEventIDTraceHeaders = r.ConfigAddEventIDTraceHeaders
 		sslEnforceSecureEndpoints = r.ConfigSslEnforceSecureEndpoints
 		metaEventsEnabled = r.ConfigMetaEventsEnabled
 		metaEventsType = r.ConfigMetaEventsType
@@ -308,6 +312,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		signatureVersions = r.ConfigSignatureVersions
 		requestIDHeader = r.ConfigRequestIDHeader
 		disableEndpoint = r.ConfigDisableEndpoint
+		addEventIDTraceHeaders = r.ConfigAddEventIDTraceHeaders
 		sslEnforceSecureEndpoints = r.ConfigSslEnforceSecureEndpoints
 		metaEventsEnabled = r.ConfigMetaEventsEnabled
 		metaEventsType = r.ConfigMetaEventsType
@@ -349,6 +354,7 @@ func rowToProject(row interface{}) (*datastore.Project, error) {
 		AllowUnmatchedDynamicURLs:     allowUnmatchedDynamicURLs,
 		ReplayAttacks:                 replayAttacks,
 		DisableEndpoint:               disableEndpoint,
+		AddEventIDTraceHeaders:        addEventIDTraceHeaders,
 		RateLimit: &datastore.RateLimitConfiguration{
 			Count:    int(ratelimitCount),
 			Duration: uint64(ratelimitDuration),
@@ -467,6 +473,26 @@ func (s *Service) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) 
 	}
 
 	return projects, nil
+}
+
+// IDsForRetry returns the single project when scoped, or every live project
+// when projectID is empty. Admin retry count and the retry walk must share this.
+func (s *Service) IDsForRetry(ctx context.Context, projectID string) ([]string, error) {
+	if !util.IsStringEmpty(projectID) {
+		return []string{projectID}, nil
+	}
+	listed, err := s.LoadProjects(ctx, &datastore.ProjectFilter{})
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(listed))
+	for _, p := range listed {
+		if p == nil || util.IsStringEmpty(p.UID) {
+			continue
+		}
+		ids = append(ids, p.UID)
+	}
+	return ids, nil
 }
 
 // UpdateProject updates an existing project

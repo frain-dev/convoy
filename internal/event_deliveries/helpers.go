@@ -184,28 +184,7 @@ func rowToEventDelivery(row interface{}) (*datastore.EventDelivery, error) {
 			ProjectID: r.ProjectID,
 		}, nil
 
-	case repo.LoadEventDeliveriesPagedInnerDescRow:
-		d := buildEventDelivery(eventDeliveryFields{
-			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
-			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
-			CliMetadata: r.CliMetadata, TargetUrl: r.TargetUrl, UrlQueryParams: r.UrlQueryParams, IdempotencyKey: r.IdempotencyKey,
-			Description: r.Description, EventType: r.EventType, DeviceID: r.DeviceID, EndpointID: r.EndpointID,
-			DeliveryMode: r.DeliveryMode, LatencySeconds: r.LatencySeconds,
-			CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, AcknowledgedAt: r.AcknowledgedAt,
-		})
-		applyJoinedMetadata(d, joinedMetadata{
-			EndpointID: r.EndpointMetadataID, EndpointName: r.EndpointMetadataName,
-			EndpointProjectID: r.EndpointMetadataProjectID, EndpointSupportEmail: r.EndpointMetadataSupportEmail,
-			EndpointUrl: r.EndpointMetadataUrl, EndpointOwnerID: r.EndpointMetadataOwnerID,
-			EndpointStatus: r.EndpointMetadataStatus, EndpointDeletedAt: r.EndpointMetadataDeletedAt,
-			EventID: r.EventMetadataID, EventType: r.EventMetadataEventType, EventCreatedAt: r.EventMetadataCreatedAt,
-			DeviceID: r.DeviceMetadataID, DeviceStatus: r.DeviceMetadataStatus, DeviceHostName: r.DeviceMetadataHostName,
-			SourceID: r.SourceMetadataID, SourceName: r.SourceMetadataName,
-			SourceIdempotencyKeys: r.SourceMetadataIdempotencyKeys,
-		})
-		return d, nil
-
-	case repo.LoadEventDeliveriesPagedInnerAscRow:
+	case repo.HydrateEventDeliveriesPageRow:
 		d := buildEventDelivery(eventDeliveryFields{
 			ID: r.ID, ProjectID: r.ProjectID, EventID: r.EventID, SubscriptionID: r.SubscriptionID,
 			Headers: r.Headers, Attempts: r.Attempts, Status: r.Status, Metadata: r.Metadata,
@@ -333,49 +312,4 @@ func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
 		return time.Unix(0, 0), time.Now()
 	}
 	return time.Unix(startDate, 0), time.Unix(endDate, 0)
-}
-
-const minLen = 30
-
-func padIntervals(intervals []datastore.EventInterval, duration time.Duration, period datastore.Period) ([]datastore.EventInterval, error) {
-	var err error
-	var format string
-
-	switch period {
-	case datastore.Daily:
-		format = "2006-01-02"
-	case datastore.Weekly:
-		format = "2006-01-02"
-	case datastore.Monthly:
-		format = "2006-01"
-	case datastore.Yearly:
-		format = "2006"
-	default:
-		return nil, errors.New("specified data cannot be generated for period")
-	}
-
-	start := time.Now()
-	if len(intervals) > 0 {
-		start, err = time.Parse(format, intervals[0].Data.Time)
-		if err != nil {
-			return nil, err
-		}
-		start = start.Add(-duration)
-	}
-
-	numPadding := minLen - len(intervals)
-	paddedIntervals := make([]datastore.EventInterval, numPadding, numPadding+len(intervals))
-	for i := numPadding; i > 0; i-- {
-		paddedIntervals[i-1] = datastore.EventInterval{
-			Data: datastore.EventIntervalData{
-				Interval: 0,
-				Time:     start.Format(format),
-			},
-			Count: 0,
-		}
-		start = start.Add(-duration)
-	}
-
-	paddedIntervals = append(paddedIntervals, intervals...)
-	return paddedIntervals, nil
 }

@@ -91,9 +91,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -121,9 +119,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					Times(1).Return(errors.New("failed"))
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating endpoints",
@@ -162,9 +158,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
 			},
 			wantErr: false,
 		},
@@ -229,9 +223,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -271,9 +263,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -313,9 +303,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -339,9 +327,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(&datastore.Endpoint{UID: "endpoint-mtls-bad"}, nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantErr:    true,
@@ -389,9 +375,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -424,9 +408,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantErr:    true,
@@ -456,9 +438,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(false)
 			},
 			wantErr:    true,
@@ -494,9 +474,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
@@ -548,9 +526,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},

@@ -362,8 +362,13 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 		}
 
 		deliveryStatus := getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.Logger)
+		description := ""
+		if deliveryStatus == datastore.DiscardedEventStatus {
+			description = fmt.Sprintf("endpoint status is %s", s.Endpoint.Status)
+		}
 		if authUnavailable {
 			deliveryStatus = datastore.DiscardedEventStatus
+			description = "endpoint authentication is unavailable"
 		}
 
 		eventDelivery := &datastore.EventDelivery{
@@ -380,6 +385,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			IdempotencyKey: opts.Event.IdempotencyKey,
 			URLQueryParams: opts.Event.URLQueryParams,
 			Status:         deliveryStatus,
+			Description:    description,
 			AcknowledgedAt: null.TimeFrom(time.Now()),
 			DeliveryMode:   s.DeliveryMode,
 		}

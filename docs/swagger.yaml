@@ -1832,6 +1832,16 @@ definitions:
       url_query_params:
         type: string
     type: object
+  models.EventQueuedResponse:
+    properties:
+      event_type:
+        type: string
+      idempotency_key:
+        type: string
+      uid:
+        description: UID is the event id.
+        type: string
+    type: object
   models.EventResponse:
     properties:
       acknowledged_at:
@@ -2788,6 +2798,10 @@ definitions:
       name:
         description: Source name.
         type: string
+      provider:
+        allOf:
+          - $ref: '#/definitions/datastore.SourceProvider'
+        description: Use this to specify one of our predefined source types.
       pub_sub:
         allOf:
           - $ref: '#/definitions/models.PubSubConfig'
@@ -4363,12 +4377,24 @@ paths:
           type: string
         - description: EventType to filter by
           in: query
-          name: event_type
+          name: eventType
           type: string
         - description: IdempotencyKey to filter by
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            Matches deliveries of events ingested with it. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
+        - description: |-
+            Only return deliveries with at least this many attempts; 2 or more means retried.
+            Requires idempotencyValue, eventId, or endpointId.
+          in: query
+          name: minTrials
+          type: integer
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -4384,11 +4410,22 @@ paths:
           in: query
           name: prev_page_cursor
           type: string
+        - description: Matches delivery id, event id, event type prefix, and endpoint name.
+          in: query
+          name: query
+          type: string
         - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
           example: ASC | DESC
           in: query
           name: sort
           type: string
+        - collectionFormat: csv
+          description: Limits idempotencyValue matching to these source IDs.
+          in: query
+          items:
+            type: string
+          name: sourceId
+          type: array
         - description: The start date
           example: 2006-01-02T15:04:05
           in: query
@@ -4544,7 +4581,9 @@ paths:
     get:
       consumes:
         - application/json
-      description: This endpoint fetches an app message's delivery attempts
+      description: |-
+        This endpoint fetches an app message's delivery attempts
+        Default: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.
       operationId: GetDeliveryAttempts
       parameters:
         - description: Project ID
@@ -4556,6 +4595,14 @@ paths:
           in: path
           name: eventDeliveryID
           required: true
+          type: string
+        - description: Return a page of ten attempts and next_cursor
+          in: query
+          name: paginated
+          type: boolean
+        - description: Exclusive attempt cursor from next_cursor; requires paginated=true
+          in: query
+          name: before
           type: string
       produces:
         - application/json
@@ -4787,12 +4834,24 @@ paths:
           type: string
         - description: EventType to filter by
           in: query
-          name: event_type
+          name: eventType
           type: string
         - description: IdempotencyKey to filter by
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            Matches deliveries of events ingested with it. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
+        - description: |-
+            Only return deliveries with at least this many attempts; 2 or more means retried.
+            Requires idempotencyValue, eventId, or endpointId.
+          in: query
+          name: minTrials
+          type: integer
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -4808,11 +4867,22 @@ paths:
           in: query
           name: prev_page_cursor
           type: string
+        - description: Matches delivery id, event id, event type prefix, and endpoint name.
+          in: query
+          name: query
+          type: string
         - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
           example: ASC | DESC
           in: query
           name: sort
           type: string
+        - collectionFormat: csv
+          description: Limits idempotencyValue matching to these source IDs.
+          in: query
+          items:
+            type: string
+          name: sourceId
+          type: array
         - description: The start date
           example: 2006-01-02T15:04:05
           in: query
@@ -4994,6 +5064,12 @@ paths:
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -5014,6 +5090,10 @@ paths:
             A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
+          type: string
+        - description: Set to text to search metadata literally, without interpreting JSON in query.
+          in: query
+          name: queryMode
           type: string
         - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
           example: ASC | DESC
@@ -5114,7 +5194,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint creates an endpoint event
+      description: |-
+        This endpoint creates an endpoint event
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateEndpointEvent
       parameters:
         - description: Project ID
@@ -5138,9 +5220,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    allOf:
-                      - $ref: '#/definitions/handlers.Stub'
-                    x-nullable: true
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
@@ -5357,6 +5437,12 @@ paths:
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -5377,6 +5463,10 @@ paths:
             A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
+          type: string
+        - description: Set to text to search metadata literally, without interpreting JSON in query.
+          in: query
+          name: queryMode
           type: string
         - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
           example: ASC | DESC
@@ -5460,7 +5550,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
+      description: |-
+        This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateBroadcastEvent
       parameters:
         - description: Project ID
@@ -5484,7 +5576,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    $ref: '#/definitions/models.EventResponse'
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
@@ -5567,6 +5659,12 @@ paths:
           in: query
           name: idempotencyKey
           type: string
+        - description: |-
+            Raw value of a source's single idempotency key location, e.g. a provider delivery ID.
+            List only; pass sourceId if several sources qualify. Not combinable with idempotencyKey.
+          in: query
+          name: idempotencyValue
+          type: string
         - description: A pagination cursor to fetch the next page of a list
           example: 01H0JA5MEES38RRK3HTEJC647K
           in: query
@@ -5587,6 +5685,10 @@ paths:
             A JSON object uses payload containment, same as body. Text plus JSON ANDs both.
           in: query
           name: query
+          type: string
+        - description: Set to text to search metadata literally, without interpreting JSON in query.
+          in: query
+          name: queryMode
           type: string
         - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
           example: ASC | DESC
@@ -5659,7 +5761,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+      description: |-
+        This endpoint creates a dynamic event without creating the endpoint and subscription ahead of time.
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateDynamicEvent
       parameters:
         - description: Project ID
@@ -5683,9 +5787,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    allOf:
-                      - $ref: '#/definitions/handlers.Stub'
-                    x-nullable: true
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request
@@ -5729,7 +5831,9 @@ paths:
     post:
       consumes:
         - application/json
-      description: This endpoint uses the owner_id to fan out an event to multiple endpoints.
+      description: |-
+        This endpoint uses the owner_id to fan out an event to multiple endpoints.
+        The 201 body includes uid (the event id). Use GET /events/{eventID} or GET /eventdeliveries?eventId= to follow the send.
       operationId: CreateEndpointFanoutEvent
       parameters:
         - description: Project ID
@@ -5753,9 +5857,7 @@ paths:
               - $ref: '#/definitions/util.ServerResponse'
               - properties:
                   data:
-                    allOf:
-                      - $ref: '#/definitions/handlers.Stub'
-                    x-nullable: true
+                    $ref: '#/definitions/models.EventQueuedResponse'
                 type: object
         "400":
           description: Bad Request

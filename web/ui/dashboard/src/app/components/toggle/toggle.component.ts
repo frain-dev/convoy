@@ -16,6 +16,8 @@ import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveForm
     ]
 })
 export class ToggleComponent implements OnInit, ControlValueAccessor {
+	private static nextId = 0;
+
 	@Input('isChecked') isChecked = false;
 	@Input('label') label!: string;
 	@Input('name') id!: string;
@@ -27,6 +29,10 @@ export class ToggleComponent implements OnInit, ControlValueAccessor {
 	constructor(@Optional() private controlContainer: ControlContainer) {}
 
 	ngOnInit(): void {
+		if (!this.id) {
+			const base = this.formControlName || 'toggle';
+			this.id = `convoy-toggle-${base}-${ToggleComponent.nextId++}`;
+		}
 		if (this.formControlName) {
 			if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
 		}

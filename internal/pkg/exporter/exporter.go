@@ -83,7 +83,7 @@ func NewExporter(
 	// Derive the look back duration from CONVOY_BACKUP_INTERVAL (defaults to 1h)
 	lookBackDur := DefaultBackupInterval
 	if cfg, err := config.Get(); err == nil {
-		lookBackDur = ParseBackupInterval(cfg.RetentionPolicy.BackupInterval)
+		lookBackDur = ParseBackupInterval(cfg.WebhookArchiving.Interval)
 	}
 
 	return &Exporter{
@@ -130,7 +130,7 @@ func NewExporterWithWindow(
 // Export writes gzip-compressed JSONL files to disk. Used by the legacy
 // file-based backup flow and E2E tests.
 func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
-	if !ex.config.RetentionPolicy.IsRetentionPolicyEnabled {
+	if !ex.config.GetWebhookArchivingConfig().Enabled {
 		return nil, nil
 	}
 
@@ -150,7 +150,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 // StreamExport exports all tables and streams gzip-compressed JSONL directly to
 // the given BlobStore via io.Pipe, avoiding any local disk writes.
 func (ex *Exporter) StreamExport(ctx context.Context, store blobstore.BlobStore) (ExportResult, error) {
-	if !ex.config.RetentionPolicy.IsRetentionPolicyEnabled {
+	if !ex.config.GetWebhookArchivingConfig().Enabled {
 		return nil, nil
 	}
 

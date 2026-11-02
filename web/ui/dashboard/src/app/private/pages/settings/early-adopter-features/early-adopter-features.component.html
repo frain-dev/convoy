@@ -11,7 +11,7 @@
   </div>
 }
 
-@if (!isLoadingFeatures && earlyAdopterFeatures.length === 0) {
+@if (featuresKnown && !isLoadingFeatures && earlyAdopterFeatures.length === 0) {
   <div class="p-24px bg-white-100 border border-new.border rounded-12px">
     <p class="font-body font-normal text-[14px] leading-normal text-new.text-secondary">No early adopter features available at this time.</p>
   </div>

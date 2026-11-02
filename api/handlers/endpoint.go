@@ -269,11 +269,8 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Display gate routes through the same resolver semantics as the sampler and
-	// enforcement (env folded into the instance base, per-org override wins), so the
-	// failure_rate column never disagrees with whether rates are actually computed.
 	circuitBreakerEnabled := cbenablement.EnabledForOrg(
-		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, project.OrganisationID)
+		r.Context(), h.A.FFlag, h.A.FeatureFlagFetcher, h.A.AdminManaged, project.OrganisationID)
 	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 && h.A.CircuitBreakerStore != nil {
 		keys := make([]string, len(endpoints))
 		for i := 0; i < len(endpoints); i++ {
@@ -1047,6 +1044,11 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("OAuth2 connection test successful", resp, http.StatusOK))
 }
 
+// newOAuth2TokenTestService builds the one-shot OAuth2 probe used by
+// TestOAuth2Connection. That handler returns token material to the caller, so
+// the client is the notification egress path (unconditional private-network
+// block) rather than the webhook dispatcher, which still allows RFC1918 for
+// self-hosted delivery and real endpoint token exchange.
 func (h *Handler) newOAuth2TokenTestService() (*services.OAuth2TokenService, error) {
 	dispatcher, err := convoynet.NewDispatcher(
 		h.A.Licenser,
@@ -1063,7 +1065,7 @@ func (h *Handler) newOAuth2TokenTestService() (*services.OAuth2TokenService, err
 	return services.NewOAuth2TokenService(
 		h.A.Cache,
 		h.A.Logger,
-		services.WithOAuth2HTTPClient(dispatcher.HTTPClient()),
+		services.WithOAuth2HTTPClient(dispatcher.NotificationHTTPClient()),
 		services.WithOAuth2Context(dispatcher.ContextWithRules),
 	), nil
 }

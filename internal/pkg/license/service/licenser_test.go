@@ -600,3 +600,49 @@ func TestCommunityProjectEnabledRefreshDoesNotClobberConcurrentMutation(t *testi
 	require.True(t, l.ProjectEnabled("b"))
 	require.True(t, l.ProjectEnabled("a"))
 }
+
+func TestRetentionAndArchivingEntitlementsAreIndependent(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		retention bool
+		archiving bool
+	}{
+		{"neither", false, false},
+		{"retention only", true, false},
+		{"archiving only", false, true},
+		{"both", true, true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			l, responder := newLicensedLicenserForTest(t)
+			body, err := json.Marshal(map[string]interface{}{
+				"status": true,
+				"data": map[string]interface{}{
+					"valid": true, "status": "active",
+					"entitlements": []map[string]interface{}{
+						{"key": "retention_policy", "value": tt.retention},
+						{"key": "webhook_archiving", "value": tt.archiving},
+					},
+				},
+			})
+			require.NoError(t, err)
+			responder.set(http.StatusOK, string(body))
+			require.NoError(t, l.validateAndCache(context.Background()))
+			require.Equal(t, tt.retention, l.RetentionPolicy())
+			require.Equal(t, tt.archiving, l.WebhookArchiving())
+
+			l.orgRepo = communityOrgRepo{}
+			l.userRepo = communityUserRepo{}
+			l.projectRepo = communityProjectRepo{}
+			raw, err := l.FeatureListJSON(context.Background())
+			require.NoError(t, err)
+			var features map[string]interface{}
+			require.NoError(t, json.Unmarshal(raw, &features))
+			require.Equal(t, tt.retention, features["RetentionPolicy"])
+
+			responder.set(http.StatusOK, `{"status":true,"data":{"valid":true,"status":"suspended"}}`)
+			require.ErrorIs(t, l.validateAndCache(context.Background()), ErrLicenseSuspended)
+			require.False(t, l.RetentionPolicy())
+			require.False(t, l.WebhookArchiving())
+		})
+	}
+}

@@ -37,6 +37,7 @@ import (
 	"github.com/frain-dev/convoy/internal/subscriptions"
 	"github.com/frain-dev/convoy/internal/users"
 	log "github.com/frain-dev/convoy/pkg/logger"
+	"github.com/frain-dev/convoy/services"
 )
 
 type pagedResponse struct {
@@ -111,20 +112,23 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-disabled.json")
 	require.NoError(u.T(), err)
 
-	// Arrange Request
+	instanceCfg, err := u.ConvoyApp.A.ConfigRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		require.ErrorIs(u.T(), err, datastore.ErrConfigNotFound)
+		instanceCfg, err = testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+		require.NoError(u.T(), err)
+	}
+	instanceCfg.IsSignupEnabled = false
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), instanceCfg))
+
 	url := "/ui/configuration/auth"
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
-
-	// Act
 	u.Router.ServeHTTP(w, req)
 
-	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
-
 	var response map[string]interface{}
 	parseResponse(u.T(), w.Result(), &response)
-
 	require.Equal(u.T(), false, response["is_signup_enabled"])
 }
 
@@ -132,20 +136,23 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	err := config.LoadConfig("./testdata/Auth_Config/jwt-convoy-signup-enabled.json")
 	require.NoError(u.T(), err)
 
-	// Arrange Request
+	instanceCfg, err := u.ConvoyApp.A.ConfigRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		require.ErrorIs(u.T(), err, datastore.ErrConfigNotFound)
+		instanceCfg, err = testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+		require.NoError(u.T(), err)
+	}
+	instanceCfg.IsSignupEnabled = true
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), instanceCfg))
+
 	url := "/ui/configuration/auth"
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
-
-	// Act
 	u.Router.ServeHTTP(w, req)
 
-	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
-
 	var response map[string]interface{}
 	parseResponse(u.T(), w.Result(), &response)
-
 	require.Equal(u.T(), true, response["is_signup_enabled"])
 }
 
@@ -972,6 +979,104 @@ func (s *DashboardIntegrationTestSuite) TestCrossOrgReads_InstanceAdmin_Authoriz
 
 		require.Equalf(s.T(), http.StatusOK, w.Code, "expected 200 for %s, got %d", url, w.Code)
 	}
+}
+
+func (s *DashboardIntegrationTestSuite) Test_CreateEventType_ProjectViewerForbidden() {
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types", s.DefaultOrg.UID, s.DefaultProject.UID)
+	body := serialize(`{"name":"invoice.created","category":"billing","description":"viewer must not create"}`)
+	req := createRequest(http.MethodPost, url, "", body)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *DashboardIntegrationTestSuite) Test_UpdateEventType_ProjectViewerForbidden() {
+	eventTypeID := ulid.Make().String()
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeID, "invoice.created", "desc", "billing")
+	require.NoError(s.T(), err)
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types/%s", s.DefaultOrg.UID, s.DefaultProject.UID, eventTypeID)
+	body := serialize(`{"description":"viewer must not update"}`)
+	req := createRequest(http.MethodPut, url, "", body)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *DashboardIntegrationTestSuite) Test_DeprecateEventType_ProjectViewerForbidden() {
+	eventTypeID := ulid.Make().String()
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeID, "invoice.created", "desc", "billing")
+	require.NoError(s.T(), err)
+
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types/%s/deprecate", s.DefaultOrg.UID, s.DefaultProject.UID, eventTypeID)
+	req := createRequest(http.MethodPost, url, "", nil)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
+func (s *DashboardIntegrationTestSuite) Test_GetEventTypes_ProjectViewerAllowed() {
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/event-types", s.DefaultOrg.UID, s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, "", nil)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusOK, w.Code, w.Body.String())
 }
 
 func TestDashboardIntegrationTestSuiteTest(t *testing.T) {
@@ -2047,6 +2152,72 @@ func (s *EventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	}
 }
 
+func (s *EventIntegrationTestSuite) Test_EventDeliveryFilterEventTypes_ObservedFromEventMetadata() {
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+		EventTypes: []string{"*"},
+		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
+	})
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "bench.event", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	delivery, err := testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event, endpoint, s.DefaultProject.UID, ulid.Make().String(), datastore.ScheduledEventStatus, subscription)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), datastore.EventType("bench.event"), delivery.EventType)
+
+	start := time.Now().UTC().Add(-time.Hour).Format("2006-01-02T15:04:05")
+	end := time.Now().UTC().Add(time.Hour).Format("2006-01-02T15:04:05")
+	base := fmt.Sprintf("/ui/organisations/%s/projects/%s/eventdeliveries", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+
+	listReq := createRequest(http.MethodGet, fmt.Sprintf("%s?startDate=%s&endDate=%s", base, start, end), "", nil)
+	require.NoError(s.T(), s.AuthenticatorFn(listReq, s.Router))
+	listW := httptest.NewRecorder()
+	s.Router.ServeHTTP(listW, listReq)
+	require.Equal(s.T(), http.StatusOK, listW.Code)
+
+	var listed []datastore.EventDelivery
+	parseResponse(s.T(), listW.Result(), &pagedResponse{Content: &listed})
+	require.Len(s.T(), listed, 1)
+	require.Equal(s.T(), delivery.UID, listed[0].UID)
+	require.NotNil(s.T(), listed[0].Event)
+	require.Equal(s.T(), datastore.EventType("bench.event"), listed[0].Event.EventType)
+
+	typesURL := fmt.Sprintf("%s/eventtypes?startDate=%s&endDate=%s", base, start, end)
+	getTypes := func() models.DeliveryFilterEventTypesResponse {
+		req := createRequest(http.MethodGet, typesURL, "", nil)
+		require.NoError(s.T(), s.AuthenticatorFn(req, s.Router))
+		w := httptest.NewRecorder()
+		s.Router.ServeHTTP(w, req)
+		require.Equal(s.T(), http.StatusOK, w.Code)
+		var types models.DeliveryFilterEventTypesResponse
+		parseResponse(s.T(), w.Result(), &types)
+		return types
+	}
+
+	first := getTypes()
+	require.Contains(s.T(), first.Observed, "bench.event")
+	require.NotContains(s.T(), first.Catalog, "bench.event")
+
+	second := getTypes()
+	require.Equal(s.T(), first.Observed, second.Observed)
+	require.Equal(s.T(), first.Catalog, second.Catalog)
+
+	filterReq := createRequest(http.MethodGet, fmt.Sprintf("%s?startDate=%s&endDate=%s&eventType=%s", base, start, end, "bench.event"), "", nil)
+	require.NoError(s.T(), s.AuthenticatorFn(filterReq, s.Router))
+	filterW := httptest.NewRecorder()
+	s.Router.ServeHTTP(filterW, filterReq)
+	require.Equal(s.T(), http.StatusOK, filterW.Code)
+
+	var filtered []datastore.EventDelivery
+	parseResponse(s.T(), filterW.Result(), &pagedResponse{Content: &filtered})
+	require.Len(s.T(), filtered, 1)
+	require.Equal(s.T(), delivery.UID, filtered[0].UID)
+}
+
 func TestEventIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(EventIntegrationTestSuite))
 }
@@ -2599,9 +2770,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser() {
-	expectedStatusCode := http.StatusOK
-
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
@@ -2611,18 +2780,46 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
-	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
 	req := createRequest(http.MethodPost, url, "", nil)
-	req.Header.Set("Authorization", "")
+	err = authenticateRequest(&models.LoginUser{
+		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})(req, s.Router)
+	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
-
-	// Act.
 	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusOK, w.Code)
+}
 
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
+func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_AcceptForExistingUser_RequiresInviteeSession() {
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
+	require.NoError(s.T(), err)
+
+	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
+		Type:     auth.RoleProjectAdmin,
+		Project:  s.DefaultProject.UID,
+		Endpoint: "",
+	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/ui/organisations/process_invite?token=%s&accepted=true", iv.Token)
+
+	anon := createRequest(http.MethodPost, url, "", nil)
+	anon.Header.Set("Authorization", "")
+	anonW := httptest.NewRecorder()
+	s.Router.ServeHTTP(anonW, anon)
+	require.Equal(s.T(), http.StatusUnauthorized, anonW.Code)
+	require.Contains(s.T(), anonW.Body.String(), services.ErrInviteeLoginRequired.Error())
+
+	inviter := createRequest(http.MethodPost, url, "", nil)
+	err = s.AuthenticatorFn(inviter, s.Router)
+	require.NoError(s.T(), err)
+	inviterW := httptest.NewRecorder()
+	s.Router.ServeHTTP(inviterW, inviter)
+	require.Equal(s.T(), http.StatusUnauthorized, inviterW.Code)
+	require.Contains(s.T(), inviterW.Body.String(), services.ErrInviteeLoginRequired.Error())
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberInvite_InviteExpired() {
@@ -3654,7 +3851,8 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 	    "name": "project_1",
 	"type": "outgoing",
 	    "config": {
-	        "retention_policy":{"policy":"1h"},
+	        "retention_policy":{"period":"1h"},
+	        "webhook_archiving":{"enabled":true},
 	        "strategy": {
 	            "type": "exponential",
 	            "duration": 10,
@@ -4606,9 +4804,18 @@ func (u *UserIntegrationTestSuite) TearDownTest() {
 	metrics.Reset()
 }
 
-func (u *UserIntegrationTestSuite) Test_RegisterUser() {
-	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
+func (u *UserIntegrationTestSuite) ensureSignupEnabled() {
+	instanceCfg, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
 	require.NoError(u.T(), err)
+	if instanceCfg.IsSignupEnabled {
+		return
+	}
+	instanceCfg.IsSignupEnabled = true
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), instanceCfg))
+}
+
+func (u *UserIntegrationTestSuite) Test_RegisterUser() {
+	u.ensureSignupEnabled()
 
 	r := &models.RegisterUser{
 		FirstName:        "test",
@@ -4657,10 +4864,8 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 	configuration, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
 	require.NoError(u.T(), err)
 
-	// disable registration
 	configuration.IsSignupEnabled = false
-	configRepo := u.ConvoyApp.A.ConfigRepo
-	require.NoError(u.T(), configRepo.UpdateConfiguration(context.Background(), configuration))
+	require.NoError(u.T(), u.ConvoyApp.A.ConfigRepo.UpdateConfiguration(context.Background(), configuration))
 
 	r := &models.RegisterUser{
 		FirstName:        "test",
@@ -4688,8 +4893,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
-	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
-	require.NoError(u.T(), err)
+	u.ensureSignupEnabled()
 
 	r := &models.RegisterUser{
 		LastName:         "test",
@@ -4715,8 +4919,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
-	_, err := testdb.SeedConfiguration(u.ConvoyApp.A.DB)
-	require.NoError(u.T(), err)
+	u.ensureSignupEnabled()
 
 	r := &models.RegisterUser{
 		FirstName:        "test",

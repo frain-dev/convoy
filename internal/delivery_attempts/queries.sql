@@ -35,7 +35,7 @@ FROM convoy.delivery_attempts
 WHERE id = @id AND event_delivery_id = @event_delivery_id AND deleted_at IS NULL;
 
 -- name: FindDeliveryAttempts :many
--- Fetch last 10 delivery attempts for an event delivery, ordered by created_at
+-- Fetch a bounded page, with a stable tie-breaker for simultaneous attempts.
 WITH att AS (
     SELECT
         id,
@@ -57,16 +57,17 @@ WITH att AS (
         created_at,
         updated_at,
         deleted_at
-    FROM convoy.delivery_attempts
-    WHERE event_delivery_id = @event_delivery_id AND deleted_at IS NULL
-    ORDER BY created_at DESC
-    LIMIT 10
+    FROM convoy.delivery_attempts a
+    WHERE a.event_delivery_id = @event_delivery_id AND a.deleted_at IS NULL
+      AND (@before_id::text = '' OR (a.created_at, a.id) < (@before_time::timestamptz, @before_id))
+    ORDER BY created_at DESC, id DESC
+    LIMIT @page_limit
 )
 SELECT
     id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
     ip_address, request_http_header, response_http_header, http_status,
     response_data, error, status, requested_at, responded_at, created_at, updated_at, deleted_at
-FROM att ORDER BY created_at ASC;
+FROM att ORDER BY created_at ASC, id ASC;
 
 -- name: GetFailureAndSuccessCounts :many
 -- Get failure and success counts for endpoints within the lookback duration

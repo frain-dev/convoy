@@ -1,0 +1,79 @@
+name: Publish Homebrew formula
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/publish-homebrew.yml
+      - .github/workflows/release.yml
+      - scripts/ci/publish-homebrew.py
+      - scripts/ci/test_publish_homebrew.py
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published stable release tag
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    secrets:
+      HOMEBREW_BOT_APP_ID:
+        required: true
+      HOMEBREW_BOT_APP_KEY:
+        required: true
+      HOMEBREW_REVIEWER_APP_ID:
+        required: true
+      HOMEBREW_REVIEWER_APP_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homebrew-formula-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'publish' }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
+      - name: Test formula and approval boundaries
+        run: python3 -m unittest discover -s scripts/ci -p test_publish_homebrew.py -v
+  publish:
+    needs: validate
+    if: github.repository == 'frain-dev/convoy' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          persist-credentials: false
+      - name: Mint publisher token
+        id: publisher
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ secrets.HOMEBREW_BOT_APP_ID }}
+          private-key: ${{ secrets.HOMEBREW_BOT_APP_KEY }}
+          owner: frain-dev
+          repositories: homebrew-tools
+      - name: Mint reviewer token
+        id: reviewer
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ secrets.HOMEBREW_REVIEWER_APP_ID }}
+          private-key: ${{ secrets.HOMEBREW_REVIEWER_APP_KEY }}
+          owner: frain-dev
+          repositories: homebrew-tools
+      - name: Publish, validate, approve and merge formula
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          HOMEBREW_PUBLISHER_TOKEN: ${{ steps.publisher.outputs.token }}
+          HOMEBREW_REVIEWER_TOKEN: ${{ steps.reviewer.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ci/publish-homebrew.py

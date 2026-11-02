@@ -8,6 +8,7 @@ export interface PROJECT {
 			duration: string;
 		};
 		disable_endpoint: boolean;
+		add_event_id_trace_headers?: boolean;
 		verify_dynamic_events?: boolean;
 		allow_unmatched_dynamic_urls?: boolean;
 		strategy: {
