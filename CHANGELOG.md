@@ -1,5 +1,13 @@
 # Convoy Changes
 
+## 26.9.3
+
+
+
+### Bug Fixes
+
+- fix(dataplane): correct missing-field and invalid-operand filtering (#2875)
+
 ## 26.7.3
 
 ### Breaking Changes
