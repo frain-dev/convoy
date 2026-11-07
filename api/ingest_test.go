@@ -79,6 +79,33 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 	})
 }
 
+func Test_isJSONContentType(t *testing.T) {
+	tests := []struct {
+		name        string
+		contentType string
+		want        bool
+	}{
+		{name: "application/json", contentType: "application/json", want: true},
+		{name: "application/json with charset", contentType: "application/json; charset=utf-8", want: true},
+		{name: "vendor json suffix", contentType: "application/vnd.api+json", want: true},
+		{name: "multipart form", contentType: "multipart/form-data; boundary=abc", want: false},
+		{name: "urlencoded form", contentType: "application/x-www-form-urlencoded", want: false},
+		{name: "plain text", contentType: "text/plain", want: false},
+		{name: "missing", contentType: "", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/", nil)
+			if tt.contentType != "" {
+				req.Header.Set("Content-Type", tt.contentType)
+			}
+
+			require.Equal(t, tt.want, isJSONContentType(req))
+		})
+	}
+}
+
 func Test_extractEventTypeFromLocation(t *testing.T) {
 	payload := []byte(`{
 		"object_kind": "push",

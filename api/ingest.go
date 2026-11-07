@@ -183,6 +183,12 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		payload = []byte("{}")
 	}
 
+	if isJSONContentType(r) && !json.Valid(payload) {
+		a.A.Logger.Error("Request payload is not valid JSON", "source_id", source.UID, "mask_id", maskID)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid JSON payload", http.StatusBadRequest))
+		return
+	}
+
 	eventType := maskID
 	if !util.IsStringEmpty(source.EventTypeLocation) {
 		if sourceUsesPayloadSignature(source) && eventTypeLocationUsesRequestMetadata(source.EventTypeLocation) {
@@ -281,6 +287,19 @@ const (
 	multipartFormDataContentType = "multipart/form-data"
 	urlEncodedContentType        = "application/x-www-form-urlencoded"
 )
+
+func isJSONContentType(r *http.Request) bool {
+	contentType := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+	if contentType == "" {
+		return false
+	}
+
+	if idx := strings.IndexByte(contentType, ';'); idx >= 0 {
+		contentType = strings.TrimSpace(contentType[:idx])
+	}
+
+	return contentType == applicationJsonContentType || strings.HasSuffix(contentType, "+json")
+}
 
 func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]byte, error) {
 	var contentType string
