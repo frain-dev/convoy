@@ -66,21 +66,22 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 
 // GetDeliveryAttempts
 //
-//	@Summary		List delivery attempts
-//	@Description	This endpoint fetches an app message's delivery attempts
-//	@Description	Default: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.
-//	@Tags			Delivery Attempts
-//	@Id				GetDeliveryAttempts
-//	@Accept			json
-//	@Produce		json
-//	@Param			projectID		path		string	true	"Project ID"
-//	@Param			eventDeliveryID	path		string	true	"event delivery id"
-//	@Param			paginated		query		bool	false	"Return a page of ten attempts and next_cursor"
-//	@Param			before			query		string	false	"Exclusive attempt cursor from next_cursor; requires paginated=true"
-//	@Success		200				{object}	util.ServerResponse{data=[]datastore.DeliveryAttempt}
-//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
-//	@Security		ApiKeyAuth
-//	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
+//	@Summary						List delivery attempts
+//	@Description					This endpoint fetches an app message's delivery attempts
+//	@Description					Default: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.
+//	@Tags							Delivery Attempts
+//	@Id								GetDeliveryAttempts
+//	@Accept							json
+//	@Produce						json
+//	@Param							projectID		path	string	true	"Project ID"
+//	@Param							eventDeliveryID	path	string	true	"event delivery id"
+//	@Param							paginated		query	bool	false	"Return a page of ten attempts and next_cursor"
+//	@Param							before			query	string	false	"Exclusive attempt cursor from next_cursor; requires paginated=true"
+//	@x-convoy-paginated-response	true
+//	@Success						200			{object}	util.ServerResponse{data=[]datastore.DeliveryAttempt}
+//	@Failure						400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security						ApiKeyAuth
+//	@Router							/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts [get]
 func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {

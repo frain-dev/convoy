@@ -3662,7 +3662,8 @@
               ]
             }
           }
-        }
+        },
+        "x-convoy-paginated-response": true
       }
     },
     "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
