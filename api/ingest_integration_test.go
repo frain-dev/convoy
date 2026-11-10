@@ -519,6 +519,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_MalformedJSONPayload() {
 	i.Router.ServeHTTP(w, req)
 
 	require.Equal(i.T(), http.StatusBadRequest, w.Code)
+	require.Contains(i.T(), w.Body.String(), "Invalid JSON payload")
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_NonJSONPayloadStillAccepted() {
