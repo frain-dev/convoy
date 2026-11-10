@@ -500,6 +500,50 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPa
 	require.Equal(i.T(), http.StatusRequestEntityTooLarge, w.Code)
 }
 
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_MalformedJSONPayload() {
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
+
+	v := &datastore.VerifierConfig{
+		Type: datastore.NoopVerifier,
+	}
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
+
+	body := serialize(`{ "name": "convoy"`)
+
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	w := httptest.NewRecorder()
+
+	i.Router.ServeHTTP(w, req)
+
+	require.Equal(i.T(), http.StatusBadRequest, w.Code)
+	require.Contains(i.T(), w.Body.String(), "Invalid JSON payload")
+}
+
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_NonJSONPayloadStillAccepted() {
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
+
+	v := &datastore.VerifierConfig{
+		Type: datastore.NoopVerifier,
+	}
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
+
+	body := serialize(`not-json`)
+
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	req := createRequest(http.MethodPost, url, "", body)
+	req.Header.Set("Content-Type", "text/plain")
+
+	w := httptest.NewRecorder()
+
+	i.Router.ServeHTTP(w, req)
+
+	require.Equal(i.T(), http.StatusOK, w.Code)
+}
+
 func TestIngestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IngestIntegrationTestSuite))
 }
