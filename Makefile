@@ -156,6 +156,8 @@ generate_docs:
 	# generated SDK clients add the "Bearer " prefix instead of every caller.
 	yq -i '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.yaml
 	jq '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
+	bash docs/fix_openapi3_spec.sh
+	bash docs/test_openapi3_spec.sh
 	@echo "Validating specs..."
 	openapi swagger validate ./docs/swagger.json
 	openapi swagger validate ./docs/swagger.yaml

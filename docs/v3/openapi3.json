@@ -4013,10 +4013,33 @@
                     {
                       "properties": {
                         "data": {
-                          "items": {
-                            "$ref": "#/components/schemas/datastore.DeliveryAttempt"
-                          },
-                          "type": "array"
+                          "oneOf": [
+                            {
+                              "items": {
+                                "$ref": "#/components/schemas/datastore.DeliveryAttempt"
+                              },
+                              "type": "array"
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "content",
+                                "next_cursor"
+                              ],
+                              "properties": {
+                                "content": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/datastore.DeliveryAttempt"
+                                  },
+                                  "type": "array"
+                                },
+                                "next_cursor": {
+                                  "type": "string",
+                                  "description": "Pass as before to fetch older attempts. Empty on the last page."
+                                }
+                              }
+                            }
+                          ]
                         }
                       },
                       "type": "object"
@@ -4119,7 +4142,8 @@
         ],
         "description": "This endpoint fetches an app message's delivery attempts\nDefault: latest ten attempts as an array. With paginated=true: content and next_cursor. Pass next_cursor as before for older history; empty means last page. Pages are oldest first.",
         "operationId": "GetDeliveryAttempts",
-        "summary": "List delivery attempts"
+        "summary": "List delivery attempts",
+        "x-convoy-paginated-response": true
       }
     },
     "/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {

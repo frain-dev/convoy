@@ -36,6 +36,10 @@ jq '.servers[0].description = "US Region" | .servers += [{"url": "https://eu.get
 yq -i '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.yaml
 jq '.components.securitySchemes.ApiKeyAuth = {"type": "http", "scheme": "bearer"}' ./docs/v3/openapi3.json > ./docs/v3/openapi3.json.tmp && mv ./docs/v3/openapi3.json.tmp ./docs/v3/openapi3.json
 
+# Restore response unions that Swagger 2.0 cannot express.
+bash docs/fix_openapi3_spec.sh
+bash docs/test_openapi3_spec.sh
+
 # validate specs
 echo "Validating specs..."
 openapi swagger validate ./docs/swagger.json
