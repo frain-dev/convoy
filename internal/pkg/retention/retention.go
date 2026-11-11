@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -237,12 +239,17 @@ func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period
 	// Nil hook == HookDrop (JIT archiving makes archive-at-drop unnecessary).
 	// Logger omitted: gopartman defaults to slog.Default(); importing log/slog
 	// here is blocked by depguard (use pkg/logger for Convoy-owned logs).
-	pm, err := partman.New(
+	opts := []partman.Option{
 		partman.WithDB(db.GetConn()),
 		partman.WithClock(partman.NewRealClock()),
 		// Asynq drives Maintain; do not also run the library ticker.
-		partman.WithScheduleInterval(24*time.Hour),
-	)
+		partman.WithScheduleInterval(24 * time.Hour),
+	}
+	if partitionDDLModeOnline() {
+		opts = append(opts, partman.WithPartitionDDLMode(partman.PartitionDDLModeOnline))
+		logger.Info("partition DDL mode=online (CONVOY_PARTITION_DDL_MODE)")
+	}
+	pm, err := partman.New(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -267,6 +274,13 @@ func applyPartmanMigrations(ctx context.Context, db database.Database) error {
 		}
 	}
 	return nil
+}
+
+// partitionDDLModeOnline enables gopartman online DDL (prepare+ATTACH,
+// DETACH CONCURRENTLY then DROP). Default is classic. Set
+// CONVOY_PARTITION_DDL_MODE=online on server and agent.
+func partitionDDLModeOnline() bool {
+	return strings.EqualFold(strings.TrimSpace(os.Getenv("CONVOY_PARTITION_DDL_MODE")), "online")
 }
 
 func (r *PartitionRetentionPolicy) parentConfig(table string) partman.ParentConfig {
