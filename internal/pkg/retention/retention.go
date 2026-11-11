@@ -237,11 +237,14 @@ func NewPartitionRetentionPolicy(db database.Database, logger log.Logger, period
 	// Nil hook == HookDrop (JIT archiving makes archive-at-drop unnecessary).
 	// Logger omitted: gopartman defaults to slog.Default(); importing log/slog
 	// here is blocked by depguard (use pkg/logger for Convoy-owned logs).
+	// Online DDL is always on here; classic remains gopartman's library default
+	// for other consumers that do not pass WithPartitionDDLMode.
 	pm, err := partman.New(
 		partman.WithDB(db.GetConn()),
 		partman.WithClock(partman.NewRealClock()),
 		// Asynq drives Maintain; do not also run the library ticker.
 		partman.WithScheduleInterval(24*time.Hour),
+		partman.WithPartitionDDLMode(partman.PartitionDDLModeOnline),
 	)
 	if err != nil {
 		return nil, err
