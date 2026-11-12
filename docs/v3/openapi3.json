@@ -4013,10 +4013,33 @@
                     {
                       "properties": {
                         "data": {
-                          "items": {
-                            "$ref": "#/components/schemas/datastore.DeliveryAttempt"
-                          },
-                          "type": "array"
+                          "oneOf": [
+                            {
+                              "items": {
+                                "$ref": "#/components/schemas/datastore.DeliveryAttempt"
+                              },
+                              "type": "array"
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "content",
+                                "next_cursor"
+                              ],
+                              "properties": {
+                                "content": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/datastore.DeliveryAttempt"
+                                  },
+                                  "type": "array"
+                                },
+                                "next_cursor": {
+                                  "type": "string",
+                                  "description": "Pass as before to fetch older attempts. Empty on the last page."
+                                }
+                              }
+                            }
+                          ]
                         }
                       },
                       "type": "object"
