@@ -1382,8 +1382,8 @@ github.com/maxatome/go-testdeep v1.14.0/go.mod h1:lPZc/HAcJMP92l7yI6TRz1aZN5URwU
 github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2/go.mod h1:eD9eIE7cdwcMi9rYluz88Jz2VyhSmden33/aXg4oVIY=
 github.com/mdelapenya/tlscert v0.2.0 h1:7H81W6Z/4weDvZBNOfQte5GpIMo0lGYEeWbkGp5LJHI=
 github.com/mdelapenya/tlscert v0.2.0/go.mod h1:O4njj3ELLnJjGdkN7M/vIVCpZ+Cf0L6muqOG4tLSl8o=
-github.com/mekilis/gopartman v0.0.0-20261111161957-f4fc03580b71 h1:EUL/vl18965TiTn11aoBfYHX3tnXNyJ7dR/txQ1LLlw=
-github.com/mekilis/gopartman v0.0.0-20261111161957-f4fc03580b71/go.mod h1:kJ2hJ3JJ1DVg1u9AVVbI3kn//cnzXfRU8QvlCoyusps=
+github.com/mekilis/gopartman v0.0.0-20261112012817-10608b3b286c h1:+458RmRukejhV+RUQdFgOCvYpteBV5XgFNTjAQ+ZM8U=
+github.com/mekilis/gopartman v0.0.0-20261112012817-10608b3b286c/go.mod h1:kJ2hJ3JJ1DVg1u9AVVbI3kn//cnzXfRU8QvlCoyusps=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/miekg/pkcs11 v1.0.3/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
 github.com/minio/crc64nvme v1.1.0 h1:e/tAguZ+4cw32D+IO/8GSf5UVr9y+3eJcxZI2WOO/7Q=
