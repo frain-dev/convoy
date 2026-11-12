@@ -36,6 +36,11 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources [post]
 func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not create project-wide sources. Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -100,6 +105,11 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [get]
 func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not read source verifier secrets. Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -152,6 +162,11 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [put]
 func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not update project-wide sources. Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -229,6 +244,11 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [delete]
 func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not delete project-wide sources. Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -278,6 +298,11 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources [get]
 func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not list sources (verifier secrets). Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

@@ -34,6 +34,12 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens are scoped to one customer's endpoints; they must not mint
+	// project-wide portal links. Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
 		h.A.Logger.Errorf("Failed to create migrator: %v", err)
@@ -111,6 +117,12 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [get]
 func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not fetch arbitrary portal links (or their tokens) by
+	// id. Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -159,6 +171,12 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not retarget or rename other customers' portal links.
+	// Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	migrator, err := h.Versioning.For(r)
 	if err != nil {
 		h.A.Logger.Errorf("Failed to create migrator: %v", err)
@@ -293,6 +311,12 @@ func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Requ
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke [put]
 func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not revoke other customers' portal links.
+	// Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -347,6 +371,12 @@ func (h *Handler) portalLinkRepo() datastore.PortalLinkRepository {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [get]
 func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
+	// Portal tokens must not list every portal link (and token) in the project.
+	// Failure policy: fail closed 401.
+	if h.rejectPortalLinkToken(w, r) {
+		return
+	}
+
 	pageable := middleware.GetPageableFromContext(r.Context())
 	project, err := h.retrieveProject(r)
 	if err != nil {

@@ -196,10 +196,11 @@ func (h *Handler) IsReqWithPortalLinkToken(authUser *auth.AuthenticatedUser) boo
 	return authUser.Credential.Type == auth.CredentialTypeToken
 }
 
-// rejectPortalLinkToken blocks project-wide mutations that must not accept
-// portal credentials (broadcast/fanout/dynamic, refresh_token, bulk onboard,
-// OpenAPI import). Portal tokens stay on CreateEndpoint / CreateEndpointEvent
-// with ownership checks. Failure policy: fail closed 401.
+// rejectPortalLinkToken blocks project-wide reads and mutations that must not
+// accept portal credentials (sources CRUD/list, portal-links CRUD/list/refresh,
+// broadcast/fanout/dynamic, bulk onboard, OpenAPI import, event types). Portal
+// tokens stay on CreateEndpoint / CreateEndpointEvent with ownership checks.
+// Failure policy: fail closed 401.
 func (h *Handler) rejectPortalLinkToken(w http.ResponseWriter, r *http.Request) bool {
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if authUser == nil || !h.IsReqWithPortalLinkToken(authUser) {
