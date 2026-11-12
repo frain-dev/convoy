@@ -1238,8 +1238,8 @@ github.com/jcmturner/rpc/v2 v2.0.3/go.mod h1:VUJYCIDm3PVOEHw8sgt091/20OJjskO/YJk
 github.com/jinzhu/copier v0.3.4/go.mod h1:DfbEm0FYsaqBcKcFuvmOZb218JkPGtvSHsKg8S8hyyg=
 github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1 h1:SpbhN3p8Sh8R5a+OFA9iUKc368c81g5Rx/yTwg1tzfE=
 github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1/go.mod h1:bhGPmCgCCTSRfiMYWjpS46IDo9EUZXlsuUaPXSWGbv0=
-github.com/jirevwe/gopartman v0.2.1-0.20261112090804-a958188a6bc6 h1:RdvhMA+qkznE7nVO6WCMSH8DoYPxSPH4aXOcwf2cOMU=
-github.com/jirevwe/gopartman v0.2.1-0.20261112090804-a958188a6bc6/go.mod h1:kJ2hJ3JJ1DVg1u9AVVbI3kn//cnzXfRU8QvlCoyusps=
+github.com/jirevwe/gopartman v0.3.0 h1:5bs8ivTLw9AdIREzKCweFb2N5thIzDiMPSdERSg12JE=
+github.com/jirevwe/gopartman v0.3.0/go.mod h1:kJ2hJ3JJ1DVg1u9AVVbI3kn//cnzXfRU8QvlCoyusps=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20160803190731-bd40a432e4c7/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
