@@ -35,7 +35,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jarcoal/httpmock v1.4.0
 	github.com/jaswdr/faker v1.19.1
-	github.com/jirevwe/gopartman v0.0.0-20261112012817-10608b3b286c
+	github.com/jirevwe/gopartman v0.2.1-0.20261112090804-a958188a6bc6
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9
@@ -254,6 +254,3 @@ require (
 )
 
 replace github.com/dop251/goja_nodejs v0.0.0-20250409162600-f7acab6894b0 => github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1
-
-// Hotfix online partition DDL (ADR-0013) until published on the upstream module.
-replace github.com/jirevwe/gopartman => github.com/mekilis/gopartman v0.0.0-20261112012817-10608b3b286c

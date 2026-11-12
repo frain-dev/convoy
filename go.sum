@@ -1238,6 +1238,8 @@ github.com/jcmturner/rpc/v2 v2.0.3/go.mod h1:VUJYCIDm3PVOEHw8sgt091/20OJjskO/YJk
 github.com/jinzhu/copier v0.3.4/go.mod h1:DfbEm0FYsaqBcKcFuvmOZb218JkPGtvSHsKg8S8hyyg=
 github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1 h1:SpbhN3p8Sh8R5a+OFA9iUKc368c81g5Rx/yTwg1tzfE=
 github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1/go.mod h1:bhGPmCgCCTSRfiMYWjpS46IDo9EUZXlsuUaPXSWGbv0=
+github.com/jirevwe/gopartman v0.2.1-0.20261112090804-a958188a6bc6 h1:RdvhMA+qkznE7nVO6WCMSH8DoYPxSPH4aXOcwf2cOMU=
+github.com/jirevwe/gopartman v0.2.1-0.20261112090804-a958188a6bc6/go.mod h1:kJ2hJ3JJ1DVg1u9AVVbI3kn//cnzXfRU8QvlCoyusps=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20160803190731-bd40a432e4c7/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
@@ -1382,8 +1384,6 @@ github.com/maxatome/go-testdeep v1.14.0/go.mod h1:lPZc/HAcJMP92l7yI6TRz1aZN5URwU
 github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2/go.mod h1:eD9eIE7cdwcMi9rYluz88Jz2VyhSmden33/aXg4oVIY=
 github.com/mdelapenya/tlscert v0.2.0 h1:7H81W6Z/4weDvZBNOfQte5GpIMo0lGYEeWbkGp5LJHI=
 github.com/mdelapenya/tlscert v0.2.0/go.mod h1:O4njj3ELLnJjGdkN7M/vIVCpZ+Cf0L6muqOG4tLSl8o=
-github.com/mekilis/gopartman v0.0.0-20261112012817-10608b3b286c h1:+458RmRukejhV+RUQdFgOCvYpteBV5XgFNTjAQ+ZM8U=
-github.com/mekilis/gopartman v0.0.0-20261112012817-10608b3b286c/go.mod h1:kJ2hJ3JJ1DVg1u9AVVbI3kn//cnzXfRU8QvlCoyusps=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/miekg/pkcs11 v1.0.3/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
 github.com/minio/crc64nvme v1.1.0 h1:e/tAguZ+4cw32D+IO/8GSf5UVr9y+3eJcxZI2WOO/7Q=
