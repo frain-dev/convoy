@@ -35,7 +35,7 @@ require (
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/jarcoal/httpmock v1.4.0
 	github.com/jaswdr/faker v1.19.1
-	github.com/jirevwe/gopartman v0.2.1-0.20261112090804-a958188a6bc6
+	github.com/jirevwe/gopartman v0.3.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9
