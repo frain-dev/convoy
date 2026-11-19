@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
@@ -33,6 +34,20 @@ import (
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
+	requestID := middleware.GetReqID(r.Context())
+	var checksum string
+	fail := func(response util.ServerResponse, cause error) {
+		attrs := []any{"webhook ingestion rejected", "request_id", requestID, "http_status", response.StatusCode, "reason", response.Message}
+		if checksum != "" {
+			attrs = append(attrs, "idempotency_key_hash", checksum)
+		}
+		if cause != nil {
+			a.A.Logger.Error(append(attrs, "error", cause)...)
+		} else {
+			a.A.Logger.Info(attrs...)
+		}
+		_ = render.Render(w, r, ingestErrorResponse(response, requestID, checksum))
+	}
 	// s.AppService.CountProjectApplications()
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")
@@ -42,10 +57,10 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			a.A.Logger.Errorf("Source not found for mask ID %s: %v", maskID, err)
-			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
+			fail(util.NewErrorResponse("Resource not found", http.StatusNotFound), err)
 			return
 		}
-		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
+		fail(util.NewErrorResponse("error retrieving source", http.StatusBadRequest), err)
 		return
 	}
 
@@ -53,19 +68,18 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// ProjectRepo is the cached repository wired by ensureAPIRepositories.
 	project, err := a.A.ProjectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		fail(util.NewServiceErrResponse(err), err)
 		return
 	}
 
 	if err = license.EnsureProjectEnabled(a.A.Licenser, project.UID); err != nil {
 		a.A.Logger.Errorf("Project disabled for project ID %s", project.UID)
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		fail(util.NewErrorResponse(err.Error(), http.StatusBadRequest), err)
 		return
 	}
 
 	if source.Type != datastore.HTTPSource {
-		_ = render.Render(w, r, util.NewErrorResponse("Source type needs to be HTTP",
-			http.StatusBadRequest))
+		fail(util.NewErrorResponse("Source type needs to be HTTP", http.StatusBadRequest), nil)
 		return
 	}
 
@@ -74,18 +88,17 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		if errors.Is(err, errIngestVerifierInit) {
 			a.A.Logger.Error("failed to initialize HMAC verifier", "error", err, "source_id", source.UID, "mask_id", maskID)
-			_ = render.Render(w, r, util.NewErrorResponse("failed to initialize HMAC verifier", http.StatusInternalServerError))
+			fail(util.NewErrorResponse("failed to initialize HMAC verifier", http.StatusInternalServerError), err)
 			return
 		}
 		if errors.Is(err, errIngestProviderUndefined) {
-			_ = render.Render(w, r, util.NewErrorResponse("Provider type undefined", http.StatusBadRequest))
+			fail(util.NewErrorResponse("Provider type undefined", http.StatusBadRequest), err)
 			return
 		}
 		a.A.Logger.Error("no valid verifier configured for source",
 			"error", err, "source_id", source.UID, "mask_id", maskID,
 			"provider", source.Provider, "verifier_type", verifierTypeOrEmpty(source.Verifier))
-		_ = render.Render(w, r, util.NewErrorResponse(
-			"source has no valid verifier configured", http.StatusBadRequest))
+		fail(util.NewErrorResponse("source has no valid verifier configured", http.StatusBadRequest), err)
 		return
 	}
 
@@ -98,7 +111,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		cfg, err := config.Get()
 		if err != nil {
 			a.A.Logger.Error("failed to load config", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
+			fail(util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError), err)
 			return
 		}
 
@@ -110,27 +123,23 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// We use this to check the size of the request content, this is to ensure that we return the appropriate
 	// status code when the size of a request payload exceeds the configured MaxResponseSize.
 	if r.ContentLength > int64(maxIngestSize) {
-		_ = render.Render(w, r, util.NewErrorResponse("request body too large", http.StatusRequestEntityTooLarge))
+		fail(util.NewErrorResponse("request body too large", http.StatusRequestEntityTooLarge), nil)
 		return
 	}
 
-	var checksum string
 	var isDuplicate bool
 	if len(source.IdempotencyKeys) > 0 {
-		duper := dedup.NewDeDuper(r.Context(), r, events.New(a.A.Logger, a.A.DB))
-		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
+		eventRepo := events.New(a.A.Logger, a.A.DB)
+		duper := dedup.NewDeDuper(r.Context(), r, eventRepo)
+		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
 		if err != nil {
-			a.A.Logger.Error("Duplicate check failed", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("Failed to process request", http.StatusBadRequest))
+			fail(util.NewErrorResponse("Failed to process request", http.StatusBadRequest), err)
 			return
 		}
 
-		isDuplicate = exists
-
-		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
+		isDuplicate, err = eventRepo.FindEventsByIdempotencyKey(r.Context(), source.ProjectID, checksum)
 		if err != nil {
-			a.A.Logger.Error("Checksum generation failed", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("Failed to process request", http.StatusBadRequest))
+			fail(util.NewErrorResponse("Failed to process request", http.StatusBadRequest), err)
 			return
 		}
 	}
@@ -140,8 +149,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Read raw body for signature verification first (e.g., GitHub signs raw bytes)
 	rawPayload, err := io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
 	if err != nil {
-		a.A.Logger.Error("Failed to read request body", "error", err)
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		fail(util.NewErrorResponse("Invalid request format", http.StatusBadRequest), err)
 		return
 	}
 
@@ -156,8 +164,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		// Fallback: extract/convert payload (e.g., form -> JSON) and verify against that for backward compatibility
 		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
 		if err != nil {
-			a.A.Logger.Error("Failed to extract payload", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+			fail(util.NewErrorResponse("Invalid request format", http.StatusBadRequest), err)
 			return
 		}
 
@@ -165,16 +172,14 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		r.Body = io.NopCloser(bytes.NewReader(rawPayload))
 
 		if err = v.VerifyRequest(r, payload); err != nil {
-			a.A.Logger.Error("Request verification failed (raw and converted)", "error", rawVerifyErr)
-			_ = render.Render(w, r, util.NewErrorResponse("Request verification failed", http.StatusBadRequest))
+			fail(util.NewErrorResponse("Request verification failed", http.StatusBadRequest), rawVerifyErr)
 			return
 		}
 	} else {
 		// Raw verification succeeded; now convert for storage
 		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
 		if err != nil {
-			a.A.Logger.Error("Failed to extract payload", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+			fail(util.NewErrorResponse("Invalid request format", http.StatusBadRequest), err)
 			return
 		}
 	}
@@ -184,22 +189,20 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	if isJSONContentType(r) && !json.Valid(payload) {
-		a.A.Logger.Error("Request payload is not valid JSON", "source_id", source.UID, "mask_id", maskID)
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid JSON payload", http.StatusBadRequest))
+		fail(util.NewErrorResponse("Invalid JSON payload", http.StatusBadRequest), nil)
 		return
 	}
 
 	eventType := maskID
 	if !util.IsStringEmpty(source.EventTypeLocation) {
 		if sourceUsesPayloadSignature(source) && eventTypeLocationUsesRequestMetadata(source.EventTypeLocation) {
-			_ = render.Render(w, r, util.NewErrorResponse("event type location cannot use request headers or query parameters with payload signature verification", http.StatusBadRequest))
+			fail(util.NewErrorResponse("event type location cannot use request headers or query parameters with payload signature verification", http.StatusBadRequest), nil)
 			return
 		}
 
 		eventType, err = extractEventTypeFromLocation(r, payload, source.EventTypeLocation)
 		if err != nil {
-			a.A.Logger.Error("Failed to extract event type", "error", err)
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			fail(util.NewErrorResponse(err.Error(), http.StatusBadRequest), err)
 			return
 		}
 	}
@@ -242,8 +245,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
-		a.A.Logger.Error("Failed to encode event data", "error", err)
-		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
+		fail(util.NewErrorResponse("Failed to process event", http.StatusBadRequest), err)
 		return
 	}
 
@@ -255,8 +257,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	err = a.A.Queue.Write(r.Context(), convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
-		a.A.Logger.Error("Error occurred sending new event to the queue", "error", err)
-		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
+		fail(util.NewErrorResponse("Failed to process event", http.StatusBadRequest), err)
 		return
 	}
 
@@ -280,6 +281,17 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	} else {
 		_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
 	}
+}
+
+func ingestErrorResponse(response util.ServerResponse, requestID, checksum string) util.ServerResponse {
+	if requestID == "" && checksum == "" {
+		return response
+	}
+	fields := struct {
+		RequestID          string `json:"request_id,omitempty"`
+		IdempotencyKeyHash string `json:"idempotency_key_hash,omitempty"`
+	}{RequestID: requestID, IdempotencyKeyHash: checksum}
+	return util.NewErrorResponseWithData(response.Message, response.StatusCode, fields)
 }
 
 const (

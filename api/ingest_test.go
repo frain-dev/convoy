@@ -11,8 +11,22 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 )
+
+func TestIngestErrorResponse(t *testing.T) {
+	base := util.NewErrorResponse("Failed to process event", http.StatusBadRequest)
+
+	response := ingestErrorResponse(base, "request-42", "checksum-42")
+	require.Equal(t, base.StatusCode, response.StatusCode)
+	require.Equal(t, base.Status, response.Status)
+	require.Equal(t, base.Message, response.Message)
+	require.JSONEq(t, `{"request_id":"request-42","idempotency_key_hash":"checksum-42"}`, string(response.Data))
+
+	response = ingestErrorResponse(base, "request-42", "")
+	require.JSONEq(t, `{"request_id":"request-42"}`, string(response.Data))
+}
 
 func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 	t.Run("application/json content type", func(t *testing.T) {
