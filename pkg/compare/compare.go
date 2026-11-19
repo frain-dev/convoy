@@ -43,7 +43,7 @@ func compare(payload, filter map[string]interface{}) (bool, error) {
 		slen := len(key)
 
 		// the filter ends with a trailing .$
-		if key[slen-1] == '$' && key[slen-2] == '.' {
+		if slen >= 2 && key[slen-1] == '$' && key[slen-2] == '.' {
 			return false, ErrTrailingDollarOpNotAllowed
 		}
 
