@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/internal/events"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/frain-dev/convoy/internal/pkg/ingestidentity"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/sources"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -35,11 +36,16 @@ import (
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
 	requestID := middleware.GetReqID(r.Context())
+	maskID := chi.URLParam(r, "maskID")
+	deliveryID := ingestidentity.DeliveryID(a.cfg.IngestDeliveryIDHeaders, maskID, r)
 	var checksum string
 	fail := func(response util.ServerResponse, cause error) {
 		attrs := []any{"webhook ingestion rejected", "request_id", requestID, "http_status", response.StatusCode, "reason", response.Message}
 		if checksum != "" {
 			attrs = append(attrs, "idempotency_key_hash", checksum)
+		}
+		if deliveryID != "" {
+			attrs = append(attrs, "upstream_delivery_id", deliveryID)
 		}
 		if cause != nil {
 			a.A.Logger.Error(append(attrs, "error", cause)...)
@@ -48,11 +54,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		}
 		_ = render.Render(w, r, ingestErrorResponse(response, requestID, checksum))
 	}
-	// s.AppService.CountProjectApplications()
-	// 1. Retrieve mask ID
-	maskID := chi.URLParam(r, "maskID")
-
-	// 2. Retrieve source using mask ID.
+	// Retrieve the source using the mask ID.
 	source, err := sources.New(a.A.Logger, a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
@@ -259,6 +261,10 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		fail(util.NewErrorResponse("Failed to process event", http.StatusBadRequest), err)
 		return
+	}
+
+	if deliveryID != "" {
+		a.A.Logger.Info("webhook ingestion accepted", "request_id", requestID, "upstream_delivery_id", deliveryID, "event_id", event.UID)
 	}
 
 	// 4. Return 200

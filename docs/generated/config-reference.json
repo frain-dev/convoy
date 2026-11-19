@@ -338,6 +338,12 @@
       "default": "localhost:5005"
     },
     {
+      "json_path": "ingest_delivery_id_headers",
+      "env_var": "CONVOY_INGEST_DELIVERY_ID_HEADERS",
+      "go_type": "map[string]string",
+      "default": "null"
+    },
+    {
       "json_path": "instance_ingest_rate",
       "env_var": "CONVOY_INSTANCE_INGEST_RATE",
       "go_type": "int",

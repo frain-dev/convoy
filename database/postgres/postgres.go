@@ -80,6 +80,7 @@ func NewDBWithLogger(cfg config.Configuration, logger log.Logger) (*Postgres, er
 	primary.randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	if err_ := ping(primary); err_ != nil {
+		_ = primary.Close()
 		return nil, err_
 	}
 
