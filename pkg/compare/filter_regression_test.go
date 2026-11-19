@@ -1,6 +1,7 @@
 package compare
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -96,6 +97,35 @@ func TestFilterMissingFieldsAndInvalidOperands(t *testing.T) {
 			got, err := Compare(p, f)
 			if got != tt.want || (err != nil) != tt.wantError {
 				t.Fatalf("got (%v,%v), want match=%v error=%v", got, err, tt.want, tt.wantError)
+			}
+		})
+	}
+}
+
+// A malformed filter key shorter than two characters must not panic when the
+// trailing array selector is checked. Previously compare() read key[slen-2]
+// unconditionally, so keys such as "$" (length 1) or "" (length 0) crashed the
+// process with an index-out-of-range panic.
+func TestCompareShortFilterKeysDoNotPanic(t *testing.T) {
+	tests := []struct {
+		name         string
+		filter       map[string]interface{}
+		want         bool
+		wantErr      bool
+		wantTrailErr bool
+	}{
+		{"single dollar key", map[string]interface{}{"$": "x"}, false, false, false},
+		{"empty key", map[string]interface{}{"": "x"}, false, false, false},
+		{"trailing dollar op", map[string]interface{}{"field.$": "x"}, false, true, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Compare(flatten.M{"type": "invoice"}, tt.filter)
+			if got != tt.want || (err != nil) != tt.wantErr {
+				t.Fatalf("got (%v,%v), want match=%v error=%v", got, err, tt.want, tt.wantErr)
+			}
+			if tt.wantTrailErr && !errors.Is(err, ErrTrailingDollarOpNotAllowed) {
+				t.Fatalf("expected ErrTrailingDollarOpNotAllowed, got %v", err)
 			}
 		})
 	}
