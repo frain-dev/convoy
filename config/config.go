@@ -754,6 +754,8 @@ const (
 )
 
 type Configuration struct {
+	// IngestDeliveryIDHeaders maps source mask IDs to delivery GUID headers.
+	IngestDeliveryIDHeaders map[string]string `json:"ingest_delivery_id_headers,omitempty" envconfig:"CONVOY_INGEST_DELIVERY_ID_HEADERS"`
 	// PreviousQueueProvider opts into inspecting the other configured queue store.
 	PreviousQueueProvider QueueProvider `json:"previous_queue_provider,omitempty" envconfig:"CONVOY_PREVIOUS_QUEUE_PROVIDER"`
 	QueueStoreScope       string        `json:"queue_store_scope,omitempty" envconfig:"CONVOY_QUEUE_STORE_SCOPE"`
