@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
@@ -1819,4 +1820,43 @@ func TestNotificationRoundTripper_BypassesGuardForProxyHopOnly(t *testing.T) {
 	_, err = direct.RoundTrip(req2)
 	require.NoError(t, err)
 	require.False(t, bypass)
+}
+
+func TestDispatcherDoPreservesHeadersOnInvalidGzip(t *testing.T) {
+	var compressed bytes.Buffer
+	writer := gzip.NewWriter(&compressed)
+	_, err := writer.Write([]byte("accepted"))
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	for _, tt := range []struct {
+		name  string
+		body  []byte
+		limit int64
+	}{
+		{name: "truncated header", body: compressed.Bytes(), limit: 1},
+		{name: "invalid header", body: []byte("not a gzip response"), limit: 1024},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Encoding", "gzip")
+				w.Header().Set("X-Delivery-Result", "accepted")
+				w.WriteHeader(http.StatusOK)
+				_, writeErr := w.Write(tt.body)
+				require.NoError(t, writeErr)
+			}))
+			defer server.Close()
+			req, requestErr := http.NewRequest(http.MethodPost, server.URL, nil)
+			require.NoError(t, requestErr)
+			// Explicit encoding keeps the transport from decompressing the response.
+			req.Header.Set("Accept-Encoding", "gzip")
+			dispatcher := &Dispatcher{logger: log.New("convoy", log.LevelInfo)}
+			response := &Response{}
+			require.Error(t, dispatcher.do(req, response, tt.limit, server.Client()))
+			require.Equal(t, http.StatusOK, response.StatusCode)
+			require.Equal(t, "200 OK", response.Status)
+			require.Equal(t, "accepted", response.ResponseHeader.Get("X-Delivery-Result"))
+			require.Equal(t, "gzip", response.ResponseHeader.Get("Content-Encoding"))
+		})
+	}
 }
