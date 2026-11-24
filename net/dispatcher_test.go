@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
@@ -1819,4 +1820,46 @@ func TestNotificationRoundTripper_BypassesGuardForProxyHopOnly(t *testing.T) {
 	_, err = direct.RoundTrip(req2)
 	require.NoError(t, err)
 	require.False(t, bypass)
+}
+
+func TestDispatcherDoLimitsDecodedResponseBody(t *testing.T) {
+	const limit int64 = 50 * 1024
+	for _, encoding := range []string{"identity", "gzip"} {
+		for _, size := range []int{128, 1024 * 1024} {
+			t.Run(fmt.Sprintf("%s/%d", encoding, size), func(t *testing.T) {
+				payload := bytes.Repeat([]byte("a"), size)
+				body := payload
+				if encoding == "gzip" {
+					var compressed bytes.Buffer
+					writer := gzip.NewWriter(&compressed)
+					_, err := writer.Write(payload)
+					require.NoError(t, err)
+					require.NoError(t, writer.Close())
+					body = compressed.Bytes()
+					require.Less(t, len(body), int(limit))
+				}
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Encoding", encoding)
+					_, err := w.Write(body)
+					if err != nil {
+						t.Errorf("write response: %v", err)
+					}
+				}))
+				defer server.Close()
+				req, err := http.NewRequest(http.MethodPost, server.URL, nil)
+				require.NoError(t, err)
+				// Keep gzip decoding in the dispatcher rather than the HTTP transport.
+				req.Header.Set("Accept-Encoding", "gzip")
+				dispatcher := &Dispatcher{logger: log.New("convoy", log.LevelInfo)}
+				response := &Response{}
+				require.NoError(t, dispatcher.do(req, response, limit, server.Client()))
+				expected := payload
+				if int64(len(expected)) > limit {
+					expected = expected[:limit]
+				}
+				require.Len(t, response.Body, len(expected))
+				require.Equal(t, expected, response.Body)
+			})
+		}
+	}
 }

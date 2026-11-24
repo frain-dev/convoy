@@ -901,7 +901,8 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64,
 		reader = body
 	}
 
-	buf, err := io.ReadAll(reader)
+	// Bound the decoded body too: gzip can expand beyond the wire-size limit.
+	buf, err := io.ReadAll(io.LimitReader(reader, maxResponseSize))
 	res.Body = buf
 
 	updateDispatchHeaders(res, response)
