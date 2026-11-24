@@ -981,6 +981,29 @@ func (s *DashboardIntegrationTestSuite) TestCrossOrgReads_InstanceAdmin_Authoriz
 	}
 }
 
+func (s *DashboardIntegrationTestSuite) Test_ExpireSecret_ProjectViewerForbidden() {
+	password := "viewer-pass"
+	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)
+	require.NoError(s.T(), err)
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, viewer, &auth.Role{
+		Type:    auth.RoleProjectViewer,
+		Project: s.DefaultProject.UID,
+	})
+	require.NoError(s.T(), err)
+	viewerAuth := authenticateRequest(&models.LoginUser{Username: viewer.Email, Password: password})
+
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s/expire_secret", s.DefaultOrg.UID, s.DefaultProject.UID, ulid.Make().String())
+	body := serialize(`{}`)
+	req := createRequest(http.MethodPut, url, "", body)
+	err = viewerAuth(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+
+	require.Equal(s.T(), http.StatusForbidden, w.Code, w.Body.String())
+}
+
 func (s *DashboardIntegrationTestSuite) Test_CreateEventType_ProjectViewerForbidden() {
 	password := "viewer-pass"
 	viewer, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("viewer.%d@test.com", time.Now().UnixNano()), password)

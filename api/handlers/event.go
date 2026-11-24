@@ -59,6 +59,9 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 	projectID := project.UID
 
 	// A portal-link token may only create events against an endpoint it owns. This
@@ -178,6 +181,9 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	if err := project.ValidateOutgoingEventIdempotencyKey(newMessage.IdempotencyKey); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -254,6 +260,9 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		h.A.Logger.Error("failed to retrieve project for fanout event", "error", err)
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
@@ -343,6 +352,9 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	err = newMessage.Validate()
 	if err != nil {
@@ -391,6 +403,15 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/{eventID}/replay [put]
 func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
+	project, err := h.getProjectFromContext(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
+
 	event, err := h.retrieveEvent(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -441,6 +462,9 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	p, err := h.getProjectFromContext(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, p) {
 		return
 	}
 

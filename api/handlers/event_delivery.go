@@ -71,6 +71,9 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
@@ -129,6 +132,9 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
@@ -218,6 +224,9 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
