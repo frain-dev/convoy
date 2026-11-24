@@ -46,6 +46,9 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	var newSource models.CreateSource
 	if err := util.ReadJSON(r, &newSource); err != nil {
@@ -172,6 +175,9 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	var sourceUpdate models.UpdateSource
 	err = util.ReadJSON(r, &sourceUpdate)
@@ -252,6 +258,9 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 

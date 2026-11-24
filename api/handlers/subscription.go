@@ -189,6 +189,9 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	var sub models.CreateSubscription
 	err = util.ReadJSON(r, &sub)
@@ -265,6 +268,9 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	sub, err := h.subscriptionRepo().FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
@@ -326,6 +332,9 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 

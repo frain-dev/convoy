@@ -710,6 +710,9 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	var e *models.ExpireSecret
 	err = util.ReadJSON(r, &e)

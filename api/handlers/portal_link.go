@@ -77,6 +77,9 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	svc := portal_links.New(h.A.Logger, h.A.DB)
 	portalLink, err := svc.CreatePortalLink(r.Context(), project.UID, &newPortalLink)
@@ -215,6 +218,9 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+	if !h.requireJWTProjectManage(w, r, project) {
+		return
+	}
 
 	svc := portal_links.New(h.A.Logger, h.A.DB)
 
@@ -320,6 +326,9 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+	if !h.requireJWTProjectManage(w, r, project) {
 		return
 	}
 
